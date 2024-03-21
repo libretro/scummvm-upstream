@@ -64,7 +64,7 @@ BSUM::BSUM(Common::SeekableReadStream *chunkStream) : EngineData(chunkStream) {
 		// Parner logos were introduced with nancy4, but at least one nancy3 release
 		// had one as well. For some reason they didn't port over the code from the
 		// later games, but implemented it the same way the other BSUM images work.
-		// Hence, we skip an extra byte indicating the number of partner logos. 
+		// Hence, we skip an extra byte indicating the number of partner logos.
 		s.skip(1);
 	}
 
@@ -242,7 +242,7 @@ TBOX::TBOX(Common::SeekableReadStream *chunkStream) : EngineData(chunkStream) {
 	tabWidth = chunkStream->readUint16LE();
 	pageScrollPercent = chunkStream->readUint16LE(); // Not implemented yet
 
-	Graphics::PixelFormat format = g_nancy->_graphicsManager->getInputPixelFormat();
+	Graphics::PixelFormat format = g_nancy->_graphics->getInputPixelFormat();
 	if (g_nancy->getGameType() >= kGameTypeNancy2) {
 		byte r, g, b;
 		r = chunkStream->readByte();
@@ -408,7 +408,7 @@ SET::SET(Common::SeekableReadStream *chunkStream) : EngineData(chunkStream) {
 	if (g_nancy->getGameType() >= kGameTypeNancy2) {
 		readRect(*chunkStream, _doneButtonHighlightSrc);
 	}
-	
+
 	readRectArray(*chunkStream, _scrollbarSrcs, 3);
 
 	_scrollbarsCenterYPos.resize(3);
@@ -492,6 +492,34 @@ LOAD::LOAD(Common::SeekableReadStream *chunkStream) :
 		readFilename(s, _defaultSaveNamePrefix, kGameTypeNancy7);
 		s.skip(16, kGameTypeNancy3);
 	}
+}
+
+LOAD_v2::LOAD_v2(Common::SeekableReadStream *chunkStream) :
+		EngineData(chunkStream) {
+	readFilename(*chunkStream, _firstPageimageName);
+	readFilename(*chunkStream, _otherPageimageName);
+	readFilename(*chunkStream, _buttonsImageName);
+
+	readRectArray(*chunkStream, _unpressedButtonSrcs, 5);
+	readRectArray(*chunkStream, _pressedButtonSrcs, 5);
+	readRectArray(*chunkStream, _highlightedButtonSrcs, 5);
+	readRectArray(*chunkStream, _disabledButtonSrcs, 5);
+
+	readRectArray(*chunkStream, _buttonDests, 5);
+	readRectArray(*chunkStream, _textboxBounds, 10);
+
+	chunkStream->skip(25); // prefixes and suffixes for filenames
+
+	_mainFontID = chunkStream->readSint16LE();
+	_highlightFontID = chunkStream->readSint16LE();
+	_fontXOffset = chunkStream->readSint16LE();
+	_fontYOffset = chunkStream->readSint16LE();
+
+	chunkStream->skip(16); // src rect for dash in font
+	_blinkingTimeDelay = chunkStream->readUint16LE();
+
+	readFilename(*chunkStream, _gameSavedPopup);
+	readFilename(*chunkStream, _emptySaveText);
 }
 
 SDLG::SDLG(Common::SeekableReadStream *chunkStream) : EngineData(chunkStream) {
@@ -779,6 +807,10 @@ TABL::TABL(Common::SeekableReadStream *chunkStream) : EngineData(chunkStream) {
 		assembleTextLine(buf, strings[i], 1000);
 	}
 	chunkStream->skip((20 - numEntries) * 1000);
+}
+
+MARK::MARK(Common::SeekableReadStream *chunkStream) : EngineData(chunkStream) {
+	readRectArray(*chunkStream, _markSrcs, 5);
 }
 
 } // End of namespace Nancy

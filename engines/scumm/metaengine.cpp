@@ -179,7 +179,7 @@ Common::Path ScummEngine_v70he::generateFilename(const int room) const {
 				// For mac they're stored in game binary.
 				result = _filenamePattern.pattern;
 			} else {
-				Common::String pattern = id == 'b' ? bPattern : _filenamePattern.pattern;
+				Common::String pattern = id == 'b' ? Common::move(bPattern) : _filenamePattern.pattern;
 				if (_filenamePattern.genMethod == kGenHEMac)
 					result = Common::String::format("%s (%c)", pattern.c_str(), id);
 				else
@@ -567,7 +567,7 @@ SaveStateDescriptor ScummMetaEngine::querySaveMetaInfos(const char *target, int 
 
 GUI::OptionsContainerWidget *ScummMetaEngine::buildLoomOptionsWidget(GUI::GuiObject *boss, const Common::String &name, const Common::String &target) const {
 	Common::Platform platform = Common::parsePlatform(ConfMan.get("platform", target));
-	if (platform != Common::kPlatformUnknown && platform != Common::kPlatformDOS)
+	if (platform != Common::kPlatformUnknown && platform != Common::kPlatformDOS && platform != Common::kPlatformMacintosh)
 		return nullptr;
 
 	Common::String extra = ConfMan.get("extra", target);
@@ -580,15 +580,20 @@ GUI::OptionsContainerWidget *ScummMetaEngine::buildLoomOptionsWidget(GUI::GuiObj
 
 	if (extra == "Steam")
 		return MetaEngine::buildEngineOptionsWidget(boss, name, target);
+	else if (platform == Common::kPlatformMacintosh)
+		return new Scumm::LoomMonkeyMacGameOptionsWidget(boss, name, target, GID_LOOM);
 
 	// These EGA Loom settings are only relevant for the EGA
 	// version, since that is the only one that has an overture.
-
 	return new Scumm::LoomEgaGameOptionsWidget(boss, name, target);
 }
 
 GUI::OptionsContainerWidget *ScummMetaEngine::buildMI1OptionsWidget(GUI::GuiObject *boss, const Common::String &name, const Common::String &target) const {
 	Common::String extra = ConfMan.get("extra", target);
+	Common::Platform platform = Common::parsePlatform(ConfMan.get("platform", target));
+
+	if (platform == Common::kPlatformMacintosh && extra != "Steam")
+		return new Scumm::LoomMonkeyMacGameOptionsWidget(boss, name, target, GID_MONKEY);
 
 	if (extra != "CD" && extra != "FM-TOWNS" && extra != "SEGA")
 		return nullptr;
@@ -613,7 +618,7 @@ GUI::OptionsContainerWidget *ScummMetaEngine::buildEngineOptionsWidget(GUI::GuiO
 #ifdef USE_ENET
 	else if (gameid == "football" || gameid == "baseball2001" || gameid == "football2002" ||
 		gameid == "moonbase")
-		return new Scumm::HENetworkGameOptionsWidget(boss, name, target, gameid);
+		return new Scumm::HENetworkGameOptionsWidget(boss, name, target, Common::move(gameid));
 #endif
 
 	const ExtraGuiOptions engineOptions = getExtraGuiOptions(target);
@@ -653,7 +658,7 @@ static const ExtraGuiOption fmtownsTrimTo200 = {
 
 static const ExtraGuiOption macV3LowQualityMusic = {
 	_s("Play simplified music"),
-	_s("This music was presumably intended for low-end Macs, and uses only one channel."),
+	_s("This music was intended for low-end Macs, and uses only one channel."),
 	"mac_v3_low_quality_music",
 	false,
 	0,
@@ -773,7 +778,7 @@ const ExtraGuiOptions ScummMetaEngine::getExtraGuiOptions(const Common::String &
 	// The low quality music in Loom was probably intended for low-end
 	// Macs. It plays only one channel, instead of three.
 
-	if (target.empty() || (gameid == "loom" && platform == Common::kPlatformMacintosh && extra != "Steam")) {
+	if (target.empty() || (gameid == "indy3" && platform == Common::kPlatformMacintosh && extra != "Steam")) {
 		options.push_back(macV3LowQualityMusic);
 	}
 

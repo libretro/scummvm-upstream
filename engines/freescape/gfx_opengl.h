@@ -28,6 +28,8 @@
 
 #include "freescape/gfx.h"
 
+#ifdef USE_OPENGL_GAME
+
 namespace Freescape {
 
 class OpenGLRenderer : public Renderer {
@@ -107,12 +109,13 @@ public:
 
 	virtual void flipBuffer() override;
 	virtual void drawFloor(uint8 color) override;
-	virtual void drawEclipse(uint8 color1, uint8 color2) override;
-	void drawCelestialBody(Math::Vector3d position, float radius, uint8 color);
+	void drawCelestialBody(Math::Vector3d position, float radius, uint8 color) override;
 
 	virtual Graphics::Surface *getScreenshot() override;
 };
 
 } // End of namespace Freescape
+
+#endif
 
 #endif // FREESCAPE_GFX_OPENGL_H

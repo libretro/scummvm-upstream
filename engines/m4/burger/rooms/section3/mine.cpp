@@ -195,6 +195,10 @@ void Mine::daemon() {
 
 		player_set_commands_allowed(false);
 		ws_walk(ei.home_x, ei.home_y, nullptr, 303, ei.home_facing);
+		term_message("Mine entry %d at (%d,%d) to (%d,%d, %d)",
+			_presentSceneID,
+			ei.offscreen_x, ei.offscreen_y,
+			ei.home_x, ei.home_y, ei.home_facing);
 		break;
 	}
 
@@ -470,6 +474,7 @@ void Mine::mine_travel_link(int16 takeLink) {
 	_mineRoomInfo = MINE_INFO[mineRoomIndex];		// Get this mine room info
 	_entranceDoor = _mineRoomInfo.door[takeLink];	// Get which door to enter from in new room
 	mineRoomIndex = _mineRoomInfo.link[takeLink];	// Get which link to take
+	assert(mineRoomIndex != -1);
 
 	_mineRoomInfo = MINE_INFO[mineRoomIndex];		// Get new mine room info from new index
 	_presentSceneID = _mineRoomInfo.scene_id;		// Set the scene ID

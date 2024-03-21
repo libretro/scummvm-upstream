@@ -1354,7 +1354,6 @@ void LoomEgaGameOptionsWidget::defineLayout(GUI::ThemeEval &layouts, const Commo
 }
 
 void LoomEgaGameOptionsWidget::handleCommand(GUI::CommandSender *sender, uint32 cmd, uint32 data) {
-
 	switch (cmd) {
 	case kOvertureTicksChanged:
 		updateOvertureTicksValue();
@@ -1369,6 +1368,99 @@ void LoomEgaGameOptionsWidget::updateOvertureTicksValue() {
 	int ticks = DEFAULT_LOOM_OVERTURE_TRANSITION + _overtureTicksSlider->getValue();
 
 	_overtureTicksValue->setLabel(Common::String::format("%d:%02d.%d", ticks / 600, (ticks % 600) / 10, ticks % 10));
+}
+
+// Mac Loom/MI1 options
+LoomMonkeyMacGameOptionsWidget::LoomMonkeyMacGameOptionsWidget(GuiObject *boss, const Common::String &name, const Common::String &domain, int gameId) :
+	ScummOptionsContainerWidget(boss, name, "LoomMonkeyMacGameOptionsWidget", domain), _sndQualitySlider(nullptr), _sndQualityValue(nullptr), _enableOriginalGUICheckbox(nullptr), _quality(0) {
+	GUI::StaticTextWidget *text = new GUI::StaticTextWidget(widgetsBoss(), "LoomMonkeyMacGameOptionsWidget.SndQualityLabel", _("Music Quality:"));
+	text->setAlign(Graphics::TextAlign::kTextAlignEnd);
+
+	_sndQualitySlider = new GUI::SliderWidget(widgetsBoss(), "LoomMonkeyMacGameOptionsWidget.SndQuality", gameId == GID_MONKEY ?
+		_("Select music quality. The original lets you choose this from the Game menu.") :
+		_("Select music quality. The original determines the basic setup by hardware detection and speed tests, "
+			"but also allows changes through the Game menu to some degree."), kQualitySliderUpdate);
+	_sndQualitySlider->setMinValue(gameId == GID_MONKEY ? 6 : 0);
+	_sndQualitySlider->setMaxValue(9);
+	_sndQualityValue = new GUI::StaticTextWidget(widgetsBoss(), "LoomMonkeyMacGameOptionsWidget.SndQualityValue", Common::U32String());
+	_sndQualityValue->setFlags(GUI::WIDGET_CLEARBG);
+	updateQualitySlider();
+	createEnhancementsWidget(widgetsBoss(), "LoomMonkeyMacGameOptionsWidget");
+	_enableOriginalGUICheckbox = createOriginalGUICheckbox(widgetsBoss(), "LoomMonkeyMacGameOptionsWidget.EnableOriginalGUI");
+}
+
+void LoomMonkeyMacGameOptionsWidget::load() {
+	ScummOptionsContainerWidget::load();
+
+	_quality = 0;
+
+	if (ConfMan.hasKey("mac_snd_quality", _domain))
+		_quality = ConfMan.getInt("mac_snd_quality", _domain);
+
+	// Migrate old bool setting...
+	if (_quality == 0 && ConfMan.hasKey("mac_v3_low_quality_music", _domain)) {
+		if (ConfMan.getBool("mac_v3_low_quality_music"))
+			_quality = 1;
+	}
+	ConfMan.removeKey("mac_v3_low_quality_music", _domain);
+
+	_sndQualitySlider->setValue(_quality);
+	updateQualitySlider();
+	_enableOriginalGUICheckbox->setState(ConfMan.getBool("original_gui", _domain));
+}
+
+bool LoomMonkeyMacGameOptionsWidget::save() {
+	bool res = ScummOptionsContainerWidget::save();
+	ConfMan.setInt("mac_snd_quality", _quality, _domain);
+	ConfMan.setBool("original_gui", _enableOriginalGUICheckbox->getState(), _domain);
+	return res;
+}
+
+void LoomMonkeyMacGameOptionsWidget::defineLayout(GUI::ThemeEval &layouts, const Common::String &layoutName, const Common::String &overlayedLayout) const {
+	layouts.addDialog(layoutName, overlayedLayout)
+		.addLayout(GUI::ThemeLayout::kLayoutVertical, 5)
+			.addPadding(0, 0, 0, 0)
+			.addLayout(GUI::ThemeLayout::kLayoutVertical, 4)
+				.addPadding(0, 0, 10, 0)
+				.addWidget("EnableOriginalGUI", "Checkbox");
+	addEnhancementsLayout(layouts)
+			.closeLayout()
+			.addLayout(GUI::ThemeLayout::kLayoutHorizontal, 12)
+				.addPadding(0, 0, 0, 0)
+				.addWidget("SndQualityLabel", "OptionsLabel")
+				.addLayout(GUI::ThemeLayout::kLayoutVertical, 10, GUI::ThemeLayout::kItemAlignStretch)
+					.addPadding(0, 0, 0, 0)
+					.addWidget("SndQuality", "Slider")
+					.addWidget("SndQualityValue", "OptionsLabel")
+				.closeLayout()
+			.closeLayout()
+		.closeLayout()
+		.closeDialog();
+}
+
+void LoomMonkeyMacGameOptionsWidget::handleCommand(GUI::CommandSender *sender, uint32 cmd, uint32 data) {
+	switch (cmd) {
+	case kQualitySliderUpdate:
+		updateQualitySlider();
+		break;
+	default:
+		GUI::OptionsContainerWidget::handleCommand(sender, cmd, data);
+		break;
+	}
+}
+
+void LoomMonkeyMacGameOptionsWidget::updateQualitySlider() {
+	_quality = _sndQualitySlider->getValue();
+	static const char *const descr1[] = { _s("auto"), _s("Low"), _s("Medium"), _s("High") };
+	static const char *const descr2[] = { _s("auto"), _s("Good"), _s("Better"), _s("Best") };
+	static const char *const pattern[] = { _s("Hardware Rating: %s   -   "), _s("Quality Selection: %s") };
+
+	Common::String pt1(Common::String::format(pattern[1], descr2[_quality == _sndQualitySlider->getMinValue() ? 0 : ((_quality - 1) % 3) + 1]));
+	if (_sndQualitySlider->getMinValue() == 0)
+		pt1.insertString(Common::String::format(pattern[0], descr1[_quality == _sndQualitySlider->getMinValue() ? 0 : ((_quality - 1) / 3) + 1]), 0);
+
+	Common::U32String label(pt1);
+	_sndQualityValue->setLabel(label);
 }
 
 // VGA Loom Playback Adjustment settings
@@ -1569,8 +1661,8 @@ void MI1CdGameOptionsWidget::updateOutlookAdjustmentValue() {
 #ifdef USE_ENET
 // HE Network Play Adjustment settings
 
-HENetworkGameOptionsWidget::HENetworkGameOptionsWidget(GuiObject *boss, const Common::String &name, const Common::String &domain, Common::String gameid) :
-		ScummOptionsContainerWidget(boss, name, "HENetworkGameOptionsDialog", domain), _gameid(gameid) {
+HENetworkGameOptionsWidget::HENetworkGameOptionsWidget(GuiObject *boss, const Common::String &name, const Common::String &domain, const Common::String &&gameid) :
+	ScummOptionsContainerWidget(boss, name, "HENetworkGameOptionsDialog", domain), _gameid(Common::move(gameid)) {
 	Common::String extra = ConfMan.get("extra", domain);
 
 	// Add back the "Load modded audio" option.

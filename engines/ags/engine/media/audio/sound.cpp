@@ -30,7 +30,7 @@
 #include "ags/engine/media/audio/sound_clip.h"
 #include "ags/engine/media/audio/clip_my_midi.h"
 #include "ags/shared/core/asset_manager.h"
-#include "audio/mods/impulsetracker.h"
+#include "audio/mods/universaltracker.h"
 #include "audio/mods/mod_xm_s3m.h"
 #include "audio/mods/protracker.h"
 #include "audio/decoders/mp3.h"
@@ -111,13 +111,12 @@ SOUNDCLIP *my_load_mod(const AssetPath &asset_name, bool loop) {
 		Audio::AudioStream *audioStream = nullptr;
 		if (charAfterDot == 'I') {
 			// Impulse Tracker
-#ifdef USE_MIKMOD
-			audioStream = Audio::makeImpulseTrackerStream(data, DisposeAfterUse::YES);
-#else
-			warning("MIKMOD support was not compiled in! Skipping Impulse Tracker audio");
-			audioStream = Audio::makeSilentAudioStream(22050, true);
-			delete data;
-#endif
+			audioStream = Audio::makeUniversalTrackerStream(data, DisposeAfterUse::YES);
+			if (!audioStream) {
+				audioStream = Audio::makeSilentAudioStream(22050, true);
+				delete data;
+			}
+
 		} else if (charAfterDot == 'X') {
 			audioStream = Audio::makeModXmS3mStream(data, DisposeAfterUse::YES);
 		} else if (charAfterDot == 'S') {

@@ -96,7 +96,7 @@ void LoadSaveMenu::process() {
 		stop();
 	}
 
-	g_nancy->_cursorManager->setCursorType(CursorManager::kNormalArrow);
+	g_nancy->_cursor->setCursorType(CursorManager::kNormalArrow);
 }
 
 void LoadSaveMenu::onStateEnter(const NancyState::NancyState prevState) {
@@ -141,7 +141,7 @@ void LoadSaveMenu::registerGraphics() {
 	_blinkingCursorOverlay.registerGraphics();
 	_successOverlay.registerGraphics();
 
-	g_nancy->_graphicsManager->redrawAll();
+	g_nancy->_graphics->redrawAll();
 }
 
 void LoadSaveMenu::init() {
@@ -150,11 +150,11 @@ void LoadSaveMenu::init() {
 
 	_background.init(_loadSaveData->_imageName);
 
-	_baseFont = g_nancy->_graphicsManager->getFont(_loadSaveData->_mainFontID);
+	_baseFont = g_nancy->_graphics->getFont(_loadSaveData->_mainFontID);
 
 	if (_loadSaveData->_highlightFontID != -1) {
-		_highlightFont = g_nancy->_graphicsManager->getFont(_loadSaveData->_highlightFontID);
-		_disabledFont = g_nancy->_graphicsManager->getFont(_loadSaveData->_disabledFontID);
+		_highlightFont = g_nancy->_graphics->getFont(_loadSaveData->_highlightFontID);
+		_disabledFont = g_nancy->_graphics->getFont(_loadSaveData->_disabledFontID);
 	} else {
 		_highlightFont = _disabledFont = _baseFont;
 	}
@@ -167,8 +167,8 @@ void LoadSaveMenu::init() {
 		RenderObject *newTb = new RenderObject(5);
 		_textboxes[i] = newTb;
 		const Common::Rect &bounds = _loadSaveData->_textboxBounds[i];
-		newTb->_drawSurface.create(bounds.width(), bounds.height(), g_nancy->_graphicsManager->getScreenPixelFormat());
-		newTb->_drawSurface.clear(g_nancy->_graphicsManager->getTransColor());
+		newTb->_drawSurface.create(bounds.width(), bounds.height(), g_nancy->_graphics->getScreenPixelFormat());
+		newTb->_drawSurface.clear(g_nancy->_graphics->getTransColor());
 		newTb->moveTo(bounds);
 		newTb->setTransparent(true);
 		newTb->setVisible(true);
@@ -229,23 +229,23 @@ void LoadSaveMenu::init() {
 	_cancelButton = new UI::Button(3, _background._drawSurface,
 		_loadSaveData->_cancelButtonDownSrc, Common::Rect(),
 		_loadSaveData->_cancelButtonHighlightSrc, _loadSaveData->_cancelButtonDisabledSrc);
-	
+
 	// Load the blinking cursor graphic that appears while typing a filename
 	_blinkingCursorOverlay._drawSurface.create(_loadSaveData->_blinkingCursorSrc.width(),
 		_loadSaveData->_blinkingCursorSrc.height(),
-		g_nancy->_graphicsManager->getScreenPixelFormat());
+		g_nancy->_graphics->getScreenPixelFormat());
 	_blinkingCursorOverlay.setTransparent(true);
 	_blinkingCursorOverlay.setVisible(false);
 	_blinkingCursorOverlay._drawSurface.clear(_blinkingCursorOverlay._drawSurface.getTransparentColor());
 	_blinkingCursorOverlay._drawSurface.transBlitFrom(_highlightFont->getImageSurface(), _loadSaveData->_blinkingCursorSrc,
-		Common::Point(), g_nancy->_graphicsManager->getTransColor());
+		Common::Point(), g_nancy->_graphics->getTransColor());
 
 	// Load the "Your game has been saved" popup graphic
 	if (!_loadSaveData->_gameSavedPopup.empty()) {
 		g_nancy->_resource->loadImage(_loadSaveData->_gameSavedPopup, _successOverlay._drawSurface);
 		Common::Rect destBounds = Common::Rect(0,0, _successOverlay._drawSurface.w, _successOverlay._drawSurface.h);
 		destBounds.moveTo(640 / 2 - destBounds.width() / 2,
-			480 / 2 - destBounds.height() / 2);		
+			480 / 2 - destBounds.height() / 2);
 		_successOverlay.moveTo(destBounds);
 		_successOverlay.setVisible(false);
 	}
@@ -282,7 +282,7 @@ void LoadSaveMenu::run() {
 		_exitButton->setDisabled(false);
 		_enteredString.clear();
 		_successOverlay.setVisible(false);
-		
+
 		_selectedSave = -1;
 		_enteringNewState = false;
 	}
@@ -305,7 +305,7 @@ void LoadSaveMenu::run() {
 				g_nancy->_sound->playSound("BUDE");
 				_enteringNewState = true;
 			}
-			
+
 			return;
 		}
 	}
@@ -325,7 +325,7 @@ void LoadSaveMenu::run() {
 				g_nancy->_sound->playSound("BUDE");
 				_enteringNewState = true;
 			}
-			
+
 			return;
 		}
 	}
@@ -441,7 +441,7 @@ void LoadSaveMenu::enterFilename() {
 		_blinkingCursorOverlay.moveTo(Common::Point(tbPosition.left + textWidthInPixels,
 			tbPosition.bottom - _blinkingCursorOverlay._drawSurface.h + _loadSaveData->_fontYOffset));
 	}
-	
+
 	_cancelButton->handleInput(input);
 	if (_cancelButton->_isClicked) {
 		_state = kRun;
@@ -477,7 +477,7 @@ void LoadSaveMenu::save() {
 				return;
 			} else {
 				// Dialog has returned
-				g_nancy->_graphicsManager->suppressNextDraw();
+				g_nancy->_graphics->suppressNextDraw();
 				_destroyOnExit = true;
 				uint ret = ConfMan.getInt("sdlg_return", Common::ConfigManager::kTransientDomain);
 				ConfMan.removeKey("sdlg_return", Common::ConfigManager::kTransientDomain);
@@ -497,7 +497,7 @@ void LoadSaveMenu::save() {
 			}
 		}
 	}
-	
+
 	// Improvement: not providing a name doesn't result in the
 	// savefile being named "--- Empty ---" or "Nothing Saved Here".
 	// Instead, we use ScummVM's built-in save name generator
@@ -524,7 +524,7 @@ void LoadSaveMenu::save() {
 						}
 					}
 				}
-				
+
 				finalDesc = _loadSaveData->_defaultSaveNamePrefix + ('0' + suffixNum);
 			} else {
 				finalDesc = _filenameStrings[_selectedSave];
@@ -570,7 +570,7 @@ void LoadSaveMenu::load() {
 		} else {
 			// Dialog has returned
 			_destroyOnExit = true;
-			g_nancy->_graphicsManager->suppressNextDraw();
+			g_nancy->_graphics->suppressNextDraw();
 			uint ret = ConfMan.getInt("sdlg_return", Common::ConfigManager::kTransientDomain);
 			ConfMan.removeKey("sdlg_return", Common::ConfigManager::kTransientDomain);
 			switch (ret) {
@@ -624,7 +624,7 @@ void LoadSaveMenu::stop() {
 uint16 LoadSaveMenu::writeToTextbox(uint textboxID, const Common::String &text, const Font *font) {
 	assert(font);
 
-	_textboxes[textboxID]->_drawSurface.clear(g_nancy->_graphicsManager->getTransColor());
+	_textboxes[textboxID]->_drawSurface.clear(g_nancy->_graphics->getTransColor());
 	Common::Point destPoint(_loadSaveData->_fontXOffset, _loadSaveData->_fontYOffset + _textboxes[textboxID]->_drawSurface.h - font->getFontHeight());
 	font->drawString(&_textboxes[textboxID]->_drawSurface, text, destPoint.x, destPoint.y, _textboxes[textboxID]->_drawSurface.w, 0);
 	_textboxes[textboxID]->setVisible(true);

@@ -423,6 +423,7 @@ const SciWorkaroundEntry uninitializedReadWorkarounds[] = {
 	{ GID_LAURABOW2,      -1,    90,  1,        "MuseumActor", "init",                         nullptr,     6,     6, { WORKAROUND_FAKE,   0 } }, // Random actors in museum - bug #5197
 	{ GID_LAURABOW2,     240,   240,  0,     "sSteveAnimates", "changeState",                  nullptr,     0,     0, { WORKAROUND_FAKE,   0 } }, // Steve Dorian's idle animation at the docks - bug #5028
 	{ GID_LAURABOW2,      -1,   928,  0,              nullptr, "startText",                    nullptr,     0,     0, { WORKAROUND_FAKE,   0 } }, // gets caused by Text+Audio support (see script patcher)
+	{ GID_LIGHTHOUSE,     -1,     0,  0,          "globalVMD", "play",                         nullptr,     0,     0, { WORKAROUND_FAKE,   0 } }, // when playing a VMD while inventory is disabled (opening a portal in room 360) - bug #14924
 	{ GID_LIGHTHOUSE,     -1,    17,  0,              nullptr, "handleEvent",                  nullptr,     0,     0, { WORKAROUND_FAKE,   0 } }, // when operating the joystick in the puzzle to lower the bridge at the entrance to the workshop, or the joystick that moves the robotic arm in the mini-sub
 	{ GID_LONGBOW,        -1,     0,  0,            "Longbow", "restart",                      nullptr,     0,     0, { WORKAROUND_FAKE,   0 } }, // When canceling a restart game - bug #5244
 	{ GID_LONGBOW,        -1,   213,  0,              "clear", "handleEvent",                  nullptr,     0,     0, { WORKAROUND_FAKE,   0 } }, // When giving an answer using the druid hand sign code in any room
@@ -1345,6 +1346,8 @@ static const SciMessageWorkaroundEntry messageWorkarounds[] = {
 	{ GID_SQ4,           SCI_MEDIA_CD,     K_LANG_NONE,     -1,   16,   7,   0,   3,  1, { MSG_WORKAROUND_FAKE,      16,   7,   0,   3,  1,  7,   0,   0, "" } },
 	// Missing message when clicking talk in room 520 - bug #10915
 	{ GID_SQ4,           SCI_MEDIA_CD,     K_LANG_NONE,     -1,  510,  99,   0,   3,  1, { MSG_WORKAROUND_REMAP,    500,  99,   0,   3,  1,  0,   0,   0, nullptr } },
+	// Wrong talker when looking at Cliffy in room 240 after returning from Genetix
+	{ GID_SQ5,           SCI_MEDIA_ALL,    K_LANG_NONE,     -1,  240,   5,   1,   5,  1, { MSG_WORKAROUND_EXTRACT,  240,   5,   1,   5,  1, 99,   0,   0, nullptr } },
 	// Missing message when looking at hole in room 740
 	{ GID_SQ6,           SCI_MEDIA_ALL,    K_LANG_NONE,     -1,  740,   3,   1,   8,  1, { MSG_WORKAROUND_REMAP,    740,   3,  88,   8,  1, 99,   0,   0, nullptr } },
 	SCI_MESSAGEWORKAROUNDENTRY_TERMINATOR

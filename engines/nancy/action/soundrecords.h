@@ -34,7 +34,7 @@ public:
 	void execute() override;
 
 	uint16 channel = 0;
-	uint16 volume = 0;
+	byte volume = 0;
 
 protected:
 	Common::String getRecordTypeName() const override { return "SetVolume"; }
@@ -47,7 +47,7 @@ class PlaySound : public ActionRecord {
 public:
 	PlaySound() {}
 	~PlaySound() { delete _soundEffect; }
-	
+
 	void readData(Common::SeekableReadStream &stream) override;
 	void execute() override;
 
@@ -76,13 +76,22 @@ protected:
 	Common::String getRecordTypeName() const override;
 };
 
-// Short version of PlaySoundCC
+// Short version of PlaySoundCC, no event flag
 class PlaySoundTerse : public PlaySoundCC {
 public:
 	void readData(Common::SeekableReadStream &stream) override;
 
 protected:
 	Common::String getRecordTypeName() const override { return "PlaySoundTerse"; }
+};
+
+// Short version of PlaySoundCC, with event flag
+class PlaySoundEventFlagTerse : public PlaySoundCC {
+public:
+	void readData(Common::SeekableReadStream &stream) override;
+
+protected:
+	Common::String getRecordTypeName() const override { return "PlaySoundEventFlagTerse"; }
 };
 
 // Used for sounds that pan left-right depending on the scene background frame.
@@ -156,7 +165,7 @@ public:
 	uint _selectedSound = 0;
 
 protected:
-	Common::String getRecordTypeName() const override { return "PlayRandomSoundTerse"; }	
+	Common::String getRecordTypeName() const override { return "PlayRandomSoundTerse"; }
 };
 
 // Same as PlaySound, except it discards the filename provided in the data.

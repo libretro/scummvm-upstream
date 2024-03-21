@@ -19,11 +19,19 @@
  *
  */
 
+#include "common/file.h"
+
+#include "freescape/sound.h"
+
 namespace Freescape {
 
 enum EclipseReleaseFlags {
 	GF_ZX_DEMO_CRASH = (1 << 0),
 	GF_ZX_DEMO_MICROHOBBY = (1 << 1),
+};
+
+enum {
+	kVariableEclipseAnkhs = 32,
 };
 
 class EclipseEngine : public FreescapeEngine {
@@ -33,21 +41,35 @@ public:
 	void gotoArea(uint16 areaID, int entranceID) override;
 
 	void borderScreen() override;
+	void titleScreen() override;
+	void drawInfoMenu() override;
+	void drawIndicator(Graphics::Surface *surface, int xPosition, int yPosition, int separation);
 
+	void drawSensorShoot(Sensor *sensor) override;
+
+	void loadAssets() override;
 	void loadAssetsDOSFullGame() override;
+	void pressedKey(const int keycode) override;
+	void releasedKey(const int keycode) override;
 
 	uint32 _initialEnergy;
 	uint32 _initialShield;
 
+	bool _resting;
+	int _lastThirtySeconds;
+	void updateTimeVariables() override;
+
 	void initDOS();
 	void initCPC();
 	void initZX();
+
+	void loadAssetsZXFullGame() override;
+	void loadAssetsCPCFullGame() override;
 	void loadAssetsCPCDemo() override;
 	void loadAssetsZXDemo() override;
 
 	void initGameState() override;
 	void executePrint(FCLInstruction &instruction) override;
-
 
 	void drawBackground() override;
 	void drawDOSUI(Graphics::Surface *surface) override;
@@ -55,7 +77,14 @@ public:
 	void drawZXUI(Graphics::Surface *surface) override;
 	void drawAnalogClock(Graphics::Surface *surface, int x, int y, uint32 colorHand1, uint32 colorHand2, uint32 colorBack);
 	void drawAnalogClockHand(Graphics::Surface *surface, int x, int y, double degrees, double magnitude, uint32 color);
+	void drawEclipseIndicator(Graphics::Surface *surface, int x, int y, uint32 color1, uint32 color2);
 
+	soundFx *load1bPCM(Common::SeekableReadStream *file, int offset);
+
+	bool checkIfGameEnded() override;
+	void endGame() override;
+	void loadSoundsFx(Common::SeekableReadStream *file, int offset, int number) override;
+	void playSoundFx(int index, bool sync) override;
 
 	Common::Error saveGameStreamExtended(Common::WriteStream *stream, bool isAutosave = false) override;
 	Common::Error loadGameStreamExtended(Common::SeekableReadStream *stream) override;

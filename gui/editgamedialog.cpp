@@ -114,7 +114,13 @@ EditGameDialog::EditGameDialog(const Common::String &domain)
 	// GAME: Path to game data (r/o), extra data (r/o), and save data (r/w)
 	Common::Path gamePath(ConfMan.getPath("path", _domain));
 	Common::Path extraPath(ConfMan.getPath("extrapath", _domain));
+	if (!ConfMan.hasKey("extrapath", _domain)) {
+		extraPath.clear();
+	}
 	Common::Path savePath(ConfMan.getPath("savepath", _domain));
+	if (!ConfMan.hasKey("savepath", _domain)) {
+		savePath.clear();
+	}
 
 	// GAME: Determine the description string
 	Common::String description(ConfMan.get("description", domain));
@@ -218,13 +224,17 @@ EditGameDialog::EditGameDialog(const Common::String &domain)
 	//
 	int backendTabId = tab->addTab(_("Backend"), "GameOptions_Backend", false);
 
+	ScrollContainerWidget *backendContainer = new ScrollContainerWidget(tab, "GameOptions_Backend.Container", "GameOptions_Backend_Container");
+	backendContainer->setBackgroundType(ThemeEngine::kWidgetBackgroundNo);
+	backendContainer->setTarget(this);
+
 	if (!g_gui.useLowResGUI())
-		_globalBackendOverride = new CheckboxWidget(tab, "GameOptions_Backend.EnableTabCheckbox", _("Override global backend settings"), Common::U32String(), kCmdGlobalBackendOverride);
+		_globalBackendOverride = new CheckboxWidget(backendContainer, "GameOptions_Backend_Container.EnableTabCheckbox", _("Override global backend settings"), Common::U32String(), kCmdGlobalBackendOverride);
 	else
-		_globalBackendOverride = new CheckboxWidget(tab, "GameOptions_Backend.EnableTabCheckbox", _c("Override global backend settings", "lowres"), Common::U32String(), kCmdGlobalBackendOverride);
+		_globalBackendOverride = new CheckboxWidget(backendContainer, "GameOptions_Backend_Container.EnableTabCheckbox", _c("Override global backend settings", "lowres"), Common::U32String(), kCmdGlobalBackendOverride);
 
 	g_system->registerDefaultSettings(_domain);
-	_backendOptions = g_system->buildBackendOptionsWidget(tab, "GameOptions_Backend.Container", _domain);
+	_backendOptions = g_system->buildBackendOptionsWidget(backendContainer, "GameOptions_Backend_Container.Container", _domain);
 
 	if (_backendOptions) {
 		_backendOptions->setParentDialog(this);

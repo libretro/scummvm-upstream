@@ -35,8 +35,8 @@ namespace Action {
 
 void MazeChasePuzzle::init() {
 	Common::Rect screenBounds = NancySceneState.getViewport().getBounds();
-	_drawSurface.create(screenBounds.width(), screenBounds.height(), g_nancy->_graphicsManager->getInputPixelFormat());
-	_drawSurface.clear(g_nancy->_graphicsManager->getTransColor());
+	_drawSurface.create(screenBounds.width(), screenBounds.height(), g_nancy->_graphics->getInputPixelFormat());
+	_drawSurface.clear(g_nancy->_graphics->getTransColor());
 	setTransparent(true);
 	setVisible(true);
 	moveTo(screenBounds);
@@ -126,7 +126,7 @@ void MazeChasePuzzle::updateGraphics() {
 					enemyMovement(_currentAnimFrame);
 				}
 			}
-			
+
 			if (_currentAnimFrame == 1) {
 				// Clear the buttons
 				Common::Rect fill = _upButtonDest;
@@ -138,14 +138,14 @@ void MazeChasePuzzle::updateGraphics() {
 				_needsRedraw = true;
 			} else if (_currentAnimFrame >= _framesPerMove + 1) {
 				_currentAnimFrame = -1;
-			}		
+			}
 		}
 	}
 }
 
 void MazeChasePuzzle::readData(Common::SeekableReadStream &stream) {
 	readFilename(stream, _imageName);
-	
+
 	uint width = stream.readUint16LE();
 	uint height = stream.readUint16LE();
 	uint numEnemies = stream.readUint16LE();
@@ -268,7 +268,7 @@ void MazeChasePuzzle::handleInput(NancyInput &input) {
 	}
 
 	if (NancySceneState.getViewport().convertViewportToScreen(_exitHotspot).contains(input.mousePos)) {
-		g_nancy->_cursorManager->setCursorType(g_nancy->_cursorManager->_puzzleExitCursor);
+		g_nancy->_cursor->setCursorType(g_nancy->_cursor->_puzzleExitCursor);
 
 		if (input.input & NancyInput::kLeftMouseButtonUp) {
 			_state = kActionTrigger;
@@ -285,7 +285,7 @@ void MazeChasePuzzle::handleInput(NancyInput &input) {
 
 	if (NancySceneState.getViewport().convertViewportToScreen(buttonHotspot).contains(input.mousePos)) {
 		if (canMove(0, kWallUp)) {
-			g_nancy->_cursorManager->setCursorType(CursorManager::kHotspot);
+			g_nancy->_cursor->setCursorType(CursorManager::kHotspot);
 
 			if (input.input & NancyInput::kLeftMouseButtonUp) {
 				--_pieces[0]._gridPos.y;
@@ -304,7 +304,7 @@ void MazeChasePuzzle::handleInput(NancyInput &input) {
 
 	if (NancySceneState.getViewport().convertViewportToScreen(buttonHotspot).contains(input.mousePos)) {
 		if (canMove(0, kWallRight)) {
-			g_nancy->_cursorManager->setCursorType(CursorManager::kHotspot);
+			g_nancy->_cursor->setCursorType(CursorManager::kHotspot);
 
 			if (input.input & NancyInput::kLeftMouseButtonUp) {
 				++_pieces[0]._gridPos.x;
@@ -323,7 +323,7 @@ void MazeChasePuzzle::handleInput(NancyInput &input) {
 
 	if (NancySceneState.getViewport().convertViewportToScreen(buttonHotspot).contains(input.mousePos)) {
 		if (canMove(0, kWallDown)) {
-			g_nancy->_cursorManager->setCursorType(CursorManager::kHotspot);
+			g_nancy->_cursor->setCursorType(CursorManager::kHotspot);
 
 			if (input.input & NancyInput::kLeftMouseButtonUp) {
 				++_pieces[0]._gridPos.y;
@@ -342,7 +342,7 @@ void MazeChasePuzzle::handleInput(NancyInput &input) {
 
 	if (NancySceneState.getViewport().convertViewportToScreen(buttonHotspot).contains(input.mousePos)) {
 		if (canMove(0, kWallLeft)) {
-			g_nancy->_cursorManager->setCursorType(CursorManager::kHotspot);
+			g_nancy->_cursor->setCursorType(CursorManager::kHotspot);
 
 			if (input.input & NancyInput::kLeftMouseButtonUp) {
 				--_pieces[0]._gridPos.x;
@@ -358,9 +358,9 @@ void MazeChasePuzzle::handleInput(NancyInput &input) {
 
 	buttonHotspot = _resetButtonDest;
 	buttonHotspot.grow(-10);
-	
+
 	if (NancySceneState.getViewport().convertViewportToScreen(buttonHotspot).contains(input.mousePos)) {
-		g_nancy->_cursorManager->setCursorType(CursorManager::kHotspot);
+		g_nancy->_cursor->setCursorType(CursorManager::kHotspot);
 
 		if (input.input & NancyInput::kLeftMouseButtonUp) {
 			++_currentAnimFrame;
@@ -378,7 +378,7 @@ Common::Rect MazeChasePuzzle::getScreenPosition(Common::Point gridPos) {
 	Common::Rect dest = _playerSrc;
 
 	dest.moveTo(0, 0);
-	 
+
 	dest.right -= 1;
 	dest.bottom -= 1;
 
@@ -507,7 +507,7 @@ bool MazeChasePuzzle::canMove(uint pieceID, WallType direction) {
 				}
 			}
 		}
-		
+
 		return true;
 	case kWallUp :
 		if (	piece._gridPos.y == 0 ||

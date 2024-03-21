@@ -55,6 +55,7 @@
 #include "ultima/nuvie/script/script.h"
 
 #include "common/system.h"
+#include "backends/keymapper/keymapper.h"
 
 namespace Ultima {
 namespace Nuvie {
@@ -165,6 +166,7 @@ bool Events::init(ObjManager *om, MapWindow *mw, MsgScroll *ms, Player *p, Magic
 	gui->AddWidget(fps_counter_widget);
 	fps_counter_widget->Hide();
 	scriptThread = nullptr;
+	_keymapperStateBeforeKEYINPUT = true;
 
 	return true;
 }
@@ -430,6 +432,11 @@ bool Events::select_obj(Obj *obj, Actor *actor) {
 bool Events::select_actor(Actor *actor) {
 	assert(mode == INPUT_MODE);
 
+	if (last_mode == PUSH_MODE && !move_in_inventory && (push_actor || push_obj)) {
+		// Prevent selecting an actor as target when pushing on the map
+		cancelAction();
+		return false;
+	}
 	input.type = EVENTINPUT_MAPCOORD;
 	input.actor = actor;
 	input.set_loc(actor->get_location());
@@ -1013,6 +1020,7 @@ bool Events::look(Obj *obj) {
 					reader = player->get_actor();
 				view_manager->close_all_gumps();
 				view_manager->set_spell_mode(reader, obj, false);
+				gui->lock_input(view_manager->get_current_view());
 				view_manager->get_current_view()->grab_focus();
 				return false;
 			}
@@ -1213,15 +1221,9 @@ bool Events::pushTo(sint16 rel_x, sint16 rel_y, bool push_from) {
 		return false;
 	}
 
-	if (push_actor) {
-		if (!push_actor->can_be_moved() || push_actor->get_tile_type() != ACTOR_ST) {
-			scroll->display_string("Not possible\n\n");
-			scroll->display_prompt();
-			endAction();
-			return false;
-		}
+	if (push_actor)
 		from = push_actor->get_location();
-	} else {
+	else {
 		if (push_obj->is_on_map()) {
 			from = MapCoord(push_obj->x, push_obj->y, push_obj->z);
 		} else {
@@ -1253,22 +1255,46 @@ bool Events::pushTo(sint16 rel_x, sint16 rel_y, bool push_from) {
 	pushrel_x = to.x - from.x;
 	pushrel_y = to.y - from.y;
 
+	sint8 wrappedXDir = get_wrapped_rel_dir(to.x, from.x, to.z);
+	sint8 wrappedYDir = get_wrapped_rel_dir(to.y, from.y, to.z);
+
 	if (map_window->get_interface() == INTERFACE_NORMAL || push_actor) {
 		// you can only push one space at a time
-		pushrel_x = (pushrel_x == 0) ? 0 : (pushrel_x < 0) ? -1 : 1;
-		pushrel_y = (pushrel_y == 0) ? 0 : (pushrel_y < 0) ? -1 : 1;
+		pushrel_x = wrappedXDir;
+		pushrel_y = wrappedYDir;
 	}
 	to.x = from.x + pushrel_x;
 	to.y = from.y + pushrel_y;
 	to.z = from.z;
 
-	scroll->display_string(get_direction_name(pushrel_x, pushrel_y));
+	// Use wrapped direction since we could have crossed a map boundary
+	scroll->display_string(get_direction_name(wrappedXDir, wrappedYDir));
 	scroll->display_string(".\n\n");
+
+	// Coordinates could be out of the map's bounds now, make them wrap around
+	WRAP_COORD(to.x, to.z);
+	WRAP_COORD(to.y, to.z);
 
 	if (pushrel_x == 0 && pushrel_y == 0) {
 		scroll->display_prompt();
 		endAction();
 		return true;
+	}
+
+	if (push_actor || push_obj->is_on_map()) {
+		const uint16 pushObjN = push_obj ? push_obj->obj_n : push_actor->get_obj_n();
+		// Objects/Actors with a base weight of 0 are not movable
+		bool isUnmovable = obj_manager->get_obj_weight_unscaled(pushObjN) == 0;
+		// U6 does not allow pushing dragons
+		if (game->get_game_type() == NUVIE_GAME_U6)
+			isUnmovable = isUnmovable || pushObjN == OBJ_U6_DRAGON;
+
+		if (isUnmovable) {
+			scroll->display_string("Not possible\n\n");
+			scroll->display_prompt();
+			endAction();
+			return false;
+		}
 	}
 	CanDropOrMoveMsg can_move_check;
 	if (push_obj && (can_move_check = map_window->can_drop_or_move_obj(to.x, to.y, player->get_actor(), push_obj))
@@ -1279,24 +1305,25 @@ bool Events::pushTo(sint16 rel_x, sint16 rel_y, bool push_from) {
 		return true;
 	}
 	DEBUG(0, LEVEL_WARNING, "deduct moves from player\n");
-	// FIXME: the random chance here is just made up, I don't know what
-	//        kind of check U6 did ("Failed.\n\n")
+
 	if (push_actor) {
-		// if actor can take a step, do so; else 50% chance of pushing them
-		if (push_actor == player->get_actor()) {
-			if (player->check_walk_delay() && !view_manager->gumps_are_active()) {
-				player->moveRelative(pushrel_x, pushrel_y);
-				game->time_changed();
-			}
-		} else if (map->lineTest(to.x, to.y, to.x, to.y, to.z, LT_HitActors | LT_HitUnpassable, lt))
+		const auto playerActor = player->get_actor();
+		auto strengthCheckFailed = [=]() {
+			// Using adjusted strength here, which takes cursed status into account
+			const uint playerStr = script->call_actor_str_adj(playerActor);
+			const uint pushedActorStr = script->call_actor_str_adj(push_actor);
+			return (pushedActorStr / 2 + 30 - playerStr) / 2 > getRandom(29) + 1;
+		};
+
+		const ActorMoveFlags moveFlags = ACTOR_IGNORE_MOVES | ACTOR_IGNORE_DANGER | ACTOR_IGNORE_PARTY_MEMBERS;
+
+		// Can not push self and must pass strength test
+		if (push_actor == playerActor || !push_actor->can_be_moved() || strengthCheckFailed())
+			scroll->display_string("Failed.\n\n");
+		else if (!push_actor->move(to.x, to.y, to.z, moveFlags))
 			scroll->display_string("Blocked.\n\n");
-		else if (!push_actor->moveRelative(pushrel_x, pushrel_y)) {
-			if (NUVIE_RAND() % 2) { // already checked if target is passable
-				push_actor->move(to.x, to.y, from.z, ACTOR_FORCE_MOVE | ACTOR_IGNORE_DANGER);
-				player->subtract_movement_points(5);
-			} else
-				scroll->display_string("Failed.\n\n");
-		}
+		else
+			player->subtract_movement_points(5);
 	} else {
 		if (map_window->get_interface() != INTERFACE_IGNORE_BLOCK
 		        && map_window->blocked_by_wall(player->get_actor(), push_obj)) {
@@ -1319,7 +1346,7 @@ bool Events::pushTo(sint16 rel_x, sint16 rel_y, bool push_from) {
 			                         to.x,
 			                         to.y,
 			                         to.z,
-			                         LT_HitActors | LT_HitUnpassable,
+			                         LT_HitUnpassable,
 			                         lt,
 			                         0,
 			                         game->get_game_type() == NUVIE_GAME_U6 ? nullptr
@@ -1342,9 +1369,7 @@ bool Events::pushTo(sint16 rel_x, sint16 rel_y, bool push_from) {
 				}
 			} else {
 				Obj *obj = obj_manager->get_obj(to.x, to.y, to.z);
-				if (map_window->get_interface() == INTERFACE_IGNORE_BLOCK
-				        && map->get_actor(to.x, to.y, to.z)) {} // don't allow moving under actor
-				else if (obj && obj_manager->can_store_obj(obj, push_obj)) { //if we are moving onto a container.
+				if (obj && obj_manager->can_store_obj(obj, push_obj)) { //if we are moving onto a container.
 					can_move = obj_manager->moveto_container(push_obj, obj);
 				} else {
 					/* do normal move if no usecode or return from usecode was true */
@@ -1399,9 +1424,6 @@ bool Events::pushFrom(const MapCoord &target) {
 		endAction(true);
 		return false;
 	}
-	if (push_obj
-	        && (obj_manager->get_obj_weight(push_obj, OBJ_WEIGHT_EXCLUDE_CONTAINER_ITEMS) == 0))
-		push_obj = nullptr;
 
 	if (push_actor && push_actor->is_visible()) {
 		scroll->display_string(push_actor->get_name());
@@ -3192,6 +3214,7 @@ void Events::doAction() {
 			get_inventory_obj(magic->get_actor_from_script());
 		} else if (magic->is_waiting_for_spell()) {
 			get_spell_num(player->get_actor(), magic->get_spellbook_obj());
+			gui->lock_input(view_manager->get_spell_view());
 		} else {
 			endAction(true);
 		}
@@ -3318,8 +3341,8 @@ void Events::cancelAction() {
 		else {
 
 			scroll->display_string("nothing\n");
-			view_manager->close_spell_mode();
 		}
+		view_manager->close_spell_mode();
 	} else if (mode == USE_MODE) {
 		if (usecode->is_script_running()) {
 			usecode->get_running_script()->resume_with_nil();
@@ -3476,6 +3499,17 @@ bool Events::newAction(EventMode new_mode) {
  * This clears visible cursors, and resets all variables used by actions.
  */
 void Events::endAction(bool prompt) {
+	if (mode == KEYINPUT_MODE)
+		// Leaving KEYINPUT_MODE: restore keymapper state.
+		g_system->getEventManager()->getKeymapper()->setEnabled(_keymapperStateBeforeKEYINPUT);
+
+	// Finished selecting a spell for enchant or looking at spellbook: undo spellbook input locking.
+	if (mode == CAST_MODE || (mode == LOOK_MODE && !is_looking_at_spellbook())) {
+		const GUI_Widget *const lockedWidget = gui->get_locked_widget();
+		if (lockedWidget && lockedWidget == view_manager->get_spell_view())
+			gui->unlock_input();
+	}
+
 	if (prompt) {
 		scroll->display_string("\n");
 		scroll->display_prompt();
@@ -3535,6 +3569,18 @@ void Events::set_mode(EventMode new_mode) {
 	      print_mode(new_mode),
 	      print_mode(mode),
 	      print_mode(last_mode));
+
+	Common::Keymapper *const keymapper = g_system->getEventManager()->getKeymapper();
+	if (mode == KEYINPUT_MODE)
+		// Switching away from KEYINPUT_MODE: restore keymapper state.
+		keymapper->setEnabled(_keymapperStateBeforeKEYINPUT);
+
+	if (new_mode == KEYINPUT_MODE) {
+		// Switching to KEYINPUT_MODE: save keymapper state and disable.
+		_keymapperStateBeforeKEYINPUT = keymapper->isEnabled();
+		keymapper->setEnabled(false);
+	}
+
 	if (new_mode == WAIT_MODE && (last_mode == EQUIP_MODE || last_mode == REST_MODE))
 		last_mode = mode;
 	else if ((new_mode == INPUT_MODE || new_mode == KEYINPUT_MODE))

@@ -161,7 +161,7 @@ void Actor::initActor(int mode) {
 		memset(_animVariable, 0, sizeof(_animVariable));
 		memset(_palette, 0, sizeof(_palette));
 		memset(_sound, 0, sizeof(_sound));
-		memset(&_cost, 0, sizeof(CostumeData));
+		_cost.reset();
 		_walkdata.reset();
 		_walkdata.point3.x = 32000;
 		_walkScript = 0;
@@ -2180,7 +2180,7 @@ bool ScummEngine::isValidActor(int id) const {
 Actor *ScummEngine::derefActor(int id, const char *errmsg) const {
 	if (id == 0)
 		debugC(DEBUG_ACTORS, "derefActor(0, \"%s\") in script %d, opcode 0x%x",
-			errmsg, vm.slot[_currentScript].number, _opcode);
+			errmsg, _currentScript != 0xFF ? vm.slot[_currentScript].number : -1, _opcode);
 
 	if (!isValidActor(id)) {
 		if (errmsg)
@@ -2194,11 +2194,11 @@ Actor *ScummEngine::derefActor(int id, const char *errmsg) const {
 Actor *ScummEngine::derefActorSafe(int id, const char *errmsg) const {
 	if (id == 0)
 		debugC(DEBUG_ACTORS, "derefActorSafe(0, \"%s\") in script %d, opcode 0x%x",
-			errmsg, vm.slot[_currentScript].number, _opcode);
+			errmsg, _currentScript != 0xFF ? vm.slot[_currentScript].number : -1, _opcode);
 
 	if (!isValidActor(id)) {
 		debugC(DEBUG_ACTORS, "Invalid actor %d in %s (script %d, opcode 0x%x)",
-			 id, errmsg, vm.slot[_currentScript].number, _opcode);
+			 id, errmsg, _currentScript != 0xFF ? vm.slot[_currentScript].number : -1, _opcode);
 		return nullptr;
 	}
 	return _actors[id];

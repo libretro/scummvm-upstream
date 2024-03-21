@@ -348,7 +348,7 @@ int main(int argc, char *argv[]) {
 	// HACK: These features depend on OpenGL
 	if (!getFeatureBuildState("opengl", setup.features)) {
 		setFeatureBuildState("opengl_game_classic", setup.features, false);
-		setFeatureBuildState("opengl_shaders", setup.features, false);
+		setFeatureBuildState("opengl_game_shaders", setup.features, false);
 	}
 
 	// Disable engines for which we are missing dependencies
@@ -357,7 +357,8 @@ int main(int argc, char *argv[]) {
 			for (StringList::const_iterator ef = i->requiredFeatures.begin(); ef != i->requiredFeatures.end(); ++ef) {
 				FeatureList::iterator feature = std::find(setup.features.begin(), setup.features.end(), *ef);
 				if (feature == setup.features.end()) {
-					std::cerr << "WARNING: Missing feature " << *ef << " from engine " << i->name << '\n';
+					std::cerr << "ERROR: Missing feature " << *ef << " from engine " << i->name << '\n';
+					return -1;
 				} else if (!feature->enable) {
 					setEngineBuildState(i->name, setup.engines, false);
 					break;
@@ -405,7 +406,6 @@ int main(int argc, char *argv[]) {
 	StringList featureDefines = getFeatureDefines(setup.features);
 	setup.defines.splice(setup.defines.begin(), featureDefines);
 
-	bool backendWin32 = false;
 	if (projectType == kProjectXcode) {
 		setup.defines.push_back("POSIX");
 		// Define both MACOSX, and IPHONE, but only one of them will be associated to the
@@ -418,13 +418,13 @@ int main(int argc, char *argv[]) {
 		setup.defines.push_back("SCUMMVM_NEON");
 	} else if (projectType == kProjectMSVC || projectType == kProjectCodeBlocks) {
 		setup.defines.push_back("WIN32");
-		backendWin32 = true;
+		setup.win32 = true;
 	} else {
 		// As a last resort, select the backend files to build based on the platform used to build create_project.
 		// This is broken when cross compiling.
 #if defined(_WIN32) || defined(WIN32)
 		setup.defines.push_back("WIN32");
-		backendWin32 = true;
+		setup.win32 = true;
 #else
 		setup.defines.push_back("POSIX");
 #endif
@@ -434,7 +434,7 @@ int main(int argc, char *argv[]) {
 		if (i->enable) {
 			if (!strcmp(i->name, "updates"))
 				setup.defines.push_back("USE_SPARKLE");
-			else if (backendWin32 && !strcmp(i->name, "libcurl"))
+			else if (setup.win32 && !strcmp(i->name, "libcurl"))
 				setup.defines.push_back("CURL_STATICLIB");
 			else if (!strcmp(i->name, "fluidlite"))
 				setup.defines.push_back("USE_FLUIDSYNTH");
@@ -1087,6 +1087,7 @@ const Feature s_features[] = {
 	{       "gif",         "USE_GIF", true, false, "libgif support" },
 	{      "faad",        "USE_FAAD", true, false, "AAC support" },
 	{    "mikmod",      "USE_MIKMOD", true, false, "libmikmod support" },
+	{   "openmpt",     "USE_OPENMPT", true, false, "libopenmpt support" },
 	{     "mpeg2",       "USE_MPEG2", true, true,  "MPEG-2 support" },
 	{ "theoradec",   "USE_THEORADEC", true, true,  "Theora decoding support" },
 	{       "vpx",         "USE_VPX", true, false, "VP8/VP9 decoding support" },
@@ -1113,10 +1114,10 @@ const Feature s_features[] = {
 	{             "tinygl",                    "USE_TINYGL", false, true,  "TinyGL support" },
 	{             "opengl",                    "USE_OPENGL", false, true,  "OpenGL support" },
 	{"opengl_game_classic",               "USE_OPENGL_GAME", false, true,  "OpenGL support (classic) in 3d games" },
-	{     "opengl_shaders",            "USE_OPENGL_SHADERS", false, true,  "OpenGL support (shaders) in 3d games" },
+	{"opengl_game_shaders",            "USE_OPENGL_SHADERS", false, true,  "OpenGL support (shaders) in 3d games" },
 	{            "taskbar",                   "USE_TASKBAR", false, true,  "Taskbar integration support" },
 	{              "cloud",                     "USE_CLOUD", false, true,  "Cloud integration support" },
-	{               "enet",                       "USE_ENET", false, true,  "ENet networking support" },
+	{               "enet",                      "USE_ENET", false, true,  "ENet networking support" },
 	{        "translation",               "USE_TRANSLATION", false, true,  "Translation support" },
 	{             "vkeybd",                 "ENABLE_VKEYBD", false, false, "Virtual keyboard support"},
 	{      "eventrecorder",          "ENABLE_EVENTRECORDER", false, false, "Event recorder support"},
@@ -1636,6 +1637,11 @@ void ProjectProvider::createProject(BuildSetup &setup) {
 		_allProjUuidMap[detProject] = _engineUuidMap[detProject] = detUUID;
 	}
 
+	// Scan for resources
+	for (int i = 0; i < kEngineDataGroupCount; i++) {
+		createDataFilesList(static_cast<EngineDataGroup>(i), setup.srcDir, setup.defines, _engineDataGroupDefs[i].dataFiles, _engineDataGroupDefs[i].winHeaderPath);
+	}
+
 	createWorkspace(setup);
 
 	StringList in, ex, pchDirs, pchEx;
@@ -1714,6 +1720,10 @@ void ProjectProvider::createProject(BuildSetup &setup) {
 		} else {
 			// Resource files
 			addResourceFiles(setup, in, ex);
+			if (setup.win32) {
+				for (const EngineDataGroupDef &groupDef : _engineDataGroupDefs)
+					in.push_back(setup.srcDir + "/" + groupDef.winHeaderPath);
+			}
 
 			// Various text files
 			in.push_back(setup.srcDir + "/AUTHORS");
@@ -1740,6 +1750,7 @@ void ProjectProvider::createProject(BuildSetup &setup) {
 
 	// Create other misc. build files
 	createOtherBuildFiles(setup);
+	createResourceEmbeds(setup);
 
 	// In case we create the main ScummVM project files we will need to
 	// generate engines/plugins_table.h & engines/detection_table.h
@@ -2262,6 +2273,117 @@ void ProjectProvider::createModuleList(const std::string &moduleDir, const Strin
 		error("Malformed file " + moduleMkFile);
 }
 
+static EngineDataGroupResolution s_engineDataResolutions[] = {
+	{kEngineDataGroupNormal,	"dists/engine-data/engine_data.mk",			"dists/scummvm_rc_engine_data.rh"},
+	{kEngineDataGroupBig,		"dists/engine-data/engine_data_big.mk",		"dists/scummvm_rc_engine_data_big.rh"},
+	{kEngineDataGroupCore,		"dists/engine-data/engine_data_core.mk",	"dists/scummvm_rc_engine_data_core.rh"},
+};
+
+void ProjectProvider::createDataFilesList(EngineDataGroup engineDataGroup, const std::string &baseDir, const StringList &defines, StringList &outDataFiles, std::string &outWinHeaderPath) const {
+	outDataFiles.clear();
+
+	const EngineDataGroupResolution *resolution = nullptr;
+
+	for (const EngineDataGroupResolution &resolutionCandidate : s_engineDataResolutions) {
+		if (resolutionCandidate.engineDataGroup == engineDataGroup) {
+			resolution = &resolutionCandidate;
+			break;
+		}
+	}
+
+	if (!resolution)
+		error("Engine data group resolution wasn't defined");
+
+	std::string mkFile = baseDir + "/" + resolution->mkFilePath;
+	std::ifstream moduleMk(mkFile.c_str());
+	if (!moduleMk)
+		error(mkFile + " is not present");
+
+	outWinHeaderPath = resolution->winHeaderPath;
+
+	std::stack<bool> shouldInclude;
+	shouldInclude.push(true);
+
+	std::string line;
+	for (;;) {
+		std::getline(moduleMk, line);
+
+		if (moduleMk.eof())
+			break;
+
+		if (moduleMk.fail())
+			error(std::string("Failed while reading from ") + mkFile);
+
+		TokenList tokens = tokenize(line);
+		if (tokens.empty())
+			continue;
+
+		TokenList::const_iterator i = tokens.begin();
+		if (*i == "DIST_FILES_LIST") {
+			if (tokens.size() < 3)
+				error("Malformed DIST_FILES_LIST definition in " + mkFile);
+			++i;
+
+			if (*i != "+=")
+				error("Malformed DIST_FILES_LIST definition in " + mkFile);
+
+			++i;
+
+			while (i != tokens.end()) {
+				if (*i == "\\") {
+					std::getline(moduleMk, line);
+					tokens = tokenize(line);
+					i = tokens.begin();
+				} else {
+					const std::string filename = unifyPath(*i);
+
+					if (shouldInclude.top()) {
+						outDataFiles.push_back(filename);
+					}
+					++i;
+				}
+			}
+		} else if (*i == "ifdef") {
+			if (tokens.size() < 2)
+				error("Malformed ifdef in " + mkFile);
+			++i;
+
+			if (std::find(defines.begin(), defines.end(), *i) == defines.end())
+				shouldInclude.push(false);
+			else
+				shouldInclude.push(true && shouldInclude.top());
+		} else if (*i == "ifndef") {
+			if (tokens.size() < 2)
+				error("Malformed ifndef in " + mkFile);
+			++i;
+
+			if (std::find(defines.begin(), defines.end(), *i) == defines.end())
+				shouldInclude.push(true && shouldInclude.top());
+			else
+				shouldInclude.push(false);
+		} else if (*i == "else") {
+			bool last = shouldInclude.top();
+			shouldInclude.pop();
+			shouldInclude.push(!last && shouldInclude.top());
+		} else if (*i == "endif") {
+			if (shouldInclude.size() <= 1)
+				error("endif without ifdef found in " + mkFile);
+			shouldInclude.pop();
+		} else if (*i == "elif") {
+			error("Unsupported operation 'elif' in " + mkFile);
+		} else if (*i == "ifeq" || *i == "ifneq") {
+			// XXX
+			shouldInclude.push(false);
+		} else if (*i == "#") {
+			// Comment, ignore
+		} else
+			error("Unknown definition line in " + mkFile);
+	}
+
+	if (shouldInclude.size() != 1)
+		error("Malformed file " + mkFile);
+}
+
 void ProjectProvider::createEnginePluginsTable(const BuildSetup &setup) {
 	// First we need to create the "engines" directory.
 	createDirectory(setup.outputDir + "/engines");
@@ -2306,6 +2428,38 @@ void ProjectProvider::createEnginePluginsTable(const BuildSetup &setup) {
 		detectionTable << "#if defined(ENABLE_" << engineName << ") || defined(DETECTION_FULL)\n"
 					   << "LINK_PLUGIN(" << engineName << "_DETECTION)\n"
 					   << "#endif\n";
+	}
+}
+
+void ProjectProvider::createResourceEmbeds(const BuildSetup &setup) const {
+	if (!setup.win32)
+		return;
+
+	for (int i = 0; i < kEngineDataGroupCount; i++) {
+		const EngineDataGroupDef &groupDef = _engineDataGroupDefs[i];
+
+		std::string outPath = setup.srcDir + "/" + groupDef.winHeaderPath;
+
+		std::ofstream resEmbedFile(outPath.c_str());
+
+		if (!resEmbedFile || !resEmbedFile.is_open()) {
+			error("Could not open \"" + outPath + "\" for writing");
+			return;
+		}
+
+		resEmbedFile << "// This file was generated by create_project" << std::endl;
+		resEmbedFile << "// Do not edit this file manually" << std::endl;
+		resEmbedFile << std::endl;
+
+		for (const std::string &fileName : groupDef.dataFiles) {
+			size_t lastSlashPos = fileName.find_last_of('/');
+			if (lastSlashPos == std::string::npos)
+				error("Data file definition " + fileName + " wasn't located in a subdirectory");
+
+			std::string shortName = fileName.substr(lastSlashPos + 1);
+
+			resEmbedFile << shortName << " FILE \"" << fileName << "\"" << std::endl;
+		}
 	}
 }
 } // namespace CreateProjectTool

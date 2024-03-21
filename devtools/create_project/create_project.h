@@ -90,7 +90,7 @@ struct EngineDesc {
 	/**
 	 * Whether the engine should be included in the build or not.
 	 */
-	bool enable;
+	bool enable = false;
 
 	/**
 	 * Features required for this engine.
@@ -241,29 +241,17 @@ struct BuildSetup {
 	StringList defines;   ///< List of all defines for the build.
 	StringList testDirs;  ///< List of all folders containing tests
 
-	bool devTools;             ///< Generate project files for the tools
-	bool tests;                ///< Generate project files for the tests
-	bool runBuildEvents;       ///< Run build events as part of the build (generate revision number and copy engine/theme data & needed files to the build folder
-	bool createInstaller;      ///< Create installer after the build
-	bool useSDL2;              ///< Whether to use SDL2 or not.
-	bool useStaticDetection;   ///< Whether to link detection features inside the executable or not.
-	bool useWindowsUnicode;    ///< Whether to use Windows Unicode APIs or ANSI APIs.
-	bool useWindowsSubsystem;  ///< Whether to use Windows subsystem or Console subsystem (default: Console)
-	bool useXCFramework;       ///< Whether to use Apple XCFrameworks instead of static libraries
-	bool useVcpkg;             ///< Whether to load libraries from vcpkg or SCUMMVM_LIBS
-
-	BuildSetup() {
-		devTools = false;
-		tests = false;
-		runBuildEvents = false;
-		createInstaller = false;
-		useSDL2 = true;
-		useStaticDetection = true;
-		useWindowsUnicode = true;
-		useWindowsSubsystem = false;
-		useXCFramework = false;
-		useVcpkg = false;
-	}
+	bool devTools = false;             ///< Generate project files for the tools
+	bool tests = false;                ///< Generate project files for the tests
+	bool runBuildEvents = false;       ///< Run build events as part of the build (generate revision number and copy engine/theme data & needed files to the build folder
+	bool createInstaller = false;      ///< Create installer after the build
+	bool useSDL2 = true;               ///< Whether to use SDL2 or not.
+	bool useStaticDetection = true;    ///< Whether to link detection features inside the executable or not.
+	bool useWindowsUnicode = true;     ///< Whether to use Windows Unicode APIs or ANSI APIs.
+	bool useWindowsSubsystem = false;  ///< Whether to use Windows subsystem or Console subsystem (default: Console)
+	bool useXCFramework = false;       ///< Whether to use Apple XCFrameworks instead of static libraries
+	bool useVcpkg = false;             ///< Whether to load libraries from vcpkg or SCUMMVM_LIBS
+	bool win32 = false;                ///< Target is Windows
 
 	bool featureEnabled(const std::string &feature) const;
 	Feature getFeature(const std::string &feature) const;
@@ -314,6 +302,20 @@ enum MSVC_Architecture {
 
 std::string getMSVCArchName(MSVC_Architecture arch);
 std::string getMSVCConfigName(MSVC_Architecture arch);
+
+enum EngineDataGroup {
+	kEngineDataGroupNormal,
+	kEngineDataGroupCore,
+	kEngineDataGroupBig,
+
+	kEngineDataGroupCount,
+};
+
+struct EngineDataGroupResolution {
+	EngineDataGroup engineDataGroup;
+	const char *mkFilePath;
+	const char *winHeaderPath;
+};
 
 /**
  * Creates a list of all supported versions of Visual Studio.
@@ -500,6 +502,11 @@ struct FileNode {
 
 class ProjectProvider {
 public:
+	struct EngineDataGroupDef {
+		StringList dataFiles;
+		std::string winHeaderPath;
+	};
+
 	typedef std::map<std::string, std::string> UUIDMap;
 
 	/**
@@ -535,6 +542,8 @@ protected:
 
 	UUIDMap _engineUuidMap; ///< List of (project name, UUID) pairs
 	UUIDMap _allProjUuidMap;
+
+	EngineDataGroupDef _engineDataGroupDefs[kEngineDataGroupCount];
 
 	/**
 	 *  Create workspace/solution file
@@ -624,6 +633,16 @@ protected:
 	void createModuleList(const std::string &moduleDir, const StringList &defines, StringList &testDirs, StringList &includeList, StringList &excludeList, StringList &pchDirs, StringList &pchExclude, bool forDetection = false) const;
 
 	/**
+	 * Creates a list of data files from a specified .mk file
+	 *
+	 * @param makeFilePath Path to the engine data makefile.
+	 * @param defines List of set defines.
+	 * @param outDataFiles Output list of data files.
+	 * @param outWinHeaderPath Output Windows resource header path.
+	 */
+	void createDataFilesList(EngineDataGroup engineDataGroup, const std::string &baseDir, const StringList &defines, StringList &outDataFiles, std::string &outWinHeaderPath) const;
+
+	/**
 	 * Creates an UUID for every enabled engine of the
 	 * passed build description.
 	 *
@@ -671,6 +690,11 @@ private:
 	 * @param setup Description of the desired build.
 	 */
 	void createEnginePluginsTable(const BuildSetup &setup);
+
+	/**
+	 * Creates resource embed files
+	 */
+	void createResourceEmbeds(const BuildSetup &setup) const;
 };
 
 } // namespace CreateProjectTool

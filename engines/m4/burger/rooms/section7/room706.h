@@ -42,10 +42,10 @@ private:
 	bool _flag6 = false;
 	bool _flag7 = false;
 	int _volume = 0;
-	int _val1 = 0;
+	int _astralShould = 0;
 
 	void conv83();
-	void getRoomVal();
+	void getFlumixShould();
 
 public:
 	Room706() : Room() {

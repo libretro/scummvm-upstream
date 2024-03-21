@@ -35,15 +35,13 @@ Digi::~Digi() {
 	unload_sounds();
 }
 
-void Digi::preload_sounds(const char **names) {
+void Digi::loadFootstepSounds(const char **names) {
 	if (!_sounds.empty())
 		unload_sounds();
 
 	if (names) {
-		for (; *names; ++names) {
-			if (preload(*names, NOWHERE))
-				_sounds[*names]._preloaded = true;
-		}
+		for (; *names; ++names)
+			preload(*names, true, NOWHERE);
 	}
 }
 
@@ -56,7 +54,7 @@ void Digi::unload_sounds() {
 	_sounds.clear();
 }
 
-bool Digi::preload(const Common::String &name, int roomNum) {
+bool Digi::preload(const Common::String &name, bool isFootsteps, int roomNum) {
 	MemHandle workHandle;
 	int32 assetSize;
 
@@ -76,6 +74,7 @@ bool Digi::preload(const Common::String &name, int roomNum) {
 	HUnLock(workHandle);
 
 	_sounds[name] = DigiEntry(fileName, pDest, assetSize);
+	_sounds[name]._isFootsteps = isFootsteps;
 	return false;
 }
 
@@ -84,18 +83,18 @@ void Digi::unload(const Common::String &name) {
 		// Stop it if it's playing
 		for (int channel = 0; channel < MAX_CHANNELS; ++channel) {
 			if (_channels[channel]._name == name)
-				stop(channel);
+				stop(channel, true);
 		}
 
 		// Remove the underlying resource
-		if (!_sounds[name]._filename.empty()) {
+		if (!_sounds[name]._filename.empty() && !_sounds[name]._isFootsteps) {
 			rtoss(_sounds[name]._filename);
 			_sounds[name]._filename.clear();
-		}
 
-		// Delete the sound entry
-		free(_sounds[name]._data);
-		_sounds.erase(name);
+			// Delete the sound entry
+			free(_sounds[name]._data);
+			_sounds.erase(name);
+		}
 	}
 }
 
@@ -118,7 +117,7 @@ int32 Digi::play(const Common::String &name, uint channel, int32 vol, int32 trig
 	stop(channel);
 
 	// Load in the new sound
-	preload(name, room_num);
+	preload(name, false, room_num);
 	DigiEntry &entry = _sounds[name];
 	Channel &c = _channels[channel];
 
@@ -127,8 +126,8 @@ int32 Digi::play(const Common::String &name, uint channel, int32 vol, int32 trig
 			Audio::makeRawStream(entry._data, entry._size, 11025, Audio::FLAG_UNSIGNED,
 				DisposeAfterUse::NO),
 			loop ? 0 : 1);
-	_mixer->playStream(Audio::Mixer::kPlainSoundType, &c._soundHandle, stream,
-		-1, MIN(vol, (int32)255));
+	_mixer->playStream(Audio::Mixer::kSFXSoundType, &c._soundHandle, stream,
+		-1);
 
 	if (trigger < 0 || trigger > 32767)
 		trigger = -1;
@@ -138,13 +137,12 @@ int32 Digi::play(const Common::String &name, uint channel, int32 vol, int32 trig
 	return 0;
 }
 
-void Digi::playRandom() {
-	// Get a list of any preloaded sounds, excluding individual sounds
-	// that were directly played
+void Digi::playFootsteps() {
+	// Get a list of the walking sounds
 	Common::Array<Common::String> names;
 
 	for (auto it = _sounds.begin(); it != _sounds.end(); ++it) {
-		if (it->_value._preloaded)
+		if (it->_value._isFootsteps)
 			names.push_back(it->_key);
 	}
 
@@ -168,7 +166,7 @@ Common::String Digi::expand_name_2_RAW(const Common::String &name, int32 room_nu
 	}
 }
 
-void Digi::stop(uint channel) {
+void Digi::stop(uint channel, bool calledFromUnload) {
 	assert(channel < 4);
 
 	Channel &c = _channels[channel];
@@ -179,7 +177,9 @@ void Digi::stop(uint channel) {
 		c._trigger = -1;
 		c._name.clear();
 
-		digi_unload(name);
+		if (!calledFromUnload) {
+			digi_unload(name);
+		}
 	}
 }
 
@@ -238,7 +238,7 @@ int32 Digi::ticks_to_play(const char *name, int roomNum) {
 } // namespace Sound
 
 bool digi_preload(const Common::String &name, int roomNum) {
-	return _G(digi).preload(name, roomNum);
+	return _G(digi).preload(name, false, roomNum);
 }
 
 void digi_unload(const Common::String &name) {

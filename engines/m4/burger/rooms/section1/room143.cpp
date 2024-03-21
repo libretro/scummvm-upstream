@@ -197,7 +197,7 @@ void Room143::init() {
 	}
 
 	if (_G(flags)[V000] == 1004) {
-		loadMoney();
+		showEmptyPlates();
 		series_play("143money", 0xf02, 0, -1, 600, -1, 100, 0, 0, 0, 0);
 	} else {
 		hotspot_set_active("money ", false);
@@ -796,7 +796,7 @@ void Room143::daemon() {
 				break;
 
 			default:
-				_G(flags)[V298] = 0;
+				_G(flags)[kDisableFootsteps] = 0;
 				_burlMode = 20;
 				series_play_with_breaks(PLAY9, "143bu04", 0xa00, kCHANGE_BURL_ANIMATION, 3);
 				break;
@@ -855,7 +855,7 @@ void Room143::daemon() {
 				Series::series_play("143bu11", 0xa00, 0, kCHANGE_BURL_ANIMATION);
 				break;
 
-			case kCHANGE_BURL_ANIMATION:
+			case 45:
 				series_load("143money");
 				series_play_with_breaks(PLAY8, "143bu24", 0xe00, 1, 3);
 				break;
@@ -872,7 +872,7 @@ void Room143::daemon() {
 			_G(flags)[V063] = 0;
 
 			_burlMode = 31;
-			loadMoney();
+			showEmptyPlates();
 			Series::series_play("143bu25", 0xa00, 2, kCHANGE_BURL_ANIMATION);
 			break;
 
@@ -969,7 +969,7 @@ void Room143::daemon() {
 					Series::series_play("143bu19", 0xa00, 0, kCHANGE_BURL_ANIMATION, 8, 0, 100, 0, 0, frame, frame);
 
 				} else if (imath_ranged_rand(1, 30) == 1) {
-					Series::series_play("143bu19", 0xa00, 0, -1, 8, 0, 100, 0, 0, 6, 12);
+					Series::series_play("143bu19", 0xa00, 0, kCHANGE_BURL_ANIMATION, 8, 0, 100, 0, 0, 6, 12);
 				} else {
 					do {
 						if (_frame >= 5)
@@ -1011,9 +1011,11 @@ void Room143::daemon() {
 			case 44:
 				frame = imath_ranged_rand(0, 4);
 				Series::series_play("143bu22", 0xa00, 0, kCHANGE_BURL_ANIMATION, 6, 0, 100, 0, 0, frame, frame);
+				playDigi1();
 				break;
 
 			default:
+				_burlMode = 42;
 				Series::series_play("143bu20", 0xa00, 2, kCHANGE_BURL_ANIMATION, 6, 0, 100, 0, 0, 0, 7);
 				break;
 			}
@@ -1021,7 +1023,7 @@ void Room143::daemon() {
 
 		case 46:
 			digi_stop(3);
-			loadMoney();
+			showEmptyPlates();
 			series_load("143money");
 			series_play_with_breaks(PLAY8, "143bu24", 0xe00, 1, 3);
 			break;
@@ -1094,7 +1096,7 @@ void Room143::daemon() {
 			player_update_info();
 			if (_G(player_info).y < 304) {
 				ws_walk(220, 304, 0, -1, 2);
-				_G(flags)[V298] = 1;
+				_G(flags)[kDisableFootsteps] = 1;
 			}
 
 			series_play_with_breaks(PLAY7, "143bu01", 0xe00, 22, 3);
@@ -1122,7 +1124,7 @@ void Room143::daemon() {
 		} else if (player_commands_allowed() && _G(player).walker_visible && INTERFACE_VISIBLE) {
 			_burlShould = 31;
 		} else {
-			kernel_timing_trigger(60, 10030);
+			kernel_timing_trigger(60, kBurlStopsEating);
 		}
 		break;
 
@@ -1139,10 +1141,11 @@ void Room143::daemon() {
 			if (_G(player_info).y < 300)
 				ws_walk(213, 287, 0, -1, 2);
 
+			showEmptyPlates();
 			_burlShould = 45;
 			hotspot_set_active("burl", false);
 		} else {
-			kernel_timing_trigger(60, 10031);
+			kernel_timing_trigger(60, kBurlLeavesTown);
 		}
 		break;
 
@@ -1317,7 +1320,7 @@ void Room143::conv35() {
 			if ((node == 9 && entry == 1) || (node == 5 && entry == 1) ||
 					(node == 17 && entry == 0) || (node == 19 && entry == 0)) {
 				terminateMachineAndNull(_eu02);
-				series_play("14eu02", 0xf00, 2, -1, 4, 0, 100, 0, 0, 0, 3);
+				series_play("143eu02", 0xf00, 2, -1, 4, 0, 100, 0, 0, 0, 3);
 			}
 
 			if (node == 11 && entry == 0) {
@@ -1343,7 +1346,7 @@ void Room143::conv35() {
 			} else {
 				_veraShould = 8;
 				if (_veraMode != 13) {
-					_G(kernel).trigger = KT_DAEMON;
+					_G(kernel).trigger_mode = KT_DAEMON;
 					kernel_trigger_dispatch_now(kCHANGE_VERA_ANIMATION);
 				}
 			}
@@ -1496,8 +1499,9 @@ void Room143::loadCheese() {
 	_cheese = series_play("143CHES", 0xf00, 0, -1, 600, -1, 100, 35, -5, 0, 0);
 }
 
-void Room143::loadMoney() {
-	Series::series_play("143pl01", 0xf00, 0, -1, 600, -1, 100, 0, 0, 0, 0);
+void Room143::showEmptyPlates() {
+	_emptyPlates.terminate();
+	_emptyPlates.play("143pl01", 0xf00, 0, -1, 600, -1, 100, 0, 0, 0, 0);
 }
 
 void Room143::playDigi1() {

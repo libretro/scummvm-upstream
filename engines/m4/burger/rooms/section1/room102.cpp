@@ -106,7 +106,7 @@ void Room102::init() {
 	_val8 = 0;
 	_val9 = 0;
 	_val10 = 99999;
-	_G(flags)[V298] = 1;
+	_G(flags)[kDisableFootsteps] = 1;
 
 	digi_preload("102_001");
 	digi_preload("102_002");
@@ -185,8 +185,6 @@ void Room102::daemon() {
 		break;
 
 	case kCHANGE_HARRY_ANIMATION:
-		warning("%d - %d", _harryMode, _harryShould);
-
 		switch (_harryShould) {
 		case 19:
 			term_message(" mumble or change channel");
@@ -949,7 +947,7 @@ void Room102::daemon() {
 			kernel_timing_trigger(60, 1037);
 		break;
 
-	case 10013:
+	case kWILBUR_SPEECH_STARTED:
 		break;
 
 	case 10014:
@@ -1629,7 +1627,7 @@ void Room102::conv06() {
 		if (who <= 0) {
 			if (node == 2) {
 				_harryMode = 19;
-				_G(kernel).trigger_mode = KT_PARSE;
+				_G(kernel).trigger_mode = KT_DAEMON;
 				kernel_trigger_dispatch_now(kCHANGE_HARRY_ANIMATION);
 			} else if (node == 1 && entry == 4) {
 				_G(flags)[V014] = 1;
@@ -1664,6 +1662,8 @@ void Room102::conv06() {
 				term_message("gonna_say_sheepdog %d %d", _harryShould, _harryMode);
 				queuePlay(sound, 22, KT_PARSE);
 				_flag1 = true;
+				return;
+
 			} else if (node == 1 && entry == 1) {
 				_G(flags)[GLB_TEMP_4] = 1;
 				_G(flags)[V001] -= 8;
@@ -1686,6 +1686,8 @@ void Room102::conv06() {
 		} else if (who == 1) {
 			if (_wilburChairMode == 64) {
 				kernel_timing_trigger(30, 7);
+				return;
+
 			} else {
 				_wilburChairShould = 60;
 				_G(kernel).trigger_mode = KT_DAEMON;

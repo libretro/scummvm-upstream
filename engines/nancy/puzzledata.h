@@ -23,6 +23,8 @@
 #include "common/array.h"
 #include "common/hashmap.h"
 
+#include "engines/nancy/commontypes.h"
+
 #ifndef NANCY_PUZZLEDATA_H
 #define NANCY_PUZZLEDATA_H
 
@@ -111,14 +113,25 @@ struct JournalData : public PuzzleData {
 	JournalData() {}
 	virtual ~JournalData() {}
 
+	struct Entry {
+		Entry(const Common::String &s = Common::String(), uint16 m = 0, uint16 sc = kNoScene) : stringID(s), mark(m), sceneID(sc) {}
+
+		Common::String stringID;
+		uint16 mark = 0;
+		uint16 sceneID = kNoScene;
+	};
+
 	static constexpr uint32 getTag() { return MKTAG('J', 'O', 'U', 'R'); }
 	virtual void synchronize(Common::Serializer &ser);
 
-	Common::HashMap<uint16, Common::Array<Common::String>> journalEntries;
+	Common::HashMap<uint16, Common::Array<Entry>> journalEntries;
 };
 
-// Contains data related to nancy6's exhibit puzzle, which
-// spans multiple scenes and uses several special-purpose AR types
+// Contains variables that can be read and modified through action records.
+// Mixes two separate things:
+// - the exhibit data table in nancy6
+// - the general variable storage in nancy8 and up
+// The exhibit data was only ever used in nancy6, so mixing these should be ok.
 struct TableData : public PuzzleData {
 	TableData();
 	virtual ~TableData() {}
@@ -126,7 +139,14 @@ struct TableData : public PuzzleData {
 	static constexpr uint32 getTag() { return MKTAG('T', 'A', 'B', 'L'); }
 	virtual void synchronize(Common::Serializer &ser);
 
-	Common::Array<uint16> currentIDs;
+	void setSingleValue(uint16 index, int16 value);
+	int16 getSingleValue(uint16 index) const;
+
+	void setComboValue(uint16 index, float value);
+	float getComboValue(uint16 index) const;
+
+	Common::Array<int16> singleValues;
+	Common::Array<float> comboValues;
 };
 
 PuzzleData *makePuzzleData(const uint32 tag);

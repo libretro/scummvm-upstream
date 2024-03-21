@@ -83,10 +83,6 @@ void AgiBase::initFeatures() {
 	_gameFeatures = _gameDescription->features;
 }
 
-void AgiBase::setFeature(uint32 feature) {
-	_gameFeatures |= feature;
-}
-
 void AgiBase::initVersion() {
 	_gameVersion = _gameDescription->version;
 }
@@ -437,23 +433,6 @@ bool AgiBase::canSaveGameStateCurrently(Common::U32String *msg) {
 		*msg = _("This game does not support saving");
 
 	return false;
-}
-
-int AgiEngine::agiDetectGame() {
-	int ec = errOK;
-
-	assert(_gameDescription != nullptr);
-
-	if (getVersion() <= 0x2001) {
-		_loader = new AgiLoader_v1(this);
-	} else if (getVersion() <= 0x2999) {
-		_loader = new AgiLoader_v2(this);
-	} else {
-		_loader = new AgiLoader_v3(this);
-	}
-	ec = _loader->detectGame();
-
-	return ec;
 }
 
 } // End of namespace Agi

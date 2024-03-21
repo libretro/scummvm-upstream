@@ -152,7 +152,7 @@ AVFDecoder::AVFVideoTrack::AVFVideoTrack(Common::SeekableReadStream *stream, uin
 	if (comp != 1 && comp != 2)
 		error("Unknown compression type %d found in AVF", comp);
 
-	_pixelFormat = g_nancy->_graphicsManager->getInputPixelFormat();
+	_pixelFormat = g_nancy->_graphics->getInputPixelFormat();
 	_frameSize = _width * _height * _pixelFormat.bytesPerPixel;
 
 	_chunkInfo.reserve(_frameCount);
@@ -328,7 +328,7 @@ const Graphics::Surface *AVFDecoder::AVFVideoTrack::decodeFrame(uint frameNr) {
 			if (info.type != 0) {
 				delete[] decompBuf;
 			}
-			
+
 			return nullptr;
 		}
 	} else {
@@ -339,7 +339,7 @@ const Graphics::Surface *AVFDecoder::AVFVideoTrack::decodeFrame(uint frameNr) {
 	if (info.type != 0) {
 		if (info.type == 2 && frameNr != 0) {
 			// Type 2 frames are incomplete, and only contain the pixels
-			// that are different from the last valid frame. Thus, we need 
+			// that are different from the last valid frame. Thus, we need
 			// to decode the previous frame and copy its contents to the new one's
 			const Graphics::Surface *refFrame = decodeFrame(frameNr - 1);
 			if (refFrame) {
@@ -349,7 +349,7 @@ const Graphics::Surface *AVFDecoder::AVFVideoTrack::decodeFrame(uint frameNr) {
 #ifdef SCUMM_BIG_ENDIAN
 				// Convert from BE back to LE so the decode step below works correctly
 				byte *buf = (byte *)frameInCache.getPixels();
-				if (g_nancy->_graphicsManager->getInputPixelFormat().bytesPerPixel == 2) {
+				if (g_nancy->_graphics->getInputPixelFormat().bytesPerPixel == 2) {
 					for (int i = 0; i < frameInCache.pitch * frameInCache.h / 2; ++i) {
 						((uint16 *)buf)[i] = SWAP_BYTES_16(((uint16 *)buf)[i]);
 					}
@@ -368,7 +368,7 @@ const Graphics::Surface *AVFDecoder::AVFVideoTrack::decodeFrame(uint frameNr) {
 
 #ifdef SCUMM_BIG_ENDIAN
 	byte *buf = (byte *)frameInCache.getPixels();
-	if (g_nancy->_graphicsManager->getInputPixelFormat().bytesPerPixel == 2) {
+	if (g_nancy->_graphics->getInputPixelFormat().bytesPerPixel == 2) {
 		for (int i = 0; i < frameInCache.pitch * frameInCache.h / 2; ++i) {
 			((uint16 *)buf)[i] = SWAP_BYTES_16(((uint16 *)buf)[i]);
 		}

@@ -44,8 +44,7 @@ namespace Scumm {
 ////////////////////////////////////////
 
 IMuseInternal::IMuseInternal(ScummEngine *vm, MidiDriverFlags sndType, uint32 initFlags) :
-	_native_mt32((initFlags & kFlagNativeMT32) || (initFlags & kFlagRolandGS)), // GS Mode emulates MT-32 on a GS device, so _native_mt32 should always be true
-	_enable_gs(initFlags & kFlagRolandGS),
+	_native_mt32(initFlags & kFlagNativeMT32),
 	_newSystem(initFlags & kFlagNewSystem),
 	_midi_adlib(nullptr),
 	_midi_native(nullptr),
@@ -853,14 +852,20 @@ int32 IMuseInternal::doCommand_internal(int numargs, int a[]) {
 			error("doCommand(%d [%d/%d], %d, %d, %d, %d, %d, %d, %d) unsupported", a[0], param, cmd, a[1], a[2], a[3], a[4], a[5], a[6], a[7]);
 		}
 	} else if (param == 1) {
+		Part *part = nullptr;
 		if ((1 << cmd) & 0x783FFF) {
 			player = findActivePlayer(a[1]);
 			if (!player)
 				return -1;
-			if ((1 << cmd) & (1 << 11 | 1 << 22)) {
+			if (_newSystem && cmd == 5) {
+				assert(a[3] >= 0 && a[3] <= 15);
+				part = player->getPart(a[2]);
+				if (!part)
+					return -1;
+			} else if (((1 << cmd) & (1 << 11 | 1 << 22))) {
 				assert(a[2] >= 0 && a[2] <= 15);
-				player = (Player *)player->getPart(a[2]);
-				if (!player)
+				part = player->getPart(a[2]);
+				if (!part)
 					return -1;
 			}
 		}
@@ -910,12 +915,20 @@ int32 IMuseInternal::doCommand_internal(int numargs, int a[]) {
 		case 2:
 			return player->setVolume(a[2]);
 		case 3:
-			player->setPan(a[2]);
+			if (_newSystem)
+				player->setSpeed(a[3]);
+			else
+				player->setPan(a[2]);
 			return 0;
 		case 4:
 			return player->setTranspose(a[2], a[3]);
 		case 5:
-			player->setDetune(a[2]);
+			if (_newSystem) {
+				assert(part);
+				part->volControlSensitivity(a[4]);
+			} else {
+				player->setDetune(a[2]);
+			}
 			return 0;
 		case 6:
 			// WORKAROUND for bug #2242. When playing the
@@ -946,7 +959,8 @@ int32 IMuseInternal::doCommand_internal(int numargs, int a[]) {
 			player->clearLoop();
 			return 0;
 		case 11:
-			((Part *)player)->set_onoff(a[3] != 0);
+			assert(part);
+			part->set_onoff(a[3] != 0);
 			return 0;
 		case 12:
 			return player->setHook(a[2], a[3], a[4]);
@@ -965,7 +979,8 @@ int32 IMuseInternal::doCommand_internal(int numargs, int a[]) {
 		case 21:
 			return -1;
 		case 22:
-			((Part *)player)->volume(a[3]);
+			assert(part);
+			part->volume(a[3]);
 			return 0;
 		case 23:
 			return query_queue(a[1]);

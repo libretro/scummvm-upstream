@@ -39,8 +39,8 @@ TangramPuzzle::~TangramPuzzle() {
 
 void TangramPuzzle::init() {
 	Common::Rect screenBounds = NancySceneState.getViewport().getBounds();
-	_drawSurface.create(screenBounds.width(), screenBounds.height(), g_nancy->_graphicsManager->getInputPixelFormat());
-	_drawSurface.clear(g_nancy->_graphicsManager->getTransColor());
+	_drawSurface.create(screenBounds.width(), screenBounds.height(), g_nancy->_graphics->getInputPixelFormat());
+	_drawSurface.clear(g_nancy->_graphics->getTransColor());
 	setTransparent(true);
 	setVisible(true);
 	moveTo(screenBounds);
@@ -85,7 +85,7 @@ void TangramPuzzle::init() {
 		for (int y = 0; y < curTile->_highlightedSrcImage.h; ++y) {
 			uint16 *p = (uint16 *)curTile->_highlightedSrcImage.getBasePtr(0, y);
 			for (int x = 0; x < curTile->_highlightedSrcImage.w; ++x) {
-				if (*p != g_nancy->_graphicsManager->getTransColor()) {
+				if (*p != g_nancy->_graphics->getTransColor()) {
 					// I'm not sure *3/2 is the exact formula but it's close enough
 					byte r, g, b;
 					format.colorToRGB(*p, r, g, b);
@@ -192,7 +192,7 @@ void TangramPuzzle::execute() {
 		g_nancy->_sound->stopSound(_rotateSound);
 
 		finishExecution();
-		
+
 		break;
 	}
 }
@@ -220,7 +220,7 @@ void TangramPuzzle::handleInput(NancyInput &input) {
 
 		if (idUnderMouse != 0 && idUnderMouse != (byte)-1) {
 			// A tile is under the cursor
-			g_nancy->_cursorManager->setCursorType(CursorManager::kHotspot);
+			g_nancy->_cursor->setCursorType(CursorManager::kHotspot);
 
 			if (input.input & NancyInput::kLeftMouseButtonUp) {
 				pickUpTile(idUnderMouse);
@@ -235,7 +235,7 @@ void TangramPuzzle::handleInput(NancyInput &input) {
 
 		// No tile under cursor, check exit hotspot
 		if (_exitHotspot.contains(mousePos)) {
-			g_nancy->_cursorManager->setCursorType(g_nancy->_cursorManager->_puzzleExitCursor);
+			g_nancy->_cursor->setCursorType(g_nancy->_cursor->_puzzleExitCursor);
 
 			if (input.input & NancyInput::kLeftMouseButtonUp) {
 				_state = kActionTrigger;
@@ -253,7 +253,7 @@ void TangramPuzzle::handleInput(NancyInput &input) {
 			g_nancy->_sound->playSound(_putDownSound);
 			return;
 		}
-		
+
 		tileHolding.handleInput(input);
 		bool rotated = false;
 
@@ -315,7 +315,7 @@ void TangramPuzzle::pickUpTile(uint id) {
 void TangramPuzzle::putDownTile(uint id) {
 	Tile &tile = _tiles[id];
 	_pickedUpTile = -1;
-	
+
 	drawToBuffer(tile);
 	tile.putDown();
 
@@ -330,7 +330,7 @@ void TangramPuzzle::rotateTile(uint id) {
 	assert(id < _tiles.size() && id != 0);
 
 	Tile &tileToRotate = _tiles[id];
-	
+
 	if (tileToRotate._rotation == 3) {
 		tileToRotate._rotation = 0;
 	} else {
@@ -346,7 +346,7 @@ void TangramPuzzle::rotateTile(uint id) {
 	} else {
 		tileToRotate.setHighlighted(false);
 	}
-	
+
 	Common::Rect newPos = tileToRotate._drawSurface.getBounds();
 	newPos.moveTo(oldPos.left + oldPos.width() / 2 - newPos.width() / 2, oldPos.top + oldPos.height() / 2 - newPos.height() / 2);
 	tileToRotate.moveTo(newPos);
@@ -370,7 +370,7 @@ void TangramPuzzle::moveToTop(uint id) {
 			tile.registerGraphics();
 		}
 	}
-	
+
 	_tiles[id].setZ(_z + _tiles.size());
 	_tiles[id].registerGraphics();
 }
@@ -426,7 +426,7 @@ void TangramPuzzle::Tile::drawMask() {
 		_mask = new byte[_drawSurface.w * _drawSurface.h];
 	}
 
-	uint16 transColor = g_nancy->_graphicsManager->getTransColor();
+	uint16 transColor = g_nancy->_graphics->getTransColor();
 	for (int y = 0; y < _drawSurface.h; ++y) {
 		uint16 *src = (uint16 *)_drawSurface.getBasePtr(0, y);
 		for (int x = 0; x < _drawSurface.w; ++x) {

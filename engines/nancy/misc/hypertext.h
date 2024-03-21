@@ -41,6 +41,8 @@ public:
 		_imageVerticalOffset(0) {}
 	virtual ~HypertextParser() {};
 
+	bool hasBeenDrawn() const { return !_needsTextRedraw; }
+
 protected:
 	void initSurfaces(uint width, uint height, const struct Graphics::PixelFormat &format, uint32 backgroundColor, uint32 highlightBackgroundColor);
 
@@ -57,7 +59,7 @@ protected:
 	uint32 _backgroundColor;
 	uint32 _highlightBackgroundColor;
 	uint _defaultTextColor;
-	uint _imageVerticalOffset;
+	int _imageVerticalOffset;
 
 	Common::Array<Common::String> _textLines;
 	Common::Array<Common::Rect> _hotspots;

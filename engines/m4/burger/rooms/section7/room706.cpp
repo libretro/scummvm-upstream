@@ -27,6 +27,11 @@ namespace M4 {
 namespace Burger {
 namespace Rooms {
 
+enum {
+	kCHANGE_ASTRAL_ANIMATION = 33,
+	kCHANGE_FLUMIX_ANIMATION = 34
+};
+
 static const seriesStreamBreak SERIES1[] = {
 	{   0, "706F001",  1, 255, -1, 0, nullptr, 0 },
 	{  31, "706W001",  1, 255, -1, 0, nullptr, 0 }, 
@@ -244,8 +249,8 @@ void Room706::daemon() {
 
 	case 4:
 		player_set_commands_allowed(true);
-		getRoomVal();
-		kernel_trigger_dispatch_now(34);
+		getFlumixShould();
+		kernel_trigger_dispatch_now(kCHANGE_FLUMIX_ANIMATION);
 		conv_load_and_prepare("conv83", 5);
 		conv_play_curr();
 		break;
@@ -261,6 +266,7 @@ void Room706::daemon() {
 			terminateMachineAndNull(_series6);
 
 		_flag5 = _flag6 = _flag7 = false;
+		_G(flumix_should) = 4;
 		series_unload(_series2);
 		series_unload(_series3);
 		series_unload(_series4);
@@ -428,14 +434,14 @@ void Room706::daemon() {
 		kernel_timing_trigger(6, 42);
 		break;
 
-	case 33:
-		switch (_val1) {
+	case kCHANGE_ASTRAL_ANIMATION:
+		switch (_astralShould) {
 		case 1:
-			_val1 = 21;
+			_astralShould = 21;
 			_flag7 = true;
-			_series7 = series_play("706AST01", 0x300);
-			_series8 = series_play("706AST02", 0x300);
-			digi_play(conv_sound_to_play(), 1, 255, 33);
+			_series7 = series_play("706AST01", 0x300, 0, -1, 6, -1);
+			_series8 = series_play("706AST02", 0x300, 0, -1, 6, -1);
+			digi_play(conv_sound_to_play(), 1, 255, kCHANGE_ASTRAL_ANIMATION);
 			break;
 
 		case 21:
@@ -453,16 +459,16 @@ void Room706::daemon() {
 		}
 		break;
 
-	case 34:
+	case kCHANGE_FLUMIX_ANIMATION:
 		switch (_G(flumix_should)) {
 		case 2:
-			getRoomVal();
-			series_play("706FLX01", 0x400, 0, 34, 6);
+			getFlumixShould();
+			series_play("706FLX01", 0x400, 0, kCHANGE_FLUMIX_ANIMATION, 6);
 			break;
 
 		case 3:
-			getRoomVal();
-			kernel_timing_trigger(60, 34);
+			getFlumixShould();
+			kernel_timing_trigger(60, kCHANGE_FLUMIX_ANIMATION);
 			break;
 
 		default:
@@ -518,7 +524,7 @@ void Room706::daemon() {
 		case 1:
 			_G(wilbur_should) = 21;
 			_flag6 = true;
-			_series6 = series_play("706WIT01", 0x200);
+			_series6 = series_play("706WIT01", 0x200, 0, -1, 6, -1);
 			digi_play(conv_sound_to_play(), 1, 255, kCHANGE_WILBUR_ANIMATION);
 			break;
 
@@ -555,8 +561,8 @@ void Room706::conv83() {
 		int who = conv_whos_talking();
 
 		if (who <= 0) {
-			_val1 = 1;
-			kernel_trigger_dispatch_now(33);
+			_astralShould = 1;
+			kernel_trigger_dispatch_now(kCHANGE_ASTRAL_ANIMATION);
 
 		} else if (who == 1) {
 			_G(wilbur_should) = 1;
@@ -565,7 +571,7 @@ void Room706::conv83() {
 	}
 }
 
-void Room706::getRoomVal() {
+void Room706::getFlumixShould() {
 	_G(flumix_should) = imath_ranged_rand(1, 100) >= 10 ? 3 : 2;
 }
 

@@ -41,7 +41,7 @@ void Overlay::init() {
 	if (_imageName.baseName().hasPrefix("USE_")) {
 		_usesAutotext = true;
 	}
-	
+
 	g_nancy->_resource->loadImage(_imageName, _fullSurface);
 
 	_currentFrame = _firstFrame;
@@ -59,7 +59,7 @@ void Overlay::handleInput(NancyInput &input) {
 	if (g_nancy->getGameType() >= kGameTypeNancy3) {
 		if (_hasHotspot) {
 			if (NancySceneState.getViewport().convertViewportToScreen(_hotspot).contains(input.mousePos)) {
-				g_nancy->_cursorManager->setCursorType(CursorManager::kHotspot);
+				g_nancy->_cursor->setCursorType(CursorManager::kHotspot);
 
 				if (input.input & NancyInput::kLeftMouseButtonUp) {
 					_state = kActionTrigger;
@@ -303,6 +303,10 @@ void Overlay::execute() {
 							}
 						}
 
+						// Make sure the srcRect doesn't extend beyond the image.
+						// This fixes nancy7 scene 4228
+						srcRect.clip(_fullSurface.getBounds());
+
 						if (blitsForThisFrame.size() == 1) {
 							_drawSurface.create(_fullSurface, srcRect);
 							setTransparent(_transparency == kPlayOverlayTransparent);
@@ -343,7 +347,7 @@ void Overlay::execute() {
 		if (_hasSceneChange == kPlayOverlaySceneChange) {
 			NancySceneState.changeScene(_sceneChange);
 		}
-		
+
 		finishExecution();
 
 		break;
@@ -421,11 +425,11 @@ void TableIndexOverlay::execute() {
 	auto *tabl = GetEngineData(TABL);
 	assert(tabl);
 
-	if (_lastIndexVal != playerTable->currentIDs[_tableIndex - 1]) {
-		_lastIndexVal = playerTable->currentIDs[_tableIndex - 1];
+	if (_lastIndexVal != playerTable->singleValues[_tableIndex - 1]) {
+		_lastIndexVal = playerTable->singleValues[_tableIndex - 1];
 		_srcRects.clear();
 		_srcRects.push_back(tabl->srcRects[_lastIndexVal - 1]);
-		_currentViewportFrame = -1; // Force redraw 
+		_currentViewportFrame = -1; // Force redraw
 	}
 
 	if (_state != kBegin) {

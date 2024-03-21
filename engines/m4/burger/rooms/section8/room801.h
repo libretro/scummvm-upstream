@@ -42,8 +42,8 @@ private:
 	machine *_series10 = nullptr;
 	machine *_series11 = nullptr;
 	machine *_series12 = nullptr;
-	int _val1 = 10;
-	int _val3 = 0;
+	int _wilburMode = 10;
+	int _zlargShould = 0;
 
 	int getWilburShould() const;
 	void loadSeries1();

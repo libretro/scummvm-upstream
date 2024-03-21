@@ -413,6 +413,13 @@ void Score::updateCurrentFrame() {
 	}
 
 	if (_curFrameNumber != nextFrameNumberToLoad) {
+		// Load the current sprite information into the _currentFrame data store.
+		// This is specifically because of delta updates; loading the next frame
+		// in the score applies delta changes to _currentFrame, and ideally we want
+		// those deltas to be applied over the top of whatever the current state is.
+		for (uint ch = 0; ch < _channels.size(); ch++)
+			*_currentFrame->_sprites[ch] = *_channels[ch]->_sprite;
+
 		// this copies in the frame data and updates _curFrameNumber
 		loadFrame(nextFrameNumberToLoad, true);
 	}
@@ -420,7 +427,7 @@ void Score::updateCurrentFrame() {
 }
 
 void Score::updateNextFrameTime() {
-	byte tempo = _currentFrame->_mainChannels.scoreCachedTempo;
+	byte tempo = _currentFrame->_mainChannels.tempo ? _currentFrame->_mainChannels.tempo : _currentFrame->_mainChannels.scoreCachedTempo;
 	// puppetTempo is overridden by changes in score tempo
 	if (_currentFrame->_mainChannels.tempo || tempo != _lastTempo) {
 		_puppetTempo = 0;
@@ -647,7 +654,7 @@ void Score::renderFrame(uint16 frameId, RenderMode mode) {
 	} else if (g_director->_playbackPaused) {
 		renderSprites(mode);
 		_window->render();
-	} else if (!renderTransition(frameId)) {
+	} else if (!renderTransition(frameId, mode)) {
 		bool skip = renderPrePaletteCycle(mode);
 		setLastPalette();
 		renderSprites(mode);
@@ -668,26 +675,26 @@ void Score::renderFrame(uint16 frameId, RenderMode mode) {
 	debugC(5, kDebugLoading, "Score::renderFrame() finished in %d millis", end - start);
 }
 
-bool Score::renderTransition(uint16 frameId) {
+bool Score::renderTransition(uint16 frameId, RenderMode mode) {
 	Frame *currentFrame = _currentFrame;
 	TransParams *tp = _window->_puppetTransition;
 
 	if (tp) {
 		setLastPalette();
-		_window->playTransition(frameId, tp->duration, tp->area, tp->chunkSize, tp->type, currentFrame->_mainChannels.scoreCachedPaletteId);
+		_window->playTransition(frameId, mode, tp->duration, tp->area, tp->chunkSize, tp->type, currentFrame->_mainChannels.scoreCachedPaletteId);
 		delete _window->_puppetTransition;
 		_window->_puppetTransition = nullptr;
 		return true;
 	} else if (currentFrame->_mainChannels.transType) {
 		setLastPalette();
-		_window->playTransition(frameId, currentFrame->_mainChannels.transDuration, currentFrame->_mainChannels.transArea, currentFrame->_mainChannels.transChunkSize, currentFrame->_mainChannels.transType, currentFrame->_mainChannels.scoreCachedPaletteId);
+		_window->playTransition(frameId, mode, currentFrame->_mainChannels.transDuration, currentFrame->_mainChannels.transArea, currentFrame->_mainChannels.transChunkSize, currentFrame->_mainChannels.transType, currentFrame->_mainChannels.scoreCachedPaletteId);
 		return true;
 	} else if (!currentFrame->_mainChannels.trans.isNull()) {
 		CastMember *member = _movie->getCastMember(currentFrame->_mainChannels.trans);
 		if (member && member->_type == kCastTransition) {
 			TransitionCastMember *trans = static_cast<TransitionCastMember *>(member);
 			setLastPalette();
-			_window->playTransition(frameId, trans->_durationMillis, trans->_area, trans->_chunkSize, trans->_transType, currentFrame->_mainChannels.scoreCachedPaletteId);
+			_window->playTransition(frameId, mode, trans->_durationMillis, trans->_area, trans->_chunkSize, trans->_transType, currentFrame->_mainChannels.scoreCachedPaletteId);
 			return true;
 		}
 	}
@@ -697,6 +704,8 @@ bool Score::renderTransition(uint16 frameId) {
 void Score::renderSprites(RenderMode mode) {
 	if (_window->_newMovieStarted)
 		mode = kRenderForceUpdate;
+
+	debugC(5, kDebugImages, "Score::renderSprites(): starting render cycle, mode %d", mode);
 
 	_movie->_videoPlayback = false;
 
@@ -715,7 +724,8 @@ void Score::renderSprites(RenderMode mode) {
 		}
 
 		if (channel->isDirty(nextSprite) || widgetRedrawn || mode == kRenderForceUpdate) {
-			if (currentSprite && !currentSprite->_trails)
+			bool invalidCastMember = currentSprite && currentSprite->_spriteType == kCastMemberSprite && currentSprite->_cast == nullptr;
+			if (currentSprite && !invalidCastMember && !currentSprite->_trails)
 				_window->addDirtyRect(channel->getBbox());
 
 			if (currentSprite && currentSprite->_cast && currentSprite->_cast->_erase) {
@@ -727,16 +737,22 @@ void Score::renderSprites(RenderMode mode) {
 			}
 
 			channel->setClean(nextSprite);
+			invalidCastMember = currentSprite ? (currentSprite->_spriteType == kCastMemberSprite && currentSprite->_cast == nullptr) : false;
 			// Check again to see if a video has just been started by setClean.
 			if (channel->isActiveVideo())
 				_movie->_videoPlayback = true;
 
-			_window->addDirtyRect(channel->getBbox());
+			if (!invalidCastMember)
+				_window->addDirtyRect(channel->getBbox());
+
 			if (currentSprite) {
+				Common::Rect bbox = channel->getBbox();
 				debugC(5, kDebugImages,
-					"Score::renderSprites(): CH: %-3d castId: %s [ink: %d, puppet: %d, moveable: %d, visible: %d] [bbox: %d,%d,%d,%d] [type: %d fg: %d bg: %d] [script: %s]",
-					i, currentSprite->_castId.asString().c_str(), currentSprite->_ink, currentSprite->_puppet, currentSprite->_moveable, channel->_visible,
-					PRINT_RECT(channel->getBbox()), currentSprite->_spriteType, currentSprite->_foreColor, currentSprite->_backColor,
+					"Score::renderSprites(): CH: %-3d castId: %s invalid: %d [ink: %d, puppet: %d, moveable: %d, trails: %d, visible: %d] [bbox: %d,%d,%d,%d] [type: %d fg: %d bg: %d] [script: %s]",
+					i, currentSprite->_castId.asString().c_str(), invalidCastMember,
+					currentSprite->_ink, currentSprite->_puppet, currentSprite->_moveable,
+					currentSprite->_trails, channel->_visible,
+					PRINT_RECT(bbox), currentSprite->_spriteType, currentSprite->_foreColor, currentSprite->_backColor,
 					currentSprite->_scriptId.asString().c_str());
 			} else {
 				debugC(5, kDebugImages, "Score::renderSprites(): CH: %-3d: No sprite", i);
@@ -768,6 +784,9 @@ bool Score::renderPrePaletteCycle(RenderMode mode) {
 
 		if (debugChannelSet(-1, kDebugFast))
 			frameRate = 30;
+
+		if (g_director->_fpsLimit)
+			frameRate = MIN((int)g_director->_fpsLimit, frameRate);
 
 		int frameDelay = 1000 / 60;
 		int fadeFrames = kFadeColorFrames[frameRate - 1];
@@ -932,6 +951,10 @@ void Score::renderPaletteCycle(RenderMode mode) {
 	if (speed == 0)
 		return;
 
+	// Apply the global FPS limit if required
+	if (g_director->_fpsLimit)
+		speed = MIN((int)g_director->_fpsLimit, speed);
+
 	if (debugChannelSet(-1, kDebugFast))
 		speed = 30;
 
@@ -956,7 +979,7 @@ void Score::renderPaletteCycle(RenderMode mode) {
 
 			// Do a full color cycle in one frame transition
 			int steps = lastColor - firstColor + 1;
-			debugC(2, kDebugImages, "Score::renderPaletteCycle(): color cycle palette %s, from colors %d to %d, over %d steps %d times", currentPalette.asString().c_str(), firstColor, lastColor, steps, _currentFrame->_mainChannels.palette.cycleCount);
+			debugC(2, kDebugImages, "Score::renderPaletteCycle(): color cycle palette %s, from colors %d to %d, over %d steps %d times (delay: %d ms)", currentPalette.asString().c_str(), firstColor, lastColor, steps, _currentFrame->_mainChannels.palette.cycleCount, delay);
 			for (int i = 0; i < _currentFrame->_mainChannels.palette.cycleCount; i++) {
 				for (int j = 0; j < steps; j++) {
 					uint32 startTime = g_system->getMillis();
@@ -1088,6 +1111,9 @@ void Score::renderPaletteCycle(RenderMode mode) {
 
 				if (debugChannelSet(-1, kDebugFast))
 					frameRate = 30;
+
+				if (g_director->_fpsLimit)
+					frameRate = MIN((int)g_director->_fpsLimit, frameRate);
 
 				int frameDelay = 1000 / 60;
 				int fadeFrames = kFadeColorFrames[frameRate - 1];

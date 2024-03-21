@@ -28,7 +28,8 @@ namespace Burger {
 namespace Rooms {
 
 enum {
-	kCHANGE_GERBILS_ANIMATION = 6011
+	kCHANGE_GERBILS_ANIMATION = 6011,
+	kCHANGE_WOODCHIPS_ANIMATION = 6012
 };
 
 static const char *SAID[][4] = {
@@ -124,12 +125,16 @@ const seriesPlayBreak Room604::PLAY9[] = {
 	PLAY_BREAK_END
 };
 
-const seriesPlayBreak Room604::PLAY10[] = {
+const seriesPlayBreak Room604::PLAY10Demo[] = {
 	{  0,  3, nullptr,   1,   0, -1, 2048, 0, nullptr, 0 },
 	{  4, 14, nullptr,   0,   0, -1,    0, 0, nullptr, 0 },
-	{ 15, 23, "604_008", 1, 255, -1,    0, 0, nullptr, 0 },
-	{  4, 14, nullptr,   0,   0, -1,    0, 0, nullptr, 0 },
-	{ 15, 23, "604_008", 1, 255, -1,    0, 0, nullptr, 0 },
+	{ 15, 23, nullptr,   1, 255, -1,    0, 0, nullptr, 0 },
+	{ 24, -1, nullptr,   0,   0, -1,    0, 0, nullptr, 0 },
+	PLAY_BREAK_END
+};
+
+const seriesPlayBreak Room604::PLAY10[] = {
+	{  0,  3, nullptr,   1,   0, -1, 2048, 0, nullptr, 0 },
 	{  4, 14, nullptr,   0,   0, -1,    0, 0, nullptr, 0 },
 	{ 15, 23, "604_008", 1, 255, -1,    0, 0, nullptr, 0 },
 	{ 24, -1, nullptr,   0,   0, -1,    0, 0, nullptr, 0 },
@@ -163,20 +168,20 @@ void Room604::init() {
 	if (_G(flags)[V274]) {
 		hotspot_set_active("WOOD SHAVINGS", false);
 		hotspot_set_active("ASHES", true);
-		_val1 = 27;
-		kernel_trigger_dispatch_now(6012);
+		_woodchipsShould = 27;
+		kernel_trigger_dispatch_now(kCHANGE_WOODCHIPS_ANIMATION);
 
 	} else {
 		hotspot_set_active("WOOD SHAVINGS", true);
 		hotspot_set_active("ASHES", false);
 
 		if (_G(game).previous_room != 601) {
-			_val1 = 25;
-			kernel_trigger_dispatch_now(6012);
+			_woodchipsShould = 25;
+			kernel_trigger_dispatch_now(kCHANGE_WOODCHIPS_ANIMATION);
 		}
 	}
 
-	_G(flags)[V264] = 0;
+	_G(flags)[kStandingOnKibble] = 0;
 
 	if (_G(flags)[V273] == 1) {
 		series_show("602spill", 0x900);
@@ -238,7 +243,7 @@ void Room604::init() {
 	case 603:
 	case 612:
 		if (Section6::_state2) {
-			_G(wilbur_should) = 2;
+			_G(wilbur_should) = 7;
 			kernel_trigger_dispatch_now(kCHANGE_WILBUR_ANIMATION);
 		} else {
 			_G(wilbur_should) = 6;
@@ -270,8 +275,8 @@ void Room604::daemon() {
 	case 1:
 		digi_unload_stream_breaks(SERIES1);
 		_roomSeries1.show("604wi04", 1);
-		_val1 = 25;
-		kernel_trigger_dispatch_now(6012);
+		_woodchipsShould = 25;
+		kernel_trigger_dispatch_now(kCHANGE_WOODCHIPS_ANIMATION);
 		kernel_trigger_dispatch_now(kCHANGE_WILBUR_ANIMATION);
 		break;
 
@@ -323,7 +328,8 @@ void Room604::daemon() {
 
 		case 23:
 			_G(flags)[kHampsterState] = 6006;
-			_sectionMachine1 = series_play("604mg04", 0xcff, 0, kCHANGE_GERBILS_ANIMATION, 8, 0, 100, 0, 0, 0, 50);
+			_sectionMachine1 = series_play(_G(executing) == WHOLE_GAME ? "604mg04" : "604mg04a",
+				0xcff, 0, kCHANGE_GERBILS_ANIMATION, 8, 0, 100, 0, 0, 0, 50);
 			_sectionMachine2 = series_play("604mg04s", 0xd00, 0, -1, 8, 0, 100, 0, 0, 0, 50);
 			Section6::_state4 = 3;
 			kernel_trigger_dispatch_now(6014);
@@ -334,7 +340,8 @@ void Room604::daemon() {
 			Section6::_gerbilState = 6003;
 			Section6::_state4 = 4;
 			kernel_trigger_dispatch_now(6014);
-			_sectionMachine1 = series_play("604mg04", 0xcff, 0, kCHANGE_GERBILS_ANIMATION, 8, 0, 100, 0, 0, 51, -1);
+			_sectionMachine1 = series_play(_G(executing) == WHOLE_GAME ? "604mg04" : "604mg04a",
+				0xcff, 0, kCHANGE_GERBILS_ANIMATION, 8, 0, 100, 0, 0, 51, -1);
 			_sectionMachine2 = series_play("604mg04s", 0xd00, 0, -1, 8, 0, 100, 0, 0, 51, -1);
 			break;
 
@@ -360,29 +367,30 @@ void Room604::daemon() {
 		}
 		break;
 
-	case 6012:
-		switch (_val1) {
+	case kCHANGE_WOODCHIPS_ANIMATION:
+		switch (_woodchipsShould) {
 		case 25:
-			_series1 = series_show("604chips", 0xcc0);
+			_woodchips = series_show("604chips", 0xcc0);
 			break;
 
 		case 26:
-			_val1 = 28;
+			_woodchipsShould = 28;
 			hotspot_set_active("WOOD SHAVINGS", false);
 			hotspot_set_active("ASHES", true);
 
-			terminateMachineAndNull(_series1);
-			_series1 = series_play("604chips", 0xb00, 0, 6012);
+			terminateMachineAndNull(_woodchips);
+			digi_play("604_002", 2, 255, -1, 604);
+			_woodchips = series_play("604chips", 0xb00, 0, kCHANGE_WOODCHIPS_ANIMATION);
 			break;
 
 		case 27:
-			_series1 = series_show("604chips", 0xcc0);
+			_woodchips = series_show("604chips", 0xcc0, 0, -1, -1, 41, 100, 0, 0);
 			break;
 
 		case 28:
-			_val1 = 27;
-			series_unload(_series2);
-			kernel_trigger_dispatch_now(6012);
+			_woodchipsShould = 27;
+			series_unload(_woodchipSeries);
+			kernel_trigger_dispatch_now(kCHANGE_WOODCHIPS_ANIMATION);
 			break;
 
 		default:
@@ -418,7 +426,6 @@ void Room604::daemon() {
 		case 3:
 			ws_unhide_walker();
 			player_set_commands_allowed(true);
-
 			switch (_G(flags)[V242]) {
 			case 0:
 				wilbur_speech("604w001");
@@ -467,6 +474,7 @@ void Room604::daemon() {
 			if (_G(flags)[kHampsterState] == 6006) {
 				Section6::_state4 = 5;
 				kernel_trigger_dispatch_now(6014);
+				_G(wilbur_should) = 18;
 				Section6::_gerbilState = 6004;
 				series_stream("604mg06", 4, 0xc80, kCHANGE_GERBILS_ANIMATION);
 				series_play("604mg06s", 4, 0xc80, 0, -1);
@@ -502,9 +510,15 @@ void Room604::daemon() {
 			ws_hide_walker();
 			_G(wilbur_should) = 10001;
 			player_set_commands_allowed(false);
-			series_play_with_breaks(PLAY10, "604wi11", 0xa00, kCHANGE_WILBUR_ANIMATION, 3);
+			if (_G(executing) == INTERACTIVE_DEMO) {
+				series_play_with_breaks(PLAY10Demo, "604wi11", 0xa00, kCHANGE_WILBUR_ANIMATION, 3);
+			} else {
+				series_play_with_breaks(PLAY10, "604wi11", 0xa00, kCHANGE_WILBUR_ANIMATION, 3);
+			}
+			// Remove Kibble from inventory
+			kernel_trigger_dispatch_now(2);
 
-			if (_G(flags)[V274] == 0 && _G(flags)[kHampsterState] == 600) {
+			if (_G(flags)[V274] == 0 && _G(flags)[kHampsterState] == 6000) {
 				_G(flags)[kHampsterState] = 6006;
 				_G(flags)[V248] = 1;
 				term_message("The gerbils awaken");
@@ -518,7 +532,7 @@ void Room604::daemon() {
 			player_set_commands_allowed(false);
 			_G(flags)[V247] = 1;
 			_G(flags)[V274] = 1;
-			_series2 = series_load("604chips");
+			_woodchipSeries = series_load("604chips");
 			_G(wilbur_should) = 12;
 
 			series_play_with_breaks(PLAY11, "604wi12", 0x600, kCHANGE_WILBUR_ANIMATION, 3);
@@ -532,8 +546,8 @@ void Room604::daemon() {
 			}
 
 			_G(wilbur_should) = 10001;
-			_val1 = 26;
-			kernel_trigger_dispatch_now(6012);
+			_woodchipsShould = 26;
+			kernel_trigger_dispatch_now(kCHANGE_WOODCHIPS_ANIMATION);
 			break;
 
 		case 13:
@@ -577,10 +591,10 @@ void Room604::daemon() {
 				if (_G(flags)[V248]) {
 					_G(wilbur_should) = 11;
 					player_set_commands_allowed(false);
-					wilbur_speech("604w028");
+					wilbur_speech("604w028", kCHANGE_WILBUR_ANIMATION);
 				} else {
 					_G(wilbur_should) = 10001;
-					wilbur_speech("604w027");
+					wilbur_speech("604w027", kCHANGE_WILBUR_ANIMATION);
 				}
 			} else {
 				_G(wilbur_should) = 11;
@@ -593,7 +607,7 @@ void Room604::daemon() {
 			ws_unhide_walker();
 			player_set_commands_allowed(false);
 			_G(wilbur_should) = 21;
-			wilbur_speech("604w006");
+			wilbur_speech("604w006", kCHANGE_WILBUR_ANIMATION);
 			break;
 
 		case 19:
@@ -648,16 +662,16 @@ void Room604::daemon() {
 				_G(player_info).y > 280 && _G(player_info).y < 305 &&
 				_G(player_info).facing > 2 && _G(player_info).facing < 7 &&
 				_G(flags)[V273] == 1) {
-			if (_G(flags)[V264]) {
-				_G(flags)[V264] = 1;
+			if (_G(flags)[kStandingOnKibble]) {
+				_G(flags)[kStandingOnKibble] = 1;
 			} else {
-				_G(flags)[V264] = 1;
+				_G(flags)[kStandingOnKibble] = 1;
 				intr_cancel_sentence();
 				_G(wilbur_should) = 14;
 				kernel_trigger_dispatch_now(kCHANGE_WILBUR_ANIMATION);
 			}
 		} else {
-			_G(flags)[V264] = 0;
+			_G(flags)[kStandingOnKibble] = 0;
 		}
 		break;
 

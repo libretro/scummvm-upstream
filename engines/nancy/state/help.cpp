@@ -82,7 +82,7 @@ bool Help::onStateExit(const NancyState::NancyState nextState) {
 void Help::init() {
 	auto *helpData = GetEngineData(HELP);
 	assert(helpData);
-	
+
 	_image.init(helpData->imageName);
 
 	_button = new UI::Button(5, _image._drawSurface, helpData->buttonSrc, helpData->buttonDest, helpData->buttonHoverSrc);
@@ -100,7 +100,7 @@ void Help::begin() {
 	_button->registerGraphics();
 	_image.setVisible(true);
 
-	g_nancy->_cursorManager->setCursorType(CursorManager::kNormalArrow);
+	g_nancy->_cursor->setCursorType(CursorManager::kNormalArrow);
 
 	_state = kRun;
 }

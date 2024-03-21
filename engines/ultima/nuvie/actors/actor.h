@@ -332,6 +332,22 @@ public:
 	bool is_temp() const {
 		return temp_actor;
 	}
+	virtual bool isFlying() const {
+		return false;
+	}
+	virtual bool isNonBlocking() const {
+		return false;
+	}
+	/**
+	 * @brief Does any tile of this actor occupy the given world location?
+	 * @param lx world coordinate
+	 * @param ly world coordinate
+	 * @param lz level
+	 * @param incDoubleTile include all tiles of double width/height actors
+	 * @param incSurroundingObjs include surrounding actor objects
+	 * @return true if actor occupies location, false otherwise
+	 */
+	virtual bool doesOccupyLocation(uint16 lx, uint16 ly, uint8 lz, bool incDoubleTile = true, bool incSurroundingObjs = true) const;
 
 //for lack of a better name:
 	bool is_met() const {
@@ -576,7 +592,7 @@ public:
 	bool check_moveRelative(sint16 rel_x, sint16 rel_y, ActorMoveFlags flags = 0);
 
 	virtual bool can_be_moved();
-	virtual bool can_be_passed(const Actor *other) const;
+	virtual bool can_be_passed(const Actor *other, bool ignoreParty = false) const;
 	virtual void update();
 	void set_in_party(bool state);
 	void set_pathfinder(ActorPathFinder *new_pf, Path *path_type = 0);

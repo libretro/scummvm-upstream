@@ -33,6 +33,7 @@ static const PlainGameDescriptor freescapeGames[] = {
 	{"spacestationoblivion", "Space Station Oblivion"},
 	{"darkside", "Dark Side"},
 	{"totaleclipse", "Total Eclipse"},
+	{"totaleclipse2", "Total Eclipse 2"},
 	{"castlemaster", "Castle Master"},
 	{0, 0}};
 
@@ -483,6 +484,58 @@ static const ADGameDescription gameDescriptions[] = {
 		Common::EN_ANY,
 		Common::kPlatformZX,
 		ADGF_UNSTABLE | ADGF_DEMO | GF_ZX_DEMO_CRASH,
+		GUIO1(GUIO_NOMIDI)
+	},
+	{
+		"totaleclipse",
+		"",
+		{
+			{"totaleclipse.zx.data", 0, "5bc0c4ff50407d16bb409776eda7f4a8", 36055},
+			AD_LISTEND
+		},
+		Common::EN_ANY,
+		Common::kPlatformZX,
+		ADGF_UNSTABLE,
+		GUIO1(GUIO_NOMIDI)
+	},
+	{
+		"totaleclipse2",
+		"",
+		{
+			{"totaleclipse.zx.data", 0, "5e80cb6a518d5ab2192b845801b1a32e", 35661},
+			AD_LISTEND
+		},
+		Common::EN_ANY,
+		Common::kPlatformZX,
+		ADGF_UNSTABLE,
+		GUIO1(GUIO_NOMIDI)
+	},
+	{
+		"totaleclipse",
+		"",
+		{
+			{"TECODE.BIN", 0, "369d87a5a38df89cb8aa396995bb49d5", 35794},
+			{"TECON.SCR", 0, "f6381a7e07b3bdcd569cb7423a269fd3", 16512},
+			{"TESCR.SCR", 0, "9635f9401dae0936e22c556065c254f6", 16512},
+			AD_LISTEND
+		},
+		Common::EN_ANY,
+		Common::kPlatformAmstradCPC,
+		ADGF_UNSTABLE,
+		GUIO1(GUIO_NOMIDI)
+	},
+	{
+		"totaleclipse2",
+		"",
+		{
+			{"TE2.BI1", 0, "fc6e1a240e76a68e02ce1db5ad9a689a", 16512},
+			{"TE2.BI2", 0, "c346262234e509ba5576c0a3362bc414", 35456},
+			{"TE2.BI3", 0, "d73485df2eccb90592bb598693b10555", 16512},
+			AD_LISTEND
+		},
+		Common::EN_ANY,
+		Common::kPlatformAmstradCPC,
+		ADGF_UNSTABLE,
 		GUIO1(GUIO_NOMIDI)
 	},
 	{

@@ -478,7 +478,7 @@ bool MapWindow::can_display_obj(uint16 x, uint16 y, Obj *obj) {
 	return true;
 }
 
-bool MapWindow::tile_is_black(uint16 x, uint16 y, Obj *obj) {
+bool MapWindow::tile_is_black(uint16 x, uint16 y, const Obj *obj) const {
 	if (game->using_hackmove())
 		return false;
 	if (!MapCoord(x, y, cur_level).is_visible()) // tmpBufTileIsBlack will crash if called (doesn't happen in gdb)
@@ -543,11 +543,11 @@ Actor *MapWindow::get_actorAtCursor() {
 	if (tmp_map_buf[(cursor_y + TMP_MAP_BORDER) * tmp_map_width + (cursor_x + TMP_MAP_BORDER)] == 0) //black area
 		return nullptr; // nothing to see here. ;)
 
-	return actor_manager->get_actor(WRAPPED_COORD(cur_x + cursor_x, cur_level), cur_y + cursor_y, cur_level);
+	return actor_manager->get_actor(WRAPPED_COORD(cur_x + cursor_x, cur_level), WRAPPED_COORD(cur_y + cursor_y, cur_level), cur_level);
 }
 
 MapCoord MapWindow::get_cursorCoord() {
-	return (MapCoord(WRAPPED_COORD(cur_x + cursor_x, cur_level), cur_y + cursor_y, cur_level));
+	return MapCoord(WRAPPED_COORD(cur_x + cursor_x, cur_level), WRAPPED_COORD(cur_y + cursor_y, cur_level), cur_level);
 }
 
 void MapWindow::get_level(uint8 *level) const {
@@ -1565,7 +1565,7 @@ void MapWindow::reshapeBoundary() {
 	}
 }
 
-inline bool MapWindow::tmpBufTileIsBlack(uint16 x, uint16 y) {
+inline bool MapWindow::tmpBufTileIsBlack(uint16 x, uint16 y) const {
 	if (tmp_map_buf[y * tmp_map_width + x] == 0)
 		return true;
 
@@ -1653,8 +1653,11 @@ CanDropOrMoveMsg MapWindow::can_drop_or_move_obj(uint16 x, uint16 y, Actor *acto
 	}
 
 	MapCoord actor_loc = actor->get_location();
-	if (actor_manager->get_actor(x, y, actor_loc.z))
-		return MSG_NOT_POSSIBLE;
+
+	// Can only drop onto non-blocking actors
+	// Message: "Blocked" if pushing, "Not possible" if dropping
+	if (actor_manager->findActorAt(x, y, actor_loc.z, [](const Actor *a) {return !a->isNonBlocking();}, true, false))
+		return in_inventory ? MSG_NOT_POSSIBLE : MSG_BLOCKED;
 
 	Obj *dest_obj = nullptr;
 	if (game_type == NUVIE_GAME_U6) {
@@ -1682,37 +1685,28 @@ CanDropOrMoveMsg MapWindow::can_drop_or_move_obj(uint16 x, uint16 y, Actor *acto
 	if (actor_loc.distance(target_loc) > 5 && get_interface() == INTERFACE_NORMAL)
 		return MSG_OUT_OF_RANGE;
 
+	bool blocked = false;
 	uint8 lt_flags = (game_type == NUVIE_GAME_U6) ? LT_HitMissileBoundary : 0; //FIXME this probably isn't quite right for MD/SE
 	if (map->lineTest(actor_loc.x, actor_loc.y, x, y, actor_loc.z, lt_flags, lt, 0, obj)) {
 		MapCoord hit_loc = MapCoord(lt.hit_x, lt.hit_y, lt.hit_level);
-		if (obj_loc.distance(target_loc) != 1 || hit_loc.distance(target_loc) != 1) {
-			if (lt.hitObj && target_loc == hit_loc) {
-				if (obj_manager->can_store_obj(lt.hitObj, obj)) //if we are moving onto a container.
-					return MSG_SUCCESS;
-			}
-			return MSG_BLOCKED;
-		}
-		// trying to push object one tile away from actor
-		if (map->lineTest(obj->x, obj->y, x, y, actor_loc.z, lt_flags, lt, 0, obj)) {
-			if (lt.hitObj) {
-				if (obj_manager->can_store_obj(lt.hitObj, obj)) //if we are moving onto a container.
-					return MSG_SUCCESS;
-				/*                else // I don't think these are needed
-				                {
-				                    // We can place an object on a bench or table. Or on any other object if
-				                    // the object is passable and not on a boundary.
-
-				                    Tile *obj_tile = obj_manager->get_obj_tile(lt.hitObj->obj_n, lt.hitObj->frame_n);
-				                    if(!obj_tile) // shouldn't happen
-				                        return MSG_NO_TILE;
-				                    if((obj_tile->flags3 & TILEFLAG_CAN_PLACE_ONTOP)
-				                       || (obj_tile->passable && !map->is_boundary(lt.hit_x, lt.hit_y, lt.hit_level)) )
-				                        return MSG_SUCCESS;
-				                }*/
-			}
-			return MSG_BLOCKED;
-		}
+		if (in_inventory || obj_loc.distance(target_loc) != 1 || hit_loc.distance(target_loc) != 1)
+			blocked = true;  // Just set a bool and don't return yet: blocker might be a suitable container.
+		else // trying to push object one tile away from actor
+			blocked = map->lineTest(obj->x, obj->y, x, y, actor_loc.z, lt_flags, lt, 0, obj);
 	}
+
+	const Obj* potentialContainer = nullptr;
+	if (blocked) {
+		if (lt.hitObj && MapCoord(lt.hitObj) == target_loc)
+			potentialContainer = lt.hitObj;
+	} else
+		potentialContainer = dest_obj;
+
+	if (potentialContainer && obj_manager->can_store_obj(potentialContainer, obj)) //if we are moving onto a container.
+		return MSG_SUCCESS;
+
+	if (blocked)
+		return MSG_BLOCKED;
 
 	const Tile *tile;
 	if (dest_obj)
@@ -1873,8 +1867,8 @@ void MapWindow::drag_perform_drop(int x, int y, int message, void *data) {
 	y -= area.top;
 
 	if (message == GUI_DRAG_OBJ) {
-		x = (cur_x + x / 16) % mapWidth;
-		y = (cur_y + y / 16) % mapWidth;
+		x = (uint)(cur_x + x / 16) % mapWidth;
+		y = (uint)(cur_y + y / 16) % mapWidth;
 		Obj *obj = (Obj *)data;
 
 		if (obj->obj_n == OBJ_U6_LOCK_PICK && game_type == NUVIE_GAME_U6)
@@ -2266,7 +2260,7 @@ void MapWindow::teleport_to_cursor() {
 void MapWindow::select_target(int x, int y) {
 	int wx, wy;
 	mouseToWorldCoords(x, y, wx, wy);
-	moveCursor(WRAP_VIEWP(cur_x, wx, map_width), wy - cur_y);
+	moveCursor(WRAPPED_COORD(wx - cur_x, cur_level), WRAPPED_COORD(wy - cur_y, cur_level));
 	game->get_event()->select_target(uint16(wx), uint16(wy), cur_level);
 }
 
@@ -2276,8 +2270,8 @@ void MapWindow::mouseToWorldCoords(int mx, int my, int &wx, int &wy) {
 
 	int mapWidth = map->get_width(cur_level);
 
-	wx = (cur_x + x / 16) % mapWidth;
-	wy = (cur_y + y / 16) % mapWidth;
+	wx = (uint)(cur_x + x / 16) % mapWidth;
+	wy = (uint)(cur_y + y / 16) % mapWidth;
 }
 
 void MapWindow::drag_draw(int x, int y, int message, void *data) {

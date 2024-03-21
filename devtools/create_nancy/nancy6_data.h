@@ -32,7 +32,7 @@ const GameConstants _nancy6Constants ={
 		21, 22, 23, 24, 25, 26, 27, 28, 29, 30 },
 	16,												// numCursorTypes
 	4000,											// logoEndAfter
-	32												// wonGameSceneID
+	32												// wonGameFlagID
 };
 
 const Common::Array<Common::Language> _nancy6LanguagesOrder = {
@@ -706,6 +706,21 @@ const Common::Array<const char *> _nancy6EventFlagNames = {
 	"EV_Empty1453",
 	"EV_Empty1454",
 	"EV_TBD"
+};
+
+// Patch notes:
+// This is the official patch from HeR, which is supposed
+// to fix a freeze while talking to Bess & George, or at
+// the monolith. I've not experienced said issues, and the
+// patched scene is too big for me to inspect, so this is
+// untested (though it most likely works fine)
+
+const Common::Array<const char *> nancy6PatchSrcFiles {
+	"S1671.cif"
+};
+
+const Common::Array<PatchAssociation> nancy6PatchAssociations {
+	{ { "softlocks_fix", "true" }, { "S1671" } }
 };
 
 #endif // NANCY6DATA_H

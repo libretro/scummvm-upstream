@@ -82,7 +82,7 @@ public:
 
 	void readData(Common::SeekableReadStream &stream) override;
 	void execute() override;
-	
+
 	CursorManager::CursorType getHoverCursor() const override { return _hoverCursor; }
 
 	HotspotDescription _hotspotDesc;
@@ -109,7 +109,7 @@ protected:
 		case CursorManager::kMoveLeft:
 			return "Hot1FrLeftSceneChange";
 		case CursorManager::kMoveRight:
-			return "Hot1FrUpSceneChange";
+			return "Hot1FrRightSceneChange";
 		default:
 			return "Hot1FrSceneChange";
 		}

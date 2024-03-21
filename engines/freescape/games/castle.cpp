@@ -129,6 +129,7 @@ Common::SeekableReadStream *CastleEngine::decryptFile(const Common::Path &filena
 }
 
 extern byte kEGADefaultPalette[16][3];
+extern Common::MemoryReadStream *unpackEXE(Common::File &ms);
 
 void CastleEngine::loadAssetsDOSFullGame() {
 	Common::File file;
@@ -136,6 +137,15 @@ void CastleEngine::loadAssetsDOSFullGame() {
 
 	if (_renderMode == Common::kRenderEGA) {
 		_viewArea = Common::Rect(40, 33, 280, 152);
+
+		file.open("CME.EXE");
+		stream = unpackEXE(file);
+		if (stream) {
+			loadSpeakerFxDOS(stream, 0x636d + 0x200, 0x63ed + 0x200);
+		}
+
+		delete stream;
+		file.close();
 
 		file.open("CMLE.DAT");
 		_title = load8bitBinImage(&file, 0x0);
@@ -261,7 +271,6 @@ void CastleEngine::gotoArea(uint16 areaID, int entranceID) {
 	if (entranceID > 0)
 		traverseEntrance(entranceID);
 
-	playSound(5, false);
 	_lastPosition = _position;
 
 	if (_currentArea->_skyColor > 0 && _currentArea->_skyColor != 255) {
@@ -275,11 +284,13 @@ void CastleEngine::gotoArea(uint16 areaID, int entranceID) {
 	if (areaID == _startArea && entranceID == _startEntrance) {
 		_yaw = 310;
 		_pitch = 0;
+		playSound(9, false);
+	} else {
+		playSound(5, false);
 	}
 
 	debugC(1, kFreescapeDebugMove, "starting player position: %f, %f, %f", _position.x(), _position.y(), _position.z());
 	clearTemporalMessages();
-	playSound(5, false);
 	// Ignore sky/ground fields
 	_gfx->_keyColor = 0;
 	_gfx->clearColorPairArray();
@@ -320,31 +331,9 @@ void CastleEngine::drawDOSUI(Graphics::Surface *surface) {
 }
 
 void CastleEngine::initGameState() {
-	_flyMode = false;
-	_noClipMode = false;
-	_shootingFrames = 0;
-	_underFireFrames = 0;
-	_yaw = 0;
-	_pitch = 0;
-
-	for (int i = 0; i < k8bitMaxVariable; i++) // TODO: check maximum variable
-		_gameStateVars[i] = 0;
-
-	for (auto &it : _areaMap)
-		it._value->resetArea();
-
-	_gameStateBits = 0;
-
-	//_gameStateVars[k8bitVariableEnergy] = _initialFuel;
-	//_gameStateVars[k8bitVariableShield] = _initialShield;
-
+	FreescapeEngine::initGameState();
 	_playerHeightNumber = 1;
 	_playerHeight = _playerHeights[_playerHeightNumber];
-	removeTimers();
-	startCountdown(_initialCountdown);
-	_lastMinute = 0;
-	_demoIndex = 0;
-	_demoEvents.clear();
 }
 
 void CastleEngine::executePrint(FCLInstruction &instruction) {

@@ -35,7 +35,7 @@ namespace Action {
 
 void SetVolume::readData(Common::SeekableReadStream &stream) {
 	channel = stream.readUint16LE();
-	volume = stream.readUint16LE();
+	volume = stream.readByte();
 }
 
 void SetVolume::execute() {
@@ -68,6 +68,10 @@ void PlaySound::execute() {
 		g_nancy->_sound->loadSound(_sound, &_soundEffect);
 		g_nancy->_sound->playSound(_sound);
 
+		if (g_nancy->getGameType() >= kGameTypeNancy8) {
+			NancySceneState.setEventFlag(_flag);
+		}
+
 		if (_changeSceneImmediately) {
 			NancySceneState.changeScene(_sceneChange);
 			finishExecution();
@@ -84,7 +88,10 @@ void PlaySound::execute() {
 		break;
 	case kActionTrigger:
 		NancySceneState.changeScene(_sceneChange);
-		NancySceneState.setEventFlag(_flag);
+
+		if (g_nancy->getGameType() <= kGameTypeNancy7) {
+			NancySceneState.setEventFlag(_flag);
+		}
 
 		g_nancy->_sound->stopSound(_sound);
 
@@ -147,6 +154,19 @@ void PlaySoundTerse::readData(Common::SeekableReadStream &stream) {
 	_sound.readTerse(stream);
 	_changeSceneImmediately = stream.readByte();
 	_sceneChange.sceneID = stream.readUint16LE();
+
+	_sceneChange.continueSceneSound = kContinueSceneSound;
+	_soundEffect = new SoundEffectDescription;
+
+	readCCText(stream, _ccText);
+}
+
+void PlaySoundEventFlagTerse::readData(Common::SeekableReadStream &stream) {
+	_sound.readTerse(stream);
+	_changeSceneImmediately = stream.readByte();
+	_sceneChange.sceneID = stream.readUint16LE();
+	_flag.label = stream.readUint16LE();
+	_flag.flag = stream.readByte();
 
 	_sceneChange.continueSceneSound = kContinueSceneSound;
 	_soundEffect = new SoundEffectDescription;
@@ -289,12 +309,12 @@ void TableIndexPlaySound::execute() {
 	auto *tabl = GetEngineData(TABL);
 	assert(tabl);
 
-	if (_lastIndexVal != playerTable->currentIDs[_tableIndex - 1]) {
+	if (_lastIndexVal != playerTable->singleValues[_tableIndex - 1]) {
 		g_nancy->_sound->stopSound(_sound);
 		NancySceneState.getTextbox().clear();
-		_lastIndexVal = playerTable->currentIDs[_tableIndex - 1];
-		_sound.name = Common::String::format("%s%u", tabl->soundBaseName.c_str(), playerTable->currentIDs[_tableIndex - 1]);
-		_ccText = tabl->strings[playerTable->currentIDs[_tableIndex - 1] - 1];
+		_lastIndexVal = playerTable->singleValues[_tableIndex - 1];
+		_sound.name = Common::String::format("%s%u", tabl->soundBaseName.c_str(), playerTable->singleValues[_tableIndex - 1]);
+		_ccText = tabl->strings[playerTable->singleValues[_tableIndex - 1] - 1];
 	}
 
 	PlaySoundCC::execute();

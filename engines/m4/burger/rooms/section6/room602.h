@@ -67,9 +67,9 @@ private:
 	machine *_series8 = nullptr;
 	machine *_series9 = nullptr;
 	machine *_series10 = nullptr;
-	int _val1 = 0;
-	int _val2 = 0;
-	int _val3 = 0;
+	int _motorShould = 0;
+	int _kibbleOffset = 0;
+	int _doorShould = 0;
 	int _magnetState = 0;
 
 public:

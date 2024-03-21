@@ -153,8 +153,8 @@ void DirectorSound::playCastMember(CastMemberID memberID, uint8 soundChannel, bo
 		//   4. maybe more?
 		if (shouldStopOnZero(soundChannel)) {
 			stopSound(soundChannel);
-		// Director 4 will stop after the current loop iteration, but
-		// Director 3 will continue looping until the sound is replaced.
+			// Director 4 will stop after the current loop iteration, but
+			// Director 3 will continue looping until the sound is replaced.
 		} else if (g_director->getVersion() >= 400) {
 			// If there is a loopable stream specified, set the loop to expire by itself
 			if (_channels[soundChannel]->loopPtr) {
@@ -431,7 +431,8 @@ void DirectorSound::playExternalSound(uint16 menu, uint16 submenu, uint8 soundCh
 		return;
 
 	SoundID soundId(kSoundExternal, menu, submenu);
-	if (isChannelActive(soundChannel) && isLastPlayedSound(soundChannel, soundId))
+	// If the sound is the same ID ast the last played, do nothing.
+	if (isLastPlayedSound(soundChannel, soundId))
 		return;
 
 	if (menu < kMinSampledMenu || menu > kMaxSampledMenu) {
@@ -845,6 +846,14 @@ Audio::AudioStream *SNDDecoder::getAudioStream(bool looping, bool forPuppet, Dis
 
 bool SNDDecoder::hasLoopBounds() {
 	return _loopStart != 0 || _loopEnd != 0;
+}
+
+bool SNDDecoder::hasValidLoopBounds() {
+	return hasLoopBounds() && _loopStart < _loopEnd && _loopEnd <= _size;
+}
+
+void SNDDecoder::resetLoopBounds() {
+	_loopStart = _loopEnd = 0;
 }
 
 AudioFileDecoder::AudioFileDecoder(Common::String &path)

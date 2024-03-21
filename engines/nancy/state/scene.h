@@ -50,6 +50,7 @@ struct SceneChangeDescription;
 
 namespace Action {
 class ConversationSound;
+class PlaySecondaryMovie;
 }
 
 namespace Misc {
@@ -80,11 +81,11 @@ public:
 		// Default values set to match those applied when loading from a TSUM chunk
 		Common::String description;
 		Common::Path videoFile;
-		
+
 		uint16 videoFormat = kLargeVideoFormat;
 		Common::Array<Common::Path> palettes;
 		SoundDescription sound;
-		
+
 		byte panningType = kPan360;
 		uint16 numberOfVideoFrames = 0;
 		uint16 degreesPerRotation = 18;
@@ -95,7 +96,7 @@ public:
 		uint16 verticalEdgeSize = 15;
 		Time slowMoveTimeDelta = 400;
 		Time fastMoveTimeDelta = 66;
-		
+
 		// Sound start vectors, used in nancy3 and up
 		Math::Vector3d listenerPosition;
 
@@ -115,19 +116,18 @@ public:
 	void setDestroyOnExit() { _destroyOnExit = true; }
 
 	bool isRunningAd() const { return _isRunningAd; }
-	bool isRunningSpecialEffect() const;
 
 	void changeScene(const SceneChangeDescription &sceneDescription);
 	void pushScene(int16 itemID = -1);
 	void popScene(bool inventory = false);
-	
+
 	void setPlayerTime(Time time, byte relative);
 	Time getPlayerTime() const { return _timers.playerTime; }
 	Time getTimerTime() const { return _timers.timerIsActive ? _timers.timerTime : 0; }
 	byte getPlayerTOD() const;
 
-	void addItemToInventory(uint16 id);
-	void removeItemFromInventory(uint16 id, bool pickUp = true);
+	void addItemToInventory(int16 id);
+	void removeItemFromInventory(int16 id, bool pickUp = true);
 	int16 getHeldItem() const { return _flags.heldItem; }
 	void setHeldItem(int16 id);
 	void setNoHeldItem();
@@ -177,6 +177,8 @@ public:
 	SceneChangeDescription &getNextSceneInfo() { return _sceneState.nextScene; }
 	const SceneSummary &getSceneSummary() const { return _sceneState.summary; }
 
+	void setActiveMovie(Action::PlaySecondaryMovie *activeMovie);
+	Action::PlaySecondaryMovie *getActiveMovie();
 	void setActiveConversation(Action::ConversationSound *activeConversation);
 	Action::ConversationSound *getActiveConversation();
 
@@ -287,6 +289,7 @@ private:
 	Common::HashMap<uint32, PuzzleData *> _puzzleData;
 
 	Action::ActionManager _actionManager;
+	Action::PlaySecondaryMovie *_activeMovie;
 	Action::ConversationSound *_activeConversation;
 
 	// Contains a screenshot of the Scene state from the last time it was exited

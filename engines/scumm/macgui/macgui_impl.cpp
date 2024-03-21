@@ -24,6 +24,7 @@
 #include "common/macresman.h"
 
 #include "graphics/cursorman.h"
+#include "graphics/paletteman.h"
 #include "graphics/fonts/macfont.h"
 #include "graphics/macgui/macwindowmanager.h"
 
@@ -86,6 +87,12 @@ void MacGuiImpl::setPalette(const byte *palette, uint size) {
 }
 
 bool MacGuiImpl::handleEvent(Common::Event event) {
+	// The situation we're trying to avoid here is the user opening e.g.
+	// the save dialog using keyboard shortcuts while the game is paused.
+
+	if (_bannerWindow)
+		return false;
+
 	return _windowManager->processEvent(event);
 }
 
@@ -156,7 +163,7 @@ void MacGuiImpl::initialize() {
 
 	if (_vm->isUsingOriginalGUI()) {
 		_windowManager->setMenuHotzone(Common::Rect(640, 23));
-		_windowManager->setMenuDelay(250000);
+		_windowManager->setMenuDelay(250);
 
 		Common::MacResManager resource;
 		Graphics::MacMenu *menu = _windowManager->addMenu();
@@ -233,7 +240,7 @@ void MacGuiImpl::initialize() {
 
 	for (uint i = 0; i < fontFamilies.size(); i++) {
 		if (fontFamilies[i]->getName() == fontFamily) {
-			_gameFontId = _windowManager->_fontMan->registerFontName(fontFamily, fontFamilies[i]->getFontFamilyId());
+			_gameFontId = fontFamilies[i]->getFontFamilyId();
 			break;
 		}
 	}

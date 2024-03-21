@@ -152,11 +152,11 @@ void SpellViewGump::loadCircleString(const Common::Path &datadir) {
 	Common::sprintf_s(filename, "%d.bmp", level);
 	build_path(datadir, filename, imagefile);
 
-	Graphics::ManagedSurface *s = bmp.getSdlSurface32(imagefile);
-	if (s != nullptr) {
+	Common::ScopedPtr<Graphics::ManagedSurface> s(bmp.getSdlSurface32(imagefile));
+	if (s) {
 		Common::Rect dst;
 		dst = Common::Rect(70, 7, 74, 13);
-		SDL_BlitSurface(s, nullptr, bg_image, &dst);
+		SDL_BlitSurface(s.get(), nullptr, bg_image, &dst);
 	}
 
 	switch (level) {
@@ -178,11 +178,11 @@ void SpellViewGump::loadCircleSuffix(const Common::Path &datadir, const Std::str
 	Common::Path imagefile;
 
 	build_path(datadir, image, imagefile);
-	Graphics::ManagedSurface *s = bmp.getSdlSurface32(imagefile);
-	if (s != nullptr) {
+	Common::ScopedPtr<Graphics::ManagedSurface> s(bmp.getSdlSurface32(imagefile));
+	if (s) {
 		Common::Rect dst;
 		dst = Common::Rect(75, 7, 82, 13);
-		SDL_BlitSurface(s, nullptr, bg_image, &dst);
+		SDL_BlitSurface(s.get(), nullptr, bg_image, &dst);
 	}
 }
 
@@ -314,7 +314,8 @@ GUI_status SpellViewGump::MouseDown(int x, int y, Shared::MouseButton button) {
 			close_spellbook();
 			return GUI_YUM;
 		}
-		event->target_spell(); //Simulate a global key down event.
+		if (!event_mode)
+			event->target_spell(); //Simulate a global key down event.
 		if (event->get_mode() == INPUT_MODE)
 			Game::get_game()->get_map_window()->select_target(x, y);
 		if (event->get_mode() != MOVE_MODE)
@@ -326,6 +327,9 @@ GUI_status SpellViewGump::MouseDown(int x, int y, Shared::MouseButton button) {
 }
 
 GUI_status SpellViewGump::MouseUp(int x, int y, Shared::MouseButton button) {
+	if (button == Shared::BUTTON_RIGHT)
+		return GUI_YUM;
+
 	sint16 spell = getSpell(x, y);
 
 	if (spell != -1 && spell == selected_spell) {
@@ -343,7 +347,9 @@ GUI_status SpellViewGump::MouseUp(int x, int y, Shared::MouseButton button) {
 	}
 
 
-	return DraggableView::MouseUp(x, y, button);
+	auto ret = DraggableView::MouseUp(x, y, button);
+	grab_focus(); // Dragging releases focus, grab it again
+	return ret;
 }
 
 } // End of namespace Nuvie

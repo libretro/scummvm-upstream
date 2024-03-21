@@ -27,7 +27,7 @@
 #include "common/savefile.h"
 #include "engines/util.h"
 #include "graphics/managed_surface.h"
-#include "graphics/palette.h"
+#include "graphics/paletteman.h"
 #include "m4/m4.h"
 #include "m4/adv_r/adv_control.h"
 #include "m4/adv_r/adv_file.h"
@@ -87,6 +87,7 @@ int M4Engine::isDemo() const {
 Common::Error M4Engine::run() {
 	// Initialize 320x200 paletted graphics mode
 	initGraphics(640, 480);
+	syncSoundSettings();
 
 	// Instantiate globals and setup
 	Vars *vars = createVars();
@@ -136,6 +137,13 @@ void M4Engine::m4_inflight() {
 	}
 }
 
+void M4Engine::syncSoundSettings() {
+	Engine::syncSoundSettings();
+
+	int volume = ConfMan.getBool("sfx_mute") ? 0 : CLIP(ConfMan.getInt("sfx_volume"), 0, 255);
+	_mixer->setVolumeForSoundType(Audio::Mixer::kPlainSoundType, volume);
+}
+
 bool M4Engine::canLoadGameStateCurrently(Common::U32String *msg) {
 	return g_vars && INTERFACE_VISIBLE && player_commands_allowed();
 }
@@ -148,7 +156,7 @@ void M4Engine::showSaveScreen() {
 	saveGameDialog();
 }
 
-void M4Engine::showLoadScreen(bool fromMainMenu) {
+void M4Engine::showLoadScreen(LoadDialogSource source) {
 	loadGameDialog();
 }
 

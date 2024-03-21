@@ -19,6 +19,7 @@
  *
  */
 
+#include "engines/nancy/action/datarecords.h"
 #include "engines/nancy/action/inventoryrecords.h"
 #include "engines/nancy/action/navigationrecords.h"
 #include "engines/nancy/action/soundrecords.h"
@@ -26,6 +27,7 @@
 
 #include "engines/nancy/action/autotext.h"
 #include "engines/nancy/action/conversation.h"
+#include "engines/nancy/action/interactivevideo.h"
 #include "engines/nancy/action/overlay.h"
 #include "engines/nancy/action/secondaryvideo.h"
 #include "engines/nancy/action/secondarymovie.h"
@@ -52,6 +54,7 @@
 #include "engines/nancy/action/puzzle/setplayerclock.h"
 #include "engines/nancy/action/puzzle/sliderpuzzle.h"
 #include "engines/nancy/action/puzzle/soundequalizerpuzzle.h"
+#include "engines/nancy/action/puzzle/spigotpuzzle.h"
 #include "engines/nancy/action/puzzle/tangrampuzzle.h"
 #include "engines/nancy/action/puzzle/telephone.h"
 #include "engines/nancy/action/puzzle/towerpuzzle.h"
@@ -117,6 +120,8 @@ ActionRecord *ActionManager::createActionRecord(uint16 type, Common::SeekableRea
 		newRec->_isTerse = true;
 		return newRec;
 	}
+	case 26:
+		return new InteractiveVideo();
 	case 40:
 		if (g_nancy->getGameType() < kGameTypeNancy2) {
 			// Only used in TVD
@@ -127,9 +132,8 @@ ActionRecord *ActionManager::createActionRecord(uint16 type, Common::SeekableRea
 	case 50:
 		return new ConversationVideo(); // PlayPrimaryVideoChan0
 	case 51:
-		return new PlaySecondaryVideo(0);
 	case 52:
-		return new PlaySecondaryVideo(1);
+		return new PlaySecondaryVideo();
 	case 53:
 		return new PlaySecondaryMovie();
 	case 54:
@@ -173,17 +177,39 @@ ActionRecord *ActionManager::createActionRecord(uint16 type, Common::SeekableRea
 			return new Autotext();
 		}
 	case 62:
-		return new MapCallHotMultiframe();
+		if (g_nancy->getGameType() <= kGameTypeNancy7) {
+			return new MapCallHotMultiframe(); // TVD/nancy1 only
+		} else {
+			return new ConversationCelTerse(); // nancy8 and up
+		}
+	case 63:
+		return new ConversationSoundTerse();
 	case 65:
 		return new TableIndexOverlay();
 	case 66:
 		return new TableIndexPlaySound();
 	case 67:
 		return new TableIndexSetValueHS();
+	case 68:
+		return new TextScroll(false);
+	case 70:
+		return new TextScroll(true); // AutotextEntryList
+	case 71:
+		return new ModifyListEntry(ModifyListEntry::kAdd);
+	case 72:
+		return new ModifyListEntry(ModifyListEntry::kDelete);
+	case 73:
+		return new ModifyListEntry(ModifyListEntry::kMark);
 	case 75:
 		return new TextBoxWrite();
 	case 76:
 		return new TextboxClear();
+	case 77:
+		return new SetValue();
+	case 78:
+		return new SetValueCombo();
+	case 79:
+		return new ValueTest();
 	case 97:
 		return new EventFlags(true);
 	case 98:
@@ -227,7 +253,7 @@ ActionRecord *ActionManager::createActionRecord(uint16 type, Common::SeekableRea
 	case 115:
 		return new LeverPuzzle();
 	case 116:
-		return new Telephone();
+		return new Telephone(false);
 	case 117:
 		return new SliderPuzzle();
 	case 118:
@@ -250,6 +276,8 @@ ActionRecord *ActionManager::createActionRecord(uint16 type, Common::SeekableRea
 		return new EnableDisableInventory();
 	case 125:
 		return new PopInvViewPriorScene();
+	case 126:
+		return new GoInvViewScene();
 	case 140:
 		return new SetVolume();
 	case 150:
@@ -259,7 +287,7 @@ ActionRecord *ActionManager::createActionRecord(uint16 type, Common::SeekableRea
 			return new PlaySound(); // PlayStreamSound
 		} else {
 			return new PlayRandomSoundTerse();
-		}		
+		}
 	case 152:
 		return new PlaySoundFrameAnchor();
 	case 153:
@@ -276,6 +304,8 @@ ActionRecord *ActionManager::createActionRecord(uint16 type, Common::SeekableRea
 		return new PlaySoundTerse();
 	case 160:
 		return new HintSystem();
+	case 161:
+		return new PlaySoundEventFlagTerse();
 	case 170:
 		return new SetPlayerClock();
 	case 200:
@@ -328,6 +358,10 @@ ActionRecord *ActionManager::createActionRecord(uint16 type, Common::SeekableRea
 		return new CubePuzzle();
 	case 224:
 		return new OrderingPuzzle(OrderingPuzzle::kKeypadTerse);
+	case 225:
+		return new SpigotPuzzle();
+	case 230:
+		return new Telephone(true);
 	default:
 		return nullptr;
 	}

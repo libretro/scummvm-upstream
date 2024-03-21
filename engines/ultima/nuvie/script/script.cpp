@@ -1308,7 +1308,7 @@ bool Script::call_actor_use_effect(Obj *effect_obj, Actor *actor) {
 	return call_function("actor_use_effect", 2, 0);
 }
 
-bool Script::call_can_get_obj_override(Obj *obj) {
+bool Script::call_can_get_obj_override(Obj *obj) const {
 	lua_getglobal(L, "can_get_obj_override");
 	nscript_obj_new(L, obj);
 
@@ -1349,7 +1349,7 @@ bool Script::call_is_ranged_select(UseCodeType operation) {
 	return lua_toboolean(L, -1);
 }
 
-bool Script::call_function(const char *func_name, int num_args, int num_return, bool print_stacktrace) {
+bool Script::call_function(const char *func_name, int num_args, int num_return, bool print_stacktrace) const{
 	int start_idx = lua_gettop(L);
 	int error_index = 0;
 
@@ -2997,6 +2997,7 @@ static int nscript_map_enable_temp_actor_cleaning(lua_State *L) {
 Check map location for water
 @function map_is_water
 @tparam MapCoord|x,y,z location
+@tparam bool[opt] ignore objects, defaults to false
 @treturn bool true if the map at location is a water tile otherwise false
 @within map
  */
@@ -3005,10 +3006,16 @@ static int nscript_map_is_water(lua_State *L) {
 
 	uint16 x, y;
 	uint8 z;
+	bool ignoreObjects;
+	int idx;
+
 	if (nscript_get_location_from_args(L, &x, &y, &z, 1) == false)
 		return 0;
 
-	lua_pushboolean(L, map->is_water(x, y, z));
+	idx = lua_istable(L, 1) ? 2 : 4;
+	ignoreObjects = lua_toboolean(L, idx);
+
+	lua_pushboolean(L, map->is_water(x, y, z, ignoreObjects));
 
 	return 1;
 }

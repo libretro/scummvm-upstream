@@ -33,6 +33,51 @@ void EclipseEngine::initZX() {
 	_maxShield = 63;
 }
 
+void EclipseEngine::loadAssetsZXFullGame() {
+	Common::File file;
+	bool isTotalEclipse2 = _targetName.hasPrefix("totaleclipse2");
+
+	file.open("totaleclipse.zx.title");
+	if (file.isOpen()) {
+		_title = loadAndCenterScrImage(&file);
+	} else
+		error("Unable to find totaleclipse.zx.title");
+
+	file.close();
+	file.open("totaleclipse.zx.border");
+	if (file.isOpen()) {
+		_border = loadAndCenterScrImage(&file);
+	} else
+		error("Unable to find totaleclipse.zx.border");
+	file.close();
+
+	file.open("totaleclipse.zx.data");
+	if (!file.isOpen())
+		error("Failed to open totaleclipse.zx.data");
+
+	if (isTotalEclipse2) {
+		loadMessagesFixedSize(&file, 0x2ac, 16, 30);
+		loadFonts(&file, 0x61c3);
+		loadSpeakerFxZX(&file, 0x8c6, 0x91a);
+		load8bitBinary(&file, 0x63bb, 4);
+	} else {
+		loadMessagesFixedSize(&file, 0x2ac, 16, 23);
+		loadFonts(&file, 0x6163);
+		loadSpeakerFxZX(&file, 0x816, 0x86a);
+		load8bitBinary(&file, 0x635b, 4);
+	}
+
+	for (auto &it : _areaMap) {
+		it._value->addStructure(_areaMap[255]);
+
+		if (isTotalEclipse2 && it._value->getAreaID() == 1)
+			continue;
+
+		for (int16 id = 183; id < 207; id++)
+			it._value->addObjectFromArea(id, _areaMap[255]);
+	}
+}
+
 void EclipseEngine::loadAssetsZXDemo() {
 	Common::File file;
 
@@ -60,6 +105,7 @@ void EclipseEngine::loadAssetsZXDemo() {
 		loadFonts(&file, 0x5f7b);
 		load8bitBinary(&file, 0x6173, 4);
 	} else if (_variant & GF_ZX_DEMO_CRASH) {
+		loadSpeakerFxZX(&file, 0x65c, 0x6b0);
 		loadMessagesFixedSize(&file, 0x364, 16, 9);
 		loadMessagesFixedSize(&file, 0x5901, 264, 5);
 		loadFonts(&file, 0x6589);
@@ -101,13 +147,28 @@ void EclipseEngine::drawZXUI(Graphics::Surface *surface) {
 	_gfx->readFromPalette(7, r, g, b);
 	uint32 gray = _gfx->_texturePixelFormat.ARGBToColor(0xFF, r, g, b);
 
+	_gfx->readFromPalette(2, r, g, b);
+	uint32 red = _gfx->_texturePixelFormat.ARGBToColor(0xFF, r, g, b);
+
 	int score = _gameStateVars[k8bitVariableScore];
+	int shield = _gameStateVars[k8bitVariableShield] * 100 / _maxShield;
+	shield = shield < 0 ? 0 : shield;
 
 	if (!_currentAreaMessages.empty())
 		drawStringInSurface(_currentAreaMessages[0], 102, 141, back, front, surface);
 
 	Common::String scoreStr = Common::String::format("%07d", score);
 	drawStringInSurface(scoreStr, 133, 11, back, gray, surface, 'Z' - '0' + 1);
+
+	Common::String shieldStr = Common::String::format("%d", shield);
+
+	int x = 171;
+	if (shield < 10)
+		x = 179;
+	else if (shield < 100)
+		x = 175;
+
+	drawStringInSurface(shieldStr, x, 161, back, red, surface);
 
 	drawStringInSurface(Common::String('0' + _angleRotationIndex - 3), 79, 141, back, front, surface, 'Z' - '$' + 1);
 	drawStringInSurface(Common::String('3' - _playerStepIndex), 63, 141, back, front, surface, 'Z' - '$' + 1);
@@ -118,6 +179,8 @@ void EclipseEngine::drawZXUI(Graphics::Surface *surface) {
 		drawStringInSurface("<", 240, 141, back, front, surface, 'Z' - '$' + 1);
 	}
 	drawAnalogClock(surface, 89, 172, back, back, gray);
+	drawEclipseIndicator(surface, 215, 3, front, gray);
+
 }
 
 } // End of namespace Freescape

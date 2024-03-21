@@ -38,6 +38,10 @@ namespace Action {
 PlaySecondaryMovie::~PlaySecondaryMovie() {
 	delete _decoder;
 
+	if (NancySceneState.getActiveMovie() == this) {
+		NancySceneState.setActiveMovie(nullptr);
+	}
+
 	if (_playerCursorAllowed == kNoPlayerCursorAllowed) {
 		g_nancy->setMouseEnabled(true);
 	}
@@ -148,7 +152,15 @@ void PlaySecondaryMovie::execute() {
 			g_nancy->setMouseEnabled(false);
 		}
 
+		NancySceneState.setActiveMovie(this);
+
 		_state = kRun;
+
+		if (Common::Rect(_decoder->getWidth(), _decoder->getHeight()) == NancySceneState.getViewport().getBounds()) {
+			g_nancy->_graphics->suppressNextDraw();
+			break;
+		}
+
 		// fall through
 	case kRun: {
 		int newFrame = NancySceneState.getSceneInfo().frameID;
@@ -237,6 +249,7 @@ void PlaySecondaryMovie::execute() {
 			}
 		}
 
+		NancySceneState.setActiveMovie(nullptr);
 		finishExecution();
 
 		// Allow looping

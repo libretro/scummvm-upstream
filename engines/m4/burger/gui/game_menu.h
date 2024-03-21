@@ -150,10 +150,11 @@ menuItem *menu_TextFieldAdd(guiMenu *myMenu, int32 tag, int32 x, int32 y, int32 
 	const char *prompt = nullptr, int32 specialtag = 0, CALLBACK callback = nullptr, bool transparent = false);
 
 //GAME MENU FUNCTIONS
-void CreateGameMenu(RGB8 *myPalette);
-void CreateOptionsMenu(RGB8 *myPalette);
-void CreateF2SaveMenu(RGB8 *myPalette);
-void CreateF3LoadMenu(RGB8 *myPalette);
+extern void CreateGameMenu(RGB8 *myPalette);
+extern void CreateOptionsMenu(RGB8 *myPalette);
+extern void CreateF2SaveMenu(RGB8 *myPalette);
+extern void CreateLoadMenu(RGB8 *myPalette);
+extern void CreateF3LoadMenu(RGB8 *myPalette);
 
 //routines used by the main menu
 void CreateLoadMenuFromMain(RGB8 *myPalette);
@@ -477,9 +478,9 @@ struct MenuGlobals {
 
 	//menu sprite series vars
 	char *menuSeriesResource = nullptr;
-	MemHandle menuSeriesHandle;
-	int32 menuSeriesOffset;
-	int32 menuSeriesPalOffset;
+	MemHandle menuSeriesHandle = nullptr;
+	int32 menuSeriesOffset = 0;
+	int32 menuSeriesPalOffset = 0;
 
 	Font *menuFont = nullptr;
 
@@ -505,8 +506,8 @@ struct MenuGlobals {
 	bool saveLoadFromHotkey = false;	// Come from hotkey, not through game menu
 	bool gameMenuFromMain = false;		// Come from main menu, not through escape
 
-	int32 remember_digi_volume;			// For cancelling out of the options menu
-	int32 remember_digestability;		// For cancelling out of the options menu
+	int32 remember_digi_volume = 0;		// For cancelling out of the options menu
+	int32 remember_digestability = 0;	// For cancelling out of the options menu
 
 	~MenuGlobals() {
 		_thumbnail.free();

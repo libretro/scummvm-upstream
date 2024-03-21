@@ -519,33 +519,18 @@ ActorList *ActorManager::get_actor_list() {
 	return _actors;
 }
 
-Actor *ActorManager::get_actor(uint8 actor_num) {
+Actor *ActorManager::get_actor(uint8 actor_num) const {
 	return actors[actor_num];
 }
 
 Actor *ActorManager::get_actor(uint16 x, uint16 y, uint8 z, bool inc_surrounding_objs, Actor *excluded_actor) {
-	uint16 i;
-
-	for (i = 0; i < ACTORMANAGER_MAX_ACTORS; i++) {
-		if (actors[i]->x == x && actors[i]->y == y && actors[i]->z == z && actors[i] != excluded_actor)
-			return actors[i];
-	}
-
-	if (inc_surrounding_objs) {
-		Obj *obj = obj_manager->get_obj(x, y, z);
-		if (obj && obj->is_actor_obj()) {
-			if (obj->obj_n == OBJ_U6_SILVER_SERPENT && Game::get_game()->get_game_type() == NUVIE_GAME_U6)
-				return actors[obj->qty];
-
-			return actors[obj->quality];
-		}
-
-		return get_multi_tile_actor(x, y, z);
-	}
-
-	return nullptr;
+	// Note: Semantics have changed slightly since moving to findActorAt():
+	// excluded_actor is now excluded when looking for multi-tile actors and surrounding objects
+	return findActorAt(x, y, z, [=](const Actor *a) {return a != excluded_actor;}, inc_surrounding_objs, inc_surrounding_objs);
 }
 
+#if 0
+// This was used as a helper method by get_actor() before it was changed to use findActorAt()
 Actor *ActorManager::get_multi_tile_actor(uint16 x, uint16 y, uint8 z) {
 	Actor *actor = get_actor(x + 1, y + 1, z, false); //search for 2x2 tile actor.
 	if (actor) {
@@ -571,6 +556,7 @@ Actor *ActorManager::get_multi_tile_actor(uint16 x, uint16 y, uint8 z) {
 
 	return nullptr;
 }
+#endif
 
 Actor *ActorManager::get_avatar() {
 	return get_actor(ACTOR_AVATAR_ID_N);
@@ -1188,6 +1174,36 @@ Std::set<Std::string> ActorManager::getCustomTileFilenames(const Common::Path &d
 	Std::set<Std::string> dataFiles = filelistDataDir.get_filenames();
 	files.insert(dataFiles.begin(), dataFiles.end());
 	return files;
+}
+
+Actor *ActorManager::findActorAtImpl(uint16 x, uint16 y, uint8 z, bool (*predicateWrapper)(void *predicate, const Actor *), bool incDoubleTile, bool incSurroundingObjs, void *predicate) const {
+
+	for (uint16 i = 0; i < ACTORMANAGER_MAX_ACTORS; ++i)
+		// Exclude surrounding objects here since we can get them directly via the AVL tree instead of going through earch actor's surrounding objects list
+		if (actors[i] && actors[i]->doesOccupyLocation(x, y, z, incDoubleTile, false) && predicateWrapper(predicate, actors[i]))
+			return actors[i];
+
+	if (incSurroundingObjs) {
+		// Look for actor objects (e.g. Silver Serpent body, Hydra parts, etc.)
+		const U6LList *const obj_list = obj_manager->get_obj_list(x, y, z);
+
+		if (obj_list) {
+			for (const U6Link *link = obj_list->start(); link != nullptr; link = link->next) {
+				const Obj *obj = (Obj *)link->data;
+
+				if (obj->is_actor_obj()) {
+					const uint8 actorNum = obj->obj_n == OBJ_U6_SILVER_SERPENT
+							&& Game::get_game()->get_game_type() == NUVIE_GAME_U6 ? obj->qty : obj->quality;
+					Actor *actor = get_actor(actorNum);
+					if (actor && predicateWrapper(predicate, actor))
+						return actor;
+				}
+			}
+		}
+	}
+
+	// No match
+	return nullptr;
 }
 
 } // End of namespace Nuvie

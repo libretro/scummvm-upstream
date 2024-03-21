@@ -102,8 +102,8 @@ void Walker::player_walker_callback(frac16 myMessage, machine *sender) {
 		case 21:
 		case 22:
 		case 25:
-			if (!_G(flags)[V298])
-				_G(digi).playRandom();
+			if (!_G(flags)[kDisableFootsteps])
+				_G(digi).playFootsteps();
 			break;
 
 		case 23:
@@ -123,7 +123,7 @@ void Walker::player_walker_callback(frac16 myMessage, machine *sender) {
 			break;
 
 		case 24:
-			if (!_G(flags)[V298])
+			if (!_G(flags)[kDisableFootsteps])
 				digi_play("hmmm", 1, 60, NO_TRIGGER, GLOBAL_SCENE);
 			break;
 
@@ -216,7 +216,7 @@ void Walker::wilbur_speech(const char *name, int trigger, int room, byte flags, 
 	_room = room;
 	_vol = vol;
 	_trigger = kernel_trigger_create(trigger);
-	_flag = (flags & 1) != 0;
+	_animateLips = (flags & 1) == 0;
 
 	_G(kernel).trigger_mode = KT_DAEMON;
 	kernel_trigger_dispatch_now(kWILBURS_SPEECH_START);
@@ -226,7 +226,7 @@ void Walker::wilbur_speech(const char *name, int trigger, int room, byte flags, 
 void Walker::wilbur_say() {
 	KernelTriggerType oldMode = _G(kernel).trigger_mode;
 
-	if (_flag && _G(player).walker_in_this_scene && _G(player).walker_visible)
+	if (_animateLips && _G(player).walker_in_this_scene && _G(player).walker_visible)
 		sendWSMessage(0x140000, 0, _G(my_walker), 0, 0, 1);
 
 	term_message("wilbur_say:  wilburs_talk_trigger = %d", _trigger);
@@ -264,7 +264,7 @@ bool Walker::wilbur_said(const char *list[][4]) {
 }
 
 void Walker::wilburs_speech_finished() {
-	if (_flag && !_G(player).walker_in_this_scene && !_G(player).walker_visible)
+	if (_animateLips && _G(player).walker_in_this_scene && _G(player).walker_visible)
 		sendWSMessage(0x150000, 0, _G(my_walker), 0, 0, 1);
 
 	term_message("wilburs_speech_finished: dispatching wilburs_talk_trigger = %d", _trigger);
@@ -284,6 +284,12 @@ void disable_player() {
 void wilbur_abduct(int trigger) {
 	player_set_commands_allowed(false);
 	digi_stop(1);
+
+	if (_G(executing) == INTERACTIVE_DEMO) {
+		_G(game).setRoom(608);
+		return;
+	}
+
 	digi_preload("999_004");
 
 	if (_G(my_walker) && _G(player).walker_in_this_scene && _G(player).walker_visible) {

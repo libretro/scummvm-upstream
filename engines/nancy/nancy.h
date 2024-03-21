@@ -42,8 +42,9 @@ class Serializer;
  * This is the namespace of the Nancy engine.
  *
  * Status of this engine:
- * The Vampire Diaries and Nancy Drew: Secrets can Kill are completable.
- * Every other game is untested but definitely unplayable
+ * The Vampire Diaries and all Nancy Drew games up to and including
+ * Nancy Drew: Ghost Dogs of Moon Lake are fully completable.
+ * Every other game is untested but definitely unplayable.
  *
  * Games using this engine:
  *	- The Vampire Diaries (1996)
@@ -114,8 +115,8 @@ public:
 
 	// Managers
 	ResourceManager *_resource;
-	GraphicsManager *_graphicsManager;
-	CursorManager *_cursorManager;
+	GraphicsManager *_graphics;
+	CursorManager *_cursor;
 	InputManager *_input;
 	SoundManager *_sound;
 

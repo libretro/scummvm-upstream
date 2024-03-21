@@ -67,7 +67,6 @@ class SeekableWriteStream;
 }
 namespace Graphics {
 class FontSJIS;
-class MacFontManager;
 }
 
 /**
@@ -610,7 +609,7 @@ protected:
 	virtual void loadLanguageBundle();
 	void loadCJKFont();
 	void loadKorFont();
-	void setupMusic(int midi, const Common::Path &macInstrumentFile);
+	void setupMusic(int midi);
 	void setTalkSpeed(int talkspeed);
 	int getTalkSpeed();
 
@@ -633,7 +632,7 @@ public:
 protected:
 	virtual void parseEvent(Common::Event event);
 
-	void waitForTimer(int quarterFrames);
+	void waitForTimer(int quarterFrames, bool freezeMacGui = false);
 	uint32 _lastWaitTime;
 
 	void setTimerAndShakeFrequency();
@@ -1587,7 +1586,6 @@ public:
 	Graphics::Surface _textSurface;
 	int _textSurfaceMultiplier = 0;
 
-	Graphics::MacFontManager *_macFontManager = nullptr;
 	Graphics::Surface *_macScreen = nullptr;
 	MacGui *_macGui = nullptr;
 
@@ -1619,6 +1617,7 @@ protected:
 	bool newLine();
 	void drawString(int a, const byte *msg);
 	virtual void fakeBidiString(byte *ltext, bool ignoreVerb, int ltextSize) const;
+	void wrapSegaCDText();
 	void debugMessage(const byte *msg);
 	virtual void showMessageDialog(const byte *msg);
 

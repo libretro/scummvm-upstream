@@ -5,11 +5,13 @@ MODULE_OBJS = \
   action/actionrecord.o \
   action/arfactory.o \
   action/autotext.o \
+  action/datarecords.o \
   action/inventoryrecords.o \
   action/navigationrecords.o \
   action/soundrecords.o \
   action/miscrecords.o \
   action/conversation.o \
+  action/interactivevideo.o \
   action/overlay.o \
   action/secondarymovie.o \
   action/secondaryvideo.o \
@@ -35,6 +37,7 @@ MODULE_OBJS = \
   action/puzzle/setplayerclock.o \
   action/puzzle/sliderpuzzle.o \
   action/puzzle/soundequalizerpuzzle.o \
+  action/puzzle/spigotpuzzle.o \
   action/puzzle/tangrampuzzle.o \
   action/puzzle/telephone.o \
   action/puzzle/towerpuzzle.o \

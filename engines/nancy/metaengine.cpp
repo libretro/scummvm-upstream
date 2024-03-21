@@ -146,7 +146,7 @@ Common::Error NancyMetaEngine::createInstance(OSystem *syst, Engine **engine, co
 	}
 }
 
-int NancyMetaEngine::getMaximumSaveSlot() const { return 8; }
+int NancyMetaEngine::getMaximumSaveSlot() const { int r = ConfMan.getInt("nancy_max_saves"); return r ? r : AdvancedMetaEngine::getMaximumSaveSlot(); }
 
 SaveStateDescriptor NancyMetaEngine::querySaveMetaInfos(const char *target, int slot) const {
 	SaveStateDescriptor ret = AdvancedMetaEngine::querySaveMetaInfos(target, slot);
@@ -172,7 +172,7 @@ void NancyMetaEngine::getSavegameThumbnail(Graphics::Surface &thumb) {
 
 	// Make sure we always trigger a screen redraw to support second chance saves
 	Graphics::ManagedSurface screenshotSurf;
-	Nancy::g_nancy->_graphicsManager->screenshotScreen(screenshotSurf);
+	Nancy::g_nancy->_graphics->screenshotScreen(screenshotSurf);
 	if (!screenshotSurf.empty() && createThumbnail(&thumb, &screenshotSurf)) {
 		return;
 	}
@@ -186,6 +186,7 @@ void NancyMetaEngine::registerDefaultSettings(const Common::String &target) cons
 
 	ConfMan.registerDefault("player_speech", true);
 	ConfMan.registerDefault("character_speech", true);
+	ConfMan.registerDefault("nancy_max_saves", 999);
 }
 
 const ADExtraGuiOptionsMap *NancyMetaEngine::getAdvancedExtraGuiOptions() const {

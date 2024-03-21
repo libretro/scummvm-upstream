@@ -39,7 +39,6 @@
 #include "graphics/cursorman.h"
 #include "graphics/font.h"
 #include "graphics/fontman.h"
-#include "graphics/palette.h"
 #include "graphics/surface.h"
 #include "graphics/scaler/downscaler.h"
 
@@ -65,9 +64,9 @@ void PlumbersGameWindows::startGraphics() {
 
 	Graphics::ModeWithFormatList modes = {
 		// First try for a 640x480 mode
-		Graphics::ModeWithFormat(640, 480),
+		Graphics::ModeWithFormat(640, 480, Graphics::PixelFormat::createFormatCLUT8()),
 		// System doesn't support it, so fall back on 320x240 mode
-		Graphics::ModeWithFormat(320, 240),
+		Graphics::ModeWithFormat(320, 240, Graphics::PixelFormat::createFormatCLUT8()),
 	};
 
 	int modeIdx = initGraphicsAny(modes);

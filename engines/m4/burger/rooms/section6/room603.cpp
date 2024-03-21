@@ -178,11 +178,11 @@ Room603::Room603() : Section6Room() {
 void Room603::init() {
 	player_set_commands_allowed(false);
 	_G(flags)[V246] = 0;
-	_G(flags)[V264] = 0;
+	_G(flags)[kStandingOnKibble] = 0;
 
 	if (_G(flags)[V269] == 1)
 		series_show("602spill", 0x900, 0, -1, -1, 0, 100, 80, 0);
-	_G(kernel).continue_handling_trigger = _G(flags)[V269] == 1 ? 1 : 0;
+	_G(kernel).call_daemon_every_loop = _G(flags)[V269] == 1;
 
 	if (_G(flags)[V270] == 6000) {
 		hotspot_set_active("WATER", true);
@@ -260,6 +260,8 @@ void Room603::daemon() {
 				_val1 = 24;
 				series_play_with_breaks(PLAY14, "603hole", 0xfff, -1, 6);
 			} else {
+				_G(wilbur_should) = 20;
+				_val1 = 27;
 				series_play_with_breaks(PLAY15, "603hole", 0xfff, kCHANGE_WILBUR_ANIMATION, 2);
 			}
 
@@ -402,6 +404,7 @@ void Room603::daemon() {
 			ws_demand_facing(8);
 			ws_hide_walker();
 			Section6::_state2 = 1;
+			_G(roomVal7) = 1;
 
 			if (_G(flags)[kHampsterState] == 6007) {
 				series_play_with_breaks(PLAY4, "603wi01", 0xdff, 6010, 3);
@@ -564,16 +567,17 @@ void Room603::daemon() {
 				_G(player_info).y > 284 && _G(player_info).y < 305 &&
 				_G(player_info).facing > 2 && _G(player_info).facing < 7 &&
 				_G(flags)[V269] == 1) {
-			if (_G(flags)[V264]) {
-				_G(flags)[V264] = 1;
+			if (_G(flags)[kStandingOnKibble]) {
+				_G(flags)[kStandingOnKibble] = 1;
 			} else {
+				_G(flags)[kStandingOnKibble] = 1;
 				term_message("Wilbur now slips on kibble!");
 				intr_cancel_sentence();
 				_G(wilbur_should) = 12;
 				kernel_trigger_dispatch_now(kCHANGE_WILBUR_ANIMATION);
 			}
 		} else {
-			_G(flags)[V264] = 0;
+			_G(flags)[kStandingOnKibble] = 0;
 		}
 		break;
 
@@ -586,7 +590,7 @@ void Room603::daemon() {
 void Room603::pre_parser() {
 	_G(kernel).trigger_mode = KT_DAEMON;
 
-	if (_G(flags)[kHampsterState] == 6000 && (player_said("TUBE ") || player_said("TUBE  "))) {
+	if (_G(flags)[kHampsterState] == 6006 && (player_said("TUBE ") || player_said("TUBE  "))) {
 		term_message("Can't leave through back tube as gerbils are in the way.");
 		wilbur_speech("600w003");
 		intr_cancel_sentence();

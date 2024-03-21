@@ -36,7 +36,6 @@
 
 #include "graphics/cursorman.h"
 #include "graphics/maccursor.h"
-#include "graphics/palette.h"
 #include "graphics/surface.h"
 #include "graphics/pixelformat.h"
 #include "graphics/wincursor.h"
@@ -288,6 +287,9 @@ Common::Error MTropolisEngine::run() {
 	if (selectedMode == enhancedColorDepthMode)
 		fakeMode = preferredColorDepthMode;
 
+	if (_gameDescription->gameID == GID_OBSIDIAN && ConfMan.getBool("mtropolis_mod_obsidian_widescreen"))
+		preferredHeight = 360;
+
 	// Set active mode
 	_runtime->switchDisplayMode(selectedMode, fakeMode);
 	_runtime->setDisplayResolution(preferredWidth, preferredHeight);
@@ -322,7 +324,6 @@ Common::Error MTropolisEngine::run() {
 		if (ConfMan.getBool("mtropolis_mod_obsidian_widescreen")) {
 			_runtime->getHacks().reportDisplaySize = Common::Point(640, 480);
 
-			preferredHeight = 360;
 			HackSuites::addObsidianImprovedWidescreen(*_gameDescription, _runtime->getHacks());
 		}
 	} else if (_gameDescription->gameID == GID_MTI) {

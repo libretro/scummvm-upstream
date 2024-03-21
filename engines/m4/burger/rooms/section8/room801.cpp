@@ -27,6 +27,11 @@ namespace M4 {
 namespace Burger {
 namespace Rooms {
 
+enum {
+	kCHANGE_FLUMIX_ANIMATION = 15,
+	kCHANGE_ZLARG_ANIMATION = 16
+};
+
 static const seriesStreamBreak SERIES1[] = {
 	{ 0, "805_001", 3,  80, -1, 0, nullptr, 0 },
 	{ 1, "805w001", 1, 255, -1, 0, nullptr, 0 },
@@ -131,7 +136,7 @@ void Room801::init() {
 	player_set_commands_allowed(false);
 	pal_fade_set_start(0);
 	pal_fade_init(_G(kernel).first_fade, 255, 0, 0, -1);
-	_val1 = 10;
+	_wilburMode = 10;
 	digi_preload("800_001");
 
 	if (_G(flags)[GLB_TEMP_5] == 1) {
@@ -266,10 +271,10 @@ void Room801::daemon() {
 		} else {
 			_G(wilbur_should) = getWilburShould();
 			_G(flumix_should) = 2;
-			_val3 = 2;
+			_zlargShould = 2;
 			kernel_trigger_dispatch_now(kCHANGE_WILBUR_ANIMATION);
-			kernel_trigger_dispatch_now(16);
-			kernel_trigger_dispatch_now(15);
+			kernel_trigger_dispatch_now(kCHANGE_ZLARG_ANIMATION);
+			kernel_trigger_dispatch_now(kCHANGE_FLUMIX_ANIMATION);
 
 			loadSeries1();
 			kernel_timing_trigger(6, 18);
@@ -288,12 +293,12 @@ void Room801::daemon() {
 
 		_G(wilbur_should) = getWilburShould();
 		_G(flumix_should) = 2;
-		_val3 = 2;
+		_zlargShould = 2;
 
 		_series9 = series_play("804FL01", 2, 0, -1, 6, -1);
 		kernel_trigger_dispatch_now(kCHANGE_WILBUR_ANIMATION);
-		kernel_trigger_dispatch_now(16);
-		kernel_trigger_dispatch_now(15);
+		kernel_trigger_dispatch_now(kCHANGE_ZLARG_ANIMATION);
+		kernel_trigger_dispatch_now(kCHANGE_FLUMIX_ANIMATION);
 		conv_load_and_prepare("conv80", 18);
 		player_set_commands_allowed(true);
 		conv_play_curr();
@@ -309,7 +314,7 @@ void Room801::daemon() {
 			if (who <= 0) {
 				if ((node == 3 && entry == 0) || (node == 4 && entry == 0) ||
 					(node == 6 && entry == 1) || (node == 8 && entry == 0)) {
-					_val3 = 13;
+					_zlargShould = 13;
 				} else {
 					_G(flumix_should) = 13;
 				}
@@ -319,12 +324,11 @@ void Room801::daemon() {
 		}
 		break;
 
-	case 15:
-		// Flumix
+	case kCHANGE_FLUMIX_ANIMATION:
 		switch (_G(flumix_should)) {
 		case 3:
 			terminateMachineAndNull(_series10);
-			_series10 = series_show("804FLX01", 1);
+			_series10 = series_show("804FLX01", 1, 0, -1, -1, 8);
 			digi_play("804_006", 2);
 			kernel_timing_trigger(60, 19);
 			break;
@@ -332,7 +336,7 @@ void Room801::daemon() {
 		case 12:
 			terminateMachineAndNull(_series10);
 			_G(flumix_should) = 2;
-			kernel_trigger_dispatch_now(15);
+			kernel_trigger_dispatch_now(kCHANGE_FLUMIX_ANIMATION);
 			conv_resume_curr();
 			break;
 
@@ -340,57 +344,56 @@ void Room801::daemon() {
 			_G(flumix_should) = 12;
 			_G(wilbur_should) = 6;
 			_series10 = series_play("804FLT01", 1, 4, -1, 6, -1);
-			digi_play(conv_sound_to_play(), 1, 255, 15);
+			digi_play(conv_sound_to_play(), 1, 255, kCHANGE_FLUMIX_ANIMATION);
 			break;
 
 		default:
 			_G(flumix_should) = 2;
-			_series10 = series_show("804FL01", 1, 0, 15, 30, 0);
+			_series10 = series_show("804FL01", 1, 0, kCHANGE_FLUMIX_ANIMATION, 30, 0);
 			break;
 		}
 		break;
 
-	case 16:
-		// Zlarg
-		switch (_val3) {
+	case kCHANGE_ZLARG_ANIMATION:
+		switch (_zlargShould) {
 		case 2:
 			if (imath_ranged_rand(0, 15) <= 12) {
-				_val3 = 2;
-				_series11 = series_show("804ZL01", 1, 0, 16, 30, 0);
+				_zlargShould = 2;
+				_series11 = series_show("804ZL01", 1, 0, kCHANGE_ZLARG_ANIMATION, 30, 0);
 			} else {
-				_val3 = 1;
-				kernel_trigger_dispatch_now(16);
+				_zlargShould = 1;
+				kernel_trigger_dispatch_now(kCHANGE_ZLARG_ANIMATION);
 			}
 			break;
 
 		case 12:
 			terminateMachineAndNull(_series11);
-			_val3 = 2;
-			kernel_trigger_dispatch_now(16);
+			_zlargShould = 2;
+			kernel_trigger_dispatch_now(kCHANGE_ZLARG_ANIMATION);
 			conv_resume_curr();
 			break;
 
 		case 13:
-			_val3 = 12;
+			_zlargShould = 12;
 			_G(wilbur_should) = 4;
 			_series11 = series_play("804ZLT01", 1, 4, -1, 6, -1);
-			digi_play(conv_sound_to_play(), 1, 255, 16);
+			digi_play(conv_sound_to_play(), 1, 255, kCHANGE_ZLARG_ANIMATION);
 			break;
 
 		default:
-			_val3 = 2;
-			_series11 = series_play("804ZFX01", 1, 0, 16, 6, 0);
+			_zlargShould = 2;
+			_series11 = series_play("804ZFX01", 1, 0, kCHANGE_ZLARG_ANIMATION, 6, 0);
 			break;
 		}
 		break;
 
-	case  18:
+	case 18:
 		// Beginning the first test
 		terminateMachineAndNull(_series10);
 		terminateMachineAndNull(_series9);
 		_G(flumix_should) = 3;
 		_series10 = series_play("804FLX01", 1, 16, -1, 6, 0, 100, 0, 0, 0, 7);
-		kernel_timing_trigger(180, 15);
+		kernel_timing_trigger(180, kCHANGE_FLUMIX_ANIMATION);
 		break;
 
 	case 19:
@@ -544,14 +547,14 @@ void Room801::daemon() {
 		break;
 
 	case kCHANGE_WILBUR_ANIMATION:
-		switch (_val1) {
+		switch (_wilburMode) {
 		case 9:
 			switch (_G(wilbur_should)) {
 			case 5:
 			case 6:
 			case 7:
 				_series12 = series_play("804WI04", 0x200, 2, kCHANGE_WILBUR_ANIMATION, 6, 0);
-				_val1 = 11;
+				_wilburMode = 11;
 				break;
 
 			default:
@@ -566,7 +569,7 @@ void Room801::daemon() {
 			case 4:
 			case 7:
 				_series12 = series_play("804WI05", 0x200, 2, kCHANGE_WILBUR_ANIMATION, 6, 0);
-				_val1 = 11;
+				_wilburMode = 11;
 				break;
 
 			case 5:
@@ -593,13 +596,13 @@ void Room801::daemon() {
 			switch (_G(wilbur_should)) {
 			case 4:
 				_series12 = series_play("804WI04", 0x200, 0, kCHANGE_WILBUR_ANIMATION, 6, 0);
-				_val1 = 9;
+				_wilburMode = 9;
 				break;
 
 			case 5:
 			case 6:
 				_series12 = series_play("804WI05", 0x200, 0, kCHANGE_WILBUR_ANIMATION, 6, 0);
-				_val1 = 10;
+				_wilburMode = 10;
 				break;
 
 			case 7:
@@ -650,10 +653,10 @@ int Room801::getWilburShould() const {
 }
 
 void Room801::loadSeries1() {
-	_series5 = series_play("804FX01", 0x400, 0, -1, 10);
-	_series6 = series_play("804FX02", 0x400, 0, -1, 45);
-	_series7 = series_play("804FX03", 0x400, 0, -1, 10);
-	_series8 = series_play("804FX04", 0x400, 0, -1, 10);
+	_series5 = series_play("804FX01", 0x400, 0, -1, 10, -1);
+	_series6 = series_play("804FX02", 0x400, 0, -1, 45, -1);
+	_series7 = series_play("804FX03", 0x400, 0, -1, 10, -1);
+	_series8 = series_play("804FX04", 0x400, 0, -1, 10, -1);
 }
 
 void Room801::loadSeries2() {

@@ -53,11 +53,38 @@ namespace M4 {
 
 #define MAX_ASSET_HASH		255
 
+/**
+ * This tries to encapsulate an uint32 * that also does endian conversion automatically.
+ * GetNextInt32 can't just return values directly, because in the case of some chunk
+ * types, the underlying data being pointed to gets byte swapped.
+ */
+class IntPointer {
+private:
+	int32 *_ptr = nullptr;
 
-static bool GetNextint32(char **assetPtr, char *endOfAssetBlock, uint32 **returnVal);
+public:
+	void set(int32 *ptr) { _ptr = ptr; }
+	void swap() { *_ptr = SWAP_INT32(*_ptr); }
+	int32 *ptr() const { return _ptr; }
+	int32 operator*() const { return READ_LE_INT32(_ptr); }
+};
+
 static int32 ProcessCELS(const char * /*assetName*/, char **parseAssetPtr, char * /*mainAssetPtr*/, char *endOfAssetBlock,
 	int32 **dataOffset, int32 **palDataOffset, RGB8 *myPalette);
 static void RestoreSSPaletteInfo(RGB8 *myPalette, int32 *palPtr);
+
+static bool GetNextint32(char **assetPtr, char *endOfAssetBlock, IntPointer &returnVal) {
+	// Check to see if we still have an int32 available
+	if ((endOfAssetBlock - *assetPtr) < 4) {
+		return false;
+	}
+
+	// Get the next int32
+	returnVal.set((int32 *)*assetPtr);
+	*assetPtr += 4;
+
+	return true;
+}
 
 bool InitWSAssets() {
 	int32 i;
@@ -143,6 +170,7 @@ bool InitWSAssets() {
 
 bool ClearWSAssets(uint32 assetType, int32 minHash, int32 maxHash) {
 	int32 i;
+	assert(maxHash >= minHash);
 
 	if (!_GWS(wsloaderInitialized)) {
 		return false;
@@ -248,10 +276,10 @@ bool LoadWSAssets(const char *wsAssetName, RGB8 *myPalette) {
 	MemHandle workHandle;
 	char *mainAssetPtr, *parseAssetPtr, *endOfAssetBlock;
 	uint32 *tempPtr;
-	uint32 *chunkType, *chunkSize, *chunkHash;
+	IntPointer chunkType, chunkSize, chunkHash;
 	bool finished, chunkSwap;
 	int32 *celsPtr, *palPtr;
-	uint32 i;
+	int32 i;
 	int32 assetSize;
 
 	// Check that the loader has been initialized
@@ -276,17 +304,17 @@ bool LoadWSAssets(const char *wsAssetName, RGB8 *myPalette) {
 	finished = false;
 
 	// Get the first chunkType
-	if (!GetNextint32(&parseAssetPtr, endOfAssetBlock, &chunkType)) {
+	if (!GetNextint32(&parseAssetPtr, endOfAssetBlock, chunkType)) {
 		finished = true;
 	}
 
 	// Process each chunk according to type
 	while (!finished) {
 		// Read in the chunk size and hash number
-		if (!GetNextint32(&parseAssetPtr, endOfAssetBlock, &chunkSize)) {
+		if (!GetNextint32(&parseAssetPtr, endOfAssetBlock, chunkSize)) {
 			error_show(FL, 'WSLE', "Asset Name: %s", wsAssetName);
 		}
-		if (!GetNextint32(&parseAssetPtr, endOfAssetBlock, &chunkHash)) {
+		if (!GetNextint32(&parseAssetPtr, endOfAssetBlock, chunkHash)) {
 			error_show(FL, 'WSLE', "Asset Name: %s", wsAssetName);
 		}
 
@@ -296,9 +324,9 @@ bool LoadWSAssets(const char *wsAssetName, RGB8 *myPalette) {
 		// Chunk is a machine chunk
 		case CHUNK_HCAM:
 			// Byte swap the type, size and hash and continue through case CHUNK_MACH.
-			*chunkType = SWAP_INT32(*chunkType);
-			*chunkSize = SWAP_INT32(*chunkSize);
-			*chunkHash = SWAP_INT32(*chunkHash);
+			chunkType.swap();
+			chunkSize.swap();
+			chunkHash.swap();
 			chunkSwap = true;
 			// Fall through
 
@@ -335,9 +363,9 @@ bool LoadWSAssets(const char *wsAssetName, RGB8 *myPalette) {
 		case CHUNK_UQES:
 			// Chunk is a machine chunk
 			// Byte swap the type, size and hash and continue through case CHUNK_SEQU.
-			*chunkType = SWAP_INT32(*chunkType);
-			*chunkSize = SWAP_INT32(*chunkSize);
-			*chunkHash = SWAP_INT32(*chunkHash);
+			chunkType.swap();
+			chunkSize.swap();
+			chunkHash.swap();
 			chunkSwap = true;
 			// Fall through
 
@@ -374,9 +402,9 @@ bool LoadWSAssets(const char *wsAssetName, RGB8 *myPalette) {
 		case CHUNK_ATAD:
 			// Chunk is a data chunk
 			// Byte swap the type, size and hash and continue through case CHUNK_DATA.
-			*chunkType = SWAP_INT32(*chunkType);
-			*chunkSize = SWAP_INT32(*chunkSize);
-			*chunkHash = SWAP_INT32(*chunkHash);
+			chunkType.swap();
+			chunkSize.swap();
+			chunkHash.swap();
 			chunkSwap = true;
 			// Fall through
 
@@ -412,17 +440,18 @@ bool LoadWSAssets(const char *wsAssetName, RGB8 *myPalette) {
 
 		case CHUNK_SLEC:
 			// Byte swap the type, size and hash and continue through case CHUNK_CELS.
-			*chunkType = SWAP_INT32(*chunkType);
-			*chunkSize = SWAP_INT32(*chunkSize);
-			*chunkHash = SWAP_INT32(*chunkHash);
+			chunkType.swap();
+			chunkSize.swap();
+			chunkHash.swap();
 			chunkSwap = true;
 			// Fall through
 
-		case CHUNK_CELS:
+		case CHUNK_CELS: {
 			// Check the validity of the cels hash number, and clear it
 			if (*chunkHash > MAX_ASSET_HASH) {
 				error_show(FL, 'WSLA', "Asset Name: %s, CELS hash was: %d", wsAssetName, *chunkHash);
 			}
+
 			ClearWSAssets(_WS_ASSET_CELS, *chunkHash, *chunkHash);
 
 			// Store the resource name
@@ -447,6 +476,7 @@ bool LoadWSAssets(const char *wsAssetName, RGB8 *myPalette) {
 				_GWS(globalCELSPaloffsets)[*chunkHash] = -1;
 			}
 			break;
+		}
 
 		default:
 			error_show(FL, 'WSLT', "Asset Name: %s, %d bytes into the file.", wsAssetName,
@@ -455,7 +485,7 @@ bool LoadWSAssets(const char *wsAssetName, RGB8 *myPalette) {
 		}
 
 		// Read the next chunkType, or signal we are finished
-		if (!GetNextint32(&parseAssetPtr, endOfAssetBlock, &chunkType)) {
+		if (!GetNextint32(&parseAssetPtr, endOfAssetBlock, chunkType)) {
 			finished = true;
 		}
 	}
@@ -490,7 +520,7 @@ M4sprite *CreateSprite(MemHandle resourceHandle, int32 handleOffset, int32 index
 	// Check that the index into the series requested is within a valid range
 	numCels = FROM_LE_32(celsPtr[CELS_COUNT]);
 	if (index >= (int)numCels) {
-		ws_LogErrorMsg(FL, "Sprite index out of range - max index: %d, requested index: %d", numCels - 1, index);
+		ws_LogErrorMsg(FL, "CreateSprite: Sprite index out of range - max index: %d, requested index: %d", numCels - 1, index);
 		return nullptr;
 	}
 
@@ -503,7 +533,7 @@ M4sprite *CreateSprite(MemHandle resourceHandle, int32 handleOffset, int32 index
 
 	// Set the stream boolean
 	if (streamSeries) {
-		if (FROM_LE_32(myCelSource[CELS_STREAM]))
+		if (myCelSource[CELS_STREAM])
 			*streamSeries = true;
 		else
 			*streamSeries = false;
@@ -764,24 +794,12 @@ int32 AddWSAssetCELS(const char *wsAssetName, int32 hash, RGB8 *myPalette) {
 	return -1;
 }
 
-static bool GetNextint32(char **assetPtr, char *endOfAssetBlock, uint32 **returnVal) {
-	// Check to see if we still have an int32 available
-	if ((endOfAssetBlock - *assetPtr) < 4) {
-		return false;
-	}
-
-	// Get the next int32
-	*returnVal = (uint32 *)*assetPtr;
-	*assetPtr += 4;
-
-	return true;
-}
-
 static int32 ProcessCELS(const char * /*assetName*/, char **parseAssetPtr, char * /*mainAssetPtr*/, char *endOfAssetBlock,
-	int32 **dataOffset, int32 **palDataOffset, RGB8 *myPalette) {
-	uint32 *celsType, *numColors, *palData;
-	uint32 *tempPtr, *celsSize, *data, *dataPtr, *offsetPtr, i, j, *header, *format;
-	bool	byteSwap;
+		int32 **dataOffset, int32 **palDataOffset, RGB8 *myPalette) {
+	IntPointer celsType, numColors, celsSize;
+	int32 *tempPtr, *data, *dataPtr, *offsetPtr, *palData, i, j;
+	IntPointer header, format;
+	bool byteSwap;
 
 	if (!_GWS(wsloaderInitialized))
 		return -1;
@@ -790,19 +808,19 @@ static int32 ProcessCELS(const char * /*assetName*/, char **parseAssetPtr, char 
 	*palDataOffset = nullptr;
 
 	// Get the header and the format
-	if (!GetNextint32(parseAssetPtr, endOfAssetBlock, &header)) {
+	if (!GetNextint32(parseAssetPtr, endOfAssetBlock, header)) {
 		ws_LogErrorMsg(FL, "Unable to get the SS header");
 		return -1;
 	}
-	if (!GetNextint32(parseAssetPtr, endOfAssetBlock, &format)) {
+	if (!GetNextint32(parseAssetPtr, endOfAssetBlock, format)) {
 		ws_LogErrorMsg(FL, "Unable to get the SS format");
 		return -1;
 	}
 
 	// Make sure the file is tagged "M4SS" (or "SS4M")
 	if (*header == HEAD_SS4M) {
-		*header = SWAP_INT32(*header);
-		*format = SWAP_INT32(*format);
+		header.swap();
+		format.swap();
 	} else if (*header != HEAD_M4SS) {
 		ws_LogErrorMsg(FL, "SS chunk is not a valid M4SS chunk.");
 		return -1;
@@ -815,7 +833,7 @@ static int32 ProcessCELS(const char * /*assetName*/, char **parseAssetPtr, char 
 	}
 
 	// Get the CELS chunk type - either PAL information, or the actual SS info
-	if (!GetNextint32(parseAssetPtr, endOfAssetBlock, &celsType)) {
+	if (!GetNextint32(parseAssetPtr, endOfAssetBlock, celsType)) {
 		ws_LogErrorMsg(FL, "Unable to read the SS chunk type.");
 		return -1;
 	}
@@ -825,19 +843,19 @@ static int32 ProcessCELS(const char * /*assetName*/, char **parseAssetPtr, char 
 	if ((*celsType == CELS__PAL) || (*celsType == CELS_LAP_)) {
 
 		// Read the chunk size, and the number of palette colors, and byte-swap if necessary
-		if (!GetNextint32(parseAssetPtr, endOfAssetBlock, &celsSize)) {
+		if (!GetNextint32(parseAssetPtr, endOfAssetBlock, celsSize)) {
 			ws_LogErrorMsg(FL, "Unable to read the SS PAL chunk size.");
 			return -1;
 		}
-		if (!GetNextint32(parseAssetPtr, endOfAssetBlock, &numColors)) {
+		if (!GetNextint32(parseAssetPtr, endOfAssetBlock, numColors)) {
 			ws_LogErrorMsg(FL, "Unable to read the SS PAL number of colors.");
 			return -1;
 		}
 
 		if (*celsType == CELS_LAP_) {
-			*celsType = SWAP_INT32(*celsType);
-			*celsSize = SWAP_INT32(*celsSize);
-			*numColors = SWAP_INT32(*numColors);
+			celsType.swap();
+			celsSize.swap();
+			numColors.swap();
 			byteSwap = true;
 		}
 
@@ -848,8 +866,8 @@ static int32 ProcessCELS(const char * /*assetName*/, char **parseAssetPtr, char 
 		}
 
 		// The asset block offset for palData should begin with the number of colors
-		*palDataOffset = (int32 *)numColors;
-		palData = (uint32 *)numColors;
+		*palDataOffset = numColors.ptr();
+		palData = numColors.ptr();
 
 		if (((intptr)endOfAssetBlock - (intptr)(*parseAssetPtr)) < ((int32)(*celsSize) - 8)) {
 			ws_LogErrorMsg(FL, "Pal info is larger than asset block.");
@@ -861,7 +879,7 @@ static int32 ProcessCELS(const char * /*assetName*/, char **parseAssetPtr, char 
 		// The data is always read in low byte first, but we need it high byte first
 		// regardless of the endianness of the machine.
 		if (byteSwap) {
-			tempPtr = (uint32 *)&numColors[1];
+			tempPtr = numColors.ptr() + 1;
 			for (i = 0; i < *numColors; i++) {
 				*tempPtr = SWAP_INT32(*tempPtr);
 				tempPtr++;
@@ -872,8 +890,8 @@ static int32 ProcessCELS(const char * /*assetName*/, char **parseAssetPtr, char 
 
 		// The palette info has been processed, now it can be stored
 		if (myPalette) {
-			tempPtr = (uint32 *)(&palData[1]);
-			for (i = 0; i < (uint32)*numColors; i++) {
+			tempPtr = (int32 *)(&palData[1]);
+			for (i = 0; i < *numColors; i++) {
 				j = (*tempPtr & 0xff000000) >> 24;
 				myPalette[j].r = (*tempPtr & 0x00ff0000) >> 14;
 				myPalette[j].g = (*tempPtr & 0x0000ff00) >> 6;
@@ -884,7 +902,7 @@ static int32 ProcessCELS(const char * /*assetName*/, char **parseAssetPtr, char 
 
 		byteSwap = false;
 		// Pal chunk has been processed, get the next chunk type
-		if (!GetNextint32(parseAssetPtr, endOfAssetBlock, &celsType)) {
+		if (!GetNextint32(parseAssetPtr, endOfAssetBlock, celsType)) {
 			ws_LogErrorMsg(FL, "Unable to read the SS chunk type.");
 			return -1;
 		}
@@ -897,21 +915,21 @@ static int32 ProcessCELS(const char * /*assetName*/, char **parseAssetPtr, char 
 	}
 
 	// Read in the chunk size
-	if (!GetNextint32(parseAssetPtr, endOfAssetBlock, &celsSize)) {
+	if (!GetNextint32(parseAssetPtr, endOfAssetBlock, celsSize)) {
 		ws_LogErrorMsg(FL, "Unable to read the SS chunk size.");
 		return -1;
 	}
 
 	// Byteswap if necessary
 	if (*celsType == CELS_SS__) {
-		*celsType = SWAP_INT32(*celsType);
-		*celsSize = SWAP_INT32(*celsSize);
+		celsType.swap();
+		celsSize.swap();
 		byteSwap = true;
 	}
 
 	// The asset block offset for the cel should begin with the celsType
-	*dataOffset = (int32 *)celsType;
-	data = (uint32 *)celsType;
+	*dataOffset = (int32 *)celsType.ptr();
+	data = (int32 *)celsType.ptr();
 
 	// Verify that we actually got legitimate values
 	if ((int32)(*celsSize) <= 0) {
@@ -955,7 +973,7 @@ static int32 ProcessCELS(const char * /*assetName*/, char **parseAssetPtr, char 
 		for (i = 0; i < data[CELS_COUNT]; i++) {
 
 			// The beginning of sprite i is the dataPtr + the number of bytes in the offset table
-			tempPtr = (uint32 *)((intptr)dataPtr + offsetPtr[i]);
+			tempPtr = (int32 *)((intptr)dataPtr + offsetPtr[i]);
 
 			// Byteswap the individual sprite's header
 			for (j = 0; j < SS_INDV_HEAD; j++) {
@@ -1200,7 +1218,7 @@ int32 GetWSAssetCELCount(uint32 hash) {
 
 	// Find and return the number of sprites in the SS
 	celsPtr = (uint32 *)((intptr)*(_GWS(globalCELSHandles)[hash]) + (uint32)(_GWS(globalCELSoffsets)[hash]));
-	return FROM_LE_32(celsPtr[CELS_COUNT]);
+	return celsPtr[CELS_COUNT];
 }
 
 
@@ -1227,7 +1245,7 @@ int32 GetWSAssetCELFrameRate(uint32 hash) {
 
 	// Find and return the frame rate for the SS
 	celsPtr = (uint32 *)((intptr)*(_GWS(globalCELSHandles)[hash]) + (uint32)(_GWS(globalCELSoffsets)[hash]));
-	return FROM_LE_32(celsPtr[CELS_FRAME_RATE]);
+	return celsPtr[CELS_FRAME_RATE];
 }
 
 
@@ -1254,7 +1272,7 @@ int32 GetWSAssetCELPixSpeed(uint32 hash) {
 
 	// Find and return the pix speed for the SS
 	celsPtr = (uint32 *)((intptr)*(_GWS(globalCELSHandles)[hash]) + (uint32)(_GWS(globalCELSoffsets)[hash]));
-	return FROM_LE_32(celsPtr[CELS_PIX_SPEED]);
+	return celsPtr[CELS_PIX_SPEED];
 }
 
 int32 ws_get_sprite_width(uint32 hash, int32 index) {
@@ -1283,9 +1301,10 @@ int32 ws_get_sprite_width(uint32 hash, int32 index) {
 	celsPtr = (uint32 *)((intptr)*(_GWS(globalCELSHandles)[hash]) + (uint32)(_GWS(globalCELSoffsets)[hash]));
 
 	// Check that the index into the series requested is within a valid range
-	numCels = FROM_LE_32(celsPtr[CELS_COUNT]);
+	numCels = celsPtr[CELS_COUNT];
 	if (index >= numCels) {
-		ws_LogErrorMsg(FL, "Sprite index out of range - max index: %d, requested index: %d", numCels - 1, index);
+		ws_LogErrorMsg(FL, "ws_get_sprite_width: Sprite index out of range - max index: %d, requested index: %d, hash: %d",
+			numCels - 1, index, hash);
 		return -1;
 	}
 
@@ -1296,9 +1315,9 @@ int32 ws_get_sprite_width(uint32 hash, int32 index) {
 	data = &celsPtr[CELS_OFFSETS + numCels];
 
 	// Find the sprite data for the specific sprite in the series
-	myCelSource = (uint32 *)((intptr)data + FROM_LE_32(offsets[index]));
+	myCelSource = (uint32 *)((intptr)data + offsets[index]);
 
-	return FROM_LE_32(myCelSource[CELS_W]);
+	return myCelSource[CELS_W];
 }
 
 int32 ws_get_sprite_height(uint32 hash, int32 index) {
@@ -1327,9 +1346,10 @@ int32 ws_get_sprite_height(uint32 hash, int32 index) {
 	celsPtr = (uint32 *)((intptr)*(_GWS(globalCELSHandles)[hash]) + (uint32)(_GWS(globalCELSoffsets)[hash]));
 
 	// Check that the index into the series requested is within a valid range
-	numCels = FROM_LE_32(celsPtr[CELS_COUNT]);
+	numCels = celsPtr[CELS_COUNT];
 	if (index >= numCels) {
-		ws_LogErrorMsg(FL, "Sprite index out of range - max index: %d, requested index: %d", numCels - 1, index);
+		ws_LogErrorMsg(FL, "ws_get_sprite_height: Sprite index out of range - max index: %d, requested index: %d, hash: %d",
+			numCels - 1, index, hash);
 		return -1;
 	}
 
@@ -1340,9 +1360,9 @@ int32 ws_get_sprite_height(uint32 hash, int32 index) {
 	data = &celsPtr[CELS_OFFSETS + numCels];
 
 	// Find the sprite data for the specific sprite in the series
-	myCelSource = (uint32 *)((intptr)data + FROM_LE_32(offsets[index]));
+	myCelSource = (uint32 *)((intptr)data + offsets[index]);
 
-	return FROM_LE_32(myCelSource[CELS_H]);
+	return myCelSource[CELS_H];
 }
 
 MemHandle ws_GetSEQU(uint32 hash, int32 *numLocalVars, int32 *offset) {

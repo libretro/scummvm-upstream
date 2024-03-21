@@ -255,7 +255,7 @@ struct SET : public EngineData {
 	Common::Array<SoundDescription> _sounds;
 };
 
-// Contains data for the Save/Load screen
+// Contains data for the Save/Load screen. Used up to nancy7
 struct LOAD : public EngineData {
 	LOAD(Common::SeekableReadStream *chunkStream);
 
@@ -297,12 +297,39 @@ struct LOAD : public EngineData {
 	// Common::Rect _gameSavedBounds
 };
 
+// Contains data for the new Save/Load screen. Used in nancy8 and up
+struct LOAD_v2 : public EngineData {
+	LOAD_v2(Common::SeekableReadStream *chunkStream);
+
+	Common::Path _firstPageimageName;
+	Common::Path _otherPageimageName;
+	Common::Path _buttonsImageName;
+
+	Common::Array<Common::Rect> _unpressedButtonSrcs;
+	Common::Array<Common::Rect> _pressedButtonSrcs;
+	Common::Array<Common::Rect> _highlightedButtonSrcs;
+	Common::Array<Common::Rect> _disabledButtonSrcs;
+
+	Common::Array<Common::Rect> _buttonDests;
+	Common::Array<Common::Rect> _textboxBounds;
+
+	int16 _mainFontID;
+	int16 _highlightFontID;
+	int16 _fontXOffset;
+	int16 _fontYOffset;
+
+	uint16 _blinkingTimeDelay;
+
+	Common::Path _gameSavedPopup;
+	Common::String _emptySaveText;
+};
+
 // Contains data for the prompt that appears when exiting the game
 // without saving first. Introduced in nancy3.
 struct SDLG : public EngineData {
 	struct Dialog {
 		Dialog(Common::SeekableReadStream *chunkStream);
-		
+
 		Common::Path imageName;
 
 		Common::Rect yesDest;
@@ -445,7 +472,7 @@ struct ImageChunk : public EngineData {
 // Contains text data. Every string is tagged with a key via which
 // it can be accessed. Used to store dialogue and journal (autotext) strings.
 // NOT found inside BOOT; these are stored in their own cifs, the names of which
-// can be found inside BSUM. Introduced in nancy6. 
+// can be found inside BSUM. Introduced in nancy6.
 struct CVTX : public EngineData {
 	CVTX(Common::SeekableReadStream *chunkStream);
 
@@ -460,6 +487,12 @@ struct TABL : public EngineData {
 	Common::Array<uint16> correctIDs;
 	Common::Array<Common::Rect> srcRects;
 	Common::Array<Common::String> strings;
+};
+
+struct MARK : public EngineData {
+	MARK(Common::SeekableReadStream *chunkStream);
+
+	Common::Array<Common::Rect> _markSrcs;
 };
 
 } // End of namespace Nancy

@@ -36,6 +36,10 @@ static char treePrefix[] = "_tree_";
 namespace Nancy {
 
 bool ResourceManager::loadImage(const Common::Path &name, Graphics::ManagedSurface &surf, const Common::String &treeName, Common::Rect *outSrc, Common::Rect *outDest) {
+	if (name.empty()) {
+		return false;
+	}
+
 	// Detect and load autotext surfaces
 	Common::String baseName(name.baseName());
 	if (baseName.hasPrefixIgnoreCase("USE_")) {
@@ -50,11 +54,18 @@ bool ResourceManager::loadImage(const Common::Path &name, Graphics::ManagedSurfa
 		}
 
 		if (surfID >= 0) {
-			surf.copyFrom(g_nancy->_graphicsManager->getAutotextSurface(surfID));
+			surf.copyFrom(g_nancy->_graphics->getAutotextSurface(surfID));
+			if (outSrc) {
+				// Slightly hacky, but we pass the size of the drawn text using the outSrc parameter;
+				// value is only guaranteed to be valid for an active surface.
+				// This is used for PeepholePuzzle scrolling.
+				*outSrc = g_nancy->_graphics->getAutotextSurfaceBounds(surfID);
+			}
+
 			return true;
 		}
 	}
-	
+
 	CifInfo info;
 	Common::SeekableReadStream *stream = nullptr;
 
@@ -74,7 +85,7 @@ bool ResourceManager::loadImage(const Common::Path &name, Graphics::ManagedSurfa
 		// .cifs/ciftrees were introduced with nancy1. We also don't need to flip endianness, since the BMP decoder should handle that by itself
 		return false;
 	}
-	
+
 	// Check for loose .cif images. This bypasses tree search even with a provided treeName
 	if (!stream) {
 		stream = SearchMan.createReadStreamForMember(name.append(".cif"));
@@ -162,8 +173,9 @@ bool ResourceManager::loadImage(const Common::Path &name, Graphics::ManagedSurfa
 	}
 	#endif
 
-	GraphicsManager::copyToManaged(buf, surf, info.width, info.height, g_nancy->_graphicsManager->getInputPixelFormat());
+	GraphicsManager::copyToManaged(buf, surf, info.width, info.height, g_nancy->_graphics->getInputPixelFormat());
 	delete[] buf;
+	delete stream;
 	return true;
 }
 
@@ -189,7 +201,7 @@ IFF *ResourceManager::loadIFF(const Common::Path &name) {
 	if (stream) {
 		return new IFF(stream);
 	}
-	
+
 	return nullptr;
 }
 

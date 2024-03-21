@@ -27,8 +27,23 @@
 #include "backends/fs/amigaos/amigaos-fs-factory.h"
 #include "backends/dialogs/amigaos/amigaos-dialogs.h"
 
+static bool cleanupDone = false;
+
+static void cleanup() {
+	if (!cleanupDone)
+		g_system->destroy();
+}
+
+OSystem_AmigaOS::~OSystem_AmigaOS() {
+	cleanupDone = true;
+}
+
 void OSystem_AmigaOS::init() {
-	// Initialze File System Factory
+	// Register cleanup function to avoid unfreed signals
+	if (atexit(cleanup))
+		warning("Failed to register cleanup function via atexit()");
+
+	// Initialize File System Factory
 	_fsFactory = new AmigaOSFilesystemFactory();
 
 	// Invoke parent implementation of this method
@@ -101,7 +116,6 @@ void OSystem_AmigaOS::initBackend() {
 	}
 	// First time user defaults
 	ConfMan.registerDefault("audio_buffer_size", "2048");
-	ConfMan.registerDefault("aspect_ratio", true);
 	ConfMan.registerDefault("fullscreen", true);
 	ConfMan.registerDefault("gfx_mode", "surfacesdl");
 	ConfMan.registerDefault("stretch_mode", "stretch");
@@ -113,9 +127,6 @@ void OSystem_AmigaOS::initBackend() {
 	// First time .ini defaults
 	if (!ConfMan.hasKey("audio_buffer_size")) {
 		ConfMan.set("audio_buffer_size", "2048");
-	}
-	if (!ConfMan.hasKey("aspect_ratio")) {
-		ConfMan.setBool("aspect_ratio", true);
 	}
 	if (!ConfMan.hasKey("fullscreen")) {
 		ConfMan.setBool("fullscreen", true);

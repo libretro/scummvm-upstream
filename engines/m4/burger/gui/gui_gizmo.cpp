@@ -47,8 +47,23 @@ static Gizmo *gui_create_gizmo(M4sprite *sprite, int sx, int sy, uint scrnFlags)
 static void gizmo_digi_daemon(int trigger);
 static void gizmo_daemon(int trigger);
 
+Gizmo_Globals::Gizmo_Globals() {
+	Common::fill(_roomFlags, _roomFlags + 15, false);
+}
+
 Gizmo_Globals::~Gizmo_Globals() {
 	mem_free(_gui);
+}
+
+static void gizmo_sound() {
+	digi_read_another_chunk();
+	midi_loop();
+
+	g_system->updateScreen();
+	g_system->delayMillis(10);
+
+	g_events->process();
+	gui_system_event_handler();
 }
 
 void gizmo_digi_play(const char *name, int vol, bool &done) {
@@ -58,11 +73,8 @@ void gizmo_digi_play(const char *name, int vol, bool &done) {
 		digi_read_another_chunk();
 		player_set_commands_allowed(false);
 
-		while (!g_engine->shouldQuit() && digi_play_state(2)) {
-			digi_read_another_chunk();
-			midi_loop();
-			gui_system_event_handler();
-		}
+		while (!g_engine->shouldQuit() && digi_play_state(2))
+			gizmo_sound();
 
 		player_set_commands_allowed(true);
 	}
@@ -178,15 +190,13 @@ static void gizmo_digi_wait(int spriteIndex1, int spriteIndex2) {
 	int spriteNum = spriteIndex1;
 	while (digi_play_state(2)) {
 		// Cycle displayed sprite
-		gizmo_restore_sprite(spriteIndex1);
+		gizmo_restore_sprite(spriteNum);
 		spriteNum = (spriteNum == spriteIndex2) ? spriteIndex1 : spriteNum + 1;
 
 		uint32 timer = timer_read_60();
-		while (!g_engine->shouldQuit() && (timer_read_60() - timer) < 6) {
-			digi_read_another_chunk();
-			midi_loop();
-			gui_system_event_handler();
-		}
+
+		while (!g_engine->shouldQuit() && (timer_read_60() - timer) < 6)
+			gizmo_sound();
 	}
 
 	gizmo_restore_sprite(57);
@@ -244,7 +254,7 @@ static void gizmo_daemon(int trigger) {
 		break;
 
 	case 5003:
-		switch (imath_ranged_rand(1, 3)) {
+		switch (imath_ranged_rand(1, 2)) {
 		case 1:
 			digi_play("510b004a", 2, 255, -1);
 			break;
@@ -252,7 +262,6 @@ static void gizmo_daemon(int trigger) {
 			digi_play("510b004b", 2, 255, -1);
 			break;
 		default:
-			digi_play("510b004c", 2, 255, -1);
 			break;
 		}
 

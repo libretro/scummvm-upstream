@@ -29,10 +29,12 @@
 namespace Nancy {
 namespace Misc {
 
-struct ColorFontChange {
-	bool isFont;
+struct MetaInfo {
+	enum Type { kColor, kFont, kMark, kHotspot };
+
+	Type type;
 	uint numChars;
-	byte colorOrFontID;
+	byte index;
 };
 
 void HypertextParser::initSurfaces(uint width, uint height, const Graphics::PixelFormat &format, uint32 backgroundColor, uint32 highlightBackgroundColor) {
@@ -75,7 +77,7 @@ void HypertextParser::drawAllText(const Common::Rect &textBounds, uint leftOffse
 		Common::String currentLine;
 		bool hasHotspot = false;
 		Rect hotspot;
-		Common::Queue<ColorFontChange> colorTextChanges;
+		Common::Queue<MetaInfo> metaInfo;
 		Common::Queue<uint16> newlineTokens;
 		newlineTokens.push(0);
 		int curFontID = fontID;
@@ -85,7 +87,8 @@ void HypertextParser::drawAllText(const Common::Rect &textBounds, uint leftOffse
 		Common::StringTokenizer tokenizer(_textLines[lineID], "<>\"");
 
 		Common::String curToken;
-		while(!tokenizer.empty()) {
+		bool reachedEndTag = false;
+		while(!tokenizer.empty() && !reachedEndTag) {
 			curToken = tokenizer.nextToken();
 
 			if (tokenizer.delimitersAtTokenBegin().lastChar() == '<' && tokenizer.delimitersAtTokenEnd().firstChar() == '>') {
@@ -95,14 +98,20 @@ void HypertextParser::drawAllText(const Common::Rect &textBounds, uint leftOffse
 					// fall through
 				case 'o' :
 					// CC end
-					// fall through
-				case 'e' :
-					// End conversation. Originally used for quickly ending dialogue when debugging
-					// We do nothing and just skip
 					if (curToken.size() != 1) {
 						break;
 					}
 
+					continue;
+				case 'e' :
+					// End conversation. Originally used for quickly ending dialogue when debugging, but
+					// also marks the ending of the current text line.
+					if (curToken.size() != 1) {
+						break;
+					}
+
+					// Ignore the rest of the text. This fixes nancy7 scene 5770
+					reachedEndTag = true;
 					continue;
 				case 'h' :
 					// Hotspot
@@ -116,6 +125,22 @@ void HypertextParser::drawAllText(const Common::Rect &textBounds, uint leftOffse
 					}
 
 					hasHotspot = true;
+					continue;
+				case 'H' :
+					// Hotspot inside list, begin
+					if (curToken.size() != 1) {
+						break;
+					}
+
+					metaInfo.push({MetaInfo::kHotspot, numNonSpaceChars, 1});
+					continue;
+				case 'L' :
+					// Hotspot inside list, end
+					if (curToken.size() != 1) {
+						break;
+					}
+
+					metaInfo.push({MetaInfo::kHotspot, numNonSpaceChars, 0});
 					continue;
 				case 'n' :
 					// Newline
@@ -140,8 +165,8 @@ void HypertextParser::drawAllText(const Common::Rect &textBounds, uint leftOffse
 					if (curToken.size() != 2) {
 						break;
 					}
-					
-					colorTextChanges.push({false, numNonSpaceChars, (byte)(curToken[1] - 48)});
+
+					metaInfo.push({MetaInfo::kColor, numNonSpaceChars, (byte)(curToken[1] - '0')});
 					continue;
 				case 'f' :
 					// Font token
@@ -150,7 +175,18 @@ void HypertextParser::drawAllText(const Common::Rect &textBounds, uint leftOffse
 						break;
 					}
 
-					colorTextChanges.push({true, numNonSpaceChars, (byte)(curToken[1] - 48)});
+					metaInfo.push({MetaInfo::kFont, numNonSpaceChars, (byte)(curToken[1] - '0')});
+					continue;
+				case '1':
+				case '2':
+				case '3':
+				case '4':
+				case '5':
+					if (curToken.size() != 1) {
+						break;
+					}
+
+					metaInfo.push({MetaInfo::kMark, numNonSpaceChars, (byte)(curToken[0] - '1')});
 					continue;
 				default:
 					break;
@@ -173,9 +209,9 @@ void HypertextParser::drawAllText(const Common::Rect &textBounds, uint leftOffse
 
 			currentLine += curToken;
 		}
-		
-		font = g_nancy->_graphicsManager->getFont(curFontID);
-		highlightFont = g_nancy->_graphicsManager->getFont(highlightFontID);
+
+		font = g_nancy->_graphics->getFont(curFontID);
+		highlightFont = g_nancy->_graphics->getFont(highlightFontID);
 		assert(font && highlightFont);
 
 		// Do word wrapping on the text, sans tokens. This assumes
@@ -183,11 +219,11 @@ void HypertextParser::drawAllText(const Common::Rect &textBounds, uint leftOffse
 		Array<Common::String> wrappedLines;
 		font->wordWrap(currentLine, textBounds.width(), wrappedLines, 0);
 
-		// Setup most of the hotspot
+		// Setup most of the hotspot; textbox
 		if (hasHotspot) {
 			hotspot.left = textBounds.left;
 			hotspot.top = textBounds.top + (_numDrawnLines * font->getFontHeight()) - 1;
-			hotspot.setHeight(wrappedLines.size() * font->getFontHeight());
+			hotspot.setHeight(0);
 			hotspot.setWidth(0);
 		}
 
@@ -243,28 +279,81 @@ void HypertextParser::drawAllText(const Common::Rect &textBounds, uint leftOffse
 				line.deleteChar(0);
 			}
 
-			// Set the width of the hotspot
-			if (hasHotspot) {
-				hotspot.setWidth(MAX<int16>(hotspot.width(), font->getStringWidth(line)));
-			}
-
+			bool newWrappedLine = true; // Used to ensure color/font changes don't mess up hotspots
 			while (!line.empty()) {
 				Common::String subLine;
 
-				while (colorTextChanges.size() && totalCharsDrawn >= colorTextChanges.front().numChars) {
-					// We have a color/font change token at begginning of (what's left of) the current line
-					ColorFontChange change = colorTextChanges.pop();
-					if (change.isFont) {
-						curFontID = change.colorOrFontID;
-						font = g_nancy->_graphicsManager->getFont(curFontID);
-					} else {
-						colorID = change.colorOrFontID;
+				while (metaInfo.size() && totalCharsDrawn >= metaInfo.front().numChars) {
+					// We have a color/font change token, a hyperlink, or a mark at begginning of (what's left of) the current line
+					MetaInfo change = metaInfo.pop();
+					switch (change.type) {
+					case MetaInfo::kFont:
+						curFontID = change.index;
+						font = g_nancy->_graphics->getFont(curFontID);
+						break;
+					case MetaInfo::kColor:
+						colorID = change.index;
+						break;
+					case MetaInfo::kMark: {
+						auto *mark = GetEngineData(MARK);
+						assert(mark);
+
+						if (lineNumber == 0) {
+							// A mark on the first line pushes up all text
+							if (textBounds.top - _imageVerticalOffset > 3) {
+								_imageVerticalOffset -= 3;
+							} else {
+								_imageVerticalOffset = -textBounds.top;
+							}
+						}
+
+						Common::Rect markSrc = mark->_markSrcs[change.index];
+						Common::Rect markDest = markSrc;
+						markDest.moveTo(textBounds.left + horizontalOffset + (newLineStart ? 0 : leftOffsetNonNewline) + 1,
+							lineNumber == 0 ?
+								textBounds.top - ((font->getFontHeight() + 1) / 2) + _imageVerticalOffset + 4 :
+								textBounds.top + _numDrawnLines * font->getFontHeight() + _imageVerticalOffset - 4);
+
+						// For now we do not check if we need to go to new line; neither does the original
+						_fullSurface.blitFrom(g_nancy->_graphics->_object0, markSrc, markDest);
+
+						horizontalOffset += markDest.width() + 2;
+						break;
+					}
+					case MetaInfo::kHotspot:
+						// List only
+						hasHotspot = change.index;
+
+						if (hasHotspot) {
+							hotspot.left = textBounds.left + (newLineStart ? 0 : horizontalOffset + leftOffsetNonNewline);
+							hotspot.top = textBounds.top + _numDrawnLines * font->getFontHeight() + _imageVerticalOffset - 1;
+							hotspot.setHeight(0);
+							hotspot.setWidth(0);
+						} else {
+							_hotspots.push_back(hotspot);
+							hotspot = { 0, 0, 0, 0 };
+						}
+
+						break;
 					}
 				}
 
-				if (colorTextChanges.size() && totalCharsDrawn < colorTextChanges.front().numChars && colorTextChanges.front().numChars < (totalCharsDrawn + line.size())) {
+				uint lineSizeNoSpace = 0;
+				for (uint i = 0; i < line.size(); ++i) {
+					if (!isSpace(line[i])) {
+						++lineSizeNoSpace;
+					}
+				}
+
+				if (metaInfo.size() && totalCharsDrawn < metaInfo.front().numChars && metaInfo.front().numChars <= (totalCharsDrawn + lineSizeNoSpace)) {
 					// There's a token inside the current line, so split off the part before it
-					subLine = line.substr(0, colorTextChanges.front().numChars - totalCharsDrawn);
+					uint subSize = metaInfo.front().numChars - totalCharsDrawn;
+					for (uint i = 0; i < subSize; ++i) {
+						if (isSpace(line[i])) {
+							++subSize;
+						}
+					}
+					subLine = line.substr(0, subSize);
 					line = line.substr(subLine.size());
 				}
 
@@ -280,7 +369,7 @@ void HypertextParser::drawAllText(const Common::Rect &textBounds, uint leftOffse
 												colorID);
 
 				// Then, draw the highlight
-				if (hasHotspot) {
+				if (hasHotspot && !_textHighlightSurface.empty()) {
 					highlightFont->drawString(	&_textHighlightSurface,
 												stringToDraw,
 												textBounds.left + horizontalOffset + (newLineStart ? leftOffsetNonNewline : 0),
@@ -296,6 +385,17 @@ void HypertextParser::drawAllText(const Common::Rect &textBounds, uint leftOffse
 						++totalCharsDrawn;
 					}
 				}
+
+				// Add to the width/height of the hotspot
+				if (hasHotspot) {
+					hotspot.setWidth(MAX<int16>(hotspot.width(), font->getStringWidth(stringToDraw)));
+
+					if (!stringToDraw.empty() && newWrappedLine) {
+						hotspot.setHeight(hotspot.height() + font->getFontHeight());
+					}
+				}
+
+				newWrappedLine = false;
 
 				if (subLine.size()) {
 					horizontalOffset += font->getStringWidth(subLine);
@@ -351,7 +451,7 @@ void HypertextParser::drawAllText(const Common::Rect &textBounds, uint leftOffse
 		_drawnTextHeight += font->getFontHeight();
 	}
 
-	// Add a line's height at end of text to replicate original behavior 
+	// Add a line's height at end of text to replicate original behavior
 	if (font) {
 		_drawnTextHeight += font->getFontHeight();
 	}

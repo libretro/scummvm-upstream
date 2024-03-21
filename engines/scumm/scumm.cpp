@@ -62,15 +62,13 @@
 #include "scumm/players/player_sid.h"
 #include "scumm/players/player_pce.h"
 #include "scumm/players/player_apple2.h"
-#include "scumm/players/player_mac_indy3.h"
+#include "scumm/players/player_mac_new.h"
 #include "scumm/players/player_v1.h"
 #include "scumm/players/player_v2.h"
 #include "scumm/players/player_v2cms.h"
 #include "scumm/players/player_v2a.h"
 #include "scumm/players/player_v3a.h"
-#include "scumm/players/player_v3m.h"
 #include "scumm/players/player_v4a.h"
-#include "scumm/players/player_v5m.h"
 #include "scumm/players/player_he.h"
 #include "scumm/resource.h"
 #include "scumm/he/resource_he.h"
@@ -440,7 +438,6 @@ ScummEngine::~ScummEngine() {
 	for (int i = 0; i < 20; i++)
 		if (_2byteMultiFontPtr[i])
 			delete _2byteMultiFontPtr[i];
-	delete _macFontManager;
 	delete _charset;
 	delete _messageDialog;
 	delete _pauseDialog;
@@ -1440,7 +1437,7 @@ void ScummEngine::setupScumm(const Common::Path &macResourceFile) {
 		_sound = new Sound(this, _mixer, useReplacementAudioTracks);
 
 	// Setup the music engine
-	setupMusic(_game.midi, macInstrumentFile);
+	setupMusic(_game.midi);
 
 	// Load localization data, if present
 	loadLanguageBundle();
@@ -1636,7 +1633,6 @@ void ScummEngine::setupCharsetRenderer(const Common::Path &macFontFile) {
 		if (_game.platform == Common::kPlatformFMTowns)
 			_charset = new CharsetRendererTownsV3(this);
 		else if (_game.platform == Common::kPlatformMacintosh && !macFontFile.empty()) {
-			_macFontManager = new Graphics::MacFontManager(0, Common::Language::UNK_LANG);
 			_charset = new CharsetRendererMac(this, macFontFile);
 		} else
 			_charset = new CharsetRendererV3(this);
@@ -2015,7 +2011,7 @@ void ScummEngine_v100he::resetScumm() {
 }
 #endif
 
-void ScummEngine::setupMusic(int midi, const Common::Path &macInstrumentFile) {
+void ScummEngine::setupMusic(int midi) {
 	MidiDriver::DeviceHandle dev = MidiDriver::detectDevice(midi);
 	_native_mt32 = ((MidiDriver::getMusicType(dev) == MT_MT32) || ConfMan.getBool("native_mt32"));
 
@@ -2168,15 +2164,13 @@ void ScummEngine::setupMusic(int midi, const Common::Path &macInstrumentFile) {
 #endif
 	} else if (_game.platform == Common::kPlatformAmiga && _game.version <= 4) {
 		_musicEngine = new Player_V4A(this, _mixer);
-	} else if (_game.platform == Common::kPlatformMacintosh && _game.id == GID_INDY3) {
-		_musicEngine = new Player_Mac_Indy3(this, _mixer);
+	} else if (_game.platform == Common::kPlatformMacintosh && (_game.id == GID_INDY3 || _game.id == GID_LOOM || _game.id == GID_MONKEY)) {
+		_musicEngine = MacSound::createPlayer(this);
+		if (ConfMan.hasKey("mac_v3_low_quality_music") && ConfMan.getBool("mac_v3_low_quality_music"))
+			_musicEngine->setQuality(MacSound::kQualityLowest);
+		else if (ConfMan.hasKey("mac_snd_quality"))
+			_musicEngine->setQuality(ConfMan.getInt("mac_snd_quality"));
 		_sound->_musicType = MDT_MACINTOSH;
-	} else if (_game.platform == Common::kPlatformMacintosh && _game.id == GID_LOOM) {
-		_musicEngine = new Player_V3M(this, _mixer, ConfMan.getBool("mac_v3_low_quality_music"));
-		((Player_V3M *)_musicEngine)->init(macInstrumentFile);
-	} else if (_game.platform == Common::kPlatformMacintosh && _game.id == GID_MONKEY) {
-		_musicEngine = new Player_V5M(this, _mixer);
-		((Player_V5M *)_musicEngine)->init(macInstrumentFile);
 	} else if (_game.id == GID_MANIAC && _game.version == 1) {
 		_musicEngine = new Player_V1(this, _mixer, MidiDriver::getMusicType(dev) != MT_PCSPK);
 	} else if (_game.version <= 2) {
@@ -2244,11 +2238,11 @@ void ScummEngine::setupMusic(int midi, const Common::Path &macInstrumentFile) {
 			}
 		}
 
-		uint32 imsFlags =  newSystem ? IMuse::kFlagNewSystem : 0;
+		uint32 imsFlags = 0;
+		if (newSystem)
+			imsFlags |= IMuse::kFlagNewSystem;
 		if (_native_mt32)
 			imsFlags |= IMuse::kFlagNativeMT32;
-		if (enable_gs)
-			imsFlags |= IMuse::kFlagRolandGS;
 
 		_imuse = IMuse::create(this, nativeMidiDriver, adlibMidiDriver, isMacM68kIMuse() ? MDT_MACINTOSH : _sound->_musicType, imsFlags);
 
@@ -2490,7 +2484,7 @@ Common::Error ScummEngine::go() {
 	return Common::kNoError;
 }
 
-void ScummEngine::waitForTimer(int quarterFrames) {
+void ScummEngine::waitForTimer(int quarterFrames, bool freezeMacGui) {
 	uint32 endTime, cur;
 	uint32 msecDelay = getIntegralTime(quarterFrames * (1000 / _timerFrequency));
 
@@ -2515,7 +2509,7 @@ void ScummEngine::waitForTimer(int quarterFrames) {
 		towns_updateGfx();
 #endif
 
-		if (_macGui)
+		if (_macGui && !freezeMacGui)
 			_macGui->updateWindowManager();
 
 		_system->updateScreen();
@@ -3215,7 +3209,7 @@ void ScummEngine_v3::scummLoop_handleSaveLoad() {
 	if (_completeScreenRedraw) {
 		clearCharsetMask();
 		_charset->_hasMask = false;
-		bool restoreFMTownsSounds = (_townsPlayer != nullptr);
+		bool restoreSounds = true;
 
 		if (_game.id == GID_LOOM) {
 			if (_currentRoom == 70) {
@@ -3282,7 +3276,7 @@ void ScummEngine_v3::scummLoop_handleSaveLoad() {
 						runScript(38, false, false, args);
 					}
 
-					restoreFMTownsSounds = false;
+					restoreSounds = false;
 
 				} else if (VAR(saveLoadVar) == 2) {
 					// This is our old hack. If verbs should be shown restore them.
@@ -3345,7 +3339,7 @@ void ScummEngine_v3::scummLoop_handleSaveLoad() {
 					beginCutscene(args);
 					startScene(saveLoadRoom, nullptr, 0);
 					endCutscene();
-					restoreFMTownsSounds = false;
+					restoreSounds = false;
 				}
 			}
 
@@ -3356,8 +3350,8 @@ void ScummEngine_v3::scummLoop_handleSaveLoad() {
 			redrawVerbs();
 		}
 
-		if (restoreFMTownsSounds)
-			_townsPlayer->restoreAfterLoad();
+		if (restoreSounds)
+			_musicEngine->restoreAfterLoad();
 	}
 }
 
@@ -3409,8 +3403,7 @@ void ScummEngine_v5::scummLoop_handleSaveLoad() {
 		clearCharsetMask();
 		_charset->_hasMask = false;
 
-		if (_townsPlayer)
-			_townsPlayer->restoreAfterLoad();
+		_musicEngine->restoreAfterLoad();
 
 		redrawVerbs();
 
@@ -3769,11 +3762,7 @@ bool ScummEngine::startManiac() {
 
 			if (path.isRelativeTo(currentPath)) {
 				path = path.relativeTo(currentPath);
-				// Do a case-insensitive non-path-mode match of the remainder.
-				// While strictly speaking it's too broad, this matchString
-				// ignores the presence or absence of trailing path separators
-				// in either currentPath or path.
-				if (path.toString('/').matchString("*maniac*", true, nullptr)) {
+				if (path.baseName().equalsIgnoreCase("maniac")) {
 					maniacTarget = iter->_key;
 					break;
 				}
@@ -3791,7 +3780,7 @@ bool ScummEngine::startManiac() {
 
 		// Set up the chanined games to Maniac Mansion, and then back
 		// to the current game again with that save slot.
-		ChainedGamesMan.push(maniacTarget);
+		ChainedGamesMan.push(Common::move(maniacTarget));
 		ChainedGamesMan.push(ConfMan.getActiveDomainName(), 100);
 
 		// Force a return to the launcher. This will start the first

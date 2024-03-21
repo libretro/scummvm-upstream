@@ -92,92 +92,8 @@ void SpecialEffect::execute() {
 	} else {
 		NancySceneState.specialEffect(_type, _totalTime, _fadeToBlackTime, _rect);
 	}
-	
+
 	_isDone = true;
-}
-
-void TableIndexSetValueHS::readData(Common::SeekableReadStream &stream) {
-	_tableIndex = stream.readUint16LE();
-	_valueChangeType = stream.readByte();
-	_entryCorrectFlagID = stream.readSint16LE();
-	_allEntriesCorrectFlagID = stream.readSint16LE();
-
-	_flags.readData(stream);
-	_cursorType = stream.readUint16LE();
-	uint16 numHotspots = stream.readUint16LE();
-	_hotspots.resize(numHotspots);
-	for (uint i = 0; i < numHotspots; ++i) {
-		_hotspots[i].readData(stream);
-	}
-}
-
-void TableIndexSetValueHS::execute() {
-	switch (_state) {
-	case kBegin:
-		_state = kRun;
-		// fall through
-	case kRun:
-		_hasHotspot = false;
-		for (uint i = 0; i < _hotspots.size(); ++i) {
-			if (_hotspots[i].frameID == NancySceneState.getSceneInfo().frameID) {
-				_hasHotspot = true;
-				_hotspot = _hotspots[i].coords;
-			}
-		}
-		break;
-	case kActionTrigger: {
-		TableData *playerTable = (TableData *)NancySceneState.getPuzzleData(TableData::getTag());
-		assert(playerTable);
-		auto *tabl = GetEngineData(TABL);
-		assert(tabl);
-
-		// Edit table. Values start from 1!
-		switch (_valueChangeType) {
-		case kNoChangeTableValue:
-			break;
-		case kIncrementTableValue:
-			++playerTable->currentIDs[_tableIndex - 1];
-			if (playerTable->currentIDs[_tableIndex - 1] >= playerTable->currentIDs.size() + 1) {
-				playerTable->currentIDs[_tableIndex - 1] = 1;
-			}
-			break;
-		case kDecrementTableValue:
-			--playerTable->currentIDs[_tableIndex - 1];
-			if (playerTable->currentIDs[_tableIndex - 1] == 0) {
-				playerTable->currentIDs[_tableIndex - 1] = playerTable->currentIDs.size();
-			}
-			
-			break;
-		}
-
-		// Check for correctness...
-
-		// ...of current index only...
-		if (playerTable->currentIDs[_tableIndex] == tabl->correctIDs[_tableIndex]) {
-			NancySceneState.setEventFlag(_entryCorrectFlagID, g_nancy->_true);
-		} else {
-			NancySceneState.setEventFlag(_entryCorrectFlagID, g_nancy->_false);
-		}
-
-		// ..and of all indices
-		bool allCorrect = true;
-		for (uint i = 0; i < tabl->correctIDs.size(); ++i) {
-			if (playerTable->currentIDs[i] != tabl->correctIDs[i]) {
-				allCorrect = false;
-				break;
-			}
-		}
-
-		if (allCorrect) {
-			NancySceneState.setEventFlag(_allEntriesCorrectFlagID, g_nancy->_true);
-		} else {
-			NancySceneState.setEventFlag(_allEntriesCorrectFlagID, g_nancy->_false);
-		}
-
-		_flags.execute();
-		finishExecution();
-	}
-	}
 }
 
 void LightningOn::execute() {
@@ -186,19 +102,29 @@ void LightningOn::execute() {
 }
 
 void TextBoxWrite::readData(Common::SeekableReadStream &stream) {
-	uint16 size = stream.readUint16LE();
+	int16 size = stream.readSint16LE();
 
 	if (size > 10000) {
 		error("Action Record atTextboxWrite has too many text box chars: %d", size);
 	}
 
-	char *buf = new char[size];
-	stream.read(buf, size);
-	buf[size - 1] = '\0';
+	if (size == -1) {
+		Common::String stringID;
+		readFilename(stream, stringID);
 
-	assembleTextLine(buf, _text, size);
+		const CVTX *autotext = (const CVTX *)g_nancy->getEngineData("AUTOTEXT");
+		assert(autotext);
 
-	delete[] buf;
+		_text = autotext->texts[stringID];
+	} else {
+		char *buf = new char[size];
+		stream.read(buf, size);
+		buf[size - 1] = '\0';
+
+		assembleTextLine(buf, _text, size);
+
+		delete[] buf;
+	}
 }
 
 void TextBoxWrite::execute() {
@@ -264,65 +190,6 @@ void StopTimer::execute() {
 	_isDone = true;
 }
 
-void EventFlags::readData(Common::SeekableReadStream &stream) {
-	if (!_isTerse) {
-		_flags.readData(stream);
-	} else {
-		// Terse version only has 2 flags
-		_flags.descs[0].label = stream.readSint16LE();
-		_flags.descs[0].flag = stream.readUint16LE();
-		_flags.descs[1].label = stream.readSint16LE();
-		_flags.descs[1].flag = stream.readUint16LE();
-	}
-}
-
-void EventFlags::execute() {
-	_flags.execute();
-	_isDone = true;
-}
-
-void EventFlagsMultiHS::readData(Common::SeekableReadStream &stream) {
-	EventFlags::readData(stream);
-
-	if (_isCursor) {
-		_hoverCursor = (CursorManager::CursorType)stream.readUint16LE();
-	}
-
-	uint16 numHotspots = stream.readUint16LE();
-
-	_hotspots.reserve(numHotspots);
-	for (uint16 i = 0; i < numHotspots; ++i) {
-		_hotspots.push_back(HotspotDescription());
-		HotspotDescription &newDesc = _hotspots[i];
-		newDesc.readData(stream);
-	}
-}
-
-void EventFlagsMultiHS::execute() {
-	switch (_state) {
-	case kBegin:
-		// turn main rendering on
-		_state = kRun;
-		// fall through
-	case kRun:
-		_hasHotspot = false;
-
-		for (uint i = 0; i < _hotspots.size(); ++i) {
-			if (_hotspots[i].frameID == NancySceneState.getSceneInfo().frameID) {
-				_hasHotspot = true;
-				_hotspot = _hotspots[i].coords;
-			}
-		}
-
-		break;
-	case kActionTrigger:
-		_hasHotspot = false;
-		EventFlags::execute();
-		finishExecution();
-		break;
-	}
-}
-
 void GotoMenu::readData(Common::SeekableReadStream &stream) {
 	stream.skip(1);
 }
@@ -385,18 +252,6 @@ void WinGame::execute() {
 	NancySceneState.setDestroyOnExit();
 	g_nancy->setState(NancyState::kCredits, NancyState::kMainMenu);
 
-	_isDone = true;
-}
-
-void DifficultyLevel::readData(Common::SeekableReadStream &stream) {
-	_difficulty = stream.readUint16LE();
-	_flag.label = stream.readSint16LE();
-	_flag.flag = stream.readUint16LE();
-}
-
-void DifficultyLevel::execute() {
-	NancySceneState.setDifficulty(_difficulty);
-	NancySceneState.setEventFlag(_flag);
 	_isDone = true;
 }
 

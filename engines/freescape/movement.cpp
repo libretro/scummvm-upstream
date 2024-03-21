@@ -184,7 +184,16 @@ void FreescapeEngine::activate() {
 
 
 void FreescapeEngine::shoot() {
-	playSound(1, false);
+	if (isSpectrum()) {
+		if (isDark())
+			playSound(15, false);
+		else if (isEclipse())
+			playSound(5, false);
+		else
+			playSound(8, false);
+	} else
+		playSound(8, false);
+
 	g_system->delayMillis(2);
 	_shootingFrames = 10;
 
@@ -379,7 +388,10 @@ void FreescapeEngine::resolveCollisions(Math::Vector3d const position) {
 	if ((lastPosition - newPosition).length() < 1) { // Something is blocking the player
 		if (!executed)
 			setGameBit(31);
-		playSound(4, false);
+		if (isSpectrum())
+			playSound(10, false);
+		else
+			playSound(2, false);
 	}
 
 	lastPosition = newPosition;
@@ -387,10 +399,16 @@ void FreescapeEngine::resolveCollisions(Math::Vector3d const position) {
 	newPosition = _currentArea->resolveCollisions(lastPosition, newPosition, _playerHeight);
 	int fallen = lastPosition.y() - newPosition.y();
 
-	if (fallen > 64)
+	if (fallen > _maxFallingDistance) {
 		_hasFallen = !_disableFalling;
+		_avoidRenderingFrames = 60 * 3;
+		if (isEclipse())
+			playSoundFx(0, true);
+	}
 
 	if (!_hasFallen && fallen > 0) {
+		playSound(3, false);
+
 		// Position in Y was changed, let's re-run effects
 		runCollisionConditions(lastPosition, newPosition);
 	}

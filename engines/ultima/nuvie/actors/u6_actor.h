@@ -24,6 +24,7 @@
 
 #include "ultima/nuvie/actors/actor.h"
 #include "ultima/nuvie/misc/actor_list.h"
+#include "ultima/nuvie/core/u6_objects.h"
 
 namespace Ultima {
 namespace Nuvie {
@@ -116,7 +117,7 @@ public:
 	bool get_corpser_flag() const override {
 		return (movement_flags & ACTOR_MOVEMENT_FLAGS_CORPSER);
 	}
-	bool can_be_passed(const Actor *other) const override;
+	bool can_be_passed(const Actor *other, bool ignoreParty) const override;
 	bool will_not_talk() const override;
 
 	void set_actor_obj_n(uint16 new_obj_n);
@@ -129,6 +130,30 @@ public:
 	}
 	uint8 get_dex_text_color() const override {
 		return 0x48;
+	}
+	bool isFlying() const override {
+		// FIXME: Get flying flag from lua actor_tbl
+		// in devtools/create_ultima/files/ultima6/scripts/u6/actor.lua
+		const uint16 flyingObjs[] = {
+				OBJ_U6_INSECTS, OBJ_U6_GIANT_BAT, OBJ_U6_GAZER, OBJ_U6_BIRD,
+				OBJ_U6_WINGED_GARGOYLE, OBJ_U6_DAEMON, OBJ_U6_DRAKE,
+				OBJ_U6_MONGBAT, OBJ_U6_DRAGON, OBJ_U6_INFLATED_BALLOON };
+
+		for (const auto flyingObj : flyingObjs)
+			if (obj_n == flyingObj)
+				return true;
+		return false;
+	}
+	bool isNonBlocking() const override {
+		// These are hard-coded in original U6
+		const uint16 u6NonBlockingObjs[] = {
+				OBJ_U6_INSECTS, OBJ_U6_MOUSE, OBJ_U6_BIRD, OBJ_U6_CORPSER,
+				OBJ_U6_RABBIT };
+
+		for (const auto nonBlockingObj : u6NonBlockingObjs)
+			if (obj_n == nonBlockingObj)
+				return true;
+		return false;
 	}
 
 protected:

@@ -38,6 +38,7 @@
 #include "freescape/objects/entrance.h"
 #include "freescape/objects/geometricobject.h"
 #include "freescape/objects/sensor.h"
+#include "freescape/sound.h"
 
 namespace Common {
 class RandomSource;
@@ -67,20 +68,17 @@ enum {
 	kFreescapeDebugMedia = 1 << 4,
 };
 
-struct soundFx {
-	int size;
-	int sampleRate;
-	byte *data;
+enum GameStateControl {
+	kFreescapeGameStateStart,
+	kFreescapeGameStatePlaying,
+	kFreescapeGameStateDemo,
+	kFreescapeGameStateEnd,
+	kFreescapeGameStateRestart,
 };
 
 struct CGAPaletteEntry {
 	int areaId;
 	byte *palette;
-};
-
-class SizedPCSpeaker : public Audio::PCSpeaker {
-public:
-	bool endOfStream() const override { return !isPlaying(); }
 };
 
 class EventManagerWrapper {
@@ -113,6 +111,7 @@ public:
 	~FreescapeEngine();
 
 	const ADGameDescription *_gameDescription;
+	GameStateControl _gameStateControl;
 	bool isDemo() const;
 
 	// Game selection
@@ -121,7 +120,8 @@ public:
 	bool isSpaceStationOblivion() { return _targetName.hasPrefix("spacestationoblivion"); }
 	bool isDriller() { return _targetName.hasPrefix("driller") || _targetName.hasPrefix("spacestationoblivion"); }
 	bool isDark() { return _targetName.hasPrefix("darkside"); }
-	bool isEclipse() { return _targetName.hasPrefix("totaleclipse"); }
+	bool isEclipse() { return _targetName.hasPrefix("totaleclipse"); } // This will match Total Eclipse 1 and 2.
+	bool isEclipse2() { return _targetName.hasPrefix("totaleclipse2"); }
 	bool isCastle() { return _targetName.hasPrefix("castle"); }
 	bool isAmiga() { return _gameDescription->platform == Common::kPlatformAmiga; }
 	bool isAtariST() { return _gameDescription->platform == Common::kPlatformAtariST; }
@@ -163,7 +163,7 @@ public:
 
 	// Parsing assets
 	uint8 _binaryBits;
-	void loadAssets();
+	virtual void loadAssets();
 	virtual void loadAssetsDemo();
 	virtual void loadAssetsFullGame();
 
@@ -243,6 +243,7 @@ public:
 
 	// Areas
 	uint16 _startArea;
+	uint16 _endArea;
 	AreaMap _areaMap;
 	Area *_currentArea;
 	bool _gotoExecuted;
@@ -251,6 +252,7 @@ public:
 	virtual void gotoArea(uint16 areaID, int entranceID);
 	// Entrance
 	uint16 _startEntrance;
+	uint16 _endEntrance;
 	Common::HashMap<int, const struct entrancesTableEntry *> _entranceTable;
 
 	// Input
@@ -266,6 +268,7 @@ public:
 	void resetInput();
 	void generateDemoInput();
 	virtual void pressedKey(const int keycode);
+	virtual void releasedKey(const int keycode);
 	virtual bool onScreenControls(Common::Point mouse);
 	void move(CameraMovement direction, uint8 scale, float deltaTime);
 	void resolveCollisions(Math::Vector3d newPosition);
@@ -279,6 +282,7 @@ public:
 	bool tryStepUp(Math::Vector3d currentPosition);
 	bool tryStepDown(Math::Vector3d currentPosition);
 	bool _hasFallen;
+	int _maxFallingDistance;
 	int _maxShield;
 	int _maxEnergy;
 
@@ -374,11 +378,19 @@ public:
 	void playSilence(int duration, bool sync);
 	void playSoundConst(double hzFreq, int duration, bool sync);
 	void playSoundSweepIncWL(double hzFreq1, double hzFreq2, double wlStepPerMS, int resolution, bool sync);
-	void playTeleporter(int totalIters, bool sync);
+	uint16 playSoundDOSSpeaker(uint16 startFrequency, soundSpeakerFx *speakerFxInfo);
+	void playSoundDOS(soundSpeakerFx *speakerFxInfo, bool sync);
 
-	void playSoundFx(int index, bool sync);
-	void loadSoundsFx(Common::SeekableReadStream *file, int offset, int number);
+	virtual void playSoundFx(int index, bool sync);
+	virtual void loadSoundsFx(Common::SeekableReadStream *file, int offset, int number);
 	Common::HashMap<uint16, soundFx *> _soundsFx;
+	void loadSpeakerFxDOS(Common::SeekableReadStream *file, int offsetFreq, int offsetDuration);
+	void loadSpeakerFxZX(Common::SeekableReadStream *file, int sfxTable, int sfxData);
+	Common::HashMap<uint16, soundSpeakerFx *> _soundsSpeakerFx;
+
+	void playSoundZX(Common::Array<soundUnitZX> *data);
+	Common::HashMap<uint16, Common::Array<soundUnitZX>*> _soundsSpeakerFxZX;
+	int _nextSoundToPlay = 1;
 
 	// Rendering
 	int _screenW, _screenH;
@@ -388,6 +400,7 @@ public:
 	Common::RenderMode _renderMode;
 	ColorMap _colorMap;
 	int _underFireFrames;
+	int _avoidRenderingFrames;
 	int _shootingFrames;
 	void drawFrame();
 	void flashScreen(int backgroundColor);
@@ -403,6 +416,12 @@ public:
 	Common::StringArray _temporaryMessages;
 	Common::Array<int> _temporaryMessageDeadlines;
 	Common::StringArray _messagesList;
+	Common::String _noShieldMessage;
+	Common::String _noEnergyMessage;
+	Common::String _fallenMessage;
+	Common::String _timeoutMessage;
+	Common::String _forceEndGameMessage;
+	Common::String _crushedMessage;
 
 	void loadMessagesFixedSize(Common::SeekableReadStream *file, int offset, int size, int number);
 	virtual void loadMessagesVariableSize(Common::SeekableReadStream *file, int offset, int number);
@@ -428,6 +447,9 @@ public:
 	StateVars _gameStateVars;
 	uint32 _gameStateBits;
 	virtual bool checkIfGameEnded();
+	virtual void endGame();
+	bool _endGameKeyPressed;
+	bool _endGamePlayerEndArea;
 	bool _forceEndGame;
 	bool _playerWasCrushed;
 	ObjectArray _sensors;
@@ -454,6 +476,7 @@ public:
 	int _initialCountdown;
 	int _countdown;
 	int _ticks;
+	int _ticksFromEnd;
 	int _lastTick;
 	int _lastMinute;
 

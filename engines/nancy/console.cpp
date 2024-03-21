@@ -24,8 +24,8 @@
 #include "common/config-manager.h"
 
 #include "audio/audiostream.h"
-
 #include "image/bmp.h"
+#include "video/bink_decoder.h"
 
 #include "engines/nancy/nancy.h"
 #include "engines/nancy/console.h"
@@ -76,9 +76,22 @@ NancyConsole::~NancyConsole() {}
 void NancyConsole::postEnter() {
 	GUI::Debugger::postEnter();
 	if (!_videoFile.empty()) {
-		Video::VideoDecoder *dec = new AVFDecoder;
+		Common::Path withExt = _videoFile;
+		Video::VideoDecoder *dec = new AVFDecoder();
 
-		if (dec->loadFile(_videoFile)) {
+		if (!dec->loadFile(withExt.append(".avf"))) {
+			// No AVF found, try Bink
+			delete dec;
+			dec = new Video::BinkDecoder();
+
+			if (!dec->loadFile(withExt.append(".bik"))) {
+				debugPrintf("Failed to load video '%s'\n", _videoFile.toString(Common::Path::kNativeSeparator).c_str());
+				delete dec;
+				dec = nullptr;
+			}
+		}
+
+		if (dec) {
 			Graphics::ManagedSurface surf;
 
 			if (!_paletteFile.empty()) {
@@ -99,16 +112,14 @@ void NancyConsole::postEnter() {
 					const Graphics::Surface *frame = dec->decodeNextFrame();
 					if (frame) {
 						GraphicsManager::copyToManaged(*frame, surf, !_paletteFile.empty());
-						g_nancy->_graphicsManager->debugDrawToScreen(surf);
+						g_nancy->_graphics->debugDrawToScreen(surf);
 					}
 				}
 
 				g_system->delayMillis(10);
 			}
 
-			g_nancy->_graphicsManager->redrawAll();
-		} else {
-			debugPrintf("Failed to load '%s'\n", _videoFile.toString(Common::Path::kNativeSeparator).c_str());
+			g_nancy->_graphics->redrawAll();
 		}
 
 		_videoFile.clear();
@@ -123,7 +134,7 @@ void NancyConsole::postEnter() {
 				GraphicsManager::loadSurfacePalette(surf, _paletteFile);
 			}
 
-			g_nancy->_graphicsManager->debugDrawToScreen(surf);
+			g_nancy->_graphics->debugDrawToScreen(surf);
 
 			Common::EventManager *ev = g_system->getEventManager();
 			while (!g_nancy->shouldQuit()) {
@@ -139,7 +150,7 @@ void NancyConsole::postEnter() {
 				g_system->delayMillis(10);
 			}
 
-			g_nancy->_graphicsManager->redrawAll();
+			g_nancy->_graphics->redrawAll();
 		} else {
 			debugPrintf("Failed to load image '%s'\n", _imageFile.toString().c_str());
 		}
@@ -381,7 +392,6 @@ bool NancyConsole::Cmd_playVideo(int argc, const char **argv) {
 		}
 
 		_videoFile = argv[1];
-		_videoFile.appendInPlace(".avf");
 		_paletteFile = argv[2];
 		return cmdExit(0, nullptr);
 	} else {
@@ -392,7 +402,6 @@ bool NancyConsole::Cmd_playVideo(int argc, const char **argv) {
 		}
 
 		_videoFile = argv[1];
-		_videoFile.appendInPlace(".avf");
 		return cmdExit(0, nullptr);
 	}
 }
@@ -690,7 +699,7 @@ bool NancyConsole::Cmd_scanForActionRecordType(int argc, const char **argv) {
 			} else {
 				vals.push_back(insertVal + 0x32);
 			}
-			
+
 		} else {
 			debugPrintf("Invalid input: %s\n", argv[i]);
 			return true;
@@ -870,7 +879,7 @@ bool NancyConsole::Cmd_getInventory(int argc, const char **argv) {
 bool NancyConsole::Cmd_setInventory(int argc, const char **argv) {
 	auto *inventoryData = GetEngineData(INV);
 	assert(inventoryData);
-	
+
 	if (g_nancy->_gameFlow.curState != NancyState::kScene) {
 		debugPrintf("Not in the kScene state\n");
 		return true;
@@ -1001,7 +1010,7 @@ bool NancyConsole::Cmd_soundInfo(int argc, const char **argv) {
 	Common::Array<byte> channelIDs;
 	if (argc == 1) {
 		debugPrintf("Currently playing sounds:\n\n");
-		
+
 		for (uint i = 0; i < g_nancy->getStaticData().soundChannelInfo.numChannels; ++i) {
 			channelIDs.push_back(i);
 		}
@@ -1018,7 +1027,7 @@ bool NancyConsole::Cmd_soundInfo(int argc, const char **argv) {
 			debugPrintf("Channel %u, filename %s\n", channelID, chan.name.c_str());
 			debugPrintf("Source rate %i, playing at %i\n", chan.stream->getRate(), g_nancy->_sound->_mixer->getChannelRate(chan.handle));
 			debugPrintf("Volume: %u, pan: %i, numLoops: %u\n\n", chan.volume, g_nancy->_sound->_mixer->getChannelBalance(chan.handle), chan.numLoops);
-			
+
 			if (chan.playCommands != SoundManager::kPlaySequential) {
 				debugPrintf("\tPlay commands 0x%08x\n", chan.playCommands);
 

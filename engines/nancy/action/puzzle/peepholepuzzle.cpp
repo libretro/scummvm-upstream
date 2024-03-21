@@ -35,10 +35,16 @@ namespace Action {
 
 void PeepholePuzzle::init() {
 	Common::Rect screenBounds = NancySceneState.getViewport().getBounds();
-	_drawSurface.create(screenBounds.width(), screenBounds.height(), g_nancy->_graphicsManager->getInputPixelFormat());
+	_drawSurface.create(screenBounds.width(), screenBounds.height(), g_nancy->_graphics->getInputPixelFormat());
 	moveTo(screenBounds);
 
-	g_nancy->_resource->loadImage(_innerImageName, _innerImage);
+	Common::Rect innerImageContentBounds;
+	g_nancy->_resource->loadImage(_innerImageName, _innerImage, Common::String(), &innerImageContentBounds);
+	if (!innerImageContentBounds.isEmpty()) {
+		// When using Autotext, make sure scrolling stops with the end of the text content.
+		// This was implemented in nancy7, but it's better to have it on for nancy6 as well.
+		_innerBounds.clip(innerImageContentBounds);
+	}
 
 	if (_buttonsImageName.empty()) {
 		// Empty image name for buttons, use other image as source
@@ -49,7 +55,7 @@ void PeepholePuzzle::init() {
 
 	_currentSrc = _startSrc;
 
-	setTransparent(true);
+	setTransparent(_transparency == kPlayOverlayTransparent);
 	_drawSurface.clear(_drawSurface.getTransparentColor());
 	setVisible(true);
 
@@ -87,7 +93,7 @@ void PeepholePuzzle::execute() {
 	case kRun:
 		break;
 	case kActionTrigger:
-		
+
 		finishExecution();
 	}
 }
@@ -100,7 +106,7 @@ void PeepholePuzzle::handleInput(NancyInput &input) {
 	bool justReleased = false;
 
 	if (NancySceneState.getViewport().convertViewportToScreen(_exitHotspot).contains(input.mousePos)) {
-		g_nancy->_cursorManager->setCursorType(g_nancy->_cursorManager->_puzzleExitCursor);
+		g_nancy->_cursor->setCursorType(g_nancy->_cursor->_puzzleExitCursor);
 
 		if (input.input & NancyInput::kLeftMouseButtonUp) {
 			_state = kActionTrigger;
@@ -113,7 +119,7 @@ void PeepholePuzzle::handleInput(NancyInput &input) {
 			if (NancySceneState.getViewport().convertViewportToScreen(_buttonDests[_pressedButton]).contains(input.mousePos)) {
 				if (!_disabledButtons[_pressedButton]) {
 					// Do not show hover cursor on disabled button
-					g_nancy->_cursorManager->setCursorType(CursorManager::kHotspot);
+					g_nancy->_cursor->setCursorType(CursorManager::kHotspot);
 				}
 
 				if (_pressStart == 0) {
@@ -130,7 +136,7 @@ void PeepholePuzzle::handleInput(NancyInput &input) {
 
 			// Avoid single frame with non-highlighted cursor
 			if (NancySceneState.getViewport().convertViewportToScreen(_buttonDests[_pressedButton]).contains(input.mousePos) && !_disabledButtons[_pressedButton]) {
-				g_nancy->_cursorManager->setCursorType(CursorManager::kHotspot);
+				g_nancy->_cursor->setCursorType(CursorManager::kHotspot);
 			}
 
 			_pressedButton = -1;
@@ -142,7 +148,7 @@ void PeepholePuzzle::handleInput(NancyInput &input) {
 		for (uint i = 0; i < 4; ++i) {
 			if (!_disabledButtons[i]) {
 				if (NancySceneState.getViewport().convertViewportToScreen(_buttonDests[i]).contains(input.mousePos)) {
-					g_nancy->_cursorManager->setCursorType(CursorManager::kHotspot);
+					g_nancy->_cursor->setCursorType(CursorManager::kHotspot);
 
 					if (input.input & NancyInput::kLeftMouseButtonDown) {
 						if (_pressedButton == -1) {
@@ -176,7 +182,7 @@ void PeepholePuzzle::handleInput(NancyInput &input) {
 			// Down
 			_currentSrc.translate(0, pixelsToMove);
 			if (_currentSrc.bottom > _innerBounds.bottom) {
-				_currentSrc.translate(0, _innerBounds.top - _currentSrc.top);
+				_currentSrc.translate(0, _innerBounds.bottom - _currentSrc.bottom);
 			}
 			break;
 		case 2 :
@@ -255,7 +261,101 @@ void PeepholePuzzle::checkButtons() {
 		} else {
 			_disabledButtons[i] = true;
 		}
-	}	
+	}
+
+	// Ensure that contents that do not overflow can't be scrolled
+	if (_innerBounds.height() <= _dest.height()) {
+		_disabledButtons[0] = _disabledButtons[1] = true;
+
+		if (!_buttonDisabledSrcs[0].isEmpty()) {
+			_drawSurface.blitFrom(_buttonsImage, _buttonDisabledSrcs[0], _buttonDests[0]);
+		}
+
+		if (!_buttonDisabledSrcs[1].isEmpty()) {
+			_drawSurface.blitFrom(_buttonsImage, _buttonDisabledSrcs[1], _buttonDests[1]);
+		}
+	}
+
+	if (_innerBounds.width() <= _dest.width()) {
+		_disabledButtons[2] = _disabledButtons[3] = true;
+
+		if (!_buttonDisabledSrcs[2].isEmpty()) {
+			_drawSurface.blitFrom(_buttonsImage, _buttonDisabledSrcs[2], _buttonDests[2]);
+		}
+
+		if (!_buttonDisabledSrcs[3].isEmpty()) {
+			_drawSurface.blitFrom(_buttonsImage, _buttonDisabledSrcs[3], _buttonDests[3]);
+		}
+	}
+}
+
+void TextScroll::init() {
+	Autotext::execute();
+	_isDone = false; // Set to true by Autotext
+
+	// Supply the correct names to the resource manager
+	if (_surfaceID < 3) {
+		_innerImageName = Common::String::format("USE_AUTOTEXT%u", _surfaceID + 1);
+	} else {
+		_innerImageName = Common::String::format("USE_AUTOLIST%u", _surfaceID - 2);
+	}
+
+	// Make sure the initial bounds match the surface's
+	_innerBounds = _fullSurface.getBounds();
+
+	PeepholePuzzle::init();
+}
+
+void TextScroll::readData(Common::SeekableReadStream &stream) {
+	Autotext::readData(stream);
+
+	PeepholePuzzle::_transparency = Autotext::_transparency;
+}
+
+void TextScroll::readExtraData(Common::SeekableReadStream &stream) {
+	_order = stream.readUint16LE();
+	_shouldDrawMarks = stream.readByte();
+
+	readFilename(stream, _buttonsImageName);
+
+	readRect(stream, _startSrc);
+	readRect(stream, _dest);
+
+	readRectArray(stream, _buttonDests, 4);
+	readRectArray(stream, _buttonSrcs, 4);
+	readRectArray(stream, _buttonDisabledSrcs, 4);
+
+	_pixelsToScroll = stream.readByte();
+
+	if (!_isEntryList) {
+		Autotext::readExtraData(stream);
+	}
+}
+
+void TextScroll::handleInput(NancyInput &input) {
+	PeepholePuzzle::handleInput(input);
+
+	// Finally, check hotspots
+	for (uint i = 0; i < _hotspots.size(); ++i) {
+		Common::Rect hotspot = _hotspots[i];
+		hotspot.translate(_dest.left, _dest.top);
+		Common::Point innerOffset = _drawSurface.getOffsetFromOwner();
+		hotspot.translate(-innerOffset.x, -innerOffset.y);
+		hotspot.clip(_dest);
+		if (!hotspot.isEmpty() && NancySceneState.getViewport().convertViewportToScreen(hotspot).contains(input.mousePos)) {
+			g_nancy->_cursor->setCursorType(CursorManager::kHotspot);
+
+			if (input.input & NancyInput::kLeftMouseButtonUp) {
+				// Clicked on a hotspot, change to corresponding scene
+				SceneChangeDescription sceneChange;
+				sceneChange.sceneID = _hotspotScenes[i];
+				sceneChange.continueSceneSound = kContinueSceneSound;
+				NancySceneState.changeScene(sceneChange);
+			}
+
+			break;
+		}
+	}
 }
 
 } // End of namespace Action
