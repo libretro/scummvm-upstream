@@ -22,41 +22,16 @@
 #ifndef ULTIMA8_GRAPHICS_PALETTE_H
 #define ULTIMA8_GRAPHICS_PALETTE_H
 
+#include "graphics/palette.h"
+#include "ultima/ultima8/graphics/pal_transforms.h"
+
 namespace Ultima {
 namespace Ultima8 {
 
-enum PalTransforms {
-	// Normal untransformed palette
-	Transform_None      = 0,
+class Palette: public Graphics::Palette {
+public:
+	Palette() : Graphics::Palette(256) {}
 
-	// O[i] = I[r]*0.375 + I[g]*0.5 + I[b]*0.125;
-	Transform_Greyscale = 1,
-
-	// O[r] = 0;
-	Transform_NoRed     = 2,
-
-	// O[i] = (I[i] + Grey)*0.25 + 0.1875;
-	Transform_RainStorm = 3,
-
-	// O[r] = (I[r] + Grey)*0.5 + 0.1875;
-	// O[g] = I[g]*0.5 + Grey*0.25;
-	// O[b] = I[b]*0.5;
-	Transform_FireStorm = 4,
-
-	// O[i] = I[i]*2 -Grey;
-	Transform_Saturate  = 5,
-
-	// O[g] = I[r]; O[b] = I[g]; O[r] = I[b];
-	Transform_GBR       = 6,
-
-	// O[b] = I[r]; O[r] = I[g]; O[g] = I[b];
-	Transform_BRG       = 7,
-
-	// Any value beyond this is invalid in savegames.
-	Transform_Invalid 	= 8
-};
-
-struct Palette {
 	void load(Common::ReadStream &rs, Common::ReadStream &xformrs);
 	void load(Common::ReadStream &rs);
 
@@ -64,19 +39,16 @@ struct Palette {
 	// Not designed for speed - just useful for one-offs.
 	void transformRGB(int &r, int &g, int &b) const;
 
-	// 256 rgb entries
-	uint8 _palette[768];
-
-	// Untransformed native format palette. Created by the RenderSurface
+	// Untransformed pixel format palette map
 	uint32 _native_untransformed[256];
 
-	// Transformed native format palette. Created by the RenderSurface
+	// Transformed pixel format palette map
 	uint32 _native[256];
 
-	// Untransformed XFORM ARGB palette
+	// Untransformed XFORM ARGB palette map
 	uint32 _xform_untransformed[256];
 
-	// Transformed XFORM ARGB palette. Created by the RenderSurface
+	// Transformed XFORM ARGB palette map
 	uint32 _xform[256];
 
 	// Colour transformation matrix (for fades, hue shifts)

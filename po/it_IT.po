@@ -10,8 +10,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: ScummVM 1.3.0svn\n"
 "Report-Msgid-Bugs-To: scummvm-devel@lists.scummvm.org\n"
-"POT-Creation-Date: 2024-03-17 01:12+0000\n"
-"PO-Revision-Date: 2024-03-19 12:07+0000\n"
+"POT-Creation-Date: 2024-03-25 01:43+0000\n"
+"PO-Revision-Date: 2024-03-23 12:58+0000\n"
 "Last-Translator: Walter Agazzi <walter.agazzi@protonmail.com>\n"
 "Language-Team: Italian <https://translations.scummvm.org/projects/scummvm/"
 "scummvm/it/>\n"
@@ -87,7 +87,7 @@ msgstr "Su"
 #: gui/saveload-dialog.cpp:526 gui/saveload-dialog.cpp:828
 #: gui/saveload-dialog.cpp:1224 gui/shaderbrowser-dialog.cpp:80
 #: gui/themebrowser.cpp:54 gui/unknown-game-dialog.cpp:53 base/main.cpp:604
-#: dists/android.strings.xml.cpp:43 engines/engine.cpp:747
+#: dists/android.strings.xml.cpp:43 engines/engine.cpp:749
 #: backends/dialogs/gtk/gtk-dialogs.cpp:65
 #: backends/events/default/default-events.cpp:193
 #: backends/events/default/default-events.cpp:217
@@ -241,7 +241,7 @@ msgid "Paste code from clipboard"
 msgstr "Incolla dagli appunti"
 
 #: gui/cloudconnectionwizard.cpp:362 gui/launcher.cpp:316
-#: engines/dialogs.cpp:94 engines/engine.cpp:915 engines/mm/xeen/saves.cpp:259
+#: engines/dialogs.cpp:94 engines/engine.cpp:917 engines/mm/xeen/saves.cpp:259
 #: engines/parallaction/metaengine.cpp:127
 #: engines/parallaction/saveload.cpp:193 engines/pegasus/pegasus.cpp:388
 #: engines/trecision/saveload.cpp:253 engines/tsage/scenes.cpp:638
@@ -301,8 +301,8 @@ msgstr "Un altro servizio di archiviazione è attivo. Vuoi interromperlo?"
 #: engines/director/lingo/xlibs/jitdraw3.cpp:139 engines/grim/grim.cpp:366
 #: engines/kyra/gui/saveload_eob.cpp:598 engines/kyra/gui/saveload_eob.cpp:631
 #: engines/parallaction/metaengine.cpp:145
-#: engines/sci/graphics/controls32.cpp:929 engines/scumm/scumm.cpp:3899
-#: engines/toon/toon.cpp:1531
+#: engines/sci/graphics/controls32.cpp:929 engines/scumm/scumm.cpp:3893
+#: engines/toon/toon.cpp:1538
 msgid "Yes"
 msgstr "Sì"
 
@@ -314,8 +314,8 @@ msgstr "Sì"
 #: engines/director/lingo/xlibs/jitdraw3.cpp:139 engines/grim/grim.cpp:366
 #: engines/kyra/gui/saveload_eob.cpp:598 engines/kyra/gui/saveload_eob.cpp:631
 #: engines/parallaction/metaengine.cpp:151
-#: engines/sci/graphics/controls32.cpp:929 engines/scumm/scumm.cpp:3899
-#: engines/toon/toon.cpp:1531
+#: engines/sci/graphics/controls32.cpp:929 engines/scumm/scumm.cpp:3893
+#: engines/toon/toon.cpp:1538
 msgid "No"
 msgstr "No"
 
@@ -333,7 +333,7 @@ msgstr "Il codice JSON non è valido."
 #: gui/fluidsynth-dialog.cpp:153 gui/launcher.cpp:548 gui/launcher.cpp:552
 #: gui/massadd.cpp:90 gui/options.cpp:2354 gui/predictivedialog.cpp:69
 #: gui/saveload-dialog.cpp:1225 dists/android.strings.xml.cpp:32
-#: engines/engine.cpp:550 engines/engine.cpp:573
+#: engines/engine.cpp:552 engines/engine.cpp:575
 #: backends/platform/wii/options.cpp:46 engines/agos/animation.cpp:577
 #: engines/agos/midi.cpp:320 engines/agos/midi.cpp:378
 #: engines/agos/midi.cpp:457 engines/buried/saveload.cpp:83
@@ -1428,7 +1428,7 @@ msgstr "Cerca nella lista dei giochi"
 msgid "Search:"
 msgstr "Cerca:"
 
-#: gui/launcher.cpp:316 engines/dialogs.cpp:94 engines/engine.cpp:915
+#: gui/launcher.cpp:316 engines/dialogs.cpp:94 engines/engine.cpp:917
 #: engines/mm/xeen/saves.cpp:259 engines/pegasus/pegasus.cpp:388
 #: engines/trecision/saveload.cpp:253 engines/tsage/scenes.cpp:638
 #: engines/wage/saveload.cpp:736
@@ -2541,7 +2541,7 @@ msgstr ""
 "\n"
 "E altri ancora..."
 
-#: gui/options.cpp:2899 engines/engine.cpp:602
+#: gui/options.cpp:2899 engines/engine.cpp:604
 msgid "Move"
 msgstr "Sposta"
 
@@ -2672,7 +2672,7 @@ msgstr "Registra/riproduci Gameplay"
 
 #: gui/recorderdialog.cpp:72 gui/recorderdialog.cpp:212
 #: gui/saveload-dialog.cpp:459 gui/saveload-dialog.cpp:526
-#: dists/android.strings.xml.cpp:44 engines/engine.cpp:596
+#: dists/android.strings.xml.cpp:44 engines/engine.cpp:598
 msgid "Delete"
 msgstr "Elimina"
 
@@ -3348,7 +3348,7 @@ msgctxt "lowres"
 msgid "~R~eturn to Launcher"
 msgstr "~V~ai a elenco giochi"
 
-#: engines/dialogs.cpp:95 engines/engine.cpp:944 engines/agi/saveload.cpp:766
+#: engines/dialogs.cpp:95 engines/engine.cpp:946 engines/agi/saveload.cpp:766
 #: engines/avalanche/parser.cpp:1918 engines/cine/various.cpp:349
 #: engines/dm/loadsave.cpp:199 engines/drascula/saveload.cpp:382
 #: engines/dreamweb/saveload.cpp:261 engines/glk/streams.cpp:1432
@@ -3362,13 +3362,13 @@ msgstr "~V~ai a elenco giochi"
 #: engines/prince/saveload.cpp:54 engines/sci/engine/guest_additions.cpp:742
 #: engines/sci/engine/kfile.cpp:1083 engines/sherlock/scalpel/scalpel.cpp:1249
 #: engines/sherlock/tattoo/widget_files.cpp:74 engines/startrek/saveload.cpp:42
-#: engines/toltecs/menu.cpp:302 engines/toon/toon.cpp:3804
+#: engines/toltecs/menu.cpp:302 engines/toon/toon.cpp:3811
 #: engines/trecision/saveload.cpp:67 engines/tsage/scenes.cpp:636
 #: engines/wage/saveload.cpp:746 engines/zvision/file/save_manager.cpp:48
 msgid "Save game:"
 msgstr "Salva gioco:"
 
-#: engines/dialogs.cpp:95 engines/engine.cpp:944 engines/agi/saveload.cpp:766
+#: engines/dialogs.cpp:95 engines/engine.cpp:946 engines/agi/saveload.cpp:766
 #: engines/avalanche/parser.cpp:1918 engines/cine/various.cpp:349
 #: engines/dm/loadsave.cpp:199 engines/drascula/saveload.cpp:382
 #: engines/dreamweb/saveload.cpp:261 engines/glk/streams.cpp:1432
@@ -3384,7 +3384,7 @@ msgstr "Salva gioco:"
 #: engines/prince/saveload.cpp:54 engines/sci/engine/guest_additions.cpp:743
 #: engines/sci/engine/kfile.cpp:1083 engines/sherlock/scalpel/scalpel.cpp:1249
 #: engines/sherlock/tattoo/widget_files.cpp:74 engines/startrek/saveload.cpp:42
-#: engines/toltecs/menu.cpp:302 engines/toon/toon.cpp:3804
+#: engines/toltecs/menu.cpp:302 engines/toon/toon.cpp:3811
 #: engines/trecision/saveload.cpp:67 engines/tsage/scenes.cpp:636
 #: engines/wage/saveload.cpp:746 engines/zvision/file/save_manager.cpp:48
 #: engines/zvision/metaengine.cpp:262
@@ -3440,42 +3440,42 @@ msgstr "~O~K"
 msgid "~C~ancel"
 msgstr "~A~nnulla"
 
-#: engines/engine.cpp:366
+#: engines/engine.cpp:368
 #, c-format
 msgid "Could not switch to resolution '%dx%d'."
 msgstr "Impossibile passare alla risoluzione '%dx%d'."
 
-#: engines/engine.cpp:375
+#: engines/engine.cpp:377
 msgid "Could not initialize color format."
 msgstr "Impossibile inizializzare il formato colore."
 
-#: engines/engine.cpp:384
+#: engines/engine.cpp:386
 #, c-format
 msgid "Could not switch to video mode '%s'."
 msgstr "Impossibile passare alla modalità video: '%s'."
 
-#: engines/engine.cpp:392
+#: engines/engine.cpp:394
 #, c-format
 msgid "Could not switch to stretch mode '%s'."
 msgstr "Impossibile passare al ridimensionamento '%s'."
 
-#: engines/engine.cpp:399
+#: engines/engine.cpp:401
 msgid "Could not apply aspect ratio setting."
 msgstr "Impossibile applicare la correzione delle proporzioni."
 
-#: engines/engine.cpp:404
+#: engines/engine.cpp:406
 msgid "Could not apply fullscreen setting."
 msgstr "Impossibile applicare l'impostazione schermo intero."
 
-#: engines/engine.cpp:409
+#: engines/engine.cpp:411
 msgid "Could not apply filtering setting."
 msgstr "Impossibile applicare l'impostazione del filtro grafico."
 
-#: engines/engine.cpp:483
+#: engines/engine.cpp:485
 msgid "Error"
 msgstr "Errore"
 
-#: engines/engine.cpp:546
+#: engines/engine.cpp:548
 msgid ""
 "You appear to be playing this game directly\n"
 "from the CD. This is known to cause problems,\n"
@@ -3490,7 +3490,7 @@ msgstr ""
 "Consulta la documentazione (CD audio) per\n"
 "informazioni aggiuntive."
 
-#: engines/engine.cpp:569
+#: engines/engine.cpp:571
 msgid ""
 "This game has audio tracks on its CD. These\n"
 "tracks need to be ripped from the CD using\n"
@@ -3505,11 +3505,11 @@ msgstr ""
 "Consulta la documentazione (CD audio)\n"
 "per informazioni aggiuntive."
 
-#: engines/engine.cpp:597
+#: engines/engine.cpp:599
 msgid "Skip autosave"
 msgstr "Posticipa"
 
-#: engines/engine.cpp:599
+#: engines/engine.cpp:601
 #, c-format
 msgid ""
 "WARNING: The autosave slot contains a saved game named %S, and an autosave "
@@ -3525,22 +3525,22 @@ msgstr ""
 "In alternativa puoi posticipare la decisione (verrà chiesto nuovamente tra 5 "
 "minuti)."
 
-#: engines/engine.cpp:609
+#: engines/engine.cpp:611
 msgid "ERROR: Could not copy the savegame to a new slot"
 msgstr ""
 "ERRORE: Non è stato possibile copiare il salvataggio in una nuova posizione"
 
-#: engines/engine.cpp:636 engines/savestate.cpp:98
+#: engines/engine.cpp:638 engines/savestate.cpp:98
 #: backends/platform/ios7/ios7_osys_main.cpp:294 engines/mm/xeen/saves.cpp:293
 #: engines/sky/metaengine.cpp:216
 msgid "Autosave"
 msgstr "Autosalvataggio"
 
-#: engines/engine.cpp:644
+#: engines/engine.cpp:646
 msgid "Error occurred making autosave"
 msgstr "Errore nel salvataggio automatico"
 
-#: engines/engine.cpp:719
+#: engines/engine.cpp:721
 #, c-format
 msgid ""
 "Failed to load saved game (%s)! Please consult the README for basic "
@@ -3550,15 +3550,15 @@ msgstr ""
 "informazioni di base e per le istruzioni su come ottenere ulteriore "
 "assistenza."
 
-#: engines/engine.cpp:743
+#: engines/engine.cpp:745
 msgid "WARNING: "
 msgstr "ATTENZIONE: "
 
-#: engines/engine.cpp:743
+#: engines/engine.cpp:745
 msgid " Shall we still run the game?"
 msgstr " Avviare comunque il gioco?"
 
-#: engines/engine.cpp:744
+#: engines/engine.cpp:746
 msgid ""
 "WARNING: The game you are about to start is not yet fully supported by "
 "ScummVM. As such, it is likely to be unstable, and any saved game you make "
@@ -3568,15 +3568,15 @@ msgstr ""
 "ScummVM. È quindi possibile che sia instabile, e i salvataggi potrebbero non "
 "funzionare con future versioni di ScummVM."
 
-#: engines/engine.cpp:747 engines/wintermute/wintermute.cpp:182
+#: engines/engine.cpp:749 engines/wintermute/wintermute.cpp:182
 msgid "Start anyway"
 msgstr "Avvia comunque"
 
-#: engines/engine.cpp:765
+#: engines/engine.cpp:767
 msgid "This game is not supported."
 msgstr "Questo gioco non è supportato."
 
-#: engines/engine.cpp:765
+#: engines/engine.cpp:767
 msgid ""
 "This game is not supported for the following reason:\n"
 "\n"
@@ -3584,11 +3584,11 @@ msgstr ""
 "Questo gioco non è supportato per le seguenti ragioni:\n"
 "\n"
 
-#: engines/engine.cpp:911
+#: engines/engine.cpp:913
 msgid "Loading game is currently unavailable"
 msgstr "Caricamento temporaneamente disabilitato"
 
-#: engines/engine.cpp:940
+#: engines/engine.cpp:942
 msgid "Saving game is currently unavailable"
 msgstr "Salvataggio temporaneamente disabilitato"
 
@@ -5316,6 +5316,27 @@ msgid ""
 "| `CMD + RIGHT`     | END               \n"
 "\n"
 msgstr ""
+"## Uso della tastiera\n"
+"Le tastiere esterne sono supportate e a partire da iOS 13.4 la maggior parte "
+"dei tasti speciali (come i tasti funzione, Home e End) sono mappati.\n"
+"Nelle tastiere esterne prive di tasti speciali (es. Apple Magic Keyboard per "
+"iPad), i comandi equivalenti possono essere inseriti mediante le seguenti "
+"combinazioni:\n"
+"\n"
+"\n"
+"| Combinazione Tasti| Azione            \n"
+"| ------------------|-------------------\n"
+"| `CMD + 1`         | F1                \n"
+"| `CMD + 2`         | F2                \n"
+"| `...`             | ...               \n"
+"| `CMD + 0`         | F10               \n"
+"| `CMD + SHIFT + 1` | F11               \n"
+"| `CMD + SHIFT + 2` | F12               \n"
+"| `CMD + SU`        | PAGINA SU         \n"
+"| `CMD + GIU'`      | PAGINA GIU'       \n"
+"| `CMD + SINISTRA`  | HOME              \n"
+"| `CMD + DESTRA`    | FINE               \n"
+"\n"
 
 #: backends/platform/ios7/ios7_osys_misc.mm:339
 msgid ""
@@ -5787,7 +5808,7 @@ msgstr "Cerca aggiornamenti..."
 #: engines/hugo/hugo.cpp:424 engines/lure/lure.cpp:57
 #: engines/mortevielle/mortevielle.cpp:300 engines/sky/compact.cpp:129
 #: engines/supernova/supernova.cpp:463 engines/teenagent/resources.cpp:97
-#: engines/tony/tony.cpp:187 engines/toon/toon.cpp:5409
+#: engines/tony/tony.cpp:187 engines/toon/toon.cpp:5416
 #: engines/ultima/ultima8/ultima8.cpp:183
 #, c-format
 msgid "Unable to locate the '%s' engine data file."
@@ -5796,7 +5817,7 @@ msgstr "File dati del motore '%s' non trovato."
 #: engines/access/resources.cpp:51 engines/drascula/drascula.cpp:956
 #: engines/hugo/hugo.cpp:436 engines/lure/lure.cpp:66
 #: engines/mortevielle/mortevielle.cpp:308 engines/supernova/supernova.cpp:468
-#: engines/tony/tony.cpp:200 engines/toon/toon.cpp:5422
+#: engines/tony/tony.cpp:200 engines/toon/toon.cpp:5429
 #, c-format
 msgid "The '%s' engine data file is corrupt."
 msgstr "Il file dati del motore '%s' è danneggiato."
@@ -5804,7 +5825,7 @@ msgstr "Il file dati del motore '%s' è danneggiato."
 #: engines/access/resources.cpp:60 engines/drascula/drascula.cpp:967
 #: engines/hugo/hugo.cpp:446 engines/lure/lure.cpp:69
 #: engines/mortevielle/mortevielle.cpp:318 engines/tony/tony.cpp:211
-#: engines/toon/toon.cpp:5433
+#: engines/toon/toon.cpp:5440
 #, c-format
 msgid ""
 "Incorrect version of the '%s' engine data file found. Expected %d.%d but got "
@@ -5965,7 +5986,7 @@ msgstr "Questo gioco non supporta la creazione dei salvataggi"
 #: engines/prince/saveload.cpp:63 engines/sci/engine/guest_additions.cpp:745
 #: engines/sci/engine/kfile.cpp:1216 engines/sherlock/scalpel/scalpel.cpp:1262
 #: engines/sherlock/tattoo/widget_files.cpp:93 engines/startrek/saveload.cpp:67
-#: engines/toltecs/menu.cpp:272 engines/toon/toon.cpp:3898
+#: engines/toltecs/menu.cpp:272 engines/toon/toon.cpp:3905
 #: engines/zvision/file/save_manager.cpp:61
 msgid "Restore game:"
 msgstr "Carica partita:"
@@ -5985,7 +6006,7 @@ msgstr "Carica partita:"
 #: engines/prince/saveload.cpp:63 engines/sci/engine/guest_additions.cpp:746
 #: engines/sci/engine/kfile.cpp:1216 engines/sherlock/scalpel/scalpel.cpp:1262
 #: engines/sherlock/tattoo/widget_files.cpp:93 engines/startrek/saveload.cpp:67
-#: engines/toltecs/menu.cpp:272 engines/toon/toon.cpp:3898
+#: engines/toltecs/menu.cpp:272 engines/toon/toon.cpp:3905
 #: engines/zvision/file/save_manager.cpp:61 engines/zvision/metaengine.cpp:267
 msgid "Restore"
 msgstr "Carica"
@@ -5995,7 +6016,7 @@ msgid "Quick load or save game isn't supported in this location"
 msgstr ""
 "Il salvataggio/caricamento rapido non è disponibile in questa locazione"
 
-#: engines/agos/saveload.cpp:161 engines/scumm/scumm.cpp:2902
+#: engines/agos/saveload.cpp:161 engines/scumm/scumm.cpp:2896
 #, c-format
 msgid ""
 "Failed to load saved game from file:\n"
@@ -6006,7 +6027,7 @@ msgstr ""
 "\n"
 "%s"
 
-#: engines/agos/saveload.cpp:196 engines/scumm/scumm.cpp:2889
+#: engines/agos/saveload.cpp:196 engines/scumm/scumm.cpp:2883
 #, c-format
 msgid ""
 "Failed to save game to file:\n"
@@ -6017,7 +6038,7 @@ msgstr ""
 "\n"
 "%s"
 
-#: engines/agos/saveload.cpp:204 engines/scumm/scumm.cpp:2922
+#: engines/agos/saveload.cpp:204 engines/scumm/scumm.cpp:2916
 #, c-format
 msgid ""
 "Successfully saved game in file:\n"
@@ -6464,7 +6485,7 @@ msgstr "Attiva / Disattiva modalità combattimento"
 
 #. I18N: This keymap allows skipping video cutscenes
 #: engines/bladerunner/metaengine.cpp:229 engines/scumm/help.cpp:79
-#: engines/scumm/metaengine.cpp:874 engines/twp/metaengine.cpp:131
+#: engines/scumm/metaengine.cpp:874 engines/twp/metaengine.cpp:138
 #: engines/zvision/metaengine.cpp:284
 msgid "Skip cutscene"
 msgstr "Salta scena di intermezzo"
@@ -9289,7 +9310,7 @@ msgid "Your Name:"
 msgstr "Tuo Nome:"
 
 #. I18N: Button, start hosting online multiplayer game
-#: engines/scumm/dialog-createsession.cpp:49 engines/scumm/scumm.cpp:3905
+#: engines/scumm/dialog-createsession.cpp:49 engines/scumm/scumm.cpp:3899
 msgid "Host"
 msgstr "Ospita"
 
@@ -9299,7 +9320,7 @@ msgid "Querying games..."
 msgstr "Ricerca partite..."
 
 #. I18N: Join online multiplayer game
-#: engines/scumm/dialog-sessionselector.cpp:64 engines/scumm/scumm.cpp:3905
+#: engines/scumm/dialog-sessionselector.cpp:64 engines/scumm/scumm.cpp:3899
 msgid "Join"
 msgstr "Unisciti"
 
@@ -10333,7 +10354,7 @@ msgstr ""
 "Questa specifica versione di Monkey Island 1 è priva di alcune\n"
 "risorse necessarie per il sonoro MT-32. Verrà utilizzato AdLib."
 
-#: engines/scumm/scumm.cpp:3794
+#: engines/scumm/scumm.cpp:3788
 msgid ""
 "Usually, Maniac Mansion would start now. But for that to work, the game "
 "files for Maniac Mansion have to be in the 'Maniac' directory inside the "
@@ -10344,7 +10365,7 @@ msgstr ""
 "sottocartella \"MANIAC\" all'interno della cartella principale di Day Of The "
 "Tentacle. Il gioco deve inoltre essere aggiunto a ScummVM."
 
-#: engines/scumm/scumm.cpp:3905
+#: engines/scumm/scumm.cpp:3899
 msgid "Would you like to host or join a network play session?"
 msgstr "Desideri ospitare o collegarti ad una sessione di gioco in rete?"
 
@@ -10701,31 +10722,31 @@ msgstr ""
 msgid "Font variant not present in '%s' engine data file."
 msgstr "Variante del font non presente nel file dati del motore '%s'."
 
-#: engines/toon/toon.cpp:261
+#: engines/toon/toon.cpp:268
 #, c-format
 msgid "Saved game in slot #%d "
 msgstr "Partita salvata nella posizione %d "
 
-#: engines/toon/toon.cpp:265
+#: engines/toon/toon.cpp:272
 #, c-format
 msgid "Could not quick save into slot #%d"
 msgstr "Impossibile effettuare un salvataggio rapido alla posizione %d"
 
-#: engines/toon/toon.cpp:278
+#: engines/toon/toon.cpp:285
 #, c-format
 msgid "Saved game #%d quick loaded"
 msgstr "Caricato salvataggio rapido #%d"
 
-#: engines/toon/toon.cpp:282
+#: engines/toon/toon.cpp:289
 #, c-format
 msgid "Could not quick load the saved game #%d"
 msgstr "Impossibile caricare il salvataggio rapido #%d"
 
-#: engines/toon/toon.cpp:1531
+#: engines/toon/toon.cpp:1538
 msgid "Are you sure you want to exit?"
 msgstr "Sei sicuro di voler uscire?"
 
-#: engines/toon/toon.cpp:1944
+#: engines/toon/toon.cpp:1951
 #, c-format
 msgid "Unable to locate the '%s' data file."
 msgstr "File dati '%s' non trovato."
@@ -11045,67 +11066,67 @@ msgstr "Frase classica"
 msgid "Ransome *unbeeped* (DLC)"
 msgstr "Ransome *debippato* (DLC)"
 
-#: engines/twp/metaengine.cpp:132
+#: engines/twp/metaengine.cpp:139
 msgid "Select Actor 1"
 msgstr "Seleziona personaggio 1"
 
-#: engines/twp/metaengine.cpp:133
+#: engines/twp/metaengine.cpp:140
 msgid "Select Actor 2"
 msgstr "Seleziona personaggio 2"
 
-#: engines/twp/metaengine.cpp:134
+#: engines/twp/metaengine.cpp:141
 msgid "Select Actor 3"
 msgstr "Seleziona personaggio 3"
 
-#: engines/twp/metaengine.cpp:135
+#: engines/twp/metaengine.cpp:142
 msgid "Select Actor 4"
 msgstr "Seleziona personaggio 4"
 
-#: engines/twp/metaengine.cpp:136
+#: engines/twp/metaengine.cpp:143
 msgid "Select Actor 5"
 msgstr "Seleziona personaggio 5"
 
-#: engines/twp/metaengine.cpp:137
+#: engines/twp/metaengine.cpp:144
 msgid "Select Actor 6"
 msgstr "Seleziona personaggio 6"
 
-#: engines/twp/metaengine.cpp:138
+#: engines/twp/metaengine.cpp:145
 msgid "Select Choice 1"
 msgstr "Seleziona opzione 1"
 
-#: engines/twp/metaengine.cpp:139
+#: engines/twp/metaengine.cpp:146
 msgid "Select Choice 2"
 msgstr "Seleziona opzione 2"
 
-#: engines/twp/metaengine.cpp:140
+#: engines/twp/metaengine.cpp:147
 msgid "Select Choice 3"
 msgstr "Seleziona opzione 3"
 
-#: engines/twp/metaengine.cpp:141
+#: engines/twp/metaengine.cpp:148
 msgid "Select Choice 4"
 msgstr "Seleziona opzione 4"
 
-#: engines/twp/metaengine.cpp:142
+#: engines/twp/metaengine.cpp:149
 msgid "Select Choice 5"
 msgstr "Seleziona opzione 5"
 
-#: engines/twp/metaengine.cpp:143
+#: engines/twp/metaengine.cpp:150
 msgid "Select Choice 6"
 msgstr "Seleziona opzione 6"
 
-#: engines/twp/metaengine.cpp:144
+#: engines/twp/metaengine.cpp:151
 msgid "Select Next Actor"
 msgstr "Seleziona personaggio successivo"
 
-#: engines/twp/metaengine.cpp:145
+#: engines/twp/metaengine.cpp:152
 msgid "Select Previous Actor"
 msgstr "Seleziona personaggio precedente"
 
-#: engines/twp/metaengine.cpp:146
+#: engines/twp/metaengine.cpp:153
 msgid "Skip Text"
 msgstr "Salta battuta"
 
-#: engines/twp/metaengine.cpp:147
+#: engines/twp/metaengine.cpp:154
 msgid "Show hotspots"
 msgstr "Mostra aree interattive"
 
@@ -11207,12 +11228,10 @@ msgid "Ultima VI"
 msgstr "Ultima VI"
 
 #: engines/ultima/nuvie/metaengine.cpp:208
-#, fuzzy
 msgid "Martian Dreams"
 msgstr "Martian Dreams"
 
 #: engines/ultima/nuvie/metaengine.cpp:210
-#, fuzzy
 msgid "The Savage Empire"
 msgstr "The Savage Empire"
 

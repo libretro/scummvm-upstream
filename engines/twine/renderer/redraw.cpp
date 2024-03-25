@@ -169,20 +169,63 @@ void Redraw::sortDrawingList(DrawListStruct *list, int32 listSize) const {
 	}
 }
 
-void Redraw::addOverlay(OverlayType type, int16 info0, int16 x, int16 y, int16 info1, OverlayPosType posType, int16 lifeTime) { // InitIncrustDisp
+void Redraw::posObjIncrust(OverlayListStruct *ptrdisp, int32 num) {
+	// in case we have several 3D objects rotating at the same time!
+	int32 x = 10;
+	OverlayType type = ptrdisp->type;
+
+	if (type == OverlayType::koInventory || type == OverlayType::koInventoryItem) {
+		for (int32 n = 0; n < ARRAYSIZE(overlayList); n++) {
+			OverlayListStruct *overlay = &overlayList[n];
+			if (n != num && overlay->info0 != -1) {
+				if (overlay->type == OverlayType::koInventory || overlay->type == OverlayType::koInventoryItem) {
+					x += 70;
+				}
+			}
+		}
+
+		ptrdisp->y = 10;
+		ptrdisp->x = (int16)x;
+	}
+}
+
+int32 Redraw::addOverlay(OverlayType type, int16 info0, int16 x, int16 y, int16 info1, OverlayPosType posType, int16 lifeTime) { // InitIncrustDisp
 	for (int32 i = 0; i < ARRAYSIZE(overlayList); i++) {
 		OverlayListStruct *overlay = &overlayList[i];
-		if (overlay->info0 == -1) {
-			overlay->type = type;
-			overlay->info0 = info0;
-			overlay->x = x;
-			overlay->y = y;
-			overlay->info1 = info1;
-			overlay->posType = posType;
-			overlay->lifeTime = _engine->timerRef + _engine->toSeconds(lifeTime);
-			break;
+		if (_engine->isLBA1()) {
+			if (overlay->info0 == -1) {
+				overlay->type = type;
+				overlay->info0 = info0;
+				overlay->x = x;
+				overlay->y = y;
+				overlay->info1 = info1;
+				overlay->posType = posType;
+				overlay->lifeTime = _engine->timerRef + _engine->toSeconds(lifeTime);
+				return i;
+			}
+		} else {
+			if (overlay->info0 == -1 || (overlay->info0 == info0 && overlay->type == type)) {
+				if (overlay->info0 == -1 || overlay->type != type) {
+					overlay->x = x;
+					overlay->y = y;
+				}
+				if ((OverlayType)((uint8)type) == OverlayType::koNumberRange) {
+					// ATTENTION: Big Trickery: counters are always displayed
+					// at y=20, this allows using the Y to store the
+					// current value of the counter (see FlagAnimWhoSpeak)
+					overlay->y = info0;
+				}
+				overlay->type = type;
+				overlay->info0 = info0;
+				overlay->info1 = info1;
+				overlay->posType = posType;
+				overlay->lifeTime = _engine->timerRef + _engine->toSeconds(lifeTime);
+				posObjIncrust(overlay, i);
+				return i;
+			}
 		}
 	}
+	return -1;
 }
 
 void Redraw::updateOverlayTypePosition(int16 x1, int16 y1, int16 x2, int16 y2) {
@@ -202,7 +245,7 @@ int32 Redraw::fillActorDrawingList(DrawListStruct *drawList, bool flagflip) {
 	int32 drawListPos = 0;
 	for (int32 a = 0; a < _engine->_scene->_nbObjets; a++) {
 		ActorStruct *actor = _engine->_scene->getActor(a);
-		actor->_dynamicFlags.bIsDrawn = 0; // reset visible state
+		actor->_workFlags.bIsDrawn = 0; // reset visible state
 
 		if (_engine->_grid->_useCellingGrid != -1 && actor->_pos.y > _engine->_scene->_sceneZones[_engine->_grid->_cellingGridIdx].maxs.y) {
 			continue;
@@ -213,7 +256,7 @@ int32 Redraw::fillActorDrawingList(DrawListStruct *drawList, bool flagflip) {
 			const IVec3 &projPos = _engine->_renderer->projectPoint(actor->posObj() - _engine->_grid->_worldCube);
 			// check if actor is visible on screen, otherwise don't display it
 			if (projPos.x > VIEW_X0 && projPos.x < VIEW_X1(_engine) && projPos.y > VIEW_Y0 && projPos.y < VIEW_Y1(_engine)) {
-				actor->_dynamicFlags.bIsDrawn = 1;
+				actor->_workFlags.bIsDrawn = 1;
 			}
 			continue;
 		}
@@ -378,7 +421,7 @@ void Redraw::processDrawListActors(const DrawListStruct &drawCmd, bool bgRedraw)
 	}
 
 	if (_engine->_interface->setClip(renderRect)) {
-		actor->_dynamicFlags.bIsDrawn = 1;
+		actor->_workFlags.bIsDrawn = 1;
 
 		const int32 tempX = (actor->_pos.x + DEMI_BRICK_XZ) / SIZE_BRICK_XZ;
 		int32 tempY = actor->_pos.y / SIZE_BRICK_Y;
@@ -432,7 +475,7 @@ void Redraw::processDrawListActorSprites(const DrawListStruct &drawCmd, bool bgR
 	if (validClip) {
 		_engine->_grid->drawSprite(0, renderRect.left, renderRect.top, spritePtr);
 
-		actor->_dynamicFlags.bIsDrawn = 1;
+		actor->_workFlags.bIsDrawn = 1;
 
 		if (actor->_staticFlags.bUsesClipping) {
 			const int32 tmpX = (actor->_animStep.x + DEMI_BRICK_XZ) / SIZE_BRICK_XZ;
@@ -771,6 +814,13 @@ void Redraw::renderOverlays() {
 				_engine->_interface->unsetClip();
 				break;
 			}
+			case OverlayType::koSysText:
+			case OverlayType::koFlash:
+			case OverlayType::koRain:
+			case OverlayType::koInventory:
+				// TODO lba2
+			case OverlayType::koMax:
+				break;
 			}
 		}
 	}

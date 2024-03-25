@@ -17,38 +17,28 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
- *
- * This file is dual-licensed.
- * In addition to the GPLv3 license mentioned above, MojoTouch has
- * exclusively licensed this code on March 23th, 2024, to be used in
- * closed-source products.
- * Therefore, any contributions (commits) to it will also be dual-licensed.
- *
  */
 
-#ifndef TOON_FLUX_H
-#define TOON_FLUX_H
+#include "twine/scene/buggy.h"
 
-#include "toon/character.h"
+namespace TwinE {
 
-class ToonEngine;
+void Buggy::initBuggy(uint8 numobj, uint32 flaginit) {
+}
 
-namespace Toon {
+void Buggy::resetBuggy() {
+}
 
-class CharacterFlux : public Character {
-public:
-	CharacterFlux(ToonEngine *vm);
-	~CharacterFlux() override;
+void Buggy::takeBuggy() {
+}
 
-	void setPosition(int16 x, int16 y) override;
-	void playStandingAnim() override;
-	void playWalkAnim(int32 start, int32 end) override;
-	void update(int32 timeIncrement) override;
-	int32 getRandomIdleAnim() override;
-	void setVisible(bool visible) override;
-	static int32 fixFacingForAnimation(int32 originalFacing, int32 animationId);
-};
+void Buggy::leaveBuggy(uint8 newcomportement) {
+}
 
-} // End of namespace Toon
+void Buggy::doAnimBuggy(ActorStruct *ptrobj) {
+}
 
-#endif
+void Buggy::moveBuggy(ActorStruct *ptrobj) {
+}
+
+} // namespace TwinE

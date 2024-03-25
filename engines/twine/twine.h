@@ -37,6 +37,7 @@
 #include "twine/detection.h"
 #include "twine/input.h"
 #include "twine/scene/actor.h"
+#include "twine/scene/buggy.h"
 #include "twine/script/script_life.h"
 #include "twine/script/script_move.h"
 #include "twine/shared.h"
@@ -294,6 +295,7 @@ public:
 	DebugGrid *_debugGrid;
 	Input *_input;
 	Debug *_debug;
+	Buggy *_buggy; // lba2
 	DebugScene *_debugScene;
 
 	/** Configuration file structure
@@ -308,6 +310,7 @@ public:
 	int32 _stepFalling = 0;
 	uint32 _gameFlags;
 	Common::Platform _platform;
+	bool _flagRain;
 
 	/** Disable screen recenter */
 	bool _disableScreenRecenter = false;

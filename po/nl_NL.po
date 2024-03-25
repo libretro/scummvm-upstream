@@ -10,8 +10,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: ScummVM 1.9.0git\n"
 "Report-Msgid-Bugs-To: scummvm-devel@lists.scummvm.org\n"
-"POT-Creation-Date: 2024-03-17 01:12+0000\n"
-"PO-Revision-Date: 2024-03-14 20:07+0000\n"
+"POT-Creation-Date: 2024-03-25 01:43+0000\n"
+"PO-Revision-Date: 2024-03-24 18:22+0000\n"
 "Last-Translator: Ben Castricum <github@bencastricum.nl>\n"
 "Language-Team: Dutch <https://translations.scummvm.org/projects/scummvm/"
 "scummvm/nl/>\n"
@@ -88,7 +88,7 @@ msgstr "Ga omhoog"
 #: gui/saveload-dialog.cpp:526 gui/saveload-dialog.cpp:828
 #: gui/saveload-dialog.cpp:1224 gui/shaderbrowser-dialog.cpp:80
 #: gui/themebrowser.cpp:54 gui/unknown-game-dialog.cpp:53 base/main.cpp:604
-#: dists/android.strings.xml.cpp:43 engines/engine.cpp:747
+#: dists/android.strings.xml.cpp:43 engines/engine.cpp:749
 #: backends/dialogs/gtk/gtk-dialogs.cpp:65
 #: backends/events/default/default-events.cpp:193
 #: backends/events/default/default-events.cpp:217
@@ -242,7 +242,7 @@ msgid "Paste code from clipboard"
 msgstr "Plak vanaf klembord"
 
 #: gui/cloudconnectionwizard.cpp:362 gui/launcher.cpp:316
-#: engines/dialogs.cpp:94 engines/engine.cpp:915 engines/mm/xeen/saves.cpp:259
+#: engines/dialogs.cpp:94 engines/engine.cpp:917 engines/mm/xeen/saves.cpp:259
 #: engines/parallaction/metaengine.cpp:127
 #: engines/parallaction/saveload.cpp:193 engines/pegasus/pegasus.cpp:388
 #: engines/trecision/saveload.cpp:253 engines/tsage/scenes.cpp:638
@@ -302,8 +302,8 @@ msgstr "Een andere opslag is actief. Wilt u die onderbreken?"
 #: engines/director/lingo/xlibs/jitdraw3.cpp:139 engines/grim/grim.cpp:366
 #: engines/kyra/gui/saveload_eob.cpp:598 engines/kyra/gui/saveload_eob.cpp:631
 #: engines/parallaction/metaengine.cpp:145
-#: engines/sci/graphics/controls32.cpp:929 engines/scumm/scumm.cpp:3899
-#: engines/toon/toon.cpp:1531
+#: engines/sci/graphics/controls32.cpp:929 engines/scumm/scumm.cpp:3893
+#: engines/toon/toon.cpp:1538
 msgid "Yes"
 msgstr "Ja"
 
@@ -315,8 +315,8 @@ msgstr "Ja"
 #: engines/director/lingo/xlibs/jitdraw3.cpp:139 engines/grim/grim.cpp:366
 #: engines/kyra/gui/saveload_eob.cpp:598 engines/kyra/gui/saveload_eob.cpp:631
 #: engines/parallaction/metaengine.cpp:151
-#: engines/sci/graphics/controls32.cpp:929 engines/scumm/scumm.cpp:3899
-#: engines/toon/toon.cpp:1531
+#: engines/sci/graphics/controls32.cpp:929 engines/scumm/scumm.cpp:3893
+#: engines/toon/toon.cpp:1538
 msgid "No"
 msgstr "Nee"
 
@@ -334,7 +334,7 @@ msgstr "JSON code heeft niet het juiste formaat."
 #: gui/fluidsynth-dialog.cpp:153 gui/launcher.cpp:548 gui/launcher.cpp:552
 #: gui/massadd.cpp:90 gui/options.cpp:2354 gui/predictivedialog.cpp:69
 #: gui/saveload-dialog.cpp:1225 dists/android.strings.xml.cpp:32
-#: engines/engine.cpp:550 engines/engine.cpp:573
+#: engines/engine.cpp:552 engines/engine.cpp:575
 #: backends/platform/wii/options.cpp:46 engines/agos/animation.cpp:577
 #: engines/agos/midi.cpp:320 engines/agos/midi.cpp:378
 #: engines/agos/midi.cpp:457 engines/buried/saveload.cpp:83
@@ -1373,7 +1373,7 @@ msgstr "Zoek in lijst met spellen"
 msgid "Search:"
 msgstr "Zoeken:"
 
-#: gui/launcher.cpp:316 engines/dialogs.cpp:94 engines/engine.cpp:915
+#: gui/launcher.cpp:316 engines/dialogs.cpp:94 engines/engine.cpp:917
 #: engines/mm/xeen/saves.cpp:259 engines/pegasus/pegasus.cpp:388
 #: engines/trecision/saveload.cpp:253 engines/tsage/scenes.cpp:638
 #: engines/wage/saveload.cpp:736
@@ -1589,13 +1589,13 @@ msgstr "175% - Heel groot"
 #: gui/options.cpp:158
 #, c-format
 msgid "150% - Larger"
-msgstr ""
+msgstr "150% - Groter"
 
 #. I18N: Large GUI scale
 #: gui/options.cpp:160
 #, c-format
 msgid "125% - Large"
-msgstr ""
+msgstr "125% - Groot"
 
 #. I18N: Medium GUI scale
 #: gui/options.cpp:162
@@ -2121,7 +2121,7 @@ msgstr "GUI schaal:"
 #: gui/options.cpp:2568
 #, c-format
 msgid "%d%% - Custom"
-msgstr ""
+msgstr "%d%%- Aangepast"
 
 #: gui/options.cpp:2572
 msgid "GUI renderer:"
@@ -2479,7 +2479,7 @@ msgstr ""
 "\n"
 "En meer..."
 
-#: gui/options.cpp:2899 engines/engine.cpp:602
+#: gui/options.cpp:2899 engines/engine.cpp:604
 msgid "Move"
 msgstr "Beweeg"
 
@@ -2611,7 +2611,7 @@ msgstr "Opnemen of Afspelen Spel"
 
 #: gui/recorderdialog.cpp:72 gui/recorderdialog.cpp:212
 #: gui/saveload-dialog.cpp:459 gui/saveload-dialog.cpp:526
-#: dists/android.strings.xml.cpp:44 engines/engine.cpp:596
+#: dists/android.strings.xml.cpp:44 engines/engine.cpp:598
 msgid "Delete"
 msgstr "Verwijderen"
 
@@ -3280,7 +3280,7 @@ msgctxt "lowres"
 msgid "~R~eturn to Launcher"
 msgstr "~T~erug naar Startmenu"
 
-#: engines/dialogs.cpp:95 engines/engine.cpp:944 engines/agi/saveload.cpp:766
+#: engines/dialogs.cpp:95 engines/engine.cpp:946 engines/agi/saveload.cpp:766
 #: engines/avalanche/parser.cpp:1918 engines/cine/various.cpp:349
 #: engines/dm/loadsave.cpp:199 engines/drascula/saveload.cpp:382
 #: engines/dreamweb/saveload.cpp:261 engines/glk/streams.cpp:1432
@@ -3294,13 +3294,13 @@ msgstr "~T~erug naar Startmenu"
 #: engines/prince/saveload.cpp:54 engines/sci/engine/guest_additions.cpp:742
 #: engines/sci/engine/kfile.cpp:1083 engines/sherlock/scalpel/scalpel.cpp:1249
 #: engines/sherlock/tattoo/widget_files.cpp:74 engines/startrek/saveload.cpp:42
-#: engines/toltecs/menu.cpp:302 engines/toon/toon.cpp:3804
+#: engines/toltecs/menu.cpp:302 engines/toon/toon.cpp:3811
 #: engines/trecision/saveload.cpp:67 engines/tsage/scenes.cpp:636
 #: engines/wage/saveload.cpp:746 engines/zvision/file/save_manager.cpp:48
 msgid "Save game:"
 msgstr "Spel opslaan:"
 
-#: engines/dialogs.cpp:95 engines/engine.cpp:944 engines/agi/saveload.cpp:766
+#: engines/dialogs.cpp:95 engines/engine.cpp:946 engines/agi/saveload.cpp:766
 #: engines/avalanche/parser.cpp:1918 engines/cine/various.cpp:349
 #: engines/dm/loadsave.cpp:199 engines/drascula/saveload.cpp:382
 #: engines/dreamweb/saveload.cpp:261 engines/glk/streams.cpp:1432
@@ -3316,7 +3316,7 @@ msgstr "Spel opslaan:"
 #: engines/prince/saveload.cpp:54 engines/sci/engine/guest_additions.cpp:743
 #: engines/sci/engine/kfile.cpp:1083 engines/sherlock/scalpel/scalpel.cpp:1249
 #: engines/sherlock/tattoo/widget_files.cpp:74 engines/startrek/saveload.cpp:42
-#: engines/toltecs/menu.cpp:302 engines/toon/toon.cpp:3804
+#: engines/toltecs/menu.cpp:302 engines/toon/toon.cpp:3811
 #: engines/trecision/saveload.cpp:67 engines/tsage/scenes.cpp:636
 #: engines/wage/saveload.cpp:746 engines/zvision/file/save_manager.cpp:48
 #: engines/zvision/metaengine.cpp:262
@@ -3374,44 +3374,44 @@ msgid "~C~ancel"
 msgstr "~A~nnuleer"
 
 # can this be changed into "Could not switch to video mode '%s'"?
-#: engines/engine.cpp:366
+#: engines/engine.cpp:368
 #, c-format
 msgid "Could not switch to resolution '%dx%d'."
 msgstr "Kon niet omschakelen naar resolutie '%dx%d'."
 
-#: engines/engine.cpp:375
+#: engines/engine.cpp:377
 msgid "Could not initialize color format."
 msgstr "Kon kleurformaat niet initialiseren."
 
 # can this be changed into "Could not switch to video mode '%s'"?
-#: engines/engine.cpp:384
+#: engines/engine.cpp:386
 #, c-format
 msgid "Could not switch to video mode '%s'."
 msgstr "Kon niet omschakelen naar videomodus '%s'."
 
 # can this be changed into "Could not switch to video mode '%s'"?
-#: engines/engine.cpp:392
+#: engines/engine.cpp:394
 #, c-format
 msgid "Could not switch to stretch mode '%s'."
 msgstr "Kon niet omschakelen naar uitrekmodus '%s'."
 
-#: engines/engine.cpp:399
+#: engines/engine.cpp:401
 msgid "Could not apply aspect ratio setting."
 msgstr "Kon pixelverhoudinginstelling niet toepassen."
 
-#: engines/engine.cpp:404
+#: engines/engine.cpp:406
 msgid "Could not apply fullscreen setting."
 msgstr "Kon volledig-scherminstelling niet toepassen."
 
-#: engines/engine.cpp:409
+#: engines/engine.cpp:411
 msgid "Could not apply filtering setting."
 msgstr "Kon filterinstelling niet toepassen."
 
-#: engines/engine.cpp:483
+#: engines/engine.cpp:485
 msgid "Error"
 msgstr "Fout"
 
-#: engines/engine.cpp:546
+#: engines/engine.cpp:548
 msgid ""
 "You appear to be playing this game directly\n"
 "from the CD. This is known to cause problems,\n"
@@ -3425,7 +3425,7 @@ msgstr ""
 "bestanden naar uw harddisk te kopiëren.\n"
 "Zie de documentatie (CD audio) voor details."
 
-#: engines/engine.cpp:569
+#: engines/engine.cpp:571
 msgid ""
 "This game has audio tracks on its CD. These\n"
 "tracks need to be ripped from the CD using\n"
@@ -3439,11 +3439,11 @@ msgstr ""
 "het spelmuziek. Zie de documentatie (CD audio)\n"
 "voor details."
 
-#: engines/engine.cpp:597
+#: engines/engine.cpp:599
 msgid "Skip autosave"
 msgstr "automatisch opslaan overslaan"
 
-#: engines/engine.cpp:599
+#: engines/engine.cpp:601
 #, c-format
 msgid ""
 "WARNING: The autosave slot contains a saved game named %S, and an autosave "
@@ -3457,21 +3457,21 @@ msgstr ""
 "U kunt of dit spel verplaatsen naar een nieuw slot, of verwijderen.\n"
 "U kunt ook deze autosave overslaan (de volgende is over 5 minuten)."
 
-#: engines/engine.cpp:609
+#: engines/engine.cpp:611
 msgid "ERROR: Could not copy the savegame to a new slot"
 msgstr "FOUT: Kon het opgeslagen spel niet kopiëren naar een nieuw slot"
 
-#: engines/engine.cpp:636 engines/savestate.cpp:98
+#: engines/engine.cpp:638 engines/savestate.cpp:98
 #: backends/platform/ios7/ios7_osys_main.cpp:294 engines/mm/xeen/saves.cpp:293
 #: engines/sky/metaengine.cpp:216
 msgid "Autosave"
 msgstr "Automatisch opslaan"
 
-#: engines/engine.cpp:644
+#: engines/engine.cpp:646
 msgid "Error occurred making autosave"
 msgstr "Fout tijdens het automatisch opslaan"
 
-#: engines/engine.cpp:719
+#: engines/engine.cpp:721
 #, c-format
 msgid ""
 "Failed to load saved game (%s)! Please consult the README for basic "
@@ -3481,15 +3481,15 @@ msgstr ""
 "voor basisinformatie, en voor instructies voor het verkrijgen van verdere "
 "assistentie."
 
-#: engines/engine.cpp:743
+#: engines/engine.cpp:745
 msgid "WARNING: "
 msgstr "WAARSCHUWING: "
 
-#: engines/engine.cpp:743
+#: engines/engine.cpp:745
 msgid " Shall we still run the game?"
 msgstr " Wilt u dit spel nog steeds spelen?"
 
-#: engines/engine.cpp:744
+#: engines/engine.cpp:746
 msgid ""
 "WARNING: The game you are about to start is not yet fully supported by "
 "ScummVM. As such, it is likely to be unstable, and any saved game you make "
@@ -3500,15 +3500,15 @@ msgstr ""
 "opgeslagen spellen zullen mogelijk niet werken in toekomstige versies van "
 "ScummVM."
 
-#: engines/engine.cpp:747 engines/wintermute/wintermute.cpp:182
+#: engines/engine.cpp:749 engines/wintermute/wintermute.cpp:182
 msgid "Start anyway"
 msgstr "Evengoed starten"
 
-#: engines/engine.cpp:765
+#: engines/engine.cpp:767
 msgid "This game is not supported."
 msgstr "Dit spel wordt niet ondersteund."
 
-#: engines/engine.cpp:765
+#: engines/engine.cpp:767
 msgid ""
 "This game is not supported for the following reason:\n"
 "\n"
@@ -3516,11 +3516,11 @@ msgstr ""
 "Dit spel wordt niet ondersteund om de volgende reden:\n"
 "\n"
 
-#: engines/engine.cpp:911
+#: engines/engine.cpp:913
 msgid "Loading game is currently unavailable"
 msgstr "Spel laden is nu niet mogelijk"
 
-#: engines/engine.cpp:940
+#: engines/engine.cpp:942
 msgid "Saving game is currently unavailable"
 msgstr "Spel opslaan is nu niet mogelijk"
 
@@ -5024,10 +5024,8 @@ msgid ""
 msgstr ""
 
 #: backends/platform/ios7/ios7_osys_misc.mm:314
-#, fuzzy
-#| msgid "Toggle virtual keyboard"
 msgid "External keyboard"
-msgstr "Virtueel toetsenbord aan-/uitzetten"
+msgstr "Extern toetsenbord"
 
 #: backends/platform/ios7/ios7_osys_misc.mm:317
 msgid ""
@@ -5443,7 +5441,7 @@ msgstr "Controleren op updates..."
 #: engines/hugo/hugo.cpp:424 engines/lure/lure.cpp:57
 #: engines/mortevielle/mortevielle.cpp:300 engines/sky/compact.cpp:129
 #: engines/supernova/supernova.cpp:463 engines/teenagent/resources.cpp:97
-#: engines/tony/tony.cpp:187 engines/toon/toon.cpp:5409
+#: engines/tony/tony.cpp:187 engines/toon/toon.cpp:5416
 #: engines/ultima/ultima8/ultima8.cpp:183
 #, c-format
 msgid "Unable to locate the '%s' engine data file."
@@ -5452,7 +5450,7 @@ msgstr "Kon de '%s' engine data file niet vinden."
 #: engines/access/resources.cpp:51 engines/drascula/drascula.cpp:956
 #: engines/hugo/hugo.cpp:436 engines/lure/lure.cpp:66
 #: engines/mortevielle/mortevielle.cpp:308 engines/supernova/supernova.cpp:468
-#: engines/tony/tony.cpp:200 engines/toon/toon.cpp:5422
+#: engines/tony/tony.cpp:200 engines/toon/toon.cpp:5429
 #, c-format
 msgid "The '%s' engine data file is corrupt."
 msgstr "De '%s' engine data file is corrupt."
@@ -5460,7 +5458,7 @@ msgstr "De '%s' engine data file is corrupt."
 #: engines/access/resources.cpp:60 engines/drascula/drascula.cpp:967
 #: engines/hugo/hugo.cpp:446 engines/lure/lure.cpp:69
 #: engines/mortevielle/mortevielle.cpp:318 engines/tony/tony.cpp:211
-#: engines/toon/toon.cpp:5433
+#: engines/toon/toon.cpp:5440
 #, c-format
 msgid ""
 "Incorrect version of the '%s' engine data file found. Expected %d.%d but got "
@@ -5619,7 +5617,7 @@ msgstr "Dit spel ondersteundt opslaan niet"
 #: engines/prince/saveload.cpp:63 engines/sci/engine/guest_additions.cpp:745
 #: engines/sci/engine/kfile.cpp:1216 engines/sherlock/scalpel/scalpel.cpp:1262
 #: engines/sherlock/tattoo/widget_files.cpp:93 engines/startrek/saveload.cpp:67
-#: engines/toltecs/menu.cpp:272 engines/toon/toon.cpp:3898
+#: engines/toltecs/menu.cpp:272 engines/toon/toon.cpp:3905
 #: engines/zvision/file/save_manager.cpp:61
 msgid "Restore game:"
 msgstr "Laad opgeslagen spel:"
@@ -5639,7 +5637,7 @@ msgstr "Laad opgeslagen spel:"
 #: engines/prince/saveload.cpp:63 engines/sci/engine/guest_additions.cpp:746
 #: engines/sci/engine/kfile.cpp:1216 engines/sherlock/scalpel/scalpel.cpp:1262
 #: engines/sherlock/tattoo/widget_files.cpp:93 engines/startrek/saveload.cpp:67
-#: engines/toltecs/menu.cpp:272 engines/toon/toon.cpp:3898
+#: engines/toltecs/menu.cpp:272 engines/toon/toon.cpp:3905
 #: engines/zvision/file/save_manager.cpp:61 engines/zvision/metaengine.cpp:267
 msgid "Restore"
 msgstr "Laad"
@@ -5648,7 +5646,7 @@ msgstr "Laad"
 msgid "Quick load or save game isn't supported in this location"
 msgstr "Snel laden of bewaren wordt niet ondersteund op deze locatie"
 
-#: engines/agos/saveload.cpp:161 engines/scumm/scumm.cpp:2902
+#: engines/agos/saveload.cpp:161 engines/scumm/scumm.cpp:2896
 #, c-format
 msgid ""
 "Failed to load saved game from file:\n"
@@ -5659,7 +5657,7 @@ msgstr ""
 "\n"
 "%s"
 
-#: engines/agos/saveload.cpp:196 engines/scumm/scumm.cpp:2889
+#: engines/agos/saveload.cpp:196 engines/scumm/scumm.cpp:2883
 #, c-format
 msgid ""
 "Failed to save game to file:\n"
@@ -5670,7 +5668,7 @@ msgstr ""
 "\n"
 "%s"
 
-#: engines/agos/saveload.cpp:204 engines/scumm/scumm.cpp:2922
+#: engines/agos/saveload.cpp:204 engines/scumm/scumm.cpp:2916
 #, c-format
 msgid ""
 "Successfully saved game in file:\n"
@@ -5790,13 +5788,16 @@ msgstr "De te gebruiken taal voor meertalige spellen"
 
 #: engines/ags/dialogs.cpp:83
 msgid "Enable ScummVM save management"
-msgstr ""
+msgstr "Schakel ScummVM Spel Opslag beheer in"
 
 #: engines/ags/dialogs.cpp:83
 msgid ""
 "Never disable ScummVM save management and autosaves.\n"
 "NOTE: This could cause save duplication and other oddities"
 msgstr ""
+"Schakel ScummVM Spel opslag and auo-opslaan nooit uit.\n"
+"OPMERKING: Dit kan dubbele opgeslagen spellen en andere vreemde zaken "
+"veroorzaken"
 
 #: engines/ags/dialogs.cpp:88
 msgid "Force antialiased text"
@@ -5837,6 +5838,9 @@ msgid ""
 "game interface.\n"
 "You can, however, override this setting in Game Options."
 msgstr ""
+"Om de originele spelervaring te beleven zou dit spel geladen moeten worden "
+"via de interface in het spel zelf.\n"
+"Het is mogelijk om deze setting te overrulen in Spel Opties."
 
 #: engines/ags/ags.cpp:332
 msgid ""
@@ -5844,6 +5848,9 @@ msgid ""
 "game interface.\n"
 "You can, however, override this setting in Game Options."
 msgstr ""
+"Om de originele spelervaring te beleven zou dit spel bewaard moeten worden "
+"via de interface in het spel zelf.\n"
+"Het is mogelijk om deze setting te overrulen in Spel Opties."
 
 #: engines/asylum/metaengine.cpp:115
 msgid "Show version"
@@ -6096,7 +6103,7 @@ msgstr "Schakel Vechtmodus in/uit"
 
 #. I18N: This keymap allows skipping video cutscenes
 #: engines/bladerunner/metaengine.cpp:229 engines/scumm/help.cpp:79
-#: engines/scumm/metaengine.cpp:874 engines/twp/metaengine.cpp:131
+#: engines/scumm/metaengine.cpp:874 engines/twp/metaengine.cpp:138
 #: engines/zvision/metaengine.cpp:284
 msgid "Skip cutscene"
 msgstr "Cutscene overslaan"
@@ -6261,63 +6268,57 @@ msgstr ""
 "Gebruik TTS voor het oplezen van tekst in het spel (als TTS beschikbaar is)"
 
 #: engines/cge/metaengine.cpp:199 engines/cge2/metaengine.cpp:212
-#, fuzzy
-#| msgid "Game Options"
 msgid "Game Keymappings"
-msgstr "Spel Opties"
+msgstr "Spel Toetskoppelingen"
 
 #. I18N: 3-4 dialogs of game version info, (translation) credits, etc.
 #: engines/cge/metaengine.cpp:204 engines/cge2/metaengine.cpp:216
-#, fuzzy
-#| msgid "Game menu"
 msgid "Game Info"
-msgstr "Spelmenu"
+msgstr "Spel Info"
 
 #. I18N: This opens a Quit Prompt where you have to choose
 #. [Confirm] or [Continue Playing] lines with Left Click.
 #: engines/cge/metaengine.cpp:211 engines/cge2/metaengine.cpp:233
-#, fuzzy
-#| msgid "Quit Game"
 msgid "Quit Prompt"
-msgstr "Spel Verlaten"
+msgstr "Stoppen Prompt"
 
 #. I18N: Here ALTered Item refers to the dice that has been altered/changed.
 #. In order to escape the dice game loop press Right/Left Alt
 #: engines/cge/metaengine.cpp:218
 msgid "ALTered Item"
-msgstr ""
+msgstr "AANgepast Voorwerp"
 
 #: engines/cge/metaengine.cpp:224
 msgid "Inventory Item 1 (Select/Deselect)"
-msgstr ""
+msgstr "Inventaris Voorwerp 1 (Selecteer / Deselecteer)"
 
 #: engines/cge/metaengine.cpp:229
 msgid "Inventory Item 2 (Select/Deselect)"
-msgstr ""
+msgstr "Inventaris Voorwerp 2 (Selecteer / Deselecteer)"
 
 #: engines/cge/metaengine.cpp:234
 msgid "Inventory Item 3 (Select/Deselect)"
-msgstr ""
+msgstr "Inventaris Voorwerp 3 (Selecteer / Deselecteer)"
 
 #: engines/cge/metaengine.cpp:239
 msgid "Inventory Item 4 (Select/Deselect)"
-msgstr ""
+msgstr "Inventaris Voorwerp 4 (Selecteer / Deselecteer)"
 
 #: engines/cge/metaengine.cpp:244
 msgid "Inventory Item 5 (Select/Deselect)"
-msgstr ""
+msgstr "Inventaris Voorwerp 5 (Selecteer / Deselecteer)"
 
 #: engines/cge/metaengine.cpp:249
 msgid "Inventory Item 6 (Select/Deselect)"
-msgstr ""
+msgstr "Inventaris Voorwerp 6 (Selecteer / Deselecteer)"
 
 #: engines/cge/metaengine.cpp:254
 msgid "Inventory Item 7 (Select/Deselect)"
-msgstr ""
+msgstr "Inventaris Voorwerp 7 (Selecteer / Deselecteer)"
 
 #: engines/cge/metaengine.cpp:259
 msgid "Inventory Item 8 (Select/Deselect)"
-msgstr ""
+msgstr "Inventaris Voorwerp 8 (Selecteer / Deselecteer)"
 
 #. I18N: There are 24 single-room/screen locations in the game.
 #. You switch between them from numbered buttons on interface.
@@ -6370,10 +6371,8 @@ msgstr ""
 
 #. I18N: This closes the Dialogue/text box.
 #: engines/cge2/metaengine.cpp:245
-#, fuzzy
-#| msgid "Close popup"
 msgid "Close the Dialogue box"
-msgstr "Popup sluiten"
+msgstr "Sluit het dialoogvenster"
 
 #: engines/cine/metaengine.cpp:53
 msgid "Use transparent dialog boxes in 16 color scenes"
@@ -8879,7 +8878,7 @@ msgid "Your Name:"
 msgstr "Uw naam:"
 
 #. I18N: Button, start hosting online multiplayer game
-#: engines/scumm/dialog-createsession.cpp:49 engines/scumm/scumm.cpp:3905
+#: engines/scumm/dialog-createsession.cpp:49 engines/scumm/scumm.cpp:3899
 msgid "Host"
 msgstr ""
 
@@ -8889,7 +8888,7 @@ msgid "Querying games..."
 msgstr "Opvragen spellen..."
 
 #. I18N: Join online multiplayer game
-#: engines/scumm/dialog-sessionselector.cpp:64 engines/scumm/scumm.cpp:3905
+#: engines/scumm/dialog-sessionselector.cpp:64 engines/scumm/scumm.cpp:3899
 msgid "Join"
 msgstr ""
 
@@ -9034,10 +9033,8 @@ msgid "Low"
 msgstr ""
 
 #: engines/scumm/dialogs.cpp:1454
-#, fuzzy
-#| msgid "100% - Medium"
 msgid "Medium"
-msgstr "100% - Gemiddeld"
+msgstr "Gemiddeld"
 
 #: engines/scumm/dialogs.cpp:1454
 msgid "High"
@@ -9738,14 +9735,10 @@ msgid "Play simplified music"
 msgstr "Speel versimpelde muziek"
 
 #: engines/scumm/metaengine.cpp:661
-#, fuzzy
-#| msgid ""
-#| "This music was presumably intended for low-end Macs, and uses only one "
-#| "channel."
 msgid "This music was intended for low-end Macs, and uses only one channel."
 msgstr ""
-"Deze muziek was waarschijnlijk bedoeld voor de wat mindere Macs, en gebruikt "
-"slechts 1 kanaal."
+"Deze muziek was bedoeld voor de wat mindere Macs, en gebruikt slechts één "
+"kanaal."
 
 #: engines/scumm/metaengine.cpp:669
 msgid "Enable smooth scrolling"
@@ -9885,7 +9878,7 @@ msgid ""
 "required resources for MT-32. Using AdLib instead."
 msgstr ""
 
-#: engines/scumm/scumm.cpp:3794
+#: engines/scumm/scumm.cpp:3788
 msgid ""
 "Usually, Maniac Mansion would start now. But for that to work, the game "
 "files for Maniac Mansion have to be in the 'Maniac' directory inside the "
@@ -9895,7 +9888,7 @@ msgstr ""
 "moeten de Maniac Mansion bestanden in de 'Maniac' map in de Tentacle spelmap "
 "staan, en het spel moet worden toegevoegd aan ScummVM."
 
-#: engines/scumm/scumm.cpp:3905
+#: engines/scumm/scumm.cpp:3899
 msgid "Would you like to host or join a network play session?"
 msgstr "Wilt u een netwerk spel hosten of aan meedoen?"
 
@@ -10219,10 +10212,8 @@ msgid "Saturn CD version is not yet supported"
 msgstr "Saturn CD versie wordt nog niet ondersteund"
 
 #: engines/tinsel/metaengine.cpp:39
-#, fuzzy
-#| msgid "Move Backward"
 msgid "Remove Black Bars"
-msgstr "Beweeg Achteruit"
+msgstr "Verwijder Zwarte Balken"
 
 #: engines/tinsel/metaengine.cpp:40
 msgid ""
@@ -10236,31 +10227,31 @@ msgstr ""
 msgid "Font variant not present in '%s' engine data file."
 msgstr "Font variant niet aanwezig in '%s' engine data file."
 
-#: engines/toon/toon.cpp:261
+#: engines/toon/toon.cpp:268
 #, c-format
 msgid "Saved game in slot #%d "
 msgstr "Spel opgeslagen in slot #%d "
 
-#: engines/toon/toon.cpp:265
+#: engines/toon/toon.cpp:272
 #, c-format
 msgid "Could not quick save into slot #%d"
 msgstr "Snel opslaan in slot #%d mislukt"
 
-#: engines/toon/toon.cpp:278
+#: engines/toon/toon.cpp:285
 #, c-format
 msgid "Saved game #%d quick loaded"
 msgstr "Opgeslagen spel #%d snel geladen"
 
-#: engines/toon/toon.cpp:282
+#: engines/toon/toon.cpp:289
 #, c-format
 msgid "Could not quick load the saved game #%d"
 msgstr "Kon opgeslagen spel #%d niet snelladen"
 
-#: engines/toon/toon.cpp:1531
+#: engines/toon/toon.cpp:1538
 msgid "Are you sure you want to exit?"
 msgstr "Weet u zeker dat u wilt weggaan?"
 
-#: engines/toon/toon.cpp:1944
+#: engines/toon/toon.cpp:1951
 #, c-format
 msgid "Unable to locate the '%s' data file."
 msgstr "Kan de '%s' data file niet vinden."
@@ -10515,10 +10506,8 @@ msgid "Voices: German"
 msgstr ""
 
 #: engines/twp/dialogs.cpp:32
-#, fuzzy
-#| msgid "Video"
 msgid "Video:"
-msgstr "Video"
+msgstr "Video:"
 
 #. I18N: Setting to switch toiled paper to be shown as "over".
 #: engines/twp/dialogs.cpp:37
@@ -10545,10 +10534,8 @@ msgid ""
 msgstr ""
 
 #: engines/twp/dialogs.cpp:44
-#, fuzzy
-#| msgid "Control"
 msgid "Controls:"
-msgstr "Besturing"
+msgstr "Besturing:"
 
 #. I18N: Setting to invert verb colors or keep the original verb colors.
 #: engines/twp/dialogs.cpp:48
@@ -10575,101 +10562,69 @@ msgstr ""
 msgid "Ransome *unbeeped* (DLC)"
 msgstr ""
 
-#: engines/twp/metaengine.cpp:132
-#, fuzzy
-#| msgid "Select Group by"
-msgid "Select Actor 1"
-msgstr "Selecteer Groeperen met"
-
-#: engines/twp/metaengine.cpp:133
-#, fuzzy
-#| msgid "Select Group by"
-msgid "Select Actor 2"
-msgstr "Selecteer Groeperen met"
-
-#: engines/twp/metaengine.cpp:134
-#, fuzzy
-#| msgid "Select Group by"
-msgid "Select Actor 3"
-msgstr "Selecteer Groeperen met"
-
-#: engines/twp/metaengine.cpp:135
-#, fuzzy
-#| msgid "Select Group by"
-msgid "Select Actor 4"
-msgstr "Selecteer Groeperen met"
-
-#: engines/twp/metaengine.cpp:136
-#, fuzzy
-#| msgid "Select Group by"
-msgid "Select Actor 5"
-msgstr "Selecteer Groeperen met"
-
-#: engines/twp/metaengine.cpp:137
-#, fuzzy
-#| msgid "Select Group by"
-msgid "Select Actor 6"
-msgstr "Selecteer Groeperen met"
-
-#: engines/twp/metaengine.cpp:138
-#, fuzzy
-#| msgid "Select shader"
-msgid "Select Choice 1"
-msgstr "Selecteer shader"
-
 #: engines/twp/metaengine.cpp:139
-#, fuzzy
-#| msgid "Select shader"
-msgid "Select Choice 2"
-msgstr "Selecteer shader"
+msgid "Select Actor 1"
+msgstr "Selecteer Acteur 1"
 
 #: engines/twp/metaengine.cpp:140
-#, fuzzy
-#| msgid "Select shader"
-msgid "Select Choice 3"
-msgstr "Selecteer shader"
+msgid "Select Actor 2"
+msgstr "Selecteer Actor 2"
 
 #: engines/twp/metaengine.cpp:141
-#, fuzzy
-#| msgid "Select shader"
-msgid "Select Choice 4"
-msgstr "Selecteer shader"
+msgid "Select Actor 3"
+msgstr "Selecteer Acteur 3"
 
 #: engines/twp/metaengine.cpp:142
-#, fuzzy
-#| msgid "Select shader"
-msgid "Select Choice 5"
-msgstr "Selecteer shader"
+msgid "Select Actor 4"
+msgstr "Selecteer Acteur 4"
 
 #: engines/twp/metaengine.cpp:143
-#, fuzzy
-#| msgid "Select shader"
-msgid "Select Choice 6"
-msgstr "Selecteer shader"
+msgid "Select Actor 5"
+msgstr "Selecteer Acteur 5"
 
 #: engines/twp/metaengine.cpp:144
-#, fuzzy
-#| msgid "Select next music record"
-msgid "Select Next Actor"
-msgstr "Selecteer volgend lied"
+msgid "Select Actor 6"
+msgstr "Selecteer Acteur 6"
 
 #: engines/twp/metaengine.cpp:145
-#, fuzzy
-#| msgid "Previous action"
-msgid "Select Previous Actor"
-msgstr "Vorige actie"
+msgid "Select Choice 1"
+msgstr "Selecteer Keuze 1"
 
 #: engines/twp/metaengine.cpp:146
-#, fuzzy
-#| msgid "Skip text"
-msgid "Skip Text"
-msgstr "Text overslaan"
+msgid "Select Choice 2"
+msgstr "Selecteer Keuze 2"
 
 #: engines/twp/metaengine.cpp:147
-#, fuzzy
-#| msgid "Show hints"
+msgid "Select Choice 3"
+msgstr "Selecteer Keuze 3"
+
+#: engines/twp/metaengine.cpp:148
+msgid "Select Choice 4"
+msgstr "Selecteer Keuze 4"
+
+#: engines/twp/metaengine.cpp:149
+msgid "Select Choice 5"
+msgstr "Selecteer Keuze 5"
+
+#: engines/twp/metaengine.cpp:150
+msgid "Select Choice 6"
+msgstr "Selecteer Keuze 6"
+
+#: engines/twp/metaengine.cpp:151
+msgid "Select Next Actor"
+msgstr "Selecteer Volgende Acteur"
+
+#: engines/twp/metaengine.cpp:152
+msgid "Select Previous Actor"
+msgstr "Selecteer Vorige Acteur"
+
+#: engines/twp/metaengine.cpp:153
+msgid "Skip Text"
+msgstr "Text Overslaan"
+
+#: engines/twp/metaengine.cpp:154
 msgid "Show hotspots"
-msgstr "Toon hints"
+msgstr "Toon hotspots"
 
 #: engines/ultima/metaengine.cpp:63
 msgid "Enable frame skipping"
@@ -10762,10 +10717,8 @@ msgid "Original Save"
 msgstr "Origineel opgeslagen spel"
 
 #: engines/ultima/nuvie/metaengine.cpp:206
-#, fuzzy
-#| msgid "Ultima VIII"
 msgid "Ultima VI"
-msgstr "Ultima VIII"
+msgstr "Ultima VI"
 
 #: engines/ultima/nuvie/metaengine.cpp:208
 msgid "Martian Dreams"
@@ -10925,6 +10878,8 @@ msgstr ""
 #: engines/wintermute/metaengine.cpp:68
 msgid "This setting forces ScummVM to use 2D renderer while running 2D games"
 msgstr ""
+"Deze instelling forceert ScummVM om de 2D renderer te gebruiken voor 2D "
+"spellen"
 
 #: engines/wintermute/metaengine.cpp:112
 msgid "FoxTail support is not compiled in"

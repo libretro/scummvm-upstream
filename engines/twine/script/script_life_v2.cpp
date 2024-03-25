@@ -20,10 +20,16 @@
  */
 
 #include "twine/script/script_life_v2.h"
+#include "twine/renderer/redraw.h"
 #include "twine/renderer/screens.h"
+#include "twine/audio/sound.h"
+#include "twine/renderer/renderer.h"
 #include "twine/resources/resources.h"
+#include "twine/scene/actor.h"
+#include "twine/movies.h"
 #include "twine/scene/movements.h"
 #include "twine/script/script_move_v2.h"
+#include "twine/shared.h"
 #include "twine/twine.h"
 
 namespace TwinE {
@@ -205,18 +211,218 @@ int32 ScriptLifeV2::lFADE_TO_PAL(TwinEEngine *engine, LifeScriptContext &ctx) {
 }
 
 int32 ScriptLifeV2::lPLAY_MUSIC(TwinEEngine *engine, LifeScriptContext &ctx) {
+	debugC(3, kDebugLevels::kDebugScripts, "LIFE::lPLAY_MUSIC()");
 	// TODO: game var 157 is checked here
 	return lPLAY_CD_TRACK(engine, ctx);
 }
 
 int32 ScriptLifeV2::lTRACK_TO_VAR_GAME(TwinEEngine *engine, LifeScriptContext &ctx) {
 	const int32 num = ctx.stream.readByte();
-	engine->_gameState->setGameFlag(num, MAX<int32>(0, ctx.actor->_labelIdx));
+	debugC(3, kDebugLevels::kDebugScripts, "LIFE::lTRACK_TO_VAR_GAME(%i)", (int)num);
+	engine->_gameState->setGameFlag(num, MAX<int32>(0, ctx.actor->_labelTrack));
 	return 0;
 }
 
-int32 ScriptLifeV2::lVAR_GAME_TO_TRACK(TwinEEngine *engine, LifeScriptContext &ctx) {
+#define TM_END 0
+#define TM_NOP 1
+#define TM_BODY 2
+#define TM_ANIM 3
+#define TM_GOTO_POINT 4
+#define TM_WAIT_ANIM 5
+#define TM_LOOP 6
+#define TM_ANGLE 7
+#define TM_POS_POINT 8
+#define TM_LABEL 9
+#define TM_GOTO 10
+#define TM_STOP 11
+#define TM_GOTO_SYM_POINT 12
+#define TM_WAIT_NB_ANIM 13
+#define TM_SAMPLE 14
+#define TM_GOTO_POINT_3D 15
+#define TM_SPEED 16
+#define TM_BACKGROUND 17
+#define TM_WAIT_NB_SECOND 18
+#define TM_NO_BODY 19
+#define TM_BETA 20
+#define TM_OPEN_LEFT 21
+#define TM_OPEN_RIGHT 22
+#define TM_OPEN_UP 23
+#define TM_OPEN_DOWN 24
+#define TM_CLOSE 25
+#define TM_WAIT_DOOR 26
+#define TM_SAMPLE_RND 27
+#define TM_SAMPLE_ALWAYS 28
+#define TM_SAMPLE_STOP 29
+#define TM_PLAY_ACF 30
+#define TM_REPEAT_SAMPLE 31
+#define TM_SIMPLE_SAMPLE 32
+#define TM_FACE_TWINSEN 33
+#define TM_ANGLE_RND 34
+#define TM_REM 35
+#define TM_WAIT_NB_DIZIEME 36
+#define TM_DO 37
+#define TM_SPRITE 38
+#define TM_WAIT_NB_SECOND_RND 39
+#define TM_AFF_TIMER 40
+#define TM_SET_FRAME 41
+#define TM_SET_FRAME_3DS 42
+#define TM_SET_START_3DS 43
+#define TM_SET_END_3DS 44
+#define TM_START_ANIM_3DS 45
+#define TM_STOP_ANIM_3DS 46
+#define TM_WAIT_ANIM_3DS 47
+#define TM_WAIT_FRAME_3DS 48
+#define TM_WAIT_NB_DIZIEME_RND 49
+#define TM_DECALAGE 50
+#define TM_FREQUENCE 51
+#define TM_VOLUME 52
+
+// Allows forcing a track to a label instead of an offset (basically, like in the tool!)
+int16 ScriptLifeV2::searchOffsetTrack(ActorStruct *ptrobj, uint8 label) {
+	uint8 *ptrtrack;
+	int16 offsettrack = 0;
+	uint8 macro;
+
+	for (;;) {
+		ptrtrack = ptrobj->_ptrTrack + offsettrack;
+
+		macro = *ptrtrack++;
+		offsettrack++;
+
+		switch (macro) {
+		case TM_LABEL:
+			if (*ptrtrack == label) {
+				ptrobj->_labelTrack = label; /* label */
+				ptrobj->_offsetLabelTrack = (int16)(offsettrack - 1);
+				return ((int16)(offsettrack - 1));
+			}
+			offsettrack++;
+			break;
+
+		case TM_BODY:
+		case TM_GOTO_POINT:
+		case TM_GOTO_POINT_3D:
+		case TM_GOTO_SYM_POINT:
+		case TM_POS_POINT:
+		case TM_BACKGROUND:
+		case TM_SET_FRAME:
+		case TM_SET_FRAME_3DS:
+		case TM_SET_START_3DS:
+		case TM_SET_END_3DS:
+		case TM_START_ANIM_3DS:
+		case TM_WAIT_FRAME_3DS:
+		case TM_VOLUME:
+			offsettrack++;
+			break;
+
+		case TM_ANIM:
+		case TM_SAMPLE:
+		case TM_SAMPLE_RND:
+		case TM_SAMPLE_ALWAYS:
+		case TM_SAMPLE_STOP:
+		case TM_REPEAT_SAMPLE:
+		case TM_SIMPLE_SAMPLE:
+		case TM_WAIT_NB_ANIM:
+		case TM_ANGLE:
+		case TM_FACE_TWINSEN:
+		case TM_OPEN_LEFT:
+		case TM_OPEN_RIGHT:
+		case TM_OPEN_UP:
+		case TM_OPEN_DOWN:
+		case TM_BETA:
+		case TM_GOTO:
+		case TM_SPEED:
+		case TM_SPRITE:
+		case TM_DECALAGE:
+		case TM_FREQUENCE:
+			offsettrack += 2;
+			break;
+
+		case TM_ANGLE_RND:
+		case TM_LOOP:
+			offsettrack += 4;
+			break;
+
+		case TM_WAIT_NB_SECOND:
+		case TM_WAIT_NB_SECOND_RND:
+		case TM_WAIT_NB_DIZIEME:
+		case TM_WAIT_NB_DIZIEME_RND:
+			offsettrack += 5;
+			break;
+
+		case TM_PLAY_ACF: {
+			char *ptr, c;
+			char string[256];
+			int32 n;
+
+			ptr = string;
+			n = 0;
+			do {
+				c = *ptrtrack++;
+				*ptr++ = c;
+				n++;
+			} while (c != 0);
+
+			offsettrack += n;
+			break;
+		}
+		case TM_END:
+			return -1; // label not found
+		}
+	}
 	return -1;
+}
+
+void ScriptLifeV2::cleanTrack(ActorStruct *ptrobj) {
+	if (ptrobj->_offsetTrack != -1) {
+		ptrobj->_workFlags.bTRACK_MASTER_ROT = 0;
+
+		uint8 *ptrtrack = ptrobj->_ptrTrack + ptrobj->_offsetTrack;
+
+		switch (*ptrtrack) {
+		case TM_FACE_TWINSEN:
+			*(int16 *)(ptrtrack + 1) = -1;
+			break;
+
+		case TM_WAIT_NB_ANIM:
+			*(uint8 *)(ptrtrack + 2) = 0;
+			break;
+
+		case TM_WAIT_NB_SECOND:
+		case TM_WAIT_NB_DIZIEME:
+		case TM_WAIT_NB_SECOND_RND:
+		case TM_WAIT_NB_DIZIEME_RND:
+			*(uint32 *)(ptrtrack + 2) = 0;
+			break;
+
+		case TM_ANGLE:
+			*(int16 *)(ptrtrack + 1) &= 0x7FFF;
+			break;
+
+		case TM_ANGLE_RND:
+			*(int16 *)(ptrtrack + 3) = -1;
+			break;
+
+		case TM_LOOP:
+			*(ptrtrack + 2) = *(ptrtrack + 1);
+			break;
+		}
+	}
+}
+
+int32 ScriptLifeV2::lVAR_GAME_TO_TRACK(TwinEEngine *engine, LifeScriptContext &ctx) {
+	cleanTrack(ctx.actor);
+
+	const uint8 num = ctx.stream.readByte();
+	debugC(3, kDebugLevels::kDebugScripts, "LIFE::lVAR_GAME_TO_TRACK(%i)", (int)num);
+	ctx.actor->_offsetTrack = searchOffsetTrack(ctx.actor,
+											engine->_gameState->hasGameFlag(num));
+
+	// Shielding against bug of the traveling merchant
+	if (ctx.actor->_offsetTrack < 0) {
+		ctx.actor->_offsetTrack = searchOffsetTrack(ctx.actor, 0);
+	}
+	return 0;
 }
 
 int32 ScriptLifeV2::lANIM_TEXTURE(TwinEEngine *engine, LifeScriptContext &ctx) {
@@ -242,7 +448,10 @@ int32 ScriptLifeV2::lBUBBLE(TwinEEngine *engine, LifeScriptContext &ctx) {
 }
 
 int32 ScriptLifeV2::lNO_CHOC(TwinEEngine *engine, LifeScriptContext &ctx) {
-	return -1;
+	const uint8 val = ctx.stream.readByte();
+	debugC(3, kDebugLevels::kDebugScripts, "LIFE::lNO_CHOC(%i)", (int)val);
+	ctx.actor->_staticFlags.bNoElectricShock = val;
+	return 0;
 }
 
 int32 ScriptLifeV2::lCINEMA_MODE(TwinEEngine *engine, LifeScriptContext &ctx) {
@@ -266,18 +475,71 @@ int32 ScriptLifeV2::lRESTORE_HERO(TwinEEngine *engine, LifeScriptContext &ctx) {
 }
 
 int32 ScriptLifeV2::lRAIN(TwinEEngine *engine, LifeScriptContext &ctx) {
-	return -1;
+	const int32 num = (int)ctx.stream.readByte();
+	debugC(3, kDebugLevels::kDebugScripts, "LIFE::lRAIN(%i)", (int)num);
+	int32 n = engine->_redraw->addOverlay(OverlayType::koRain, 0, 0, 0, 0, OverlayPosType::koNormal, 1);
+	if (n != -1) {
+		// Rain n/10s
+		engine->_redraw->overlayList[n].lifeTime = engine->timerRef + engine->toSeconds(num / 10);
+		engine->_flagRain = true;
+		engine->_sound->startRainSample();
+	}
+	return 0;
 }
 
 int32 ScriptLifeV2::lESCALATOR(TwinEEngine *engine, LifeScriptContext &ctx) {
-	return -1;
+	const uint8 num = ctx.stream.readByte();
+	const uint8 info1 = ctx.stream.readByte();
+	debugC(3, kDebugLevels::kDebugScripts, "LIFE::lESCALATOR(%i, %i)", (int)num, (int)info1);
+	for (int n = 0; n < engine->_scene->_sceneNumZones; n++) {
+		ZoneStruct &zone = engine->_scene->_sceneZones[n];
+		if (zone.type == ZoneType::kEscalator && zone.num == num) {
+			zone.infoData.generic.info1 = info1;
+		}
+	}
+	return 0;
 }
 
 int32 ScriptLifeV2::lSET_CAMERA(TwinEEngine *engine, LifeScriptContext &ctx) {
-	return -1;
+	const uint8 num = ctx.stream.readByte();
+	const uint8 info7 = ctx.stream.readByte();
+	debugC(3, kDebugLevels::kDebugScripts, "LIFE::lSET_CAMERA(%i, %i)", (int)num, (int)info7);
+	for (int n = 0; n < engine->_scene->_sceneNumZones; n++) {
+		ZoneStruct &zone = engine->_scene->_sceneZones[n];
+		if (zone.type == ZoneType::kCamera && zone.num == num) {
+			zone.infoData.generic.info7 = info7;
+			if (info7)
+				zone.infoData.generic.info7 |= ZONE_ON;
+			else
+				zone.infoData.generic.info7 &= ~(ZONE_ON);
+
+			zone.infoData.generic.info7 &= ~(ZONE_ACTIVE);
+		}
+	}
+	return 0;
 }
 
 int32 ScriptLifeV2::lPLAY_ACF(TwinEEngine *engine, LifeScriptContext &ctx) {
+	ScopedEngineFreeze timer(engine);
+	int strIdx = 0;
+	char movie[64];
+	do {
+		const byte c = ctx.stream.readByte();
+		movie[strIdx++] = c;
+		if (c == '\0') {
+			break;
+		}
+		if (strIdx >= ARRAYSIZE(movie)) {
+			error("Max string size exceeded for acf name");
+		}
+	} while (true);
+	debugC(3, kDebugLevels::kDebugScripts, "LIFE::lPLAY_ACF(%s)", movie);
+
+	engine->_movie->playMovie(movie);
+	// TODO: lba2 is doing more stuff here - reset the cinema mode, init the scene and palette stuff
+	engine->setPalette(engine->_screens->_paletteRGBA);
+	engine->_redraw->_firstTime = true;
+
 	return -1;
 }
 
@@ -293,11 +555,21 @@ int32 ScriptLifeV2::lSHADOW_OBJ(TwinEEngine *engine, LifeScriptContext &ctx) {
 }
 
 int32 ScriptLifeV2::lECLAIR(TwinEEngine *engine, LifeScriptContext &ctx) {
-	return -1;
+	const int32 num = (int)ctx.stream.readByte();
+	debugC(3, kDebugLevels::kDebugScripts, "LIFE::lECLAIR(%i)", (int)num);
+	int32 n = engine->_redraw->addOverlay(OverlayType::koFlash, 0, 0, 0, 0, OverlayPosType::koNormal, 1);
+	if (n != -1) {
+		// Eclair n/10s
+		engine->_redraw->overlayList[n].lifeTime = engine->timerRef + engine->toSeconds(num / 10);
+	}
+	return 0;
 }
 
 int32 ScriptLifeV2::lINIT_BUGGY(TwinEEngine *engine, LifeScriptContext &ctx) {
-	return -1;
+	const uint8 num = ctx.stream.readByte();
+	debugC(3, kDebugLevels::kDebugScripts, "LIFE::lINIT_BUGGY(%i)", (int)num);
+	engine->_buggy->initBuggy(ctx.actorIdx, num);
+	return 0;
 }
 
 int32 ScriptLifeV2::lMEMO_ARDOISE(TwinEEngine *engine, LifeScriptContext &ctx) {
@@ -319,28 +591,60 @@ int32 ScriptLifeV2::lACTION(TwinEEngine *engine, LifeScriptContext &ctx) {
 }
 
 int32 ScriptLifeV2::lSET_FRAME(TwinEEngine *engine, LifeScriptContext &ctx) {
+	const int frame = ctx.stream.readByte();
+	debugC(3, kDebugLevels::kDebugScripts, "LIFE::lSET_FRAME(%i)", (int)frame);
+	if (!ctx.actor->_staticFlags.bIsSpriteActor) {
+		// TODO: ObjectSetFrame(ctx.actorIdx, frame);
+	}
 	return -1;
 }
 
 int32 ScriptLifeV2::lSET_SPRITE(TwinEEngine *engine, LifeScriptContext &ctx) {
-	int16 num = ctx.stream.readSint16LE();
+	const int16 num = ctx.stream.readSint16LE();
+	debugC(3, kDebugLevels::kDebugScripts, "LIFE::lSET_SPRITE(%i)", (int)num);
 	if (ctx.actor->_staticFlags.bIsSpriteActor) {
-		ActorStruct *actor = engine->_scene->getActor(ctx.actorIdx);
-		actor->_sprite = num;
+		ctx.actor->_sprite = num;
 		engine->_actor->initSpriteActor(ctx.actorIdx);
 	}
 	return 0;
 }
 
 int32 ScriptLifeV2::lSET_FRAME_3DS(TwinEEngine *engine, LifeScriptContext &ctx) {
+	const int sprite = ctx.stream.readByte();
+	debugC(3, kDebugLevels::kDebugScripts, "LIFE::lSET_FRAME_3DS(%i)", (int)sprite);
+	if (ctx.actor->_staticFlags.bHasSpriteAnim3D) {
+		// TODO:
+		// if (sprite > (ListAnim3DS[ptrobj->Coord.A3DS.Num].Fin - ListAnim3DS[ptrobj->Coord.A3DS.Num].Deb)) {
+		// 	sprite = ListAnim3DS[ptrobj->Coord.A3DS.Num].Fin - ListAnim3DS[ptrobj->Coord.A3DS.Num].Deb;
+		// }
+		// sprite += ListAnim3DS[ptrobj->Coord.A3DS.Num].Deb;
+
+		ctx.actor->_sprite = sprite;
+		engine->_actor->initSpriteActor(ctx.actorIdx);
+	}
 	return -1;
 }
 
 int32 ScriptLifeV2::lIMPACT_OBJ(TwinEEngine *engine, LifeScriptContext &ctx) {
+	const uint8 num = ctx.stream.readByte();
+	const uint16 n = ctx.stream.readUint16LE();
+	const int16 y = ctx.stream.readSint16LE();
+	debugC(3, kDebugLevels::kDebugScripts, "LIFE::lIMPACT_OBJ(%i, %i, %i)", (int)num, (int)n, (int)y);
+	ActorStruct *otherActor = engine->_scene->getActor(num);
+	if (otherActor->_lifePoint > 0) {
+		// TODO: DoImpact(n, otherActor->_pos.x, otherActor->_pos.y + y, otherActor->_pos.z, num);
+	}
 	return -1;
 }
 
 int32 ScriptLifeV2::lIMPACT_POINT(TwinEEngine *engine, LifeScriptContext &ctx) {
+	const uint8 brickTrackId = ctx.stream.readByte();
+	const uint16 n = ctx.stream.readUint16LE();
+	debugC(3, kDebugLevels::kDebugScripts, "LIFE::lIMPACT_POINT(%i, %i)", (int)brickTrackId, (int)n);
+	// int16 x0 = ListBrickTrack[brickTrackId].x;
+	// int16 y0 = ListBrickTrack[brickTrackId].y;
+	// int16 z0 = ListBrickTrack[brickTrackId].z;
+	// TODO: DoImpact(n, x0, y0, z0, ctx.actorIdx);
 	return -1;
 }
 
@@ -397,11 +701,13 @@ int32 ScriptLifeV2::lSET_HIT_ZONE(TwinEEngine *engine, LifeScriptContext &ctx) {
 }
 
 int32 ScriptLifeV2::lSAVE_COMPORTEMENT(TwinEEngine *engine, LifeScriptContext &ctx) {
+	debugC(3, kDebugLevels::kDebugScripts, "LIFE::lSAVE_COMPORTEMENT()");
 	ctx.actor->_saveOffsetLife = ctx.actor->_offsetLife;
 	return 0;
 }
 
 int32 ScriptLifeV2::lRESTORE_COMPORTEMENT(TwinEEngine *engine, LifeScriptContext &ctx) {
+	debugC(3, kDebugLevels::kDebugScripts, "LIFE::lRESTORE_COMPORTEMENT()");
 	ctx.actor->_offsetLife = ctx.actor->_saveOffsetLife;
 	return 0;
 }
@@ -439,15 +745,42 @@ int32 ScriptLifeV2::lSUB_VAR_GAME(TwinEEngine *engine, LifeScriptContext &ctx) {
 }
 
 int32 ScriptLifeV2::lADD_VAR_CUBE(TwinEEngine *engine, LifeScriptContext &ctx) {
-	return -1;
+	const uint8 num = ctx.stream.readByte();
+	const uint8 amount = ctx.stream.readByte();
+	debugC(3, kDebugLevels::kDebugScripts, "LIFE::lADD_VAR_CUBE(%i, %i)", (int)num, (int)amount);
+	uint8 &current = engine->_scene->_listFlagCube[num];
+	if ((int16)current + (int16)amount < 255) {
+		current += amount;
+	} else {
+		current = 255;
+	}
+	return 0;
 }
 
 int32 ScriptLifeV2::lSUB_VAR_CUBE(TwinEEngine *engine, LifeScriptContext &ctx) {
-	return -1;
+	const uint8 num = ctx.stream.readByte();
+	const uint8 amount = ctx.stream.readByte();
+	debugC(3, kDebugLevels::kDebugScripts, "LIFE::lSUB_VAR_CUBE(%i, %i)", (int)num, (int)amount);
+	uint8 &current = engine->_scene->_listFlagCube[num];
+	if ((int16)current - (int16)amount > 0) {
+		current -= amount;
+	} else {
+		current = 0;
+	}
+	return 0;
 }
 
 int32 ScriptLifeV2::lSET_RAIL(TwinEEngine *engine, LifeScriptContext &ctx) {
-	return -1;
+	const uint8 num = ctx.stream.readByte();
+	const uint8 info1 = ctx.stream.readByte();
+	debugC(3, kDebugLevels::kDebugScripts, "LIFE::lSET_RAIL(%i, %i)", (int)num, (int)info1);
+	for (int n = 0; n < engine->_scene->_sceneNumZones; n++) {
+		ZoneStruct &zone = engine->_scene->_sceneZones[n];
+		if (zone.type == ZoneType::kRail && zone.num == num) {
+			zone.infoData.generic.info1 = info1;
+		}
+	}
+	return 0;
 }
 
 int32 ScriptLifeV2::lINVERSE_BETA(TwinEEngine *engine, LifeScriptContext &ctx) {
@@ -455,7 +788,9 @@ int32 ScriptLifeV2::lINVERSE_BETA(TwinEEngine *engine, LifeScriptContext &ctx) {
 }
 
 int32 ScriptLifeV2::lNO_BODY(TwinEEngine *engine, LifeScriptContext &ctx) {
-	return -1;
+	debugC(3, kDebugLevels::kDebugScripts, "LIFE::lNO_BODY()");
+	engine->_actor->initBody(BodyType::btNone, ctx.actorIdx);
+	return 0;
 }
 
 int32 ScriptLifeV2::lSTOP_L_TRACK_OBJ(TwinEEngine *engine, LifeScriptContext &ctx) {
@@ -487,7 +822,9 @@ int32 ScriptLifeV2::lDEBUG_OBJ(TwinEEngine *engine, LifeScriptContext &ctx) {
 }
 
 int32 ScriptLifeV2::lPOPCORN(TwinEEngine *engine, LifeScriptContext &ctx) {
-	return -1;
+	debugC(3, kDebugLevels::kDebugScripts, "LIFE::lPOPCORN()");
+	// empty on purpose
+	return 0;
 }
 
 int32 ScriptLifeV2::lFLOW_POINT(TwinEEngine *engine, LifeScriptContext &ctx) {
@@ -507,11 +844,15 @@ int32 ScriptLifeV2::lPCX(TwinEEngine *engine, LifeScriptContext &ctx) {
 }
 
 int32 ScriptLifeV2::lEND_MESSAGE(TwinEEngine *engine, LifeScriptContext &ctx) {
-	return -1;
+	debugC(3, kDebugLevels::kDebugScripts, "LIFE::lEND_MESSAGE()");
+	// empty on purpose
+	return 0;
 }
 
 int32 ScriptLifeV2::lEND_MESSAGE_OBJ(TwinEEngine *engine, LifeScriptContext &ctx) {
-	return -1;
+	const uint8 num = ctx.stream.readByte();
+	debugC(3, kDebugLevels::kDebugScripts, "LIFE::lEND_MESSAGE_OBJ(%i)", (int)num);
+	return 0;
 }
 
 int32 ScriptLifeV2::lPARM_SAMPLE(TwinEEngine *engine, LifeScriptContext &ctx) {

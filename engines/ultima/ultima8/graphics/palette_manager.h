@@ -22,12 +22,14 @@
 #ifndef ULTIMA8_GRAPHICS_PALETTEMANAGER_H
 #define ULTIMA8_GRAPHICS_PALETTEMANAGER_H
 
-#include "ultima/ultima8/graphics/palette.h"
 #include "ultima/shared/std/containers.h"
 #include "graphics/pixelformat.h"
+#include "ultima/ultima8/graphics/pal_transforms.h"
 
 namespace Ultima {
 namespace Ultima8 {
+
+class Palette;
 
 class PaletteManager {
 public:
@@ -84,6 +86,8 @@ public:
 
 	//! Reset all the transforms back to default
 	void resetTransforms();
+	bool loadTransforms(Common::ReadStream &rs);
+	void saveTransforms(Common::WriteStream &ws);
 
 	void createNativePalette(Palette *palette, int maxindex, const Graphics::PixelFormat &format);
 

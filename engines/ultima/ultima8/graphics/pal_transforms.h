@@ -17,38 +17,46 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
- *
- * This file is dual-licensed.
- * In addition to the GPLv3 license mentioned above, MojoTouch has
- * exclusively licensed this code on March 23th, 2024, to be used in
- * closed-source products.
- * Therefore, any contributions (commits) to it will also be dual-licensed.
- *
  */
 
-#ifndef TOON_FLUX_H
-#define TOON_FLUX_H
+#ifndef ULTIMA8_GRAPHICS_PAL_TRANSFORMS_H
+#define ULTIMA8_GRAPHICS_PAL_TRANSFORMS_H
 
-#include "toon/character.h"
+namespace Ultima {
+namespace Ultima8 {
 
-class ToonEngine;
+enum PalTransforms {
+	// Normal untransformed palette
+	Transform_None      = 0,
 
-namespace Toon {
+	// O[i] = I[r]*0.375 + I[g]*0.5 + I[b]*0.125;
+	Transform_Greyscale = 1,
 
-class CharacterFlux : public Character {
-public:
-	CharacterFlux(ToonEngine *vm);
-	~CharacterFlux() override;
+	// O[r] = 0;
+	Transform_NoRed     = 2,
 
-	void setPosition(int16 x, int16 y) override;
-	void playStandingAnim() override;
-	void playWalkAnim(int32 start, int32 end) override;
-	void update(int32 timeIncrement) override;
-	int32 getRandomIdleAnim() override;
-	void setVisible(bool visible) override;
-	static int32 fixFacingForAnimation(int32 originalFacing, int32 animationId);
+	// O[i] = (I[i] + Grey)*0.25 + 0.1875;
+	Transform_RainStorm = 3,
+
+	// O[r] = (I[r] + Grey)*0.5 + 0.1875;
+	// O[g] = I[g]*0.5 + Grey*0.25;
+	// O[b] = I[b]*0.5;
+	Transform_FireStorm = 4,
+
+	// O[i] = I[i]*2 -Grey;
+	Transform_Saturate  = 5,
+
+	// O[g] = I[r]; O[b] = I[g]; O[r] = I[b];
+	Transform_GBR       = 6,
+
+	// O[b] = I[r]; O[r] = I[g]; O[g] = I[b];
+	Transform_BRG       = 7,
+
+	// Any value beyond this is invalid in savegames.
+	Transform_Invalid 	= 8
 };
 
-} // End of namespace Toon
+} // End of namespace Ultima8
+} // End of namespace Ultima
 
 #endif

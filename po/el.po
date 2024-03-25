@@ -9,8 +9,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: ScummVM 1.10.0git\n"
 "Report-Msgid-Bugs-To: scummvm-devel@lists.scummvm.org\n"
-"POT-Creation-Date: 2024-03-17 01:12+0000\n"
-"PO-Revision-Date: 2024-03-18 14:11+0000\n"
+"POT-Creation-Date: 2024-03-25 01:43+0000\n"
+"PO-Revision-Date: 2024-03-23 10:10+0000\n"
 "Last-Translator: Antoniou Athanasios <a.antoniou79@gmail.com>\n"
 "Language-Team: Greek <https://translations.scummvm.org/projects/scummvm/"
 "scummvm/el/>\n"
@@ -86,7 +86,7 @@ msgstr "Μετάβαση πάνω"
 #: gui/saveload-dialog.cpp:526 gui/saveload-dialog.cpp:828
 #: gui/saveload-dialog.cpp:1224 gui/shaderbrowser-dialog.cpp:80
 #: gui/themebrowser.cpp:54 gui/unknown-game-dialog.cpp:53 base/main.cpp:604
-#: dists/android.strings.xml.cpp:43 engines/engine.cpp:747
+#: dists/android.strings.xml.cpp:43 engines/engine.cpp:749
 #: backends/dialogs/gtk/gtk-dialogs.cpp:65
 #: backends/events/default/default-events.cpp:193
 #: backends/events/default/default-events.cpp:217
@@ -241,7 +241,7 @@ msgid "Paste code from clipboard"
 msgstr "Επικόλληση κωδικού από το πρόχειρο"
 
 #: gui/cloudconnectionwizard.cpp:362 gui/launcher.cpp:316
-#: engines/dialogs.cpp:94 engines/engine.cpp:915 engines/mm/xeen/saves.cpp:259
+#: engines/dialogs.cpp:94 engines/engine.cpp:917 engines/mm/xeen/saves.cpp:259
 #: engines/parallaction/metaengine.cpp:127
 #: engines/parallaction/saveload.cpp:193 engines/pegasus/pegasus.cpp:388
 #: engines/trecision/saveload.cpp:253 engines/tsage/scenes.cpp:638
@@ -303,8 +303,8 @@ msgstr ""
 #: engines/director/lingo/xlibs/jitdraw3.cpp:139 engines/grim/grim.cpp:366
 #: engines/kyra/gui/saveload_eob.cpp:598 engines/kyra/gui/saveload_eob.cpp:631
 #: engines/parallaction/metaengine.cpp:145
-#: engines/sci/graphics/controls32.cpp:929 engines/scumm/scumm.cpp:3899
-#: engines/toon/toon.cpp:1531
+#: engines/sci/graphics/controls32.cpp:929 engines/scumm/scumm.cpp:3893
+#: engines/toon/toon.cpp:1538
 msgid "Yes"
 msgstr "Ναι"
 
@@ -316,8 +316,8 @@ msgstr "Ναι"
 #: engines/director/lingo/xlibs/jitdraw3.cpp:139 engines/grim/grim.cpp:366
 #: engines/kyra/gui/saveload_eob.cpp:598 engines/kyra/gui/saveload_eob.cpp:631
 #: engines/parallaction/metaengine.cpp:151
-#: engines/sci/graphics/controls32.cpp:929 engines/scumm/scumm.cpp:3899
-#: engines/toon/toon.cpp:1531
+#: engines/sci/graphics/controls32.cpp:929 engines/scumm/scumm.cpp:3893
+#: engines/toon/toon.cpp:1538
 msgid "No"
 msgstr "Όχι"
 
@@ -335,7 +335,7 @@ msgstr "Τα περιεχόμενα του κώδικα JSON δεν έχουν �
 #: gui/fluidsynth-dialog.cpp:153 gui/launcher.cpp:548 gui/launcher.cpp:552
 #: gui/massadd.cpp:90 gui/options.cpp:2354 gui/predictivedialog.cpp:69
 #: gui/saveload-dialog.cpp:1225 dists/android.strings.xml.cpp:32
-#: engines/engine.cpp:550 engines/engine.cpp:573
+#: engines/engine.cpp:552 engines/engine.cpp:575
 #: backends/platform/wii/options.cpp:46 engines/agos/animation.cpp:577
 #: engines/agos/midi.cpp:320 engines/agos/midi.cpp:378
 #: engines/agos/midi.cpp:457 engines/buried/saveload.cpp:83
@@ -1133,7 +1133,7 @@ msgstr ""
 "πουλήσουμε κάτι. Παρακαλούμε να το έχετε αυτό υπόψιν όταν υποβάλετε κάποιο "
 "παράπονο ή μια αναφορά προβλήματος.\n"
 "\n"
-"## Που θα βρείτε τα παιχνίδια\n"
+"## Πού θα βρείτε τα παιχνίδια\n"
 "\n"
 "Επισκεφθείτε το [Βικι μας](https://wiki.scummvm.org/index.php?"
 "title=Where_to_get_the_games) όπου θα βρείτε μια λίστα παιχνιδιών και "
@@ -1212,6 +1212,61 @@ msgid ""
 "see our [Cloud documentation](https://docs.scummvm.org/en/latest/use_scummvm/"
 "connect_cloud.html) "
 msgstr ""
+"## Σύνδεση με υπηρεσία νέφους (cloud) - Γρήγορη ρύθμιση\n"
+"\n"
+"1. Από τον Πλοηγητή, επιλέξτε **Καθολικές Επιλογές** και έπειτα επιλέξτε την "
+"καρτέλα **Νέφος**.\n"
+"\n"
+"2. Επιλέξτε την προτιμώμενη υπηρεσία αποθήκευσης στο νέφος από την "
+"αναπτυσσόμενη λίστα της επιλογής **Ενεργή αποθήκη**, και έπειτα επιλέξτε "
+"**Σύνδεση**.\n"
+"\n"
+"\t  ![Επιλογή υπηρεσίας νέφους](choose_storage.png \"Επιλογή υπηρεσίας νέφους"
+"\"){w=70%}\n"
+"\n"
+"3. Επιλέξτε **Γρήγορη ρύθμιση**.\n"
+"\n"
+"\t  ![Γρήγορη ρύθμιση](quick_mode.png \"Γρήγορη ρύθμιση\"){w=70%}\n"
+"\n"
+"4. Επιλέξτε **Εκτέλεση διακομιστή** και έπειτα επιλέξτε **Επόμενο** \n"
+"\n"
+"\t  ![Εκτέλεση διακομιστή](run_server.png \"Εκτέλεση διακομιστή\"){w=70%}\n"
+"\n"
+"  ![Επόμενο βήμα](server_next.png \"Επόμενο βήμα\"){w=70%}\n"
+"\n"
+"5. Πατήστε στον σύνδεσμο.\n"
+"\n"
+"\t  ![Πατήστε στον σύνδεσμο](open_link.png \"Πατήστε στον σύνδεσμο\")"
+"{w=70%}\n"
+"\n"
+"6. Στο παράθυρο του προγράμματος περιήγησης (browser) που θα ανοίξει, "
+"επιλέξτε την υπηρεσία νέφους που θέλετε να συνδέσετε με το ScummVM.\n"
+"\n"
+"\t  ![Επιλέξτε την υπηρεσία νέφους](cloud_browser.png \"Επιλέξτε την "
+"υπηρεσία νέφους\"){w=70%}\n"
+"\n"
+"7. Συνδεθείτε (sign in) στην επιλεγμένη υπηρεσία νέφους. Αφού περάσετε αυτό "
+"το στάδιο, επιστρέψτε στο ScummVM.\n"
+"\n"
+"8. Στην οθόνη επιτυχούς έκβασης, επιλέξτε **Ολοκλήρωση**. \n"
+"\n"
+"\t  ![Επιτυχία](cloud_success.png \"Επιτυχία\"){w=70%}\n"
+"9. Πίσω πάλι στην κυρίως καρτέλα για το νέφος, επιλέξτε **Ενεργοποίηση "
+"αποθήκευσης**.\n"
+"\n"
+"\t  ![Ενεργοποίηση αποθήκευσης](enable_storage.png \"Ενεργοποίηση αποθήκευσης"
+"\"){w=70%}\n"
+"\n"
+"10. Και είστε έτοιμοι! Χρησιμοποιήστε τη λειτουργία νέφους για να "
+"συγχρονίσετε τα αποθηκευμένα παιχνίδια (saved games) ή τα αρχεία δεδομένων "
+"των παιχνιδιών μεταξύ των συσκευών σας.\n"
+"\n"
+"\t  ![Λειτουργία νέφους](cloud_functions.png \"Λειτουργία νέφους\"){w=70%}\n"
+"\n"
+"   Για περισσότερες πληροφορίες, συμπεριλαμβανομένων και οδηγιών για τη "
+"διαδικασία χειροκίνητης ρύθμισης σύνδεσης, διαβάστε [την σχετική τεκμηρίωση "
+"για το νέφος](https://docs.scummvm.org/en/latest/use_scummvm/connect_cloud."
+"html) "
 
 #: gui/imagealbum-dialog.cpp:103 gui/saveload-dialog.cpp:832
 msgid "Prev"
@@ -1396,7 +1451,7 @@ msgstr "Αναζήτηση στη λίστα παιχνιδιών"
 msgid "Search:"
 msgstr "Αναζήτηση:"
 
-#: gui/launcher.cpp:316 engines/dialogs.cpp:94 engines/engine.cpp:915
+#: gui/launcher.cpp:316 engines/dialogs.cpp:94 engines/engine.cpp:917
 #: engines/mm/xeen/saves.cpp:259 engines/pegasus/pegasus.cpp:388
 #: engines/trecision/saveload.cpp:253 engines/tsage/scenes.cpp:638
 #: engines/wage/saveload.cpp:736
@@ -2531,7 +2586,7 @@ msgstr ""
 "\n"
 "Και άλλα..."
 
-#: gui/options.cpp:2899 engines/engine.cpp:602
+#: gui/options.cpp:2899 engines/engine.cpp:604
 msgid "Move"
 msgstr "Μετακίνηση"
 
@@ -2668,7 +2723,7 @@ msgstr "Εγγραφή ή Αναπαραγωγή Gameplay"
 
 #: gui/recorderdialog.cpp:72 gui/recorderdialog.cpp:212
 #: gui/saveload-dialog.cpp:459 gui/saveload-dialog.cpp:526
-#: dists/android.strings.xml.cpp:44 engines/engine.cpp:596
+#: dists/android.strings.xml.cpp:44 engines/engine.cpp:598
 msgid "Delete"
 msgstr "Σβήσιμο"
 
@@ -3363,7 +3418,7 @@ msgctxt "lowres"
 msgid "~R~eturn to Launcher"
 msgstr "Επισ~τ~ρ. σε Πλοηγητή"
 
-#: engines/dialogs.cpp:95 engines/engine.cpp:944 engines/agi/saveload.cpp:766
+#: engines/dialogs.cpp:95 engines/engine.cpp:946 engines/agi/saveload.cpp:766
 #: engines/avalanche/parser.cpp:1918 engines/cine/various.cpp:349
 #: engines/dm/loadsave.cpp:199 engines/drascula/saveload.cpp:382
 #: engines/dreamweb/saveload.cpp:261 engines/glk/streams.cpp:1432
@@ -3377,13 +3432,13 @@ msgstr "Επισ~τ~ρ. σε Πλοηγητή"
 #: engines/prince/saveload.cpp:54 engines/sci/engine/guest_additions.cpp:742
 #: engines/sci/engine/kfile.cpp:1083 engines/sherlock/scalpel/scalpel.cpp:1249
 #: engines/sherlock/tattoo/widget_files.cpp:74 engines/startrek/saveload.cpp:42
-#: engines/toltecs/menu.cpp:302 engines/toon/toon.cpp:3804
+#: engines/toltecs/menu.cpp:302 engines/toon/toon.cpp:3811
 #: engines/trecision/saveload.cpp:67 engines/tsage/scenes.cpp:636
 #: engines/wage/saveload.cpp:746 engines/zvision/file/save_manager.cpp:48
 msgid "Save game:"
 msgstr "Αποθήκευση παιχνιδιού:"
 
-#: engines/dialogs.cpp:95 engines/engine.cpp:944 engines/agi/saveload.cpp:766
+#: engines/dialogs.cpp:95 engines/engine.cpp:946 engines/agi/saveload.cpp:766
 #: engines/avalanche/parser.cpp:1918 engines/cine/various.cpp:349
 #: engines/dm/loadsave.cpp:199 engines/drascula/saveload.cpp:382
 #: engines/dreamweb/saveload.cpp:261 engines/glk/streams.cpp:1432
@@ -3399,7 +3454,7 @@ msgstr "Αποθήκευση παιχνιδιού:"
 #: engines/prince/saveload.cpp:54 engines/sci/engine/guest_additions.cpp:743
 #: engines/sci/engine/kfile.cpp:1083 engines/sherlock/scalpel/scalpel.cpp:1249
 #: engines/sherlock/tattoo/widget_files.cpp:74 engines/startrek/saveload.cpp:42
-#: engines/toltecs/menu.cpp:302 engines/toon/toon.cpp:3804
+#: engines/toltecs/menu.cpp:302 engines/toon/toon.cpp:3811
 #: engines/trecision/saveload.cpp:67 engines/tsage/scenes.cpp:636
 #: engines/wage/saveload.cpp:746 engines/zvision/file/save_manager.cpp:48
 #: engines/zvision/metaengine.cpp:262
@@ -3461,42 +3516,42 @@ msgstr "~Ο~K"
 msgid "~C~ancel"
 msgstr "~Α~κύρωση"
 
-#: engines/engine.cpp:366
+#: engines/engine.cpp:368
 #, c-format
 msgid "Could not switch to resolution '%dx%d'."
 msgstr "Αδυναμία αλλαγής σε ανάλυση '%dx%d'."
 
-#: engines/engine.cpp:375
+#: engines/engine.cpp:377
 msgid "Could not initialize color format."
 msgstr "Αδυναμία αρχικοποίησης της μορφής χρώματος."
 
-#: engines/engine.cpp:384
+#: engines/engine.cpp:386
 #, c-format
 msgid "Could not switch to video mode '%s'."
 msgstr "Αδυναμία αλλαγής σε λειτουργία video '%s'."
 
-#: engines/engine.cpp:392
+#: engines/engine.cpp:394
 #, c-format
 msgid "Could not switch to stretch mode '%s'."
 msgstr "Αδυναμία αλλαγής σε λειτουργία επέκτασης εικόνας '%s'."
 
-#: engines/engine.cpp:399
+#: engines/engine.cpp:401
 msgid "Could not apply aspect ratio setting."
 msgstr "Αδυναμία εφαρμογής της ρύθμισης αναλογίας διαστάσεων εικόνας."
 
-#: engines/engine.cpp:404
+#: engines/engine.cpp:406
 msgid "Could not apply fullscreen setting."
 msgstr "Δεν ήταν δυνατή η εφαρμογή ρύθμισης πλήρους οθόνης."
 
-#: engines/engine.cpp:409
+#: engines/engine.cpp:411
 msgid "Could not apply filtering setting."
 msgstr "Δεν ήταν δυνατή η εφαρμογή ρύθμισης φιλτραρίσματος."
 
-#: engines/engine.cpp:483
+#: engines/engine.cpp:485
 msgid "Error"
 msgstr "Σφάλμα"
 
-#: engines/engine.cpp:546
+#: engines/engine.cpp:548
 msgid ""
 "You appear to be playing this game directly\n"
 "from the CD. This is known to cause problems,\n"
@@ -3510,7 +3565,7 @@ msgstr ""
 "τα αρχεία δεδομένων στο σκληρό σας δίσκο.\n"
 "Δείτε την τεκμηρίωση του ScummVM (CD audio) για λεπτομέρειες."
 
-#: engines/engine.cpp:569
+#: engines/engine.cpp:571
 msgid ""
 "This game has audio tracks on its CD. These\n"
 "tracks need to be ripped from the CD using\n"
@@ -3524,11 +3579,11 @@ msgstr ""
 "να ακούσετε τη μουσική του παιχνιδιού.\n"
 "Δείτε την τεκμηρίωση του ScummVM (CD audio) για λεπτομέρειες."
 
-#: engines/engine.cpp:597
+#: engines/engine.cpp:599
 msgid "Skip autosave"
 msgstr "Αναβολή αυτόματης αποθήκευσης"
 
-#: engines/engine.cpp:599
+#: engines/engine.cpp:601
 #, c-format
 msgid ""
 "WARNING: The autosave slot contains a saved game named %S, and an autosave "
@@ -3544,21 +3599,21 @@ msgstr ""
 "Εναλλακτικά, μπορείτε να αναβάλλετε την αυτόματη αποθήκευση (θα ερωτηθείτε "
 "ξανά σε 5 λεπτά)."
 
-#: engines/engine.cpp:609
+#: engines/engine.cpp:611
 msgid "ERROR: Could not copy the savegame to a new slot"
 msgstr "ΣΦΑΛΜΑ: Αδυναμία αντιγραφής του αποθηκευμένου παιχνιδιού σε νέα θυρίδα"
 
-#: engines/engine.cpp:636 engines/savestate.cpp:98
+#: engines/engine.cpp:638 engines/savestate.cpp:98
 #: backends/platform/ios7/ios7_osys_main.cpp:294 engines/mm/xeen/saves.cpp:293
 #: engines/sky/metaengine.cpp:216
 msgid "Autosave"
 msgstr "Αυτόματη αποθήκευση"
 
-#: engines/engine.cpp:644
+#: engines/engine.cpp:646
 msgid "Error occurred making autosave"
 msgstr "Σφάλμα κατά την αυτόματη αποθήκευση"
 
-#: engines/engine.cpp:719
+#: engines/engine.cpp:721
 #, c-format
 msgid ""
 "Failed to load saved game (%s)! Please consult the README for basic "
@@ -3568,15 +3623,15 @@ msgstr ""
 "το αρχείο README για βασικές πληροφορίες, καθώς και για οδηγίες σχετικά με "
 "το πώς να λάβετε περαιτέρω βοήθεια."
 
-#: engines/engine.cpp:743
+#: engines/engine.cpp:745
 msgid "WARNING: "
 msgstr "ΠΡΟΣΟΧΗ: "
 
-#: engines/engine.cpp:743
+#: engines/engine.cpp:745
 msgid " Shall we still run the game?"
 msgstr " Θέλετε ακόμα να ξεκινήσετε το παιχνίδι;"
 
-#: engines/engine.cpp:744
+#: engines/engine.cpp:746
 msgid ""
 "WARNING: The game you are about to start is not yet fully supported by "
 "ScummVM. As such, it is likely to be unstable, and any saved game you make "
@@ -3587,15 +3642,15 @@ msgstr ""
 "παιχνίδι που κάνετε μπορεί να μη λειτουργεί σε μελλοντικές εκδόσεις του "
 "ScummVM."
 
-#: engines/engine.cpp:747 engines/wintermute/wintermute.cpp:182
+#: engines/engine.cpp:749 engines/wintermute/wintermute.cpp:182
 msgid "Start anyway"
 msgstr "Εκκίνηση παρά ταύτα"
 
-#: engines/engine.cpp:765
+#: engines/engine.cpp:767
 msgid "This game is not supported."
 msgstr "Αυτό το παιχνίδι δεν υποστηρίζεται."
 
-#: engines/engine.cpp:765
+#: engines/engine.cpp:767
 msgid ""
 "This game is not supported for the following reason:\n"
 "\n"
@@ -3603,11 +3658,11 @@ msgstr ""
 "Αυτό το παιχνίδι δεν υποστηρίζεται για τον εξής λόγο:\n"
 "\n"
 
-#: engines/engine.cpp:911
+#: engines/engine.cpp:913
 msgid "Loading game is currently unavailable"
 msgstr "Η φόρτωση παιχνιδιού είναι προσωρινά μη διαθέσιμη"
 
-#: engines/engine.cpp:940
+#: engines/engine.cpp:942
 msgid "Saving game is currently unavailable"
 msgstr "Η αποθήκευση παιχνιδιού είναι προσωρινά μη διαθέσιμη"
 
@@ -4736,6 +4791,29 @@ msgid ""
 "sometimes mind-bogglingly so. If you're stuck in a game, think about "
 "checking out a game walkthrough. Good luck!\n"
 msgstr ""
+"## Βοήθεια, έχω πελαγώσει!\n"
+"\n"
+"Κατ' αρχήν, βεβαιωθείτε ότι έχετε στην κατοχής σας τα παιχνίδια και τα "
+"απαραίτητα αρχεία για αυτά. Κοιτάξτε στην ενότητα **Πού θα βρείτε τα "
+"Παιχνίδια** στην καρτέλα **Γενικά**. Αφού τα αποκτήσετε, ακολουθείστε τα "
+"βήματα που περιγράφονται στην καρτέλα **Προσθέτοντας Παιχνίδια** για να "
+"ολοκληρώσετε τη διαδικασία προσθήκης τους στο ScummVM σε αυτή τη συσκευή. "
+"Αφιερώστε λίγο χρόνο να διαβάσετε προσεχτικά τις οδηγίες, καθώς κάποιοι "
+"χρήστες αντιμετώπισαν δυσκολίες σε αυτό το σημείο λόγω κάποιων πρόσφατων "
+"αλλαγών του συστήματος Android.\n"
+"\n"
+"Χρειάζεστε παραπάνω βοήθεια; Ανατρέξτε στην [σελίδα τεκμηρίωσης για το "
+"Android](https://docs.scummvm.org/en/latest/other_platforms/android.html). "
+"Έχετε απορίες; Επισκεφτείτε το [φόρουμ υποστήριξης](https://forums.scummvm."
+"org/viewforum.php?f=17) ή περάστε από τον [εξυπηρετητή Discord του ScummVM]"
+"(https://discord.gg/4cDsMNtcpG), όπου θα βρείτε και ένα [κανάλι υποστήριξης "
+"αποκλειστικά για το Android app](https://discord.com/"
+"channels/581224060529148060/1135579923185139862).\n"
+"\n"
+"Έχετε το νου σας, πολλά από τα παιχνίδια που υποστηρίζονται είναι σκόπιμα "
+"δύσκολα, και θα συναντήσετε αρκετούς γρίφους-σπαζοκεφαλιές. Αν έχετε "
+"κολλήσει στην πρόοδο σας σε ένα παιχνίδι, σκεφτείτε να κοιτάξετε κάποιον "
+"οδηγό για το παιχνίδι. Καλή σας τύχη!\n"
 
 #: backends/platform/android/android.cpp:1037
 #: backends/platform/ios7/ios7_osys_misc.mm:261
@@ -5130,6 +5208,26 @@ msgid ""
 "sometimes mind-bogglingly so. If you're stuck in a game, think about "
 "checking out a game walkthrough. Good luck!\n"
 msgstr ""
+"## Βοήθεια, έχω πελαγώσει!\n"
+"\n"
+"Κατ' αρχήν, βεβαιωθείτε ότι έχετε στην κατοχής σας τα παιχνίδια και τα "
+"απαραίτητα αρχεία για αυτά. Κοιτάξτε στην ενότητα **Πού θα βρείτε τα "
+"Παιχνίδια** στην καρτέλα **Γενικά**. Αφού τα αποκτήσετε, ακολουθείστε τα "
+"βήματα που περιγράφονται στην καρτέλα **Προσθέτοντας Παιχνίδια** για να "
+"ολοκληρώσετε τη διαδικασία προσθήκης τους στο ScummVM σε αυτή τη συσκευή. \n"
+"\n"
+"Χρειάζεστε παραπάνω βοήθεια; Ανατρέξτε στην [σελίδα τεκμηρίωσης για το iOS]"
+"(https://docs.scummvm.org/en/latest/other_platforms/ios.html). Έχετε "
+"απορίες; Επισκεφτείτε το [φόρουμ υποστήριξης](https://forums.scummvm.org/"
+"viewforum.php?f=15) ή περάστε από τον [εξυπηρετητή Discord του ScummVM]"
+"(https://discord.gg/4cDsMNtcpG), όπου θα βρείτε και ένα [κανάλι υποστήριξης "
+"αποκλειστικά για το iOS app](https://discord.com/"
+"channels/581224060529148060/1149456560922316911).\n"
+"\n"
+"Έχετε το νου σας, πολλά από τα παιχνίδια που υποστηρίζονται είναι σκόπιμα "
+"δύσκολα, και θα συναντήσετε αρκετούς γρίφους-σπαζοκεφαλιές. Αν έχετε "
+"κολλήσει στην πρόοδο σας σε ένα παιχνίδι, σκεφτείτε να κοιτάξετε κάποιον "
+"οδηγό για το παιχνίδι. Καλή τύχη!\n"
 
 #: backends/platform/ios7/ios7_osys_misc.mm:264
 msgid ""
@@ -5316,6 +5414,28 @@ msgid ""
 "| `CMD + RIGHT`     | END               \n"
 "\n"
 msgstr ""
+"## Χρήση πληκτρολογίου\n"
+"Τα εξωτερικά πληκτρολόγια υποστηρίζονται και, ξεκινώντας από το iOS 13.4, τα "
+"περισσότερα από τα ειδικά πλήκτρα, π.χ. F-πλήκτρα, Home και End, είναι "
+"αντιστοιχισμένα και αναγνωρίζονται. \n"
+"Για εξωτερικά πληκτρολόγια από τα οποία λείπουν τα ειδικά πλήκτρα, π.χ. το "
+"Apple Magic Keyboard για iPad, μπορείτε να πετύχετε τη λειτουργία των "
+"ειδικών πλήκτρων με τους παρακάτω συνδυασμούς πλήκτρων: \n"
+"\n"
+"\n"
+"| Συνδυασμός πλήκτρων   | Ενέργεια            \n"
+"| ------------------|-------------------\n"
+"| `CMD + 1`         | F1                \n"
+"| `CMD + 2`         | F2                \n"
+"| `...`             | ...               \n"
+"| `CMD + 0`         | F10               \n"
+"| `CMD + SHIFT + 1` | F11               \n"
+"| `CMD + SHIFT + 2` | F12               \n"
+"| `CMD + UP`        | PAGE UP           \n"
+"| `CMD + DOWN`      | PAGE DOWN         \n"
+"| `CMD + LEFT`      | HOME              \n"
+"| `CMD + RIGHT`     | END               \n"
+"\n"
 
 #: backends/platform/ios7/ios7_osys_misc.mm:339
 msgid ""
@@ -5797,7 +5917,7 @@ msgstr "Έλεγχος Ενημερώσεων..."
 #: engines/hugo/hugo.cpp:424 engines/lure/lure.cpp:57
 #: engines/mortevielle/mortevielle.cpp:300 engines/sky/compact.cpp:129
 #: engines/supernova/supernova.cpp:463 engines/teenagent/resources.cpp:97
-#: engines/tony/tony.cpp:187 engines/toon/toon.cpp:5409
+#: engines/tony/tony.cpp:187 engines/toon/toon.cpp:5416
 #: engines/ultima/ultima8/ultima8.cpp:183
 #, c-format
 msgid "Unable to locate the '%s' engine data file."
@@ -5806,7 +5926,7 @@ msgstr "Δεν ήταν δυνατή η εύρεση του αρχείου πα�
 #: engines/access/resources.cpp:51 engines/drascula/drascula.cpp:956
 #: engines/hugo/hugo.cpp:436 engines/lure/lure.cpp:66
 #: engines/mortevielle/mortevielle.cpp:308 engines/supernova/supernova.cpp:468
-#: engines/tony/tony.cpp:200 engines/toon/toon.cpp:5422
+#: engines/tony/tony.cpp:200 engines/toon/toon.cpp:5429
 #, c-format
 msgid "The '%s' engine data file is corrupt."
 msgstr "Το αρχειο παιχνιδιού '%s' είναι κατεστραμμένο."
@@ -5814,7 +5934,7 @@ msgstr "Το αρχειο παιχνιδιού '%s' είναι κατεστρα�
 #: engines/access/resources.cpp:60 engines/drascula/drascula.cpp:967
 #: engines/hugo/hugo.cpp:446 engines/lure/lure.cpp:69
 #: engines/mortevielle/mortevielle.cpp:318 engines/tony/tony.cpp:211
-#: engines/toon/toon.cpp:5433
+#: engines/toon/toon.cpp:5440
 #, c-format
 msgid ""
 "Incorrect version of the '%s' engine data file found. Expected %d.%d but got "
@@ -5974,7 +6094,7 @@ msgstr "Αυτό το παιχνίδι δεν υποστηρίζει απόθή�
 #: engines/prince/saveload.cpp:63 engines/sci/engine/guest_additions.cpp:745
 #: engines/sci/engine/kfile.cpp:1216 engines/sherlock/scalpel/scalpel.cpp:1262
 #: engines/sherlock/tattoo/widget_files.cpp:93 engines/startrek/saveload.cpp:67
-#: engines/toltecs/menu.cpp:272 engines/toon/toon.cpp:3898
+#: engines/toltecs/menu.cpp:272 engines/toon/toon.cpp:3905
 #: engines/zvision/file/save_manager.cpp:61
 msgid "Restore game:"
 msgstr "Επαναφορά παιχνιδιού:"
@@ -5994,7 +6114,7 @@ msgstr "Επαναφορά παιχνιδιού:"
 #: engines/prince/saveload.cpp:63 engines/sci/engine/guest_additions.cpp:746
 #: engines/sci/engine/kfile.cpp:1216 engines/sherlock/scalpel/scalpel.cpp:1262
 #: engines/sherlock/tattoo/widget_files.cpp:93 engines/startrek/saveload.cpp:67
-#: engines/toltecs/menu.cpp:272 engines/toon/toon.cpp:3898
+#: engines/toltecs/menu.cpp:272 engines/toon/toon.cpp:3905
 #: engines/zvision/file/save_manager.cpp:61 engines/zvision/metaengine.cpp:267
 msgid "Restore"
 msgstr "Επαναφορά"
@@ -6005,7 +6125,7 @@ msgstr ""
 "Η γρήγορη φόρτωση ή αποθήκευση παιχνιδιού δεν υποστηρίζεται σε αυτή την "
 "περιοχή"
 
-#: engines/agos/saveload.cpp:161 engines/scumm/scumm.cpp:2902
+#: engines/agos/saveload.cpp:161 engines/scumm/scumm.cpp:2896
 #, c-format
 msgid ""
 "Failed to load saved game from file:\n"
@@ -6016,7 +6136,7 @@ msgstr ""
 "\n"
 "%s"
 
-#: engines/agos/saveload.cpp:196 engines/scumm/scumm.cpp:2889
+#: engines/agos/saveload.cpp:196 engines/scumm/scumm.cpp:2883
 #, c-format
 msgid ""
 "Failed to save game to file:\n"
@@ -6027,7 +6147,7 @@ msgstr ""
 "\n"
 "%s"
 
-#: engines/agos/saveload.cpp:204 engines/scumm/scumm.cpp:2922
+#: engines/agos/saveload.cpp:204 engines/scumm/scumm.cpp:2916
 #, c-format
 msgid ""
 "Successfully saved game in file:\n"
@@ -6484,7 +6604,7 @@ msgstr "Εναλλαγή Ετοιμότητας για Μάχη"
 
 #. I18N: This keymap allows skipping video cutscenes
 #: engines/bladerunner/metaengine.cpp:229 engines/scumm/help.cpp:79
-#: engines/scumm/metaengine.cpp:874 engines/twp/metaengine.cpp:131
+#: engines/scumm/metaengine.cpp:874 engines/twp/metaengine.cpp:138
 #: engines/zvision/metaengine.cpp:284
 msgid "Skip cutscene"
 msgstr "Παράλειψη ταινίας"
@@ -6666,7 +6786,7 @@ msgstr "Έξοδος"
 #. In order to escape the dice game loop press Right/Left Alt
 #: engines/cge/metaengine.cpp:218
 msgid "ALTered Item"
-msgstr ""
+msgstr "Κάλπικο Αντικείμενο"
 
 #: engines/cge/metaengine.cpp:224
 msgid "Inventory Item 1 (Select/Deselect)"
@@ -9355,7 +9475,7 @@ msgid "Your Name:"
 msgstr "Το Όνομά σας:"
 
 #. I18N: Button, start hosting online multiplayer game
-#: engines/scumm/dialog-createsession.cpp:49 engines/scumm/scumm.cpp:3905
+#: engines/scumm/dialog-createsession.cpp:49 engines/scumm/scumm.cpp:3899
 msgid "Host"
 msgstr "Φιλοξενία"
 
@@ -9365,7 +9485,7 @@ msgid "Querying games..."
 msgstr "Αναζήτηση παιχνιδιών..."
 
 #. I18N: Join online multiplayer game
-#: engines/scumm/dialog-sessionselector.cpp:64 engines/scumm/scumm.cpp:3905
+#: engines/scumm/dialog-sessionselector.cpp:64 engines/scumm/scumm.cpp:3899
 msgid "Join"
 msgstr "Συμμετοχή"
 
@@ -10410,7 +10530,7 @@ msgstr ""
 "απαραίτητα\n"
 "δεδομένα για την υποστήριξη του MT-32. Αντ' αυτού θα γίνει χρήση AdLib."
 
-#: engines/scumm/scumm.cpp:3794
+#: engines/scumm/scumm.cpp:3788
 msgid ""
 "Usually, Maniac Mansion would start now. But for that to work, the game "
 "files for Maniac Mansion have to be in the 'Maniac' directory inside the "
@@ -10421,7 +10541,7 @@ msgstr ""
 "φάκελο 'Maniac' μέσα στο φάκελο παιχνιδιού του Tentacle, και το παιχνίδι "
 "πρέπει να προστεθεί στο ScummVM."
 
-#: engines/scumm/scumm.cpp:3905
+#: engines/scumm/scumm.cpp:3899
 msgid "Would you like to host or join a network play session?"
 msgstr "Θέλετε να φιλοξενήσετε ή να συμμετέχετε σε online συνεδρία παιχνιδιού;"
 
@@ -10774,6 +10894,11 @@ msgid ""
 "at 640x480. Enabling this option removes the forced letterbox effect, so "
 "that the game fits better on screens with an aspect ratio wider than 4:3."
 msgstr ""
+"Το παιχνίδι αρχικά αποδίδεται σε ανάλυση 640x432, η οποία κατόπιν "
+"ενθυλακώνεται με μαύρα πλαίσια (letterboxed) για να γίνει 640x480. "
+"Ενεργοποιώντας αυτή την επιλογή αφαιρείται το εξαναγκασμένο εφέ με τα μαύρα "
+"πλαίσια, ώστε η εικόνα του παιχνιδιού να προσαρμόζεται καλύτερα σε οθόνες με "
+"ευρύτερη αναλογία διαστάσεων από 4:3."
 
 #: engines/tony/tony.cpp:248
 #, c-format
@@ -10781,31 +10906,31 @@ msgid "Font variant not present in '%s' engine data file."
 msgstr ""
 "H παραλλαγή γραμματοσειράς δεν υπάρχει στο αρχείο δεδομένων '%s' της μηχανής."
 
-#: engines/toon/toon.cpp:261
+#: engines/toon/toon.cpp:268
 #, c-format
 msgid "Saved game in slot #%d "
 msgstr "Έγινε αποθήκευση παιχνιδιού στη θυρίδα #%d "
 
-#: engines/toon/toon.cpp:265
+#: engines/toon/toon.cpp:272
 #, c-format
 msgid "Could not quick save into slot #%d"
 msgstr "Αδυναμία γρήγορης αποθήκευσης στη θυρίδα #%d"
 
-#: engines/toon/toon.cpp:278
+#: engines/toon/toon.cpp:285
 #, c-format
 msgid "Saved game #%d quick loaded"
 msgstr "Το αποθηκευμένη παιχνίδι #%d φορτώθηκε γρήγορα"
 
-#: engines/toon/toon.cpp:282
+#: engines/toon/toon.cpp:289
 #, c-format
 msgid "Could not quick load the saved game #%d"
 msgstr "Δεν ήταν δυνατή η γρήγορη φόρτωση του αποθηκευμένου παιχνιδιού #%d"
 
-#: engines/toon/toon.cpp:1531
+#: engines/toon/toon.cpp:1538
 msgid "Are you sure you want to exit?"
 msgstr "Σίγουρα επιθυμείτε έξοδο από το παιχνίδι;"
 
-#: engines/toon/toon.cpp:1944
+#: engines/toon/toon.cpp:1951
 #, c-format
 msgid "Unable to locate the '%s' data file."
 msgstr "Αδυναμία εντοπισμού του αρχείου παιχνιδιού '%s'."
@@ -11069,18 +11194,21 @@ msgstr "Βίντεο:"
 #. I18N: Setting to switch toiled paper to be shown as "over".
 #: engines/twp/dialogs.cpp:37
 msgid "Toilet paper over"
-msgstr ""
+msgstr "Χαρτί υγείας από πάνω"
 
 #: engines/twp/dialogs.cpp:38
 msgid ""
 "The toilet paper in some toilets will be shown \"over\".\n"
 "It's a joke option that has no effects on the gameplay."
 msgstr ""
+"Το χαρτί υγείας σε κάποιες τουαλέτες θα εμφανίζεται τοποθετημένο ώστε το "
+"χαρτί να έρχεται \"από πάνω\".\n"
+"Πρόκειται για χιουμοριστική ρύθμιση που δεν επηρεάζει καθόλου το παιχνίδι."
 
 #. I18N: Setting to enable or disable additional jokes in the game.
 #: engines/twp/dialogs.cpp:41
 msgid "Annoying in-jokes"
-msgstr ""
+msgstr "Ενοχλητικά αστεία για γνώστες"
 
 #: engines/twp/dialogs.cpp:42
 msgid ""
@@ -11089,6 +11217,10 @@ msgid ""
 "There is a game achievement that can be obtained only if the in-jokes option "
 "is switched on."
 msgstr ""
+"Το παιχνίδι θα περιλαμβάνει αστεία για μυημένους (in-jokes) και αναφορές σε "
+"παλιά παιχνίδια περιπέτειας, μέσα στους διαλόγους ή ως αντικείμενα.\n"
+"Υπάρχει ένα επίτευγμα παιχνιδιού (achievement) για το οποίο χρειάζεται αυτή "
+"η ρύθμιση να είναι ενεργοποιημένη."
 
 #: engines/twp/dialogs.cpp:44
 msgid "Controls:"
@@ -11097,89 +11229,89 @@ msgstr "Χειρισμός:"
 #. I18N: Setting to invert verb colors or keep the original verb colors.
 #: engines/twp/dialogs.cpp:48
 msgid "Invert verb colors"
-msgstr ""
+msgstr "Αντιστροφή χρωμάτος ρημάτων"
 
 #. I18N: Setting to use retro or modern fonts.
 #: engines/twp/dialogs.cpp:50
 msgid "Retro Fonts"
-msgstr ""
+msgstr "Ρετρό Γραμματοσειρά"
 
 #. I18N: Setting to use retro or modern verbs.
 #: engines/twp/dialogs.cpp:52
 msgid "Retro Verbs"
-msgstr ""
+msgstr "Ρετρό Ρήματα"
 
 #. I18N: Setting to use classic sentence or modern sentence.
 #: engines/twp/dialogs.cpp:54
 msgid "Classic Sentence"
-msgstr ""
+msgstr "Κλασσική Πρόταση"
 
 #. I18N: Settings to enable or disable Ransome unbeeped DLC.
 #: engines/twp/dialogs.cpp:57
 msgid "Ransome *unbeeped* (DLC)"
-msgstr ""
+msgstr "Ransome *χωρίς μπιπ* (DLC)"
 
-#: engines/twp/metaengine.cpp:132
+#: engines/twp/metaengine.cpp:139
 msgid "Select Actor 1"
 msgstr "Επιλογή Ηθοποιού 1"
 
-#: engines/twp/metaengine.cpp:133
+#: engines/twp/metaengine.cpp:140
 msgid "Select Actor 2"
 msgstr "Επιλογή Ηθοποιού 2"
 
-#: engines/twp/metaengine.cpp:134
+#: engines/twp/metaengine.cpp:141
 msgid "Select Actor 3"
 msgstr "Επιλογή Ηθοποιού 3"
 
-#: engines/twp/metaengine.cpp:135
+#: engines/twp/metaengine.cpp:142
 msgid "Select Actor 4"
 msgstr "Επιλογή Ηθοποιού 4"
 
-#: engines/twp/metaengine.cpp:136
+#: engines/twp/metaengine.cpp:143
 msgid "Select Actor 5"
 msgstr "Επιλογή Ηθοποιού 5"
 
-#: engines/twp/metaengine.cpp:137
+#: engines/twp/metaengine.cpp:144
 msgid "Select Actor 6"
 msgstr "Επιλογή Ηθοποιού 6"
 
-#: engines/twp/metaengine.cpp:138
+#: engines/twp/metaengine.cpp:145
 msgid "Select Choice 1"
 msgstr "Επιλογή 1"
 
-#: engines/twp/metaengine.cpp:139
+#: engines/twp/metaengine.cpp:146
 msgid "Select Choice 2"
 msgstr "Επιλογή 2"
 
-#: engines/twp/metaengine.cpp:140
+#: engines/twp/metaengine.cpp:147
 msgid "Select Choice 3"
 msgstr "Επιλογή 3"
 
-#: engines/twp/metaengine.cpp:141
+#: engines/twp/metaengine.cpp:148
 msgid "Select Choice 4"
 msgstr "Επιλογή 4"
 
-#: engines/twp/metaengine.cpp:142
+#: engines/twp/metaengine.cpp:149
 msgid "Select Choice 5"
 msgstr "Επιλογή 5"
 
-#: engines/twp/metaengine.cpp:143
+#: engines/twp/metaengine.cpp:150
 msgid "Select Choice 6"
 msgstr "Επιλογή 6"
 
-#: engines/twp/metaengine.cpp:144
+#: engines/twp/metaengine.cpp:151
 msgid "Select Next Actor"
 msgstr "Επόμενος Ηθοποιός"
 
-#: engines/twp/metaengine.cpp:145
+#: engines/twp/metaengine.cpp:152
 msgid "Select Previous Actor"
 msgstr "Προηγούμενος Ηθοποιός"
 
-#: engines/twp/metaengine.cpp:146
+#: engines/twp/metaengine.cpp:153
 msgid "Skip Text"
 msgstr "Παράλειψη Κειμένου"
 
-#: engines/twp/metaengine.cpp:147
+#: engines/twp/metaengine.cpp:154
 msgid "Show hotspots"
 msgstr "Προβολή Σημείων Αλληλεπίδρασης"
 

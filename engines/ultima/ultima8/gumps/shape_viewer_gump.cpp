@@ -41,6 +41,7 @@
 
 #include "ultima/ultima8/filesys/file_system.h"
 #include "ultima/ultima8/convert/u8/convert_shape_u8.h"
+#include "ultima/ultima8/graphics/palette.h"
 #include "ultima/ultima8/graphics/palette_manager.h"
 #include "ultima/ultima8/usecode/usecode.h"
 
@@ -187,9 +188,8 @@ void ShapeViewerGump::PaintThis(RenderSurface *surf, int32 lerp_factor, bool /*s
 			const ShapeFrame *frame = shape->getFrame(_curFrame);
 			if (frame && frame->hasPoint(relx, rely)) {
 				uint8 rawpx = frame->getPixel(relx, rely);
-				uint8 px_r = shape->getPalette()->_palette[rawpx * 3];
-				uint8 px_g = shape->getPalette()->_palette[rawpx * 3 + 1];
-				uint8 px_b = shape->getPalette()->_palette[rawpx * 3 + 2];
+				uint8 px_r, px_g, px_b;
+				shape->getPalette()->get(rawpx, px_r, px_g, px_b);
 
 				Common::sprintf_s(buf2, "px: (%d, %d)(%d, %d): %d (%d, %d, %d)", relx, rely, frame->_xoff, frame->_yoff, rawpx, px_r, px_g, px_b);
 				rendtext = font->renderText(buf2, remaining);

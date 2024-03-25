@@ -25,6 +25,7 @@
 #include "common/events.h"
 #include "common/savefile.h"
 #include "common/translation.h"
+#include "common/debug-channels.h"
 #include "engines/util.h"
 #include "graphics/cursorman.h"
 #include "graphics/screen.h"
@@ -101,16 +102,16 @@ TwpEngine::~TwpEngine() {
 	delete _screen;
 }
 
-Math::Vector2d TwpEngine::winToScreen(Math::Vector2d pos) {
+Math::Vector2d TwpEngine::winToScreen(const Math::Vector2d &pos) {
 	return Math::Vector2d(pos.getX(), SCREEN_HEIGHT - pos.getY());
 }
 
-Math::Vector2d TwpEngine::roomToScreen(Math::Vector2d pos) {
+Math::Vector2d TwpEngine::roomToScreen(const Math::Vector2d &pos) {
 	Math::Vector2d screenSize = _room->getScreenSize();
 	return Math::Vector2d(SCREEN_WIDTH, SCREEN_HEIGHT) * (pos - _gfx.cameraPos()) / screenSize;
 }
 
-Math::Vector2d TwpEngine::screenToRoom(Math::Vector2d pos) {
+Math::Vector2d TwpEngine::screenToRoom(const Math::Vector2d &pos) {
 	Math::Vector2d screenSize = _room->getScreenSize();
 	return (pos * screenSize) / Math::Vector2d(SCREEN_WIDTH, SCREEN_HEIGHT) + _gfx.cameraPos();
 }
@@ -123,7 +124,7 @@ Common::String TwpEngine::getGameId() const {
 	return _gameDescription->desc.gameId;
 }
 
-bool TwpEngine::clickedAtHandled(Math::Vector2d roomPos) {
+bool TwpEngine::clickedAtHandled(const Math::Vector2d &roomPos) {
 	bool result = false;
 	int x = roomPos.getX();
 	int y = roomPos.getY();
@@ -227,7 +228,7 @@ void TwpEngine::walkFast(bool state) {
 	}
 }
 
-void TwpEngine::clickedAt(Math::Vector2d scrPos) {
+void TwpEngine::clickedAt(const Math::Vector2d &scrPos) {
 	if (_room && !_actorSwitcher.isMouseOver()) {
 		Math::Vector2d roomPos = screenToRoom(scrPos);
 		Common::SharedPtr<Object> obj = objAt(roomPos);
@@ -1041,6 +1042,10 @@ Common::Error TwpEngine::run() {
 }
 
 Common::Error TwpEngine::loadGameState(int slot) {
+	Common::Error result = Engine::loadGameState(slot);
+	if (result.getCode() == Common::kNoError)
+		return Common::kNoError;
+
 	Common::InSaveFile *file = getSaveFileManager()->openRawFile(getSaveStateName(slot));
 	if (file) {
 		return loadGameStream(file);
@@ -1049,9 +1054,8 @@ Common::Error TwpEngine::loadGameState(int slot) {
 }
 
 Common::Error TwpEngine::loadGameStream(Common::SeekableReadStream *stream) {
-	SaveGame savegame;
-	if (_saveGameManager->getSaveGame(stream, savegame)) {
-		_saveGameManager->loadGame(savegame);
+	if (!_saveGameManager->loadGame(*stream)) {
+		return Common::kUnknownError;
 	}
 	return Common::kNoError;
 }
@@ -1061,22 +1065,28 @@ bool TwpEngine::canSaveGameStateCurrently(Common::U32String *msg) {
 }
 
 Common::Error TwpEngine::saveGameState(int slot, const Common::String &desc, bool isAutosave) {
-	Common::String name = getSaveStateName(slot);
-	Common::OutSaveFile *saveFile = _saveFileMan->openForSaving(name, false);
-	if (!saveFile)
-		return Common::kWritingFailed;
+	Common::Error result = Engine::saveGameState(slot, desc, isAutosave);
+	if (result.getCode() != Common::kNoError)
+		return result;
 
-	Common::Error result = saveGameStream(saveFile, isAutosave);
-	if (result.getCode() == Common::kNoError) {
-		name = name + ".png";
-		Common::OutSaveFile *thumbnail = _saveFileMan->openForSaving(name, false);
-		g_twp->capture(*thumbnail, Math::Vector2d(320, 180));
-		thumbnail->finalize();
+	if (DebugMan.isDebugChannelEnabled(kDebugSave)) {
+		Common::OutSaveFile *saveFile = _saveFileMan->openForSaving(Common::String::format("Savegame%d.save", slot), false);
+		if (!saveFile)
+			return Common::kWritingFailed;
+
+		result = saveGameStream(saveFile, isAutosave);
+		if (result.getCode() == Common::kNoError) {
+			Common::OutSaveFile *thumbnail = _saveFileMan->openForSaving(Common::String::format("Savegame%d.png", slot), false);
+			Graphics::Surface surface;
+			g_twp->capture(surface, 320, 180);
+			Image::writePNG(*thumbnail, surface);
+			thumbnail->finalize();
+			delete thumbnail;
+		}
 
 		saveFile->finalize();
+		delete saveFile;
 	}
-
-	delete saveFile;
 	return result;
 }
 
@@ -1462,7 +1472,7 @@ void TwpEngine::execNutEntry(HSQUIRRELVM v, const Common::String &entry) {
 	}
 }
 
-void TwpEngine::cameraAt(Math::Vector2d at) {
+void TwpEngine::cameraAt(const Math::Vector2d &at) {
 	_camera->setRoom(_room);
 	_camera->setAt(at);
 }
@@ -1518,7 +1528,7 @@ private:
 	int _zOrder = INT_MAX;
 };
 
-Common::SharedPtr<Object> TwpEngine::objAt(Math::Vector2d pos) {
+Common::SharedPtr<Object> TwpEngine::objAt(const Math::Vector2d &pos) {
 	Common::SharedPtr<Object> result;
 	objsAt(pos, GetByZOrder(result));
 	return result;
@@ -1774,7 +1784,7 @@ Scaling *TwpEngine::getScaling(const Common::String &name) {
 	return nullptr;
 }
 
-void TwpEngine::capture(Common::WriteStream &stream, Math::Vector2d size) {
+void TwpEngine::capture(Graphics::Surface &surface, int width, int height) {
 	// render scene into texture
 	Common::Array<byte> data;
 	RenderTexture rt(Math::Vector2d(SCREEN_WIDTH, SCREEN_HEIGHT));
@@ -1788,11 +1798,10 @@ void TwpEngine::capture(Common::WriteStream &stream, Math::Vector2d size) {
 	Graphics::Surface s;
 	s.init(SCREEN_WIDTH, SCREEN_HEIGHT, 4 * SCREEN_WIDTH, data.data(), fmt);
 	s.flipVertical(Common::Rect(s.w, s.h));
-	Graphics::Surface *scaledSurface = s.scale(size.getX(), size.getY());
 
+	Graphics::Surface *scaledSurface = s.scale(width, height);
 	// and save to stream
-	Image::writePNG(stream, s);
-
+	surface.copyFrom(*scaledSurface);
 	delete scaledSurface;
 }
 

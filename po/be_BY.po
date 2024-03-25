@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: ScummVM 1.8.0git\n"
 "Report-Msgid-Bugs-To: scummvm-devel@lists.scummvm.org\n"
-"POT-Creation-Date: 2024-03-17 01:12+0000\n"
+"POT-Creation-Date: 2024-03-25 01:43+0000\n"
 "PO-Revision-Date: 2021-03-21 08:24+0000\n"
 "Last-Translator: Eugene Sandulenko <sev@scummvm.org>\n"
 "Language-Team: Belarusian <https://translations.scummvm.org/projects/scummvm/"
@@ -93,7 +93,7 @@ msgstr "Уверх"
 #: gui/saveload-dialog.cpp:526 gui/saveload-dialog.cpp:828
 #: gui/saveload-dialog.cpp:1224 gui/shaderbrowser-dialog.cpp:80
 #: gui/themebrowser.cpp:54 gui/unknown-game-dialog.cpp:53 base/main.cpp:604
-#: dists/android.strings.xml.cpp:43 engines/engine.cpp:747
+#: dists/android.strings.xml.cpp:43 engines/engine.cpp:749
 #: backends/dialogs/gtk/gtk-dialogs.cpp:65
 #: backends/events/default/default-events.cpp:193
 #: backends/events/default/default-events.cpp:217
@@ -250,7 +250,7 @@ msgid "Paste code from clipboard"
 msgstr "Уставіць код з буфера памену"
 
 #: gui/cloudconnectionwizard.cpp:362 gui/launcher.cpp:316
-#: engines/dialogs.cpp:94 engines/engine.cpp:915 engines/mm/xeen/saves.cpp:259
+#: engines/dialogs.cpp:94 engines/engine.cpp:917 engines/mm/xeen/saves.cpp:259
 #: engines/parallaction/metaengine.cpp:127
 #: engines/parallaction/saveload.cpp:193 engines/pegasus/pegasus.cpp:388
 #: engines/trecision/saveload.cpp:253 engines/tsage/scenes.cpp:638
@@ -317,8 +317,8 @@ msgstr "Цяпер працуе іншае сховішча. Перапыніц�
 #: engines/director/lingo/xlibs/jitdraw3.cpp:139 engines/grim/grim.cpp:366
 #: engines/kyra/gui/saveload_eob.cpp:598 engines/kyra/gui/saveload_eob.cpp:631
 #: engines/parallaction/metaengine.cpp:145
-#: engines/sci/graphics/controls32.cpp:929 engines/scumm/scumm.cpp:3899
-#: engines/toon/toon.cpp:1531
+#: engines/sci/graphics/controls32.cpp:929 engines/scumm/scumm.cpp:3893
+#: engines/toon/toon.cpp:1538
 msgid "Yes"
 msgstr "Так"
 
@@ -330,8 +330,8 @@ msgstr "Так"
 #: engines/director/lingo/xlibs/jitdraw3.cpp:139 engines/grim/grim.cpp:366
 #: engines/kyra/gui/saveload_eob.cpp:598 engines/kyra/gui/saveload_eob.cpp:631
 #: engines/parallaction/metaengine.cpp:151
-#: engines/sci/graphics/controls32.cpp:929 engines/scumm/scumm.cpp:3899
-#: engines/toon/toon.cpp:1531
+#: engines/sci/graphics/controls32.cpp:929 engines/scumm/scumm.cpp:3893
+#: engines/toon/toon.cpp:1538
 msgid "No"
 msgstr "Не"
 
@@ -351,7 +351,7 @@ msgstr ""
 #: gui/fluidsynth-dialog.cpp:153 gui/launcher.cpp:548 gui/launcher.cpp:552
 #: gui/massadd.cpp:90 gui/options.cpp:2354 gui/predictivedialog.cpp:69
 #: gui/saveload-dialog.cpp:1225 dists/android.strings.xml.cpp:32
-#: engines/engine.cpp:550 engines/engine.cpp:573
+#: engines/engine.cpp:552 engines/engine.cpp:575
 #: backends/platform/wii/options.cpp:46 engines/agos/animation.cpp:577
 #: engines/agos/midi.cpp:320 engines/agos/midi.cpp:378
 #: engines/agos/midi.cpp:457 engines/buried/saveload.cpp:83
@@ -1389,7 +1389,7 @@ msgstr "Пошук у спісе гульняў"
 msgid "Search:"
 msgstr "Пошук:"
 
-#: gui/launcher.cpp:316 engines/dialogs.cpp:94 engines/engine.cpp:915
+#: gui/launcher.cpp:316 engines/dialogs.cpp:94 engines/engine.cpp:917
 #: engines/mm/xeen/saves.cpp:259 engines/pegasus/pegasus.cpp:388
 #: engines/trecision/saveload.cpp:253 engines/tsage/scenes.cpp:638
 #: engines/wage/saveload.cpp:736
@@ -2517,7 +2517,7 @@ msgid ""
 "And more..."
 msgstr "Добавить игру..."
 
-#: gui/options.cpp:2899 engines/engine.cpp:602
+#: gui/options.cpp:2899 engines/engine.cpp:604
 #, fuzzy
 msgid "Move"
 msgstr "Рухацца ўгару"
@@ -2651,7 +2651,7 @@ msgstr "Прайграць ці запісаць гульнявы працэс"
 
 #: gui/recorderdialog.cpp:72 gui/recorderdialog.cpp:212
 #: gui/saveload-dialog.cpp:459 gui/saveload-dialog.cpp:526
-#: dists/android.strings.xml.cpp:44 engines/engine.cpp:596
+#: dists/android.strings.xml.cpp:44 engines/engine.cpp:598
 msgid "Delete"
 msgstr "Выдаліць"
 
@@ -3282,7 +3282,7 @@ msgctxt "lowres"
 msgid "~R~eturn to Launcher"
 msgstr "Г~а~лоўнае меню"
 
-#: engines/dialogs.cpp:95 engines/engine.cpp:944 engines/agi/saveload.cpp:766
+#: engines/dialogs.cpp:95 engines/engine.cpp:946 engines/agi/saveload.cpp:766
 #: engines/avalanche/parser.cpp:1918 engines/cine/various.cpp:349
 #: engines/dm/loadsave.cpp:199 engines/drascula/saveload.cpp:382
 #: engines/dreamweb/saveload.cpp:261 engines/glk/streams.cpp:1432
@@ -3296,13 +3296,13 @@ msgstr "Г~а~лоўнае меню"
 #: engines/prince/saveload.cpp:54 engines/sci/engine/guest_additions.cpp:742
 #: engines/sci/engine/kfile.cpp:1083 engines/sherlock/scalpel/scalpel.cpp:1249
 #: engines/sherlock/tattoo/widget_files.cpp:74 engines/startrek/saveload.cpp:42
-#: engines/toltecs/menu.cpp:302 engines/toon/toon.cpp:3804
+#: engines/toltecs/menu.cpp:302 engines/toon/toon.cpp:3811
 #: engines/trecision/saveload.cpp:67 engines/tsage/scenes.cpp:636
 #: engines/wage/saveload.cpp:746 engines/zvision/file/save_manager.cpp:48
 msgid "Save game:"
 msgstr "Захаваць гульню:"
 
-#: engines/dialogs.cpp:95 engines/engine.cpp:944 engines/agi/saveload.cpp:766
+#: engines/dialogs.cpp:95 engines/engine.cpp:946 engines/agi/saveload.cpp:766
 #: engines/avalanche/parser.cpp:1918 engines/cine/various.cpp:349
 #: engines/dm/loadsave.cpp:199 engines/drascula/saveload.cpp:382
 #: engines/dreamweb/saveload.cpp:261 engines/glk/streams.cpp:1432
@@ -3318,7 +3318,7 @@ msgstr "Захаваць гульню:"
 #: engines/prince/saveload.cpp:54 engines/sci/engine/guest_additions.cpp:743
 #: engines/sci/engine/kfile.cpp:1083 engines/sherlock/scalpel/scalpel.cpp:1249
 #: engines/sherlock/tattoo/widget_files.cpp:74 engines/startrek/saveload.cpp:42
-#: engines/toltecs/menu.cpp:302 engines/toon/toon.cpp:3804
+#: engines/toltecs/menu.cpp:302 engines/toon/toon.cpp:3811
 #: engines/trecision/saveload.cpp:67 engines/tsage/scenes.cpp:636
 #: engines/wage/saveload.cpp:746 engines/zvision/file/save_manager.cpp:48
 #: engines/zvision/metaengine.cpp:262
@@ -3374,43 +3374,43 @@ msgstr "~О~К"
 msgid "~C~ancel"
 msgstr "~А~дмена"
 
-#: engines/engine.cpp:366
+#: engines/engine.cpp:368
 #, c-format
 msgid "Could not switch to resolution '%dx%d'."
 msgstr "Не атрымалася перайсці да разрознасці '%dx%d'."
 
-#: engines/engine.cpp:375
+#: engines/engine.cpp:377
 msgid "Could not initialize color format."
 msgstr "Не магу ініцыялізаваць фармат колеру."
 
-#: engines/engine.cpp:384
+#: engines/engine.cpp:386
 #, c-format
 msgid "Could not switch to video mode '%s'."
 msgstr "Не атрымалася перайсці ў відэарэжым '%s'."
 
-#: engines/engine.cpp:392
+#: engines/engine.cpp:394
 #, c-format
 msgid "Could not switch to stretch mode '%s'."
 msgstr "Не атрымалася перайсці ў рэжым расцягу '%s'."
 
-#: engines/engine.cpp:399
+#: engines/engine.cpp:401
 msgid "Could not apply aspect ratio setting."
 msgstr "Не атрымалася выкарыстаць карэкцыю суадносін бакоў."
 
-#: engines/engine.cpp:404
+#: engines/engine.cpp:406
 msgid "Could not apply fullscreen setting."
 msgstr "Не магу ўжыць поўнаэкранны рэжым."
 
-#: engines/engine.cpp:409
+#: engines/engine.cpp:411
 msgid "Could not apply filtering setting."
 msgstr "Не магу ўжыць налады фільтрацыі."
 
-#: engines/engine.cpp:483
+#: engines/engine.cpp:485
 #, fuzzy
 msgid "Error"
 msgstr "Няма памылкі"
 
-#: engines/engine.cpp:546
+#: engines/engine.cpp:548
 #, fuzzy
 msgid ""
 "You appear to be playing this game directly\n"
@@ -3425,7 +3425,7 @@ msgstr ""
 "на жорсткі дыск. Падрабязнасці можна знайсці ў\n"
 "файле README."
 
-#: engines/engine.cpp:569
+#: engines/engine.cpp:571
 #, fuzzy
 msgid ""
 "This game has audio tracks on its CD. These\n"
@@ -3441,12 +3441,12 @@ msgstr ""
 "з'явіцца музыка. Падрабязнасці можна знайсці ў\n"
 "файле README."
 
-#: engines/engine.cpp:597
+#: engines/engine.cpp:599
 #, fuzzy
 msgid "Skip autosave"
 msgstr "Пустое аўтазахаванне"
 
-#: engines/engine.cpp:599
+#: engines/engine.cpp:601
 #, c-format
 msgid ""
 "WARNING: The autosave slot contains a saved game named %S, and an autosave "
@@ -3456,21 +3456,21 @@ msgid ""
 "Alternatively, you can skip the autosave (will prompt again in 5 minutes)."
 msgstr ""
 
-#: engines/engine.cpp:609
+#: engines/engine.cpp:611
 msgid "ERROR: Could not copy the savegame to a new slot"
 msgstr ""
 
-#: engines/engine.cpp:636 engines/savestate.cpp:98
+#: engines/engine.cpp:638 engines/savestate.cpp:98
 #: backends/platform/ios7/ios7_osys_main.cpp:294 engines/mm/xeen/saves.cpp:293
 #: engines/sky/metaengine.cpp:216
 msgid "Autosave"
 msgstr "Аўтазахаванне"
 
-#: engines/engine.cpp:644
+#: engines/engine.cpp:646
 msgid "Error occurred making autosave"
 msgstr "Памылка стварэння аўтазахавання"
 
-#: engines/engine.cpp:719
+#: engines/engine.cpp:721
 #, c-format
 msgid ""
 "Failed to load saved game (%s)! Please consult the README for basic "
@@ -3479,16 +3479,16 @@ msgstr ""
 "Не атрымалася загрузіць гульню (%s)! Звярніцеся да файла README за "
 "падрабязнасцямі і ўказаннямі да атрымання далейшай дапамогі."
 
-#: engines/engine.cpp:743
+#: engines/engine.cpp:745
 msgid "WARNING: "
 msgstr ""
 
-#: engines/engine.cpp:743
+#: engines/engine.cpp:745
 #, fuzzy
 msgid " Shall we still run the game?"
 msgstr "Поўная назва гульні"
 
-#: engines/engine.cpp:744
+#: engines/engine.cpp:746
 msgid ""
 "WARNING: The game you are about to start is not yet fully supported by "
 "ScummVM. As such, it is likely to be unstable, and any saved game you make "
@@ -3498,27 +3498,27 @@ msgstr ""
 "за ўсё, не будзе працаваць стабільна, і захаванні гульняў могуць не "
 "працаваць у будучых версіях ScummVM."
 
-#: engines/engine.cpp:747 engines/wintermute/wintermute.cpp:182
+#: engines/engine.cpp:749 engines/wintermute/wintermute.cpp:182
 msgid "Start anyway"
 msgstr "Усё адно запусціць"
 
-#: engines/engine.cpp:765
+#: engines/engine.cpp:767
 #, fuzzy
 msgid "This game is not supported."
 msgstr "Game id не падтрымваецца"
 
-#: engines/engine.cpp:765
+#: engines/engine.cpp:767
 #, fuzzy
 msgid ""
 "This game is not supported for the following reason:\n"
 "\n"
 msgstr "Гэтая гульня не падтрымвае загрузку захаванняў праз галоўнае меню."
 
-#: engines/engine.cpp:911
+#: engines/engine.cpp:913
 msgid "Loading game is currently unavailable"
 msgstr "Загрузка гульні цяпер недаступна"
 
-#: engines/engine.cpp:940
+#: engines/engine.cpp:942
 msgid "Saving game is currently unavailable"
 msgstr "Цяпер захаванне гульні недаступна"
 
@@ -5436,7 +5436,7 @@ msgstr "Правяраю абнаўленні..."
 #: engines/hugo/hugo.cpp:424 engines/lure/lure.cpp:57
 #: engines/mortevielle/mortevielle.cpp:300 engines/sky/compact.cpp:129
 #: engines/supernova/supernova.cpp:463 engines/teenagent/resources.cpp:97
-#: engines/tony/tony.cpp:187 engines/toon/toon.cpp:5409
+#: engines/tony/tony.cpp:187 engines/toon/toon.cpp:5416
 #: engines/ultima/ultima8/ultima8.cpp:183
 #, c-format
 msgid "Unable to locate the '%s' engine data file."
@@ -5445,7 +5445,7 @@ msgstr "Не атрымалася знайсці файл рухавічка %s.
 #: engines/access/resources.cpp:51 engines/drascula/drascula.cpp:956
 #: engines/hugo/hugo.cpp:436 engines/lure/lure.cpp:66
 #: engines/mortevielle/mortevielle.cpp:308 engines/supernova/supernova.cpp:468
-#: engines/tony/tony.cpp:200 engines/toon/toon.cpp:5422
+#: engines/tony/tony.cpp:200 engines/toon/toon.cpp:5429
 #, c-format
 msgid "The '%s' engine data file is corrupt."
 msgstr "Файл рухавічка %s пашкоджаны."
@@ -5453,7 +5453,7 @@ msgstr "Файл рухавічка %s пашкоджаны."
 #: engines/access/resources.cpp:60 engines/drascula/drascula.cpp:967
 #: engines/hugo/hugo.cpp:446 engines/lure/lure.cpp:69
 #: engines/mortevielle/mortevielle.cpp:318 engines/tony/tony.cpp:211
-#: engines/toon/toon.cpp:5433
+#: engines/toon/toon.cpp:5440
 #, c-format
 msgid ""
 "Incorrect version of the '%s' engine data file found. Expected %d.%d but got "
@@ -5611,7 +5611,7 @@ msgstr "Game id не падтрымваецца"
 #: engines/prince/saveload.cpp:63 engines/sci/engine/guest_additions.cpp:745
 #: engines/sci/engine/kfile.cpp:1216 engines/sherlock/scalpel/scalpel.cpp:1262
 #: engines/sherlock/tattoo/widget_files.cpp:93 engines/startrek/saveload.cpp:67
-#: engines/toltecs/menu.cpp:272 engines/toon/toon.cpp:3898
+#: engines/toltecs/menu.cpp:272 engines/toon/toon.cpp:3905
 #: engines/zvision/file/save_manager.cpp:61
 msgid "Restore game:"
 msgstr "Узнавіць гульню:"
@@ -5631,7 +5631,7 @@ msgstr "Узнавіць гульню:"
 #: engines/prince/saveload.cpp:63 engines/sci/engine/guest_additions.cpp:746
 #: engines/sci/engine/kfile.cpp:1216 engines/sherlock/scalpel/scalpel.cpp:1262
 #: engines/sherlock/tattoo/widget_files.cpp:93 engines/startrek/saveload.cpp:67
-#: engines/toltecs/menu.cpp:272 engines/toon/toon.cpp:3898
+#: engines/toltecs/menu.cpp:272 engines/toon/toon.cpp:3905
 #: engines/zvision/file/save_manager.cpp:61 engines/zvision/metaengine.cpp:267
 msgid "Restore"
 msgstr "Узнавіць"
@@ -5640,7 +5640,7 @@ msgstr "Узнавіць"
 msgid "Quick load or save game isn't supported in this location"
 msgstr ""
 
-#: engines/agos/saveload.cpp:161 engines/scumm/scumm.cpp:2902
+#: engines/agos/saveload.cpp:161 engines/scumm/scumm.cpp:2896
 #, c-format
 msgid ""
 "Failed to load saved game from file:\n"
@@ -5651,7 +5651,7 @@ msgstr ""
 "\n"
 "%s"
 
-#: engines/agos/saveload.cpp:196 engines/scumm/scumm.cpp:2889
+#: engines/agos/saveload.cpp:196 engines/scumm/scumm.cpp:2883
 #, c-format
 msgid ""
 "Failed to save game to file:\n"
@@ -5662,7 +5662,7 @@ msgstr ""
 "\n"
 "%s"
 
-#: engines/agos/saveload.cpp:204 engines/scumm/scumm.cpp:2922
+#: engines/agos/saveload.cpp:204 engines/scumm/scumm.cpp:2916
 #, c-format
 msgid ""
 "Successfully saved game in file:\n"
@@ -6081,7 +6081,7 @@ msgstr "Пераключыць гук"
 
 #. I18N: This keymap allows skipping video cutscenes
 #: engines/bladerunner/metaengine.cpp:229 engines/scumm/help.cpp:79
-#: engines/scumm/metaengine.cpp:874 engines/twp/metaengine.cpp:131
+#: engines/scumm/metaengine.cpp:874 engines/twp/metaengine.cpp:138
 #: engines/zvision/metaengine.cpp:284
 msgid "Skip cutscene"
 msgstr "Прапусціць застаўку"
@@ -8898,7 +8898,7 @@ msgid "Your Name:"
 msgstr "Назва:"
 
 #. I18N: Button, start hosting online multiplayer game
-#: engines/scumm/dialog-createsession.cpp:49 engines/scumm/scumm.cpp:3905
+#: engines/scumm/dialog-createsession.cpp:49 engines/scumm/scumm.cpp:3899
 msgid "Host"
 msgstr ""
 
@@ -8910,7 +8910,7 @@ msgid "Querying games..."
 msgstr "Захоўваю гульню..."
 
 #. I18N: Join online multiplayer game
-#: engines/scumm/dialog-sessionselector.cpp:64 engines/scumm/scumm.cpp:3905
+#: engines/scumm/dialog-sessionselector.cpp:64 engines/scumm/scumm.cpp:3899
 msgid "Join"
 msgstr ""
 
@@ -9892,7 +9892,7 @@ msgid ""
 "required resources for MT-32. Using AdLib instead."
 msgstr ""
 
-#: engines/scumm/scumm.cpp:3794
+#: engines/scumm/scumm.cpp:3788
 msgid ""
 "Usually, Maniac Mansion would start now. But for that to work, the game "
 "files for Maniac Mansion have to be in the 'Maniac' directory inside the "
@@ -9903,7 +9903,7 @@ msgstr ""
 "унутры дырэкторыі гульні Tentacle і сама гульня павінна быць дададзена ў "
 "ScummVM."
 
-#: engines/scumm/scumm.cpp:3905
+#: engines/scumm/scumm.cpp:3899
 #, fuzzy
 msgid "Would you like to host or join a network play session?"
 msgstr "Ці вы хочаце захаваць або загрузіць гульню?"
@@ -10235,32 +10235,32 @@ msgstr ""
 msgid "Font variant not present in '%s' engine data file."
 msgstr "Варыянт шрыфту адсутны ў файле рухавічка %s."
 
-#: engines/toon/toon.cpp:261
+#: engines/toon/toon.cpp:268
 #, c-format
 msgid "Saved game in slot #%d "
 msgstr "Гульня захавана ў слот %d "
 
-#: engines/toon/toon.cpp:265
+#: engines/toon/toon.cpp:272
 #, c-format
 msgid "Could not quick save into slot #%d"
 msgstr "Не атрымалася хутка захаваць гульню ў слот %d"
 
-#: engines/toon/toon.cpp:278
+#: engines/toon/toon.cpp:285
 #, c-format
 msgid "Saved game #%d quick loaded"
 msgstr "Захаваная гульня №%d загружана"
 
-#: engines/toon/toon.cpp:282
+#: engines/toon/toon.cpp:289
 #, c-format
 msgid "Could not quick load the saved game #%d"
 msgstr "Не атрымалася хутка загрузіць захаваную гульню №%d"
 
-#: engines/toon/toon.cpp:1531
+#: engines/toon/toon.cpp:1538
 #, fuzzy
 msgid "Are you sure you want to exit?"
 msgstr "   Вы ўпэўнены, што жадаеце выйсці?   "
 
-#: engines/toon/toon.cpp:1944
+#: engines/toon/toon.cpp:1951
 #, c-format
 msgid "Unable to locate the '%s' data file."
 msgstr "Не магчыма знайсці файл дадзеных '%s'."
@@ -10600,91 +10600,91 @@ msgstr ""
 msgid "Ransome *unbeeped* (DLC)"
 msgstr ""
 
-#: engines/twp/metaengine.cpp:132
+#: engines/twp/metaengine.cpp:139
 #, fuzzy
 #| msgid "Select"
 msgid "Select Actor 1"
 msgstr "Выбар"
 
-#: engines/twp/metaengine.cpp:133
+#: engines/twp/metaengine.cpp:140
 #, fuzzy
 #| msgid "Select"
 msgid "Select Actor 2"
 msgstr "Выбар"
 
-#: engines/twp/metaengine.cpp:134
+#: engines/twp/metaengine.cpp:141
 #, fuzzy
 #| msgid "Select"
 msgid "Select Actor 3"
 msgstr "Выбар"
 
-#: engines/twp/metaengine.cpp:135
+#: engines/twp/metaengine.cpp:142
 #, fuzzy
 #| msgid "Select"
 msgid "Select Actor 4"
 msgstr "Выбар"
 
-#: engines/twp/metaengine.cpp:136
+#: engines/twp/metaengine.cpp:143
 #, fuzzy
 #| msgid "Select"
 msgid "Select Actor 5"
 msgstr "Выбар"
 
-#: engines/twp/metaengine.cpp:137
+#: engines/twp/metaengine.cpp:144
 #, fuzzy
 #| msgid "Select"
 msgid "Select Actor 6"
 msgstr "Выбар"
 
-#: engines/twp/metaengine.cpp:138
+#: engines/twp/metaengine.cpp:145
 #, fuzzy
 msgid "Select Choice 1"
 msgstr "Абярыце тэму"
 
-#: engines/twp/metaengine.cpp:139
+#: engines/twp/metaengine.cpp:146
 #, fuzzy
 msgid "Select Choice 2"
 msgstr "Абярыце тэму"
 
-#: engines/twp/metaengine.cpp:140
+#: engines/twp/metaengine.cpp:147
 #, fuzzy
 msgid "Select Choice 3"
 msgstr "Абярыце тэму"
 
-#: engines/twp/metaengine.cpp:141
+#: engines/twp/metaengine.cpp:148
 #, fuzzy
 msgid "Select Choice 4"
 msgstr "Абярыце тэму"
 
-#: engines/twp/metaengine.cpp:142
+#: engines/twp/metaengine.cpp:149
 #, fuzzy
 msgid "Select Choice 5"
 msgstr "Абярыце тэму"
 
-#: engines/twp/metaengine.cpp:143
+#: engines/twp/metaengine.cpp:150
 #, fuzzy
 msgid "Select Choice 6"
 msgstr "Абярыце тэму"
 
-#: engines/twp/metaengine.cpp:144
+#: engines/twp/metaengine.cpp:151
 #, fuzzy
 #| msgid "Select next music record"
 msgid "Select Next Actor"
 msgstr "Прайграць наступны музычны запіс"
 
-#: engines/twp/metaengine.cpp:145
+#: engines/twp/metaengine.cpp:152
 #, fuzzy
 #| msgid "Previous action"
 msgid "Select Previous Actor"
 msgstr "Папярэдняе дзеянне"
 
-#: engines/twp/metaengine.cpp:146
+#: engines/twp/metaengine.cpp:153
 #, fuzzy
 #| msgid "Skip text"
 msgid "Skip Text"
 msgstr "Прапусціць тэкст"
 
-#: engines/twp/metaengine.cpp:147
+#: engines/twp/metaengine.cpp:154
 #, fuzzy
 #| msgid "Show hints"
 msgid "Show hotspots"

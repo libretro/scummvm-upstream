@@ -189,6 +189,27 @@ bool Object::playCore(const Common::String &state, bool loop, bool instant) {
 	return false;
 }
 
+static Node* getChildByName(Node* node, const Common::String& name) {
+	if(!node)
+		return nullptr;
+	for (auto child : node->getChildren()) {
+		if (child->getName() == name) {
+			return child;
+		}
+	}
+	return nullptr;
+}
+
+static Node* getLayerByName(Node* node, const Common::String& name) {
+	Node* child = getChildByName(node, name);
+	if(child)
+		return child;
+	if(node->getChildren().size()==1) {
+		return getChildByName(node->getChildren()[0], name);
+	}
+	return nullptr;
+}
+
 void Object::showLayer(const Common::String &layer, bool visible) {
 	int index = -1;
 	for (size_t i = 0; i < _hiddenLayers.size(); i++) {
@@ -205,14 +226,9 @@ void Object::showLayer(const Common::String &layer, bool visible) {
 		if (index == -1)
 			_hiddenLayers.push_back(layer);
 	}
-	if (_node != NULL) {
-		for (size_t i = 0; i < _node->getChildren().size(); i++) {
-			Node *node = _node->getChildren()[i];
-			if (node->getName() == layer) {
-				node->setVisible(visible);
-			}
-		}
-	}
+	Node* node = getLayerByName(_node.get(), layer);
+	if(node)
+		node->setVisible(visible);
 }
 
 Facing Object::getFacing() const {
@@ -482,7 +498,7 @@ bool Object::inInventory() {
 	return g_twp->_resManager->isObject(getId()) && getIcon().size() > 0;
 }
 
-bool Object::contains(Math::Vector2d pos) {
+bool Object::contains(const Math::Vector2d &pos) {
 	Math::Vector2d p = pos - _node->getPos() - _node->getOffset();
 	return _hotspot.contains(p.getX(), p.getY());
 }
@@ -499,6 +515,9 @@ Common::String Object::getAnimName(const Common::String &key) {
 }
 
 void Object::setHeadIndex(int head) {
+	Node* node = getLayerByName(_node.get(), Common::String::format("%s%d", getAnimName(HEAD_ANIMNAME).c_str(), head));
+	if(!node)
+		return;
 	for (int i = 0; i <= 6; i++) {
 		showLayer(Common::String::format("%s%d", getAnimName(HEAD_ANIMNAME).c_str(), i), i == head);
 	}
@@ -513,20 +532,35 @@ void Object::stopWalking() {
 		_walkTo->disable();
 }
 
-void Object::setAnimationNames(const Common::String &head, const Common::String &stand, const Common::String &walk, const Common::String &reach) {
-	if (!head.empty())
+void Object::setAnimationNames(const Common::String &head, const Common::String &standAnim, const Common::String &walk, const Common::String &reach) {
+	if (!head.empty()) {
 		setHeadIndex(0);
-	_animNames[HEAD_ANIMNAME] = head;
-	showLayer(_animNames[HEAD_ANIMNAME], true);
+		_animNames[HEAD_ANIMNAME] = head;
+	} else {
+		_animNames.erase(HEAD_ANIMNAME);
+	}
+
+	showLayer(getAnimName(HEAD_ANIMNAME), true);
 	setHeadIndex(1);
-	if (!stand.empty())
-		_animNames[STAND_ANIMNAME] = stand;
-	if (!walk.empty())
+	if (!standAnim.empty()) {
+		_animNames[STAND_ANIMNAME] = standAnim;
+	} else {
+		_animNames.erase(STAND_ANIMNAME);
+	}
+	if (!walk.empty()) {
 		_animNames[WALK_ANIMNAME] = walk;
-	if (!reach.empty())
+	} else {
+		_animNames.erase(WALK_ANIMNAME);
+	}
+	if (!reach.empty()) {
 		_animNames[REACH_ANIMNAME] = reach;
+	} else {
+		_animNames.erase(REACH_ANIMNAME);
+	}
 	if (isWalking())
 		play(getAnimName(WALK_ANIMNAME), true);
+	else
+		stand();
 }
 
 void Object::blinkRate(Common::SharedPtr<Object> obj, float min, float max) {
@@ -561,7 +595,7 @@ void Object::setCostume(const Common::String &name, const Common::String &sheet)
 }
 
 void Object::stand() {
-	play(getAnimName(STAND_ANIMNAME));
+	play(getAnimName(STAND_ANIMNAME), true);
 }
 
 #define SET_MOTOR(motorTo)     \
@@ -641,7 +675,7 @@ void Object::stopTalking() {
 	}
 }
 
-void Object::say(Common::SharedPtr<Object> obj, const Common::StringArray &texts, Color color) {
+void Object::say(Common::SharedPtr<Object> obj, const Common::StringArray &texts, const Color &color) {
 	if (texts.size() == 0)
 		return;
 	obj->_talkingState._obj.reset(obj);
@@ -782,7 +816,7 @@ void Object::execVerb(Common::SharedPtr<Object> obj) {
 }
 
 // Walks an actor to the `pos` or actor `obj` and then faces `dir`.
-void Object::walk(Common::SharedPtr<Object> obj, Math::Vector2d pos, int facing) {
+void Object::walk(Common::SharedPtr<Object> obj, const Math::Vector2d &pos, int facing) {
 	debugC(kDebugGame, "walk to obj %s: %f,%f, %d", obj->_key.c_str(), pos.getX(), pos.getY(), facing);
 	if (!obj->_walkTo || (!obj->_walkTo->isEnabled())) {
 		obj->play(obj->getAnimName(WALK_ANIMNAME), true);
@@ -798,11 +832,13 @@ void Object::walk(Common::SharedPtr<Object> actor, Common::SharedPtr<Object> obj
 }
 
 void Object::turn(Facing facing) {
+	stand();
 	setFacing(facing);
 }
 
 void Object::turn(Common::SharedPtr<Object> actor, Common::SharedPtr<Object> obj) {
 	Facing facing = getFacingToFaceTo(actor, obj);
+	actor->stand();
 	actor->setFacing(facing);
 }
 
