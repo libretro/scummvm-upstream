@@ -161,7 +161,11 @@ void DrillerEngine::gotoArea(uint16 areaID, int entranceID) {
 			error("Invalid movement across areas");
 		assert(newPos != -1);
 		_sensors = _currentArea->getSensors();
-	}
+	} else if (entranceID == -1)
+		debugC(1, kFreescapeDebugMove, "Loading game, no change in position");
+	else
+		error("Invalid area change!");
+
 	_lastPosition = _position;
 	_gameStateVars[0x1f] = 0;
 
@@ -320,11 +324,7 @@ void DrillerEngine::drawInfoMenu() {
 	} else if (isAmiga() || isAtariST())
 		drawStringInSurface("press any key to continue", 66, 97, front, black, surface);
 
-	drawFullscreenSurface(surface);
-
-	_gfx->flipBuffer();
-	g_system->updateScreen();
-
+	Texture *menuTexture = _gfx->createTexture(surface);
 	Common::Event event;
 	bool cont = true;
 	while (!shouldQuit() && cont) {
@@ -369,10 +369,10 @@ void DrillerEngine::drawInfoMenu() {
 			}
 		}
 		_gfx->clear(0, 0, 0, true);
-		drawBorder();
-		drawUI();
+		drawFrame();
 		if (surface)
-			drawFullscreenSurface(surface);
+			_gfx->drawTexturedRect2D(_fullscreenViewArea, _fullscreenViewArea, menuTexture);
+
 		_gfx->flipBuffer();
 		g_system->updateScreen();
 		g_system->delayMillis(15); // try to target ~60 FPS
@@ -382,6 +382,7 @@ void DrillerEngine::drawInfoMenu() {
 	delete _savedScreen;
 	surface->free();
 	delete surface;
+	delete menuTexture;
 	pauseToken.clear();
 }
 

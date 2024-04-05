@@ -66,8 +66,8 @@ public:
     SQWeakRef *_root;
     SQClass *_base;
     SQFunctionProto *_function;
-    SQObjectPtr *_outervalues;
-    SQObjectPtr *_defaultparams;
+    SQObjectPtr *_outervalues = nullptr;
+    SQObjectPtr *_defaultparams = nullptr;
 };
 
 //////////////////////////////////////////////
@@ -99,7 +99,7 @@ public:
 #endif
 
     SQObjectPtr *_valptr;  /* pointer to value on stack, or _value below */
-    SQInteger    _idx;     /* idx in stack array, for relocation */
+    SQInteger    _idx = 0;     /* idx in stack array, for relocation */
     SQObjectPtr  _value;   /* value of outer after stack frame is closed */
     SQOuter     *_next;    /* pointer to next outer when frame is open   */
 };
@@ -187,10 +187,10 @@ public:
     void Finalize() { _NULL_SQOBJECT_VECTOR(_outervalues,_noutervalues); }
     SQObjectType GetType() {return OT_NATIVECLOSURE;}
 #endif
-    SQInteger _nparamscheck;
+    SQInteger _nparamscheck = 0;
     SQIntVec _typecheck;
-    SQObjectPtr *_outervalues;
-    SQUnsignedInteger _noutervalues;
+    SQObjectPtr *_outervalues = nullptr;
+    SQUnsignedInteger _noutervalues = 0;
     SQWeakRef *_env;
     SQFUNCTION _function;
     SQObjectPtr _name;

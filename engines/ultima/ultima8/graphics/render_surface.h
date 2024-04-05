@@ -118,9 +118,14 @@ public:
 		return _surface;
 	};
 
-	//
-	// Surface Filling
-	//
+	//! Fill the region with a color in the pixel format
+	void fillRect(const Rect &r, uint32 color);
+
+	//! Fill the region with a color in the pixel format
+	void frameRect(const Rect &r, uint32 color);
+
+	// Draw a line with a color in the pixel format
+	void drawLine(int32 sx, int32 sy, int32 ex, int32 ey, uint32 color);
 
 	//! Fill the region with a color in the TEX32_PACK_RGB format
 	void fill32(uint32 rgb, int32 sx, int32 sy, int32 w, int32 h) {
@@ -136,7 +141,10 @@ public:
 	//! Fill the region with a color in the TEX32_PACK_RGB format
 	void frameRect32(uint32 rgb, const Rect &r);
 
-		//
+	// Draw a line with a color in the TEX32_PACK_RGB format
+	void drawLine32(uint32 rgb, int32 sx, int32 sy, int32 ex, int32 ey);
+
+	//
 	// The rule for painting methods:
 	//
 	// First arg are the source object to 'draw' with
@@ -164,19 +172,13 @@ public:
 	void PaintHighlightInvis(const Shape *s, uint32 frame, int32 x, int32 y, bool trans, bool mirrored, uint32 col32);
 
 	//
-	// Basic Line Drawing
-	//
-
-	// Draw a line with a color in the TEX32_PACK_RGB format
-	void drawLine32(uint32 rgb, int32 sx, int32 sy, int32 ex, int32 ey);
-
-
-	//
 	// Basic Texture Blitting
 	//
 
 	//! Blit a region from a Texture (Alpha == 0 -> skipped)
 	void Blit(const Graphics::ManagedSurface &src, const Common::Rect &srcRect, int32 dx, int32 dy, bool alpha_blend = false);
+
+	void CrossKeyBlitMap(const Graphics::Surface &src, const Common::Rect &srcRect, int32 dx, int32 dy, const uint32 *map, const uint32 key);
 
 	//! Blit a region from a Texture with a Colour blend (AlphaTex == 0 -> skipped. AlphaCol32 -> Blend Factors)
 	void FadedBlit(const Graphics::ManagedSurface &src, const Common::Rect &srcRect, int32 dx, int32 dy, uint32 col32, bool alpha_blend = false);

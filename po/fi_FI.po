@@ -10,7 +10,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: ScummVM 1.6.0git\n"
 "Report-Msgid-Bugs-To: scummvm-devel@lists.scummvm.org\n"
-"POT-Creation-Date: 2024-03-25 01:43+0000\n"
+"POT-Creation-Date: 2024-04-03 09:40+0000\n"
 "PO-Revision-Date: 2024-03-20 21:32+0000\n"
 "Last-Translator: Timo Mikkolainen <tmikkola@gmail.com>\n"
 "Language-Team: Finnish <https://translations.scummvm.org/projects/scummvm/"
@@ -87,7 +87,7 @@ msgstr "Siirry ylös"
 #: gui/saveload-dialog.cpp:526 gui/saveload-dialog.cpp:828
 #: gui/saveload-dialog.cpp:1224 gui/shaderbrowser-dialog.cpp:80
 #: gui/themebrowser.cpp:54 gui/unknown-game-dialog.cpp:53 base/main.cpp:604
-#: dists/android.strings.xml.cpp:43 engines/engine.cpp:749
+#: dists/android.strings.xml.cpp:43 engines/engine.cpp:760
 #: backends/dialogs/gtk/gtk-dialogs.cpp:65
 #: backends/events/default/default-events.cpp:193
 #: backends/events/default/default-events.cpp:217
@@ -103,7 +103,7 @@ msgstr "Siirry ylös"
 #: engines/mohawk/riven_stacks/aspit.cpp:455
 #: engines/parallaction/saveload.cpp:270
 #: engines/scumm/dialog-createsession.cpp:47
-#: engines/scumm/dialog-sessionselector.cpp:67 engines/sword1/control.cpp:2796
+#: engines/scumm/dialog-sessionselector.cpp:67 engines/sword1/control.cpp:2798
 #: engines/wintermute/wintermute.cpp:182
 msgid "Cancel"
 msgstr "Peruuta"
@@ -241,7 +241,7 @@ msgid "Paste code from clipboard"
 msgstr "Liitä koodi leikepöydältä"
 
 #: gui/cloudconnectionwizard.cpp:362 gui/launcher.cpp:316
-#: engines/dialogs.cpp:94 engines/engine.cpp:917 engines/mm/xeen/saves.cpp:259
+#: engines/dialogs.cpp:94 engines/engine.cpp:928 engines/mm/xeen/saves.cpp:259
 #: engines/parallaction/metaengine.cpp:127
 #: engines/parallaction/saveload.cpp:193 engines/pegasus/pegasus.cpp:388
 #: engines/trecision/saveload.cpp:253 engines/tsage/scenes.cpp:638
@@ -294,7 +294,7 @@ msgstr "Toinen tallennustila on aktiivinen. Haluatko keskeyttää sen?"
 #: gui/cloudconnectionwizard.cpp:499 gui/downloaddialog.cpp:118
 #: gui/downloaddialog.cpp:152 gui/filebrowser-dialog.cpp:135
 #: gui/fluidsynth-dialog.cpp:209 gui/launcher.cpp:420 gui/launcher.cpp:449
-#: gui/launcher.cpp:492 gui/options.cpp:3440 gui/options.cpp:3821
+#: gui/launcher.cpp:501 gui/options.cpp:3440 gui/options.cpp:3821
 #: base/main.cpp:604 backends/events/default/default-events.cpp:193
 #: engines/buried/buried.cpp:590 engines/director/events.cpp:89
 #: engines/director/lingo/xlibs/jitdraw3.cpp:139 engines/grim/grim.cpp:366
@@ -308,7 +308,7 @@ msgstr "Kyllä"
 #: gui/cloudconnectionwizard.cpp:499 gui/downloaddialog.cpp:118
 #: gui/downloaddialog.cpp:153 gui/filebrowser-dialog.cpp:135
 #: gui/fluidsynth-dialog.cpp:209 gui/launcher.cpp:420 gui/launcher.cpp:449
-#: gui/launcher.cpp:492 gui/options.cpp:3440 gui/options.cpp:3821
+#: gui/launcher.cpp:501 gui/options.cpp:3440 gui/options.cpp:3821
 #: engines/buried/buried.cpp:590 engines/director/events.cpp:89
 #: engines/director/lingo/xlibs/jitdraw3.cpp:139 engines/grim/grim.cpp:366
 #: engines/kyra/gui/saveload_eob.cpp:598 engines/kyra/gui/saveload_eob.cpp:631
@@ -329,14 +329,14 @@ msgstr "JSON-koodin sisältö on epämuodostunutta."
 
 #: gui/cloudconnectionwizard.cpp:557 gui/downloaddialog.cpp:146
 #: gui/editgamedialog.cpp:363 gui/editrecorddialog.cpp:67
-#: gui/fluidsynth-dialog.cpp:153 gui/launcher.cpp:548 gui/launcher.cpp:552
+#: gui/fluidsynth-dialog.cpp:153 gui/launcher.cpp:557 gui/launcher.cpp:561
 #: gui/massadd.cpp:90 gui/options.cpp:2354 gui/predictivedialog.cpp:69
 #: gui/saveload-dialog.cpp:1225 dists/android.strings.xml.cpp:32
-#: engines/engine.cpp:552 engines/engine.cpp:575
+#: engines/engine.cpp:563 engines/engine.cpp:586
 #: backends/platform/wii/options.cpp:46 engines/agos/animation.cpp:577
 #: engines/agos/midi.cpp:320 engines/agos/midi.cpp:378
 #: engines/agos/midi.cpp:457 engines/buried/saveload.cpp:83
-#: engines/director/lingo/lingo-builtins.cpp:1906
+#: engines/director/lingo/lingo-builtins.cpp:1908
 #: engines/drascula/saveload.cpp:48 engines/grim/inputdialog.cpp:83
 #: engines/groovie/script.cpp:660 engines/mtropolis/mtropolis.cpp:114
 #: engines/mtropolis/mtropolis.cpp:124 engines/parallaction/saveload.cpp:270
@@ -345,10 +345,10 @@ msgstr "JSON-koodin sisältö on epämuodostunutta."
 #: engines/scumm/scumm.cpp:1604 engines/scumm/scumm.cpp:2080
 #: engines/scumm/scumm.cpp:2096 engines/sky/compact.cpp:140
 #: engines/sword1/animation.cpp:532 engines/sword1/animation.cpp:563
-#: engines/sword1/animation.cpp:571 engines/sword1/control.cpp:2796
+#: engines/sword1/animation.cpp:571 engines/sword1/control.cpp:2798
 #: engines/sword1/logic.cpp:1732 engines/sword2/animation.cpp:426
 #: engines/sword2/animation.cpp:456 engines/sword2/animation.cpp:466
-#: engines/vcruise/vcruise.cpp:92 engines/vcruise/vcruise.cpp:102
+#: engines/vcruise/vcruise.cpp:101 engines/vcruise/vcruise.cpp:111
 #: engines/zvision/file/save_manager.cpp:225
 msgid "OK"
 msgstr "OK"
@@ -436,7 +436,7 @@ msgid ""
 msgstr ""
 "Yhteytesi vaikuttaa rajatulta. Haluatko varmasti ladata tiedostoja sillä?"
 
-#: gui/downloaddialog.cpp:136 gui/launcher.cpp:650
+#: gui/downloaddialog.cpp:136 gui/launcher.cpp:659
 msgid "ScummVM couldn't open the specified directory!"
 msgstr "ScummVM ei voi avata kyseistä hakemistoa!"
 
@@ -547,7 +547,7 @@ msgstr "ikonipaketit"
 msgid "shader packs"
 msgstr "sävytinpaketit"
 
-#: gui/dump-all-dialogs.cpp:126 gui/launcher.cpp:701
+#: gui/dump-all-dialogs.cpp:126 gui/launcher.cpp:710
 msgid "Pick the game:"
 msgstr "Valitse peli:"
 
@@ -1314,7 +1314,7 @@ msgstr "Vuosi"
 msgid "Select Group by"
 msgstr "Valitse ryhmitys"
 
-#: gui/launcher.cpp:233 gui/launcher.cpp:886
+#: gui/launcher.cpp:233 gui/launcher.cpp:895
 msgid "Group:"
 msgstr "Ryhmitä:"
 
@@ -1410,17 +1410,17 @@ msgctxt "lowres"
 msgid "Mass Add..."
 msgstr "Lisää monta..."
 
-#: gui/launcher.cpp:301 gui/launcher.cpp:856 gui/shaderbrowser-dialog.cpp:61
+#: gui/launcher.cpp:301 gui/launcher.cpp:865 gui/shaderbrowser-dialog.cpp:61
 #: gui/shaderbrowser-dialog.cpp:97
 msgid "Search in game list"
 msgstr "Etsi peliä listasta"
 
-#: gui/launcher.cpp:305 gui/launcher.cpp:877 gui/shaderbrowser-dialog.cpp:65
+#: gui/launcher.cpp:305 gui/launcher.cpp:886 gui/shaderbrowser-dialog.cpp:65
 #: gui/shaderbrowser-dialog.cpp:107
 msgid "Search:"
 msgstr "Etsi:"
 
-#: gui/launcher.cpp:316 engines/dialogs.cpp:94 engines/engine.cpp:917
+#: gui/launcher.cpp:316 engines/dialogs.cpp:94 engines/engine.cpp:928
 #: engines/mm/xeen/saves.cpp:259 engines/pegasus/pegasus.cpp:388
 #: engines/trecision/saveload.cpp:253 engines/tsage/scenes.cpp:638
 #: engines/wage/saveload.cpp:736
@@ -1443,19 +1443,19 @@ msgstr ""
 msgid "Do you really want to remove this game configuration?"
 msgstr "Haluatko varmasti poistaa pelin asetuksineen listalta?"
 
-#: gui/launcher.cpp:491
+#: gui/launcher.cpp:500
 msgid "Do you want to load saved game?"
 msgstr "Haluatko ladata tallennetun pelin?"
 
-#: gui/launcher.cpp:548
+#: gui/launcher.cpp:557
 msgid "This game does not support loading games from the launcher."
 msgstr "Tämä peli ei tue pelitallennuksien lataamista pelin ulkopuolelta."
 
-#: gui/launcher.cpp:552
+#: gui/launcher.cpp:561
 msgid "ScummVM could not find any engine capable of running the selected game!"
 msgstr "ScummVM ei löytänyt pelimoottoria joka tukee valittua peliä!"
 
-#: gui/launcher.cpp:653 gui/launcher.cpp:677
+#: gui/launcher.cpp:662 gui/launcher.cpp:686
 msgid ""
 "Did you add this directory to the SAF? Press the help button [?] on the top "
 "for detailed instructions"
@@ -1463,96 +1463,96 @@ msgstr ""
 "Lisäsitkö tämän kansion SAF:iin? Paina ohje-nappia [?] ylhäällä nähdäksesi "
 "tarkat ohjeet"
 
-#: gui/launcher.cpp:674
+#: gui/launcher.cpp:683
 msgid "ScummVM could not find any game in the specified directory!"
 msgstr "ScummVM ei löytänyt yhtään peliä kyseisestä hakemistosta!"
 
 #. I18N: Unknown game variant
-#: gui/launcher.cpp:695
+#: gui/launcher.cpp:704
 msgid "Unknown variant"
 msgstr "Tuntematon versio"
 
-#: gui/launcher.cpp:926 gui/saveload-dialog.cpp:381
+#: gui/launcher.cpp:935 gui/saveload-dialog.cpp:381
 msgid "List view"
 msgstr "Listanäkymä"
 
-#: gui/launcher.cpp:927 gui/saveload-dialog.cpp:382
+#: gui/launcher.cpp:936 gui/saveload-dialog.cpp:382
 msgid "Grid view"
 msgstr "Ruudukkonäkymä"
 
-#: gui/launcher.cpp:1089
+#: gui/launcher.cpp:1100
 msgid "~S~tart"
 msgstr "~P~elaa"
 
-#: gui/launcher.cpp:1089
+#: gui/launcher.cpp:1100
 msgid "Start selected game"
 msgstr "Pelaa valittua peliä"
 
-#: gui/launcher.cpp:1092
+#: gui/launcher.cpp:1103
 msgid "~L~oad..."
 msgstr "~L~ataa..."
 
-#: gui/launcher.cpp:1092
+#: gui/launcher.cpp:1103
 msgid "Load saved game for selected game"
 msgstr "Lataa pelitallennus valitulle pelille"
 
-#: gui/launcher.cpp:1094
+#: gui/launcher.cpp:1105
 msgid "Record..."
 msgstr "Nauhoita..."
 
-#: gui/launcher.cpp:1100
+#: gui/launcher.cpp:1111
 msgid "~G~ame Options..."
 msgstr "~P~elin Asetukset..."
 
-#: gui/launcher.cpp:1100
+#: gui/launcher.cpp:1111
 msgid "Change game options"
 msgstr "Muuta pelin asetuksia"
 
-#: gui/launcher.cpp:1100
+#: gui/launcher.cpp:1111
 msgctxt "lowres"
 msgid "~G~ame Opts..."
 msgstr "~P~elin Asetukset..."
 
 #. I18N: List grouping when no engine is specified
 #. I18N: List grouping when no enginr is specified
-#: gui/launcher.cpp:1192 gui/launcher.cpp:1388
+#: gui/launcher.cpp:1209 gui/launcher.cpp:1405
 msgid "Unknown Engine"
 msgstr "Tuntematon pelimoottori"
 
 #. I18N: List grouping when no pubisher is specified
 #. I18N: List group when no publisher is specified
-#: gui/launcher.cpp:1209 gui/launcher.cpp:1405
+#: gui/launcher.cpp:1226 gui/launcher.cpp:1422
 msgid "Unknown Publisher"
 msgstr "Tuntematon julkaisija"
 
 #. I18N: List group when no game series is specified
 #. I18N: List grouping when no game series is specified
-#: gui/launcher.cpp:1226 gui/launcher.cpp:1422
+#: gui/launcher.cpp:1243 gui/launcher.cpp:1439
 msgid "No Series"
 msgstr "Ei sarjaa"
 
 #. I18N: List group when no languageis specified
 #. I18N: List group when no language is specified
-#: gui/launcher.cpp:1240 gui/launcher.cpp:1436
+#: gui/launcher.cpp:1257 gui/launcher.cpp:1453
 msgid "Language not detected"
 msgstr "Kieli ei tiedossa"
 
 #. I18N: List group when no platform is specified
-#: gui/launcher.cpp:1254 gui/launcher.cpp:1450
+#: gui/launcher.cpp:1271 gui/launcher.cpp:1467
 msgid "Platform not detected"
 msgstr "Alusta ei tiedossa"
 
 #. I18N: List group when no year is specified
-#: gui/launcher.cpp:1271 gui/launcher.cpp:1467
+#: gui/launcher.cpp:1288 gui/launcher.cpp:1484
 msgid "Unknown Year"
 msgstr "Tuntematon vuosi"
 
 #. I18N: Group for All items
-#: gui/launcher.cpp:1474 gui/widgets/groupedlist.cpp:81
+#: gui/launcher.cpp:1491 gui/widgets/groupedlist.cpp:81
 msgid "All"
 msgstr "Kaikki"
 
-#: gui/launcher.cpp:1623
+#: gui/launcher.cpp:1646
 msgid "Icons per row:"
 msgstr "Ikoneita per rivi:"
 
@@ -2520,7 +2520,7 @@ msgstr ""
 "\n"
 "Ja lisää..."
 
-#: gui/options.cpp:2899 engines/engine.cpp:604
+#: gui/options.cpp:2899 engines/engine.cpp:615
 msgid "Move"
 msgstr "Siirrä"
 
@@ -2651,7 +2651,7 @@ msgstr "Nauhoitin tai Toista Tallennus"
 
 #: gui/recorderdialog.cpp:72 gui/recorderdialog.cpp:212
 #: gui/saveload-dialog.cpp:459 gui/saveload-dialog.cpp:526
-#: dists/android.strings.xml.cpp:44 engines/engine.cpp:598
+#: dists/android.strings.xml.cpp:44 engines/engine.cpp:609
 msgid "Delete"
 msgstr "Poista"
 
@@ -2904,7 +2904,7 @@ msgstr ""
 "Toista vaiheet 1 ja 6 jokaiselle pelille."
 
 #: base/main.cpp:671 base/main.cpp:696
-#: engines/director/lingo/lingo-builtins.cpp:1275
+#: engines/director/lingo/lingo-builtins.cpp:1276
 #: engines/director/lingo/xlibs/jitdraw3.cpp:123
 #: engines/director/lingo/xlibs/jitdraw3.cpp:131
 msgid "Ok"
@@ -3311,7 +3311,7 @@ msgctxt "lowres"
 msgid "~R~eturn to Launcher"
 msgstr "Palaa p~e~livalitsimeen"
 
-#: engines/dialogs.cpp:95 engines/engine.cpp:946 engines/agi/saveload.cpp:766
+#: engines/dialogs.cpp:95 engines/engine.cpp:957 engines/agi/saveload.cpp:766
 #: engines/avalanche/parser.cpp:1918 engines/cine/various.cpp:349
 #: engines/dm/loadsave.cpp:199 engines/drascula/saveload.cpp:382
 #: engines/dreamweb/saveload.cpp:261 engines/glk/streams.cpp:1432
@@ -3331,7 +3331,7 @@ msgstr "Palaa p~e~livalitsimeen"
 msgid "Save game:"
 msgstr "Tallenna peli:"
 
-#: engines/dialogs.cpp:95 engines/engine.cpp:946 engines/agi/saveload.cpp:766
+#: engines/dialogs.cpp:95 engines/engine.cpp:957 engines/agi/saveload.cpp:766
 #: engines/avalanche/parser.cpp:1918 engines/cine/various.cpp:349
 #: engines/dm/loadsave.cpp:199 engines/drascula/saveload.cpp:382
 #: engines/dreamweb/saveload.cpp:261 engines/glk/streams.cpp:1432
@@ -3402,42 +3402,42 @@ msgstr "~H~yväksy"
 msgid "~C~ancel"
 msgstr "~P~eruuta"
 
-#: engines/engine.cpp:368
+#: engines/engine.cpp:379
 #, c-format
 msgid "Could not switch to resolution '%dx%d'."
 msgstr "Vaihto resoluutioon '%dx%d' ei onnistunut."
 
-#: engines/engine.cpp:377
+#: engines/engine.cpp:388
 msgid "Could not initialize color format."
 msgstr "Väriformaattia ei voitu alustaa."
 
-#: engines/engine.cpp:386
+#: engines/engine.cpp:397
 #, c-format
 msgid "Could not switch to video mode '%s'."
 msgstr "Vaihto videotilaan '%s' ei onnistunut."
 
-#: engines/engine.cpp:394
+#: engines/engine.cpp:405
 #, c-format
 msgid "Could not switch to stretch mode '%s'."
 msgstr "Vaihto venytystilaan '%s' ei onnistunut."
 
-#: engines/engine.cpp:401
+#: engines/engine.cpp:412
 msgid "Could not apply aspect ratio setting."
 msgstr "Kuvasuhdeasetusta ei voitu asettaa."
 
-#: engines/engine.cpp:406
+#: engines/engine.cpp:417
 msgid "Could not apply fullscreen setting."
 msgstr "Kokoruututila-asetusta ei voi asettaa."
 
-#: engines/engine.cpp:411
+#: engines/engine.cpp:422
 msgid "Could not apply filtering setting."
 msgstr "Suodatusasetusta ei voitu ottaa käyttöön."
 
-#: engines/engine.cpp:485
+#: engines/engine.cpp:496
 msgid "Error"
 msgstr "Virhe"
 
-#: engines/engine.cpp:548
+#: engines/engine.cpp:559
 msgid ""
 "You appear to be playing this game directly\n"
 "from the CD. This is known to cause problems,\n"
@@ -3451,7 +3451,7 @@ msgstr ""
 "pelin tiedostot kovalevyllesi.\n"
 "Avaa dokumentaation CD audio-osio ohjeita varten."
 
-#: engines/engine.cpp:571
+#: engines/engine.cpp:582
 msgid ""
 "This game has audio tracks on its CD. These\n"
 "tracks need to be ripped from the CD using\n"
@@ -3465,11 +3465,11 @@ msgstr ""
 "kuuluvat pelissä.\n"
 "Avaa dokumentaation CD audio-osio ohjeita varten."
 
-#: engines/engine.cpp:599
+#: engines/engine.cpp:610
 msgid "Skip autosave"
 msgstr "Ohita automaattinen tallennus"
 
-#: engines/engine.cpp:601
+#: engines/engine.cpp:612
 #, c-format
 msgid ""
 "WARNING: The autosave slot contains a saved game named %S, and an autosave "
@@ -3485,21 +3485,21 @@ msgstr ""
 "Voit myös perua automaattitallennuksen (jolloin kysymme uudestaan 5 minuutin "
 "kuluttua)."
 
-#: engines/engine.cpp:611
+#: engines/engine.cpp:622
 msgid "ERROR: Could not copy the savegame to a new slot"
 msgstr "VIRHE: Tallennuksen kopiointi uuteen paikkaan epäonnistui"
 
-#: engines/engine.cpp:638 engines/savestate.cpp:98
+#: engines/engine.cpp:649 engines/savestate.cpp:98
 #: backends/platform/ios7/ios7_osys_main.cpp:294 engines/mm/xeen/saves.cpp:293
 #: engines/sky/metaengine.cpp:216
 msgid "Autosave"
 msgstr "Autom. tallennus"
 
-#: engines/engine.cpp:646
+#: engines/engine.cpp:657
 msgid "Error occurred making autosave"
 msgstr "Automaattista pelitallennusta luodessa tapahtui virhe"
 
-#: engines/engine.cpp:721
+#: engines/engine.cpp:732
 #, c-format
 msgid ""
 "Failed to load saved game (%s)! Please consult the README for basic "
@@ -3508,15 +3508,15 @@ msgstr ""
 "Pelitallennuksen lataus epäonnistui (%s)! Konsultoi README-tiedostoa "
 "saadaksesi lisätietoa ja ohjeita avun hankkimiseen."
 
-#: engines/engine.cpp:745
+#: engines/engine.cpp:756
 msgid "WARNING: "
 msgstr "VAROITUS: "
 
-#: engines/engine.cpp:745
+#: engines/engine.cpp:756
 msgid " Shall we still run the game?"
 msgstr " Käynnistämmekö pelin tästä huolimatta?"
 
-#: engines/engine.cpp:746
+#: engines/engine.cpp:757
 msgid ""
 "WARNING: The game you are about to start is not yet fully supported by "
 "ScummVM. As such, it is likely to be unstable, and any saved game you make "
@@ -3526,15 +3526,15 @@ msgstr ""
 "epävakaa, eivätkä pelitallennukset välttämättä toimi tulevissa ScummVM:n "
 "versioissa."
 
-#: engines/engine.cpp:749 engines/wintermute/wintermute.cpp:182
+#: engines/engine.cpp:760 engines/wintermute/wintermute.cpp:182
 msgid "Start anyway"
 msgstr "Pelaa silti"
 
-#: engines/engine.cpp:767
+#: engines/engine.cpp:778
 msgid "This game is not supported."
 msgstr "Tämä peli ei ole tuettu."
 
-#: engines/engine.cpp:767
+#: engines/engine.cpp:778
 msgid ""
 "This game is not supported for the following reason:\n"
 "\n"
@@ -3542,11 +3542,11 @@ msgstr ""
 "Tämä peli ei ole tuettu seuraavasta syystä:\n"
 "\n"
 
-#: engines/engine.cpp:913
+#: engines/engine.cpp:924
 msgid "Loading game is currently unavailable"
 msgstr "Pelin lataaminen ei ole tällä hetkellä mahdollista"
 
-#: engines/engine.cpp:942
+#: engines/engine.cpp:953
 msgid "Saving game is currently unavailable"
 msgstr "Pelin tallentaminen ei ole tällä hetkellä mahdollista"
 
@@ -3777,7 +3777,7 @@ msgstr "SegaCD Ääni"
 msgid "Initializing MT-32 Emulator"
 msgstr "Alustetaan MT-32 emulaattoria"
 
-#: audio/softsynth/mt32.cpp:435
+#: audio/softsynth/mt32.cpp:441
 msgid "MT-32 emulator"
 msgstr "MT-32 emulaattori"
 
@@ -5746,7 +5746,7 @@ msgstr "Tarkista päivitykset..."
 #: engines/mortevielle/mortevielle.cpp:300 engines/sky/compact.cpp:129
 #: engines/supernova/supernova.cpp:463 engines/teenagent/resources.cpp:97
 #: engines/tony/tony.cpp:187 engines/toon/toon.cpp:5416
-#: engines/ultima/ultima8/ultima8.cpp:183
+#: engines/ultima/ultima8/ultima8.cpp:188
 #, c-format
 msgid "Unable to locate the '%s' engine data file."
 msgstr "\"%s\" pelimoottorin datatiedostoa ei löydetty."
@@ -5803,7 +5803,7 @@ msgstr "Käytä aina terävää mustavalkotekstiä"
 msgid "Do not emulate NTSC artifacts for text"
 msgstr "Poista NTSC-häiriövärien emulointi tekstille"
 
-#: engines/agi/detection_tables.h:316
+#: engines/agi/detection_tables.h:313
 msgid "Early AGI games for Tandy Color Computer are not yet supported."
 msgstr ""
 "Varhaiset AGI-pelit Tandy Color Computer:ille eivät vielä ole tuettuja."
@@ -6544,7 +6544,7 @@ msgstr ""
 "uudestaan seuraavalla kerralla peliä käynnistäessäsi.\n"
 
 #: engines/buried/saveload.cpp:179 engines/mtropolis/saveload.cpp:158
-#: engines/vcruise/vcruise.cpp:314
+#: engines/vcruise/vcruise.cpp:363
 msgid "Saved game was created with a newer version of ScummVM. Unable to load."
 msgstr ""
 "Tämä pelitallenne on luotu ScummVM:n uudemmalla versiolla. Lataus ei onnistu."
@@ -6877,60 +6877,60 @@ msgid "Enable Text to Speech for Objects, Options, and the Bible Quote"
 msgstr ""
 "Tekstistä puheeksi -toiminto esineille, asetuksille ja raamattulainaukselle"
 
-#: engines/freescape/metaengine.cpp:39
+#: engines/freescape/metaengine.cpp:40
 msgid "Prerecorded sounds"
 msgstr "Esiäänitetyt äänet"
 
-#: engines/freescape/metaengine.cpp:40
+#: engines/freescape/metaengine.cpp:41
 msgid "Use high-quality pre-recorded sounds instead of pc speaker emulation"
 msgstr ""
 "Käytä korkealaatuisia esiäänitettyjä ääniä pc speaker-emulaation sijaan"
 
-#: engines/freescape/metaengine.cpp:50
+#: engines/freescape/metaengine.cpp:51
 msgid "Extended timer"
 msgstr "Pidennetty ajastin"
 
-#: engines/freescape/metaengine.cpp:51
+#: engines/freescape/metaengine.cpp:52
 msgid "Start the game timer at 99:59:59"
 msgstr "Aloita peliajastin ajasta 99:59:59"
 
-#: engines/freescape/metaengine.cpp:61
+#: engines/freescape/metaengine.cpp:62
 msgid "Automatic drilling"
 msgstr "Automaattinen poraus"
 
-#: engines/freescape/metaengine.cpp:62
+#: engines/freescape/metaengine.cpp:63
 msgid "Allow to succefully drill in any part of the area in Driller"
 msgstr "Salli onnistunut poraus missä tahansa alueella Driller:issä"
 
-#: engines/freescape/metaengine.cpp:72
+#: engines/freescape/metaengine.cpp:73
 msgid "Disable demo mode"
 msgstr "Ei demotilaa"
 
-#: engines/freescape/metaengine.cpp:73
+#: engines/freescape/metaengine.cpp:74
 msgid "Never activate demo mode"
 msgstr "Älä koskaan aktivoi demotilaa"
 
-#: engines/freescape/metaengine.cpp:83
+#: engines/freescape/metaengine.cpp:84
 msgid "Disable sensors"
 msgstr "Sensorit pois päältä"
 
-#: engines/freescape/metaengine.cpp:84
+#: engines/freescape/metaengine.cpp:85
 msgid "Sensors will not shoot the player"
 msgstr "Sensorit eivät ammu pelaajaa"
 
-#: engines/freescape/metaengine.cpp:94
+#: engines/freescape/metaengine.cpp:95
 msgid "Disable falling"
 msgstr "Estä putoaminen"
 
-#: engines/freescape/metaengine.cpp:95
+#: engines/freescape/metaengine.cpp:96
 msgid "Player cannot fall over edges"
 msgstr "Pelaaja ei voi pudota kielekkeiltä"
 
-#: engines/freescape/metaengine.cpp:105
+#: engines/freescape/metaengine.cpp:106
 msgid "Invert Y-axis on mouse"
 msgstr "Käännä hiiren Y-akseli"
 
-#: engines/freescape/metaengine.cpp:106
+#: engines/freescape/metaengine.cpp:107
 msgid "Use alternative camera controls"
 msgstr "Käytä vaihtoehtoisia kamerakontrolleja"
 
@@ -8264,7 +8264,7 @@ msgid ""
 msgstr "Haluatko varmasti ladata pelin? Menetät tallentamattoman edistymisesi."
 
 #: engines/mohawk/myst_stacks/menu.cpp:283
-#: engines/mohawk/riven_stacks/aspit.cpp:349 engines/vcruise/metaengine.cpp:134
+#: engines/mohawk/riven_stacks/aspit.cpp:349 engines/vcruise/metaengine.cpp:145
 #: engines/wintermute/keymapper_tables.h:925
 #: engines/wintermute/keymapper_tables.h:1265
 msgid "Load game"
@@ -8457,14 +8457,14 @@ msgstr "Lopeta kaikki käynnissä olevat videot"
 msgid "Failed to read version information from save file"
 msgstr "Pelitallenteen version lukeminen epäonnistui"
 
-#: engines/mtropolis/saveload.cpp:150 engines/vcruise/vcruise.cpp:309
+#: engines/mtropolis/saveload.cpp:150 engines/vcruise/vcruise.cpp:358
 msgid ""
 "Failed to load save, the save file doesn't contain valid version information."
 msgstr ""
 "Pelitallenteen lukeminen epäonnistui, tallenne ei sisällä validia "
 "versioinformaatiota."
 
-#: engines/mtropolis/saveload.cpp:166 engines/vcruise/vcruise.cpp:319
+#: engines/mtropolis/saveload.cpp:166 engines/vcruise/vcruise.cpp:368
 msgid ""
 "Saved game was created with an earlier, incompatible version of ScummVM. "
 "Unable to load."
@@ -9493,7 +9493,7 @@ msgstr "Esc"
 msgid "Space"
 msgstr "Välilyönti"
 
-#: engines/scumm/help.cpp:80 engines/vcruise/metaengine.cpp:149
+#: engines/scumm/help.cpp:80 engines/vcruise/metaengine.cpp:160
 msgid "Pause game"
 msgstr "Pause"
 
@@ -10453,7 +10453,7 @@ msgstr ""
 msgid "Cutscene '%s' not found"
 msgstr "Videotiedosto '%s' ei löytynyt"
 
-#: engines/sword1/control.cpp:2794
+#: engines/sword1/control.cpp:2796
 msgid ""
 "ScummVM found that you have old saved games for Broken Sword 1 that should "
 "be converted.\n"
@@ -10471,7 +10471,7 @@ msgstr ""
 "Paina OK muuntaaksesi tallenteet nyt, muuten kysymme sinulta uudelleestaan "
 "seuraavalla kerralla\n"
 
-#: engines/sword1/control.cpp:2980
+#: engines/sword1/control.cpp:2982
 #, c-format
 msgid ""
 "Target new saved game already exists!\n"
@@ -10480,11 +10480,11 @@ msgstr ""
 "Kohdetiedosto on jo olemassa!\n"
 "Säilytetäänkö vanha pelitallennus (%s), vai uusi pelitallennus (%s)?\n"
 
-#: engines/sword1/control.cpp:2983
+#: engines/sword1/control.cpp:2985
 msgid "Keep the old one"
 msgstr "Säilytä vanha tallennus"
 
-#: engines/sword1/control.cpp:2983
+#: engines/sword1/control.cpp:2985
 msgid "Keep the new one"
 msgstr "Säilytä uusi tallennus"
 
@@ -11081,7 +11081,7 @@ msgstr "Ultima VIII Huijaukset"
 msgid "Ultima VIII Debug"
 msgstr "Ultima VIII Debug"
 
-#: engines/ultima/ultima8/games/cru_game.cpp:165
+#: engines/ultima/ultima8/games/cru_game.cpp:164
 msgid ""
 "Crusader intro movie file missing - check that the FLICS and SOUND "
 "directories have been copied from the CD.  More instructions are on the "
@@ -11121,57 +11121,73 @@ msgstr "Ohita päävalikko"
 msgid "Starts a new game upon launching instead of going to the main menu."
 msgstr "Aloittaa uuden pelin käynnistäessä päävalikkoon siirtymisen sijasta."
 
-#: engines/vcruise/metaengine.cpp:124
+#: engines/vcruise/metaengine.cpp:86
+#, fuzzy
+#| msgid "Color graphics"
+msgid "Use 16-color graphics"
+msgstr "Värigrafiikka"
+
+#: engines/vcruise/metaengine.cpp:87
+#, fuzzy
+#| msgid "Color graphics"
+msgid "Uses 16-color graphics."
+msgstr "Värigrafiikka"
+
+#: engines/vcruise/metaengine.cpp:135
 msgid "Display help screen"
 msgstr "Näytä ohjenäyttö"
 
-#: engines/vcruise/metaengine.cpp:129 engines/wintermute/keymapper_tables.h:920
+#: engines/vcruise/metaengine.cpp:140 engines/wintermute/keymapper_tables.h:920
 msgid "Save game"
 msgstr "Luo pelitallennus"
 
-#: engines/vcruise/metaengine.cpp:139
+#: engines/vcruise/metaengine.cpp:150
 msgid "Open sound settings"
 msgstr "Avaa ääniasetukset"
 
-#: engines/vcruise/metaengine.cpp:144
+#: engines/vcruise/metaengine.cpp:155
 msgid "Quit game"
 msgstr "Lopeta peli"
 
-#: engines/vcruise/metaengine.cpp:155
+#: engines/vcruise/metaengine.cpp:166
 msgid "Toggle music on/off"
 msgstr "Musiikki päälle/pois"
 
-#: engines/vcruise/metaengine.cpp:160
+#: engines/vcruise/metaengine.cpp:171
 msgid "Toggle sound effects on/off"
 msgstr "Ääniefektit päälle/pois"
 
-#: engines/vcruise/metaengine.cpp:165
+#: engines/vcruise/metaengine.cpp:176
 msgid "Music volume down"
 msgstr "Musiikin äänenvoimakkuus alas"
 
-#: engines/vcruise/metaengine.cpp:170
+#: engines/vcruise/metaengine.cpp:181
 msgid "Music volume up"
 msgstr "Musiikin äänenvoimakkuus ylös"
 
-#: engines/vcruise/metaengine.cpp:175
+#: engines/vcruise/metaengine.cpp:186
 msgid "Sound effect volume down"
 msgstr "Ääniefektien äänenvoimakkuus alas"
 
-#: engines/vcruise/metaengine.cpp:180
+#: engines/vcruise/metaengine.cpp:191
 msgid "Sound effect volume up"
 msgstr "Ääniefektien äänenvoimakkuus ylös"
 
-#: engines/vcruise/metaengine.cpp:185
+#: engines/vcruise/metaengine.cpp:196
 msgid "Skip current animation"
 msgstr "Ohita tämänhetkinen animaatio"
 
-#: engines/vcruise/vcruise.cpp:83
+#: engines/vcruise/metaengine.cpp:200
+msgid "Cycle item in scene (debug cheat)"
+msgstr ""
+
+#: engines/vcruise/vcruise.cpp:92
 msgid "This game requires JPEG support, which was not compiled in."
 msgstr ""
 "Tämä peli vaatii toimiakseen JPEG-tuen, jota ei ole käännetty tähän ScummVM:"
 "ään."
 
-#: engines/vcruise/vcruise.cpp:90
+#: engines/vcruise/vcruise.cpp:99
 msgid ""
 "Music for this game requires Ogg Vorbis support, which was not compiled in.\n"
 "The game will still play, but will not have any music."
@@ -11180,7 +11196,7 @@ msgstr ""
 "käännetty tähän ScummVM:ään.\n"
 "Peli toimii silti, mutta ilman musiikkia."
 
-#: engines/vcruise/vcruise.cpp:100
+#: engines/vcruise/vcruise.cpp:109
 msgid ""
 "Music for this game requires MP3 support, which was not compiled in.\n"
 "The game will still play, but will not have any music."
@@ -11189,16 +11205,16 @@ msgstr ""
 "tähän ScummVM:ään.\n"
 "Peli toimii silti, mutta ilman musiikkia."
 
-#: engines/vcruise/vcruise.cpp:299
+#: engines/vcruise/vcruise.cpp:348
 msgid "Failed to load save, the save data appears to be damaged."
 msgstr ""
 "Pelitallenteen lukeminen epäonnistui, tallenne vaikuttaa olevan vaurioitunut."
 
-#: engines/vcruise/vcruise.cpp:304
+#: engines/vcruise/vcruise.cpp:353
 msgid "Failed to read version information from save file."
 msgstr "Pelitallenteen version lukeminen epäonnistui."
 
-#: engines/vcruise/vcruise.cpp:324
+#: engines/vcruise/vcruise.cpp:373
 msgid "An unknown error occurred while attempting to load the saved game."
 msgstr "Tuntematon virhe pelitallennusta ladatessa."
 

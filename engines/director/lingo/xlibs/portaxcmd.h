@@ -19,40 +19,23 @@
  *
  */
 
-#include "ultima/ultima8/filesys/file_system.h"
-#include "ultima/ultima8/ultima8.h"
-#include "common/savefile.h"
+#ifndef DIRECTOR_LINGO_XLIBS_PORTAXCMD_H
+#define DIRECTOR_LINGO_XLIBS_PORTAXCMD_H
 
-namespace Ultima {
-namespace Ultima8 {
+namespace Director {
 
-using Std::string;
+namespace PortaXCMD {
 
-FileSystem *FileSystem::_fileSystem = nullptr;
+extern const char *xlibName;
+extern const char *fileNames[];
 
-FileSystem::FileSystem() {
-	_fileSystem = this;
-}
+void open(ObjectType type, const Common::Path &path);
+void close(ObjectType type);
 
-FileSystem::~FileSystem() {
-	_fileSystem = nullptr;
-}
+void m_Porta(int nargs);
 
+} // End of namespace PortaXCMD
 
-// Open a streaming file as readable. Streamed (0 on failure)
-Common::SeekableReadStream *FileSystem::ReadFile(const Common::Path &path) {
-	Common::File *f = new Common::File();
-	if (f->open(path))
-		return f;
+} // End of namespace Director
 
-	// Some games have some files in a "data" subdir.
-	Common::Path altpath = Common::Path("data").join(path);
-	if (f->open(altpath))
-		return f;
-
-	delete f;
-	return nullptr;
-}
-
-} // End of namespace Ultima8
-} // End of namespace Ultima
+#endif

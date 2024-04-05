@@ -402,6 +402,7 @@ public:
 	int _underFireFrames;
 	int _avoidRenderingFrames;
 	int _shootingFrames;
+	GeometricObject *_delayedShootObject;
 	void drawFrame();
 	void flashScreen(int backgroundColor);
 	uint8 _colorNumber;
@@ -490,27 +491,6 @@ public:
 
 	// Random
 	Common::RandomSource *_rnd;
-};
-
-class CastleEngine : public FreescapeEngine {
-public:
-	CastleEngine(OSystem *syst, const ADGameDescription *gd);
-	~CastleEngine();
-
-	Graphics::ManagedSurface *_option;
-	void initGameState() override;
-	void loadAssetsDOSFullGame() override;
-	void loadAssetsDOSDemo() override;
-	void loadAssetsAmigaDemo() override;
-
-	void drawDOSUI(Graphics::Surface *surface) override;
-
-	void executePrint(FCLInstruction &instruction) override;
-	void gotoArea(uint16 areaID, int entranceID) override;
-	Common::Error saveGameStreamExtended(Common::WriteStream *stream, bool isAutosave = false) override;
-	Common::Error loadGameStreamExtended(Common::SeekableReadStream *stream) override;
-private:
-	Common::SeekableReadStream *decryptFile(const Common::Path &filename);
 };
 
 extern FreescapeEngine *g_freescape;

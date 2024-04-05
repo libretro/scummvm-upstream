@@ -19,6 +19,7 @@
  *
  */
 
+#include "common/file.h"
 #include "common/rational.h"
 #include "common/translation.h"
 #include "common/compression/unzip.h"
@@ -28,7 +29,6 @@
 
  // TODO: !! a lot of these includes are just for some hacks... clean up sometime
 #include "ultima/ultima8/conf/config_file_manager.h"
-#include "ultima/ultima8/filesys/file_system.h"
 #include "ultima/ultima8/kernel/object_manager.h"
 #include "ultima/ultima8/games/start_u8_process.h"
 #include "ultima/ultima8/games/start_crusader_process.h"
@@ -126,7 +126,7 @@ Ultima8Engine *Ultima8Engine::_instance = nullptr;
 
 Ultima8Engine::Ultima8Engine(OSystem *syst, const Ultima::UltimaGameDescription *gameDesc) :
 		Engine(syst), _gameDescription(gameDesc), _randomSource("Ultima8"),
-		_isRunning(false),  _gameInfo(nullptr), _fileSystem(nullptr),
+		_isRunning(false),  _gameInfo(nullptr),
 		_configFileMan(nullptr), _saveCount(0), _game(nullptr), _lastError(Common::kNoError),
 		_kernel(nullptr), _objectManager(nullptr), _mouse(nullptr), _ucMachine(nullptr),
 		_screen(nullptr), _fontManager(nullptr), _paletteManager(nullptr), _gameData(nullptr),
@@ -151,7 +151,6 @@ Ultima8Engine::~Ultima8Engine() {
 	delete _world;
 	delete _fontManager;
 	delete _screen;
-	delete _fileSystem;
 	delete _configFileMan;
 	delete _gameInfo;
 
@@ -172,6 +171,12 @@ Common::Error Ultima8Engine::run() {
 	return result;
 }
 
+void Ultima8Engine::initializePath(const Common::FSNode& gamePath) {
+	Engine::initializePath(gamePath);
+
+	// Crusader: No Regret (DOS/German)
+	SearchMan.addSubDirectoryMatching(gamePath, "data", 0, 4);
+}
 
 bool Ultima8Engine::initialize() {
 	// Call syncSoundSettings to get default volumes set
@@ -183,7 +188,7 @@ bool Ultima8Engine::initialize() {
 		GUIErrorMessageFormat(_("Unable to locate the '%s' engine data file."), "ultima8.dat");
 		return false;
 	}
-	SearchMan.add("data", archive);
+	SearchMan.add("ultima8.dat", archive);
 
 	return true;
 }
@@ -221,7 +226,6 @@ Common::Error Ultima8Engine::startup() {
 	debug(MM_INFO, "-- Initializing Pentagram --");
 
 	_gameInfo = nullptr;
-	_fileSystem = new FileSystem;
 	_configFileMan = new ConfigFileManager();
 	_fontManager = new FontManager();
 	_kernel = new Kernel();

@@ -164,6 +164,7 @@ FreescapeEngine::FreescapeEngine(OSystem *syst, const ADGameDescription *gd)
 
 	_underFireFrames = 0;
 	_shootingFrames = 0;
+	_delayedShootObject = nullptr;
 	_avoidRenderingFrames = 0;
 	_endGamePlayerEndArea = false;
 	_endGameKeyPressed = false;
@@ -322,7 +323,11 @@ void FreescapeEngine::drawBackground() {
 }
 
 void FreescapeEngine::drawFrame() {
-	_gfx->updateProjectionMatrix(70.0, _nearClipPlane, _farClipPlane);
+	int farClipPlane = _farClipPlane;
+	if (_currentArea->isOutside())
+		farClipPlane *= 100;
+
+	_gfx->updateProjectionMatrix(90.0, _nearClipPlane, farClipPlane);
 	_gfx->positionCamera(_position, _position + _cameraFront);
 
 	if (_underFireFrames > 0) {
@@ -330,8 +335,12 @@ void FreescapeEngine::drawFrame() {
 
 		if (isDriller() && (isDOS() || isAmiga() || isAtariST()))
 			underFireColor = 1;
-		else if (isDark() && (isDOS() || isAmiga() || isAtariST()))
-			underFireColor = 4;
+		else if (isDark() && (isDOS() || isAmiga() || isAtariST())) {
+			if (_renderMode == Common::kRenderCGA)
+				underFireColor = 3;
+			else
+				underFireColor = 4;
+		}
 
 		_currentArea->remapColor(_currentArea->_usualBackgroundColor, underFireColor);
 		_currentArea->remapColor(_currentArea->_skyColor, underFireColor);
@@ -674,6 +683,14 @@ Common::Error FreescapeEngine::run() {
 		checkSensors();
 		drawFrame();
 
+		if (_shootingFrames == 0) {
+			if (_delayedShootObject) {
+				executeObjectConditions(_delayedShootObject, true, false, false);
+				executeLocalGlobalConditions(true, false, false); // Only execute "on shot" room/global conditions
+				_delayedShootObject = nullptr;
+			}
+		}
+
 		_gfx->flipBuffer();
 		_frameLimiter->delayBeforeSwap();
 		g_system->updateScreen();
@@ -689,6 +706,8 @@ Common::Error FreescapeEngine::run() {
 }
 
 void FreescapeEngine::endGame() {
+	_shootingFrames = 0;
+	_delayedShootObject = nullptr;
 	if (_gameStateControl == kFreescapeGameStateEnd && !isPlayingSound() && !_endGamePlayerEndArea) {
 		_endGamePlayerEndArea = true;
 		gotoArea(_endArea, _endEntrance);
@@ -816,6 +835,7 @@ void FreescapeEngine::initGameState() {
 	_noClipMode = false;
 	_playerWasCrushed = false;
 	_shootingFrames = 0;
+	_delayedShootObject = nullptr;
 	_underFireFrames = 0;
 	_avoidRenderingFrames = 0;
 	_yaw = 0;
@@ -1022,8 +1042,7 @@ Graphics::ManagedSurface *FreescapeEngine::loadAndConvertNeoImage(Common::Seekab
 	decoder.loadStream(*stream);
 	Graphics::ManagedSurface *surface = new Graphics::ManagedSurface();
 	surface->copyFrom(*decoder.getSurface());
-	surface->convertToInPlace(_gfx->_currentPixelFormat, decoder.getPalette(),
-		decoder.getPaletteStartIndex(), decoder.getPaletteColorCount());
+	surface->convertToInPlace(_gfx->_currentPixelFormat, decoder.getPalette(), decoder.getPaletteColorCount());
 	return surface;
 }
 

@@ -27,6 +27,7 @@
 #include "ultima/ultima8/ultima8.h"
 #include "common/system.h"
 #include "engines/util.h"
+#include "graphics/blit.h"
 #include "graphics/screen.h"
 
 namespace Ultima {
@@ -195,6 +196,24 @@ bool RenderSurface::IsFlipped() const {
 	return _flipped;
 }
 
+void RenderSurface::fillRect(const Rect &r, uint32 color) {
+	Common::Rect rect(r.left, r.top, r.right, r.bottom);
+	rect.clip(_clipWindow);
+	rect.translate(_ox, _oy);
+	_surface->fillRect(rect, color);
+}
+
+void RenderSurface::frameRect(const Rect& r, uint32 color) {
+	Common::Rect rect(r.left, r.top, r.right, r.bottom);
+	rect.clip(_clipWindow);
+	rect.translate(_ox, _oy);
+	_surface->frameRect(rect, color);
+}
+
+void RenderSurface::drawLine(int32 sx, int32 sy, int32 ex, int32 ey, uint32 color) {
+	_surface->drawLine(sx + _ox, sy + _oy, ex + _ox, ey + _oy, color);
+}
+
 void RenderSurface::fill32(uint32 rgb, const Rect &r) {
 	Common::Rect rect(r.left, r.top, r.right, r.bottom);
 	rect.clip(_clipWindow);
@@ -287,6 +306,12 @@ void RenderSurface::Blit(const Graphics::ManagedSurface &src, const Common::Rect
 	} else {
 		_surface->blitFrom(src, srcRect, dpoint);
 	}
+}
+
+void RenderSurface::CrossKeyBlitMap(const Graphics::Surface& src, const Common::Rect& srcRect, int32 dx, int32 dy, const uint32* map, const uint32 key) {
+	byte *dstPixels = reinterpret_cast<byte *>(_surface->getBasePtr(_ox + dx, _oy + dy));
+	const byte *srcPixels = reinterpret_cast<const byte *>(src.getBasePtr(srcRect.left, srcRect.top));
+	Graphics::crossKeyBlitMap(dstPixels, srcPixels, _surface->pitch, src.pitch, srcRect.width(), srcRect.height(), _surface->format.bytesPerPixel, map, key);
 }
 
 namespace {

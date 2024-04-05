@@ -21,6 +21,7 @@
 
 #include "common/formats/winexe.h"
 #include "common/config-manager.h"
+#include "common/crc.h"
 #include "common/endian.h"
 #include "common/events.h"
 #include "common/file.h"
@@ -39,7 +40,9 @@
 #include "graphics/managed_surface.h"
 #include "graphics/palette.h"
 
+#include "image/ani.h"
 #include "image/bmp.h"
+#include "image/icocur.h"
 
 #include "audio/decoders/wave.h"
 #include "audio/decoders/vorbis.h"
@@ -50,9 +53,12 @@
 
 #include "gui/message.h"
 
+#include "vcruise/ad2044_items.h"
+#include "vcruise/ad2044_ui.h"
 #include "vcruise/audio_player.h"
 #include "vcruise/circuitpuzzle.h"
 #include "vcruise/sampleloop.h"
+#include "vcruise/midi_player.h"
 #include "vcruise/menu.h"
 #include "vcruise/runtime.h"
 #include "vcruise/script.h"
@@ -61,6 +67,104 @@
 
 
 namespace VCruise {
+
+struct InitialItemPlacement {
+	uint roomNumber;
+	uint screenNumber;
+	uint itemID;
+};
+
+const InitialItemPlacement g_ad2044InitialItemPlacements[] = {
+	{1, 0xb0, 18},	// Spoon
+	{1, 0xb8, 24},	// Cigarette pack
+	{1, 0xac, 27},	// Matches
+	{1, 0x62, 2},	// "A" tag
+	{1, 0x64, 58},  // Newspaper
+};
+
+struct AD2044Graphics {
+	explicit AD2044Graphics(const Common::SharedPtr<Common::WinResources> &resources, bool lowQuality, const Graphics::PixelFormat &pixFmt);
+
+	Common::SharedPtr<Graphics::Surface> invDownClicked;
+	Common::SharedPtr<Graphics::Surface> invUpClicked;
+	Common::SharedPtr<Graphics::Surface> musicClicked;
+	Common::SharedPtr<Graphics::Surface> musicClickedDeep;
+	Common::SharedPtr<Graphics::Surface> soundClicked;
+	Common::SharedPtr<Graphics::Surface> soundClickedDeep;
+	Common::SharedPtr<Graphics::Surface> exitClicked;
+	Common::SharedPtr<Graphics::Surface> loadClicked;
+	Common::SharedPtr<Graphics::Surface> saveClicked;
+	Common::SharedPtr<Graphics::Surface> resizeClicked;
+	Common::SharedPtr<Graphics::Surface> musicVolUpClicked;
+	Common::SharedPtr<Graphics::Surface> musicVolDownClicked;
+	Common::SharedPtr<Graphics::Surface> music;
+	Common::SharedPtr<Graphics::Surface> musicVol;
+	Common::SharedPtr<Graphics::Surface> sound;
+	Common::SharedPtr<Graphics::Surface> soundVol;
+	Common::SharedPtr<Graphics::Surface> musicDisabled;
+	Common::SharedPtr<Graphics::Surface> musicVolDisabled;
+	Common::SharedPtr<Graphics::Surface> soundDisabled;
+	Common::SharedPtr<Graphics::Surface> soundVolDisabled;
+	Common::SharedPtr<Graphics::Surface> examine;
+	Common::SharedPtr<Graphics::Surface> examineDisabled;
+	Common::SharedPtr<Graphics::Surface> invPage[8];
+
+
+	void loadGraphic(Common::SharedPtr<Graphics::Surface> AD2044Graphics::*field, const Common::String &resName);
+	Common::SharedPtr<Graphics::Surface> loadGraphic(const Common::String &resName) const;
+	void finishLoading();
+
+private:
+	AD2044Graphics() = delete;
+
+	bool _lowQuality;
+	Common::SharedPtr<Common::WinResources> _resources;
+	Common::Array<Common::WinResourceID> _resourceIDs;
+	const Graphics::PixelFormat _pixFmt;
+};
+
+AD2044Graphics::AD2044Graphics(const Common::SharedPtr<Common::WinResources> &resources, bool lowQuality, const Graphics::PixelFormat &pixFmt)
+	: _resources(resources), _lowQuality(lowQuality), _pixFmt(pixFmt) {
+
+	_resourceIDs = resources->getIDList(Common::kWinBitmap);
+}
+
+void AD2044Graphics::loadGraphic(Common::SharedPtr<Graphics::Surface> AD2044Graphics::*field, const Common::String &resNameBase) {
+	this->*field = loadGraphic(resNameBase);
+}
+
+Common::SharedPtr<Graphics::Surface> AD2044Graphics::loadGraphic(const Common::String &resNameBase) const {
+	Common::String resName = _lowQuality ? (Common::String("D") + resNameBase) : resNameBase;
+
+	const Common::WinResourceID *resID = nullptr;
+	for (const Common::WinResourceID &resIDCandidate : _resourceIDs) {
+		if (resIDCandidate.getString() == resName) {
+			resID = &resIDCandidate;
+			break;
+		}
+	}
+
+	if (!resID)
+		error("Couldn't find bitmap graphic %s", resName.c_str());
+
+	Common::ScopedPtr<Common::SeekableReadStream> bmpResource(_resources->getResource(Common::kWinBitmap, *resID));
+
+	if (!bmpResource)
+		error("Couldn't open bitmap graphic %s", resName.c_str());
+
+	Image::BitmapDecoder decoder;
+	if (!decoder.loadStream(*bmpResource))
+		error("Couldn't load bitmap graphic %s", resName.c_str());
+
+	const Graphics::Surface *bmpSurf = decoder.getSurface();
+
+	Common::SharedPtr<Graphics::Surface> surf(bmpSurf->convertTo(_pixFmt, decoder.getPalette(), decoder.getPaletteColorCount()), Graphics::SurfaceDeleter());
+	return surf;
+}
+
+void AD2044Graphics::finishLoading() {
+	_resources.reset();
+}
 
 struct CodePageGuess {
 	Common::CodePage codePage;
@@ -198,13 +302,70 @@ AnimationDef::AnimationDef() : animNum(0), firstFrame(0), lastFrame(0) {
 InteractionDef::InteractionDef() : objectType(0), interactionID(0) {
 }
 
-void MapDef::clear() {
-	for (uint screen = 0; screen < kNumScreens; screen++)
-		for (uint direction = 0; direction < kNumDirections; direction++)
-			screenDirections[screen][direction].reset();
+MapLoader::~MapLoader() {
 }
 
-const MapScreenDirectionDef *MapDef::getScreenDirection(uint screen, uint direction) {
+Common::SharedPtr<MapScreenDirectionDef> MapLoader::loadScreenDirectionDef(Common::ReadStream &stream) {
+	byte screenDefHeader[16];
+
+	if (stream.read(screenDefHeader, 16) != 16)
+		error("Error reading screen def header");
+
+	uint16 numInteractions = READ_LE_UINT16(screenDefHeader + 0);
+
+	if (numInteractions > 0) {
+		Common::SharedPtr<MapScreenDirectionDef> screenDirectionDef(new MapScreenDirectionDef());
+		screenDirectionDef->interactions.resize(numInteractions);
+
+		for (uint i = 0; i < numInteractions; i++) {
+			InteractionDef &idef = screenDirectionDef->interactions[i];
+
+			byte interactionData[12];
+			if (stream.read(interactionData, 12) != 12)
+				error("Error reading interaction data");
+
+			idef.rect = Common::Rect(READ_LE_INT16(interactionData + 0), READ_LE_INT16(interactionData + 2), READ_LE_INT16(interactionData + 4), READ_LE_INT16(interactionData + 6));
+			idef.interactionID = READ_LE_UINT16(interactionData + 8);
+			idef.objectType = READ_LE_UINT16(interactionData + 10);
+		}
+
+		return screenDirectionDef;
+	}
+
+	return nullptr;
+}
+
+class ReahSchizmMapLoader : public MapLoader {
+public:
+	ReahSchizmMapLoader();
+
+	void setRoomNumber(uint roomNumber) override;
+	const MapScreenDirectionDef *getScreenDirection(uint screen, uint direction) override;
+	void unload() override;
+
+private:
+	void load();
+
+	static const uint kNumScreens = 96;
+	static const uint kFirstScreen = 0xa0;
+
+	uint _roomNumber;
+	bool _isLoaded;
+
+	Common::SharedPtr<MapScreenDirectionDef> _screenDirections[kNumScreens][kNumDirections];
+};
+
+ReahSchizmMapLoader::ReahSchizmMapLoader() : _roomNumber(0), _isLoaded(false) {
+}
+
+void ReahSchizmMapLoader::setRoomNumber(uint roomNumber) {
+	if (_roomNumber != roomNumber)
+		unload();
+
+	_roomNumber = roomNumber;
+}
+
+const MapScreenDirectionDef *ReahSchizmMapLoader::getScreenDirection(uint screen, uint direction) {
 	if (screen < kFirstScreen)
 		return nullptr;
 
@@ -213,11 +374,182 @@ const MapScreenDirectionDef *MapDef::getScreenDirection(uint screen, uint direct
 	if (screen >= kNumScreens)
 		return nullptr;
 
-	return screenDirections[screen][direction].get();
+	if (!_isLoaded)
+		load();
+
+	return _screenDirections[screen][direction].get();
 }
 
+void ReahSchizmMapLoader::load() {
+	// This is loaded even if the open fails
+	_isLoaded = true;
+
+	Common::Path mapFileName(Common::String::format("Map/Room%02i.map", static_cast<int>(_roomNumber)));
+	Common::File mapFile;
+
+	if (!mapFile.open(mapFileName))
+		return;
+
+	byte screenDefOffsets[kNumScreens * kNumDirections * 4];
+
+	if (!mapFile.seek(16))
+		error("Error skipping map file header");
+
+	if (mapFile.read(screenDefOffsets, sizeof(screenDefOffsets)) != sizeof(screenDefOffsets))
+		error("Error reading map offset table");
+
+	for (uint screen = 0; screen < kNumScreens; screen++) {
+		for (uint direction = 0; direction < kNumDirections; direction++) {
+			uint32 offset = READ_LE_UINT32(screenDefOffsets + (kNumDirections * screen + direction) * 4);
+			if (!offset)
+				continue;
+
+			// QUIRK: The stone game in the tower in Reah (Room 06) has two 0cb screens and the second one is damaged,
+			// so it must be ignored.
+			if (!_screenDirections[screen][direction]) {
+				if (!mapFile.seek(offset))
+					error("Error seeking to screen data");
+
+				_screenDirections[screen][direction] = loadScreenDirectionDef(mapFile);
+			}
+		}
+	}
+}
+
+void ReahSchizmMapLoader::unload() {
+	for (uint screen = 0; screen < kNumScreens; screen++)
+		for (uint direction = 0; direction < kNumDirections; direction++)
+			_screenDirections[screen][direction].reset();
+
+	_isLoaded = false;
+}
+
+class AD2044MapLoader : public MapLoader {
+public:
+	AD2044MapLoader();
+
+	void setRoomNumber(uint roomNumber) override;
+	const MapScreenDirectionDef *getScreenDirection(uint screen, uint direction) override;
+	void unload() override;
+
+private:
+	struct ScreenOverride {
+		uint roomNumber;
+		uint screenNumber;
+		int actualMapFileID;
+	};
+
+	void load();
+
+	static const uint kFirstScreen = 0xa0;
+
+	uint _roomNumber;
+	uint _screenNumber;
+	bool _isLoaded;
+
+	Common::SharedPtr<MapScreenDirectionDef> _currentMap;
+
+	static const ScreenOverride sk_screenOverrides[];
+};
+
+const AD2044MapLoader::ScreenOverride AD2044MapLoader::sk_screenOverrides[] = {
+	// Room 1
+	{1, 0xb6, 145},	// After pushing the button to open the capsule
+	{1, 0x66, 138}, // Looking at banner
+	{1, 0x6a, 142},	// Opening an apple on the table
+	{1, 0x6b, 143}, // Clicking the tablet in the apple
+	{1, 0x6c, 144}, // Table facing the center of the room with soup bowl empty
+
+	// Room 23
+	{23, 0xa3, 103}, // Looking at high mirror
+	{23, 0xa4, 104}, // After taking mirror
+
+	{23, 0xb9, 125}, // Bathroom looking down the stairs
+	//{23, 0xb9, 126}, // ???
+	{23, 0xbb, 127}, // Bathroom entry point
+	{23, 0xbc, 128}, // Sink
+	{23, 0xbd, 129}, // Looking at toilet, seat down
+	{23, 0xbe, 130}, // Looking at toilet, seat up
+	{23, 0x61, 133}, // Bathroom looking at boots
+	{23, 0x62, 134}, // Looking behind boots
+	{23, 0x63, 135}, // Standing behind toilet looking at sink
+	{23, 0x64, 136}, // Looking under toilet
+};
+
+AD2044MapLoader::AD2044MapLoader() : _roomNumber(0), _screenNumber(0), _isLoaded(false) {
+}
+
+void AD2044MapLoader::setRoomNumber(uint roomNumber) {
+	if (_roomNumber != roomNumber)
+		unload();
+
+	_roomNumber = roomNumber;
+}
+
+const MapScreenDirectionDef *AD2044MapLoader::getScreenDirection(uint screen, uint direction) {
+	if (screen != _screenNumber)
+		unload();
+
+	_screenNumber = screen;
+
+	if (!_isLoaded)
+		load();
+
+	return _currentMap.get();
+}
+
+void AD2044MapLoader::load() {
+	// This is loaded even if the open fails
+	_isLoaded = true;
+
+	int scrFileID = -1;
+
+	for (const ScreenOverride &screenOverride : sk_screenOverrides) {
+		if (screenOverride.roomNumber == _roomNumber && screenOverride.screenNumber == _screenNumber) {
+			scrFileID = screenOverride.actualMapFileID;
+			break;
+		}
+	}
+
+	if (_roomNumber == 87) {
+		uint highDigit = (_screenNumber & 0xf0) >> 4;
+		uint lowDigit = _screenNumber & 0x0f;
+
+		scrFileID = 8700 + static_cast<int>(highDigit * 10u + lowDigit);
+	}
+
+	if (scrFileID < 0) {
+		if (_screenNumber < kFirstScreen)
+			return;
+
+		uint adjustedScreenNumber = _screenNumber - kFirstScreen;
+
+		if (adjustedScreenNumber > 99)
+			return;
+
+		scrFileID = static_cast<int>(_roomNumber * 100u + adjustedScreenNumber);
+	}
+
+	Common::Path mapFileName(Common::String::format("map/SCR%i.MAP", scrFileID));
+	Common::File mapFile;
+
+	debug(1, "Loading screen map %s", mapFileName.toString(Common::Path::kNativeSeparator).c_str());
+
+	if (!mapFile.open(mapFileName)) {
+		error("Couldn't resolve map file for room %u screen %x", _roomNumber, _screenNumber);
+	}
+
+	_currentMap = loadScreenDirectionDef(mapFile);
+}
+
+void AD2044MapLoader::unload() {
+	_currentMap.reset();
+	_isLoaded = false;
+}
+
+
 ScriptEnvironmentVars::ScriptEnvironmentVars() : lmb(false), lmbDrag(false), esc(false), exitToMenu(false), animChangeSet(false), isEntryScript(false), puzzleWasSet(false),
-	panInteractionID(0), fpsOverride(0), lastHighlightedItem(0), animChangeFrameOffset(0), animChangeNumFrames(0) {
+	panInteractionID(0), clickInteractionID(0), fpsOverride(0), lastHighlightedItem(0), animChangeFrameOffset(0), animChangeNumFrames(0) {
 }
 
 OSEvent::OSEvent() : type(kOSEventTypeInvalid), keyCode(static_cast<Common::KeyCode>(0)), keymappedEvent(kKeymappedEventNone), timestamp(0) {
@@ -225,8 +557,13 @@ OSEvent::OSEvent() : type(kOSEventTypeInvalid), keyCode(static_cast<Common::KeyC
 
 void Runtime::RenderSection::init(const Common::Rect &paramRect, const Graphics::PixelFormat &fmt) {
 	rect = paramRect;
-	surf.reset(new Graphics::ManagedSurface(paramRect.width(), paramRect.height(), fmt));
-	surf->fillRect(Common::Rect(0, 0, surf->w, surf->h), 0xffffffff);
+	pixFmt = fmt;
+	if (paramRect.isEmpty())
+		surf.reset();
+	else {
+		surf.reset(new Graphics::ManagedSurface(paramRect.width(), paramRect.height(), fmt));
+		surf->fillRect(Common::Rect(0, 0, surf->w, surf->h), 0xffffffff);
+	}
 }
 
 Runtime::StackValue::ValueUnion::ValueUnion() {
@@ -675,6 +1012,9 @@ FrameData::FrameData() : areaID{0, 0, 0, 0}, areaFrameIndex(0), frameIndex(0), f
 FrameData2::FrameData2() : x(0), y(0), angle(0), frameNumberInArea(0), unknown(0) {
 }
 
+AnimFrameRange::AnimFrameRange() : animationNum(0), firstFrame(0), lastFrame(0) {
+}
+
 SoundParams3D::SoundParams3D() : minRange(0), maxRange(0), unknownRange(0) {
 }
 
@@ -762,13 +1102,42 @@ void SaveGameSwappableState::Sound::read(Common::ReadStream *stream, uint saveGa
 	params3D.read(stream);
 }
 
-SaveGameSwappableState::SaveGameSwappableState() : roomNumber(0), screenNumber(0), direction(0), havePendingPostSwapScreenReset(false),
+SaveGameSwappableState::SaveGameSwappableState() : roomNumber(0), screenNumber(0), direction(0), disc(0), havePendingPostSwapScreenReset(false),
 												   musicTrack(0), musicVolume(100), musicActive(true), musicMuteDisabled(false), animVolume(100),
-												   loadedAnimation(0), animDisplayingFrame(0) {
+												   loadedAnimation(0), animDisplayingFrame(0), haveIdleAnimationLoop(false), idleAnimNum(0), idleFirstFrame(0), idleLastFrame(0)
+{
+}
+
+SaveGameSnapshot::PagedInventoryItem::PagedInventoryItem() : page(0), slot(0), itemID(0) {
+}
+
+void SaveGameSnapshot::PagedInventoryItem::write(Common::WriteStream *stream) const {
+	stream->writeByte(page);
+	stream->writeByte(slot);
+	stream->writeByte(itemID);
+}
+
+void SaveGameSnapshot::PagedInventoryItem::read(Common::ReadStream *stream, uint saveGameVersion) {
+	page = stream->readByte();
+	slot = stream->readByte();
+	itemID = stream->readByte();
+}
+
+SaveGameSnapshot::PlacedInventoryItem::PlacedInventoryItem() : locationID(0), itemID(0) {
+}
+
+void SaveGameSnapshot::PlacedInventoryItem::write(Common::WriteStream *stream) const {
+	stream->writeUint32BE(locationID);
+	stream->writeByte(itemID);
+}
+
+void SaveGameSnapshot::PlacedInventoryItem::read(Common::ReadStream *stream, uint saveGameVersion) {
+	locationID = stream->readUint32BE();
+	itemID = stream->readByte();
 }
 
 SaveGameSnapshot::SaveGameSnapshot() : hero(0), swapOutRoom(0), swapOutScreen(0), swapOutDirection(0),
-	escOn(false), numStates(1), listenerX(0), listenerY(0), listenerAngle(0) {
+	escOn(false), numStates(1), listenerX(0), listenerY(0), listenerAngle(0), inventoryPage(0), inventoryActiveItem(0) {
 }
 
 void SaveGameSnapshot::write(Common::WriteStream *stream) const {
@@ -781,7 +1150,14 @@ void SaveGameSnapshot::write(Common::WriteStream *stream) const {
 		stream->writeUint32BE(states[sti]->roomNumber);
 		stream->writeUint32BE(states[sti]->screenNumber);
 		stream->writeUint32BE(states[sti]->direction);
+		stream->writeUint32BE(states[sti]->disc);
 		stream->writeByte(states[sti]->havePendingPostSwapScreenReset ? 1 : 0);
+		stream->writeByte(states[sti]->haveIdleAnimationLoop ? 1 : 0);
+		if (states[sti]->haveIdleAnimationLoop) {
+			stream->writeUint32BE(states[sti]->idleAnimNum);
+			stream->writeUint32BE(states[sti]->idleFirstFrame);
+			stream->writeUint32BE(states[sti]->idleLastFrame);
+		}
 	}
 
 	stream->writeUint32BE(hero);
@@ -825,6 +1201,10 @@ void SaveGameSnapshot::write(Common::WriteStream *stream) const {
 
 	stream->writeUint32BE(variables.size());
 	stream->writeUint32BE(timers.size());
+	stream->writeUint32BE(placedItems.size());
+	stream->writeUint32BE(pagedItems.size());
+	stream->writeByte(inventoryPage);
+	stream->writeByte(inventoryActiveItem);
 
 	for (uint sti = 0; sti < numStates; sti++) {
 		for (const SaveGameSwappableState::InventoryItem &invItem : states[sti]->inventory)
@@ -856,6 +1236,12 @@ void SaveGameSnapshot::write(Common::WriteStream *stream) const {
 		stream->writeUint32BE(timer._key);
 		stream->writeUint32BE(timer._value);
 	}
+
+	for (const PlacedInventoryItem &item : placedItems)
+		item.write(stream);
+
+	for (const PagedInventoryItem &item : pagedItems)
+		item.write(stream);
 }
 
 LoadGameOutcome SaveGameSnapshot::read(Common::ReadStream *stream) {
@@ -889,8 +1275,22 @@ LoadGameOutcome SaveGameSnapshot::read(Common::ReadStream *stream) {
 		states[sti]->screenNumber = stream->readUint32BE();
 		states[sti]->direction = stream->readUint32BE();
 
+		if (saveVersion >= 10)
+			states[sti]->disc = stream->readUint32BE();
+
 		if (saveVersion >= 7)
 			states[sti]->havePendingPostSwapScreenReset = (stream->readByte() != 0);
+
+		if (saveVersion >= 10)
+			states[sti]->haveIdleAnimationLoop = (stream->readByte() != 0);
+		else
+			states[sti]->haveIdleAnimationLoop = false;
+
+		if (states[sti]->haveIdleAnimationLoop) {
+			states[sti]->idleAnimNum = stream->readUint32BE();
+			states[sti]->idleFirstFrame = stream->readUint32BE();
+			states[sti]->idleLastFrame = stream->readUint32BE();
+		}
 	}
 
 	if (saveVersion >= 6) {
@@ -967,6 +1367,19 @@ LoadGameOutcome SaveGameSnapshot::read(Common::ReadStream *stream) {
 	uint numVars = stream->readUint32BE();
 	uint numTimers = stream->readUint32BE();
 
+	uint numPlacedItems = 0;
+	uint numPagedItems = 0;
+
+	if (saveVersion >= 10) {
+		numPlacedItems = stream->readUint32BE();
+		numPagedItems = stream->readUint32BE();
+		this->inventoryPage = stream->readByte();
+		this->inventoryActiveItem = stream->readByte();
+	} else {
+		this->inventoryPage = 0;
+		this->inventoryActiveItem = 0;
+	}
+
 	if (stream->eos() || stream->err())
 		return kLoadGameOutcomeSaveDataCorrupted;
 
@@ -978,7 +1391,6 @@ LoadGameOutcome SaveGameSnapshot::read(Common::ReadStream *stream) {
 
 	triggeredOneShots.resize(numOneShots);
 
-	
 	for (uint sti = 0; sti < numStates; sti++) {
 		for (uint i = 0; i < numInventory[sti]; i++)
 			states[sti]->inventory[i].read(stream);
@@ -1016,6 +1428,18 @@ LoadGameOutcome SaveGameSnapshot::read(Common::ReadStream *stream) {
 		timers[key] = value;
 	}
 
+	for (uint i = 0; i < numPlacedItems; i++) {
+		PlacedInventoryItem item;
+		item.read(stream, saveVersion);
+		placedItems.push_back(item);
+	}
+
+	for (uint i = 0; i < numPagedItems; i++) {
+		PagedInventoryItem item;
+		item.read(stream, saveVersion);
+		pagedItems.push_back(item);
+	}
+
 	if (stream->eos() || stream->err())
 		return kLoadGameOutcomeSaveDataCorrupted;
 
@@ -1039,11 +1463,11 @@ void SaveGameSnapshot::writeString(Common::WriteStream *stream, const Common::St
 FontCacheItem::FontCacheItem() : font(nullptr), size(0) {
 }
 
-Runtime::Runtime(OSystem *system, Audio::Mixer *mixer, const Common::FSNode &rootFSNode, VCruiseGameID gameID, Common::Language defaultLanguage)
-	: _system(system), _mixer(mixer), _roomNumber(1), _screenNumber(0), _direction(0), _hero(0), _swapOutRoom(0), _swapOutScreen(0), _swapOutDirection(0),
+Runtime::Runtime(OSystem *system, Audio::Mixer *mixer, MidiDriver *midiDrv, const Common::FSNode &rootFSNode, VCruiseGameID gameID, Common::Language defaultLanguage)
+	: _system(system), _mixer(mixer), _midiDrv(midiDrv), _roomNumber(1), _screenNumber(0), _direction(0), _hero(0), _disc(0), _swapOutRoom(0), _swapOutScreen(0), _swapOutDirection(0),
 	  _haveHorizPanAnimations(false), _loadedRoomNumber(0), _activeScreenNumber(0),
 	  _gameState(kGameStateBoot), _gameID(gameID), _havePendingScreenChange(false), _forceScreenChange(false), _havePendingPreIdleActions(false), _havePendingReturnToIdleState(false), _havePendingPostSwapScreenReset(false),
-	  _havePendingCompletionCheck(false), _havePendingPlayAmbientSounds(false), _ambientSoundFinishTime(0), _escOn(false), _debugMode(false), _fastAnimationMode(false),
+	  _havePendingCompletionCheck(false), _havePendingPlayAmbientSounds(false), _ambientSoundFinishTime(0), _escOn(false), _debugMode(false), _fastAnimationMode(false), _lowQualityGraphicsMode(false),
 	  _musicTrack(0), _musicActive(true), _musicMute(false), _musicMuteDisabled(false),
 	  _scoreSectionEndTime(0), _musicVolume(getDefaultSoundVolume()), _musicVolumeRampStartTime(0), _musicVolumeRampStartVolume(0), _musicVolumeRampRatePerMSec(0), _musicVolumeRampEnd(0),
 	  _panoramaDirectionFlags(0),
@@ -1060,8 +1484,9 @@ Runtime::Runtime(OSystem *system, Audio::Mixer *mixer, const Common::FSNode &roo
 	  _listenerX(0), _listenerY(0), _listenerAngle(0), _soundCacheIndex(0),
 	  _isInGame(false),
 	  _subtitleFont(nullptr), _isDisplayingSubtitles(false), _isSubtitleSourceAnimation(false),
-	  _languageIndex(0), _defaultLanguageIndex(0), _defaultLanguage(defaultLanguage), _charSet(kCharSetLatin),
-	  _isCDVariant(false) {
+	  _languageIndex(0), _defaultLanguageIndex(0), _defaultLanguage(defaultLanguage), _language(defaultLanguage), _charSet(kCharSetLatin),
+	  _isCDVariant(false), _currentAnimatedCursor(nullptr), _currentCursor(nullptr), _cursorTimeBase(0), _cursorCycleLength(0),
+	  _inventoryActivePage(0), _keepStaticAnimationInIdle(false) {
 
 	for (uint i = 0; i < kNumDirections; i++) {
 		_haveIdleAnimations[i] = false;
@@ -1075,7 +1500,13 @@ Runtime::Runtime(OSystem *system, Audio::Mixer *mixer, const Common::FSNode &roo
 	_rng.reset(new Common::RandomSource("vcruise"));
 
 #ifdef USE_FREETYPE2
-	_subtitleFontKeepalive.reset(Graphics::loadTTFFontFromArchive("NotoSans-Regular.ttf", 16, Graphics::kTTFSizeModeCharacter, 0, 0, Graphics::kTTFRenderModeLight));
+	if (_gameID == GID_AD2044) {
+		Common::File f;
+		if (f.open("gfx/AD2044.TTF"))
+			_subtitleFontKeepalive.reset(Graphics::loadTTFFont(f, 16, Graphics::kTTFSizeModeCharacter, 108, 72, Graphics::kTTFRenderModeLight));
+	} else
+		_subtitleFontKeepalive.reset(Graphics::loadTTFFontFromArchive("NotoSans-Regular.ttf", 16, Graphics::kTTFSizeModeCharacter, 0, 0, Graphics::kTTFRenderModeLight));
+
 	_subtitleFont = _subtitleFontKeepalive.get();
 #endif
 
@@ -1094,42 +1525,85 @@ Runtime::Runtime(OSystem *system, Audio::Mixer *mixer, const Common::FSNode &roo
 Runtime::~Runtime() {
 }
 
-void Runtime::initSections(const Common::Rect &gameRect, const Common::Rect &menuRect, const Common::Rect &trayRect, const Common::Rect &fullscreenMenuRect, const Graphics::PixelFormat &pixFmt) {
+void Runtime::initSections(const Common::Rect &gameRect, const Common::Rect &menuRect, const Common::Rect &trayRect, const Common::Rect &subtitleRect, const Common::Rect &fullscreenMenuRect, const Graphics::PixelFormat &pixFmt) {
 	_gameSection.init(gameRect, pixFmt);
 	_menuSection.init(menuRect, pixFmt);
 	_traySection.init(trayRect, pixFmt);
 	_fullscreenMenuSection.init(fullscreenMenuRect, pixFmt);
+
+	if (!subtitleRect.isEmpty())
+		_subtitleSection.init(subtitleRect, pixFmt);
+
+	_placedItemBackBufferSection.init(Common::Rect(), pixFmt);
 }
 
 void Runtime::loadCursors(const char *exeName) {
-	Common::SharedPtr<Common::WinResources> winRes(Common::WinResources::createFromEXE(exeName));
-	if (!winRes)
-		error("Couldn't open executable file %s", exeName);
+	if (_gameID == GID_AD2044) {
+		const int staticCursorIDs[] = {0, 29, 30, 31, 32, 33, 34, 35, 36, 39, 40, 41, 50, 96, 97, 99};
+		const int animatedCursorIDs[] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11};
 
-	Common::Array<Common::WinResourceID> cursorGroupIDs = winRes->getIDList(Common::kWinGroupCursor);
-	for (const Common::WinResourceID &id : cursorGroupIDs) {
-		Common::SharedPtr<Graphics::WinCursorGroup> cursorGroup(Graphics::WinCursorGroup::createCursorGroup(winRes.get(), id));
-		if (!winRes) {
-			warning("Couldn't load cursor group");
-			continue;
+		_cursors.resize(100);
+
+		for (int cid : staticCursorIDs) {
+			Common::String cursorPath = Common::String::format("gfx/CURSOR%02i.CUR", static_cast<int>(cid));
+
+			Common::File f;
+			Image::IcoCurDecoder decoder;
+			if (!f.open(Common::Path(cursorPath)) || !decoder.open(f))
+				error("Couldn't load cursor %s", cursorPath.c_str());
+
+			uint numItems = decoder.numItems();
+
+			if (numItems < 1)
+				error("Cursor %s had no items", cursorPath.c_str());
+
+			Graphics::Cursor *cursor = decoder.loadItemAsCursor(0);
+			if (!cursor)
+				error("Couldn't load cursor %s", cursorPath.c_str());
+
+			_cursors[cid] = staticCursorToAnimatedCursor(Common::SharedPtr<Graphics::Cursor>(cursor));
 		}
 
-		Common::String nameStr = id.getString();
-		if (nameStr.matchString("CURSOR_#")) {
-			char c = nameStr[7];
+		for (int cid : animatedCursorIDs) {
+			Common::String cursorPath = Common::String::format("gfx/CURSOR%i.ani", static_cast<int>(cid));
 
-			uint shortID = c - '0';
-			if (shortID >= _cursorsShort.size())
-				_cursorsShort.resize(shortID + 1);
-			_cursorsShort[shortID] = cursorGroup;
-		} else if (nameStr.matchString("CURSOR_CUR_##")) {
-			char c1 = nameStr[11];
-			char c2 = nameStr[12];
+			Common::File f;
+			Image::AniDecoder decoder;
+			if (!f.open(Common::Path(cursorPath)) || !decoder.open(f))
+				error("Couldn't load cursor %s", cursorPath.c_str());
 
-			uint longID = (c1 - '0') * 10 + (c2 - '0');
-			if (longID >= _cursors.size())
-				_cursors.resize(longID + 1);
-			_cursors[longID] = cursorGroup;
+			_cursors[cid] = aniFileToAnimatedCursor(decoder);
+		}
+	} else {
+		Common::SharedPtr<Common::WinResources> winRes(Common::WinResources::createFromEXE(exeName));
+		if (!winRes)
+			error("Couldn't open executable file %s", exeName);
+
+		Common::Array<Common::WinResourceID> cursorGroupIDs = winRes->getIDList(Common::kWinGroupCursor);
+		for (const Common::WinResourceID &id : cursorGroupIDs) {
+			Common::SharedPtr<Graphics::WinCursorGroup> cursorGroup(Graphics::WinCursorGroup::createCursorGroup(winRes.get(), id));
+			if (!winRes) {
+				warning("Couldn't load cursor group");
+				continue;
+			}
+
+			Common::String nameStr = id.getString();
+			if (nameStr.matchString("CURSOR_#")) {
+				char c = nameStr[7];
+
+				uint shortID = c - '0';
+				if (shortID >= _cursorsShort.size())
+					_cursorsShort.resize(shortID + 1);
+				_cursorsShort[shortID] = winCursorGroupToAnimatedCursor(cursorGroup);
+			} else if (nameStr.matchString("CURSOR_CUR_##")) {
+				char c1 = nameStr[11];
+				char c2 = nameStr[12];
+
+				uint longID = (c1 - '0') * 10 + (c2 - '0');
+				if (longID >= _cursors.size())
+					_cursors.resize(longID + 1);
+				_cursors[longID] = winCursorGroupToAnimatedCursor(cursorGroup);
+			}
 		}
 	}
 
@@ -1158,6 +1632,18 @@ void Runtime::loadCursors(const char *exeName) {
 		_namedCursors["curDrop"] = 91;
 	}
 
+	if (_gameID == GID_AD2044) {
+		_namedCursors["CUR_PRZOD"] = 4; // Przod = forward
+		_namedCursors["CUR_PRAWO"] = 3;	// Prawo = right
+		_namedCursors["CUR_LEWO"] = 1; // Lewo = left
+		_namedCursors["CUR_LUPA"] = 6; // Lupa = magnifier
+		_namedCursors["CUR_NAC"] = 5; // Nac = top?  Not sure.  But this is the finger pointer.
+		_namedCursors["CUR_TYL"] = 2; // Tyl = back
+		_namedCursors["CUR_OTWORZ"] = 11; // Otworz = open
+		_namedCursors["CUR_WEZ"] = 8; // Wez = Pick up
+		_namedCursors["CUR_ZOSTAW"] = 7; // Put down
+	}
+
 	_panCursors[kPanCursorDraggableHoriz | kPanCursorDraggableUp] = 2;
 	_panCursors[kPanCursorDraggableHoriz | kPanCursorDraggableDown] = 3;
 	_panCursors[kPanCursorDraggableHoriz] = 4;
@@ -1180,6 +1666,10 @@ void Runtime::setDebugMode(bool debugMode) {
 
 void Runtime::setFastAnimationMode(bool fastAnimationMode) {
 	_fastAnimationMode = fastAnimationMode;
+}
+
+void Runtime::setLowQualityGraphicsMode(bool lowQualityGraphicsMode) {
+	_lowQualityGraphicsMode = lowQualityGraphicsMode;
 }
 
 bool Runtime::runFrame() {
@@ -1253,6 +1743,8 @@ bool Runtime::runFrame() {
 	updateSounds(timestamp);
 	updateSubtitles();
 
+	refreshCursor(timestamp);
+
 	return true;
 }
 
@@ -1268,7 +1760,19 @@ bool Runtime::bootGame(bool newGame) {
 		_musicMute = false;
 
 	debug(1, "Booting V-Cruise game...");
-	loadIndex();
+
+	if (_gameID == GID_AD2044) {
+		loadAD2044ExecutableResources();
+
+		Common::File tabFile;
+
+		if (tabFile.open(Common::Path("anims/ANIM0087.TAB")))
+			loadTabData(_examineAnimIDToFrameRange, 87, &tabFile);
+		else
+			error("Failed to load inspection animations");
+	} else
+		loadReahSchizmIndex();
+
 	debug(1, "Index loaded OK");
 	findWaves();
 	debug(1, "Waves indexed OK");
@@ -1291,18 +1795,30 @@ bool Runtime::bootGame(bool newGame) {
 
 		loadAllSchizmScreenNames();
 		debug(1, "Screen names resolved OK");
-	} else {
+	} else if (_gameID == GID_REAH) {
 		StartConfigDef &startConfig = _startConfigs[kStartConfigInitial];
 		startConfig.disc = 1;
 		startConfig.room = 1;
 		startConfig.screen = 0xb0;
 		startConfig.direction = 0;
+	} else if (_gameID == GID_AD2044) {
+		StartConfigDef &startConfig = _startConfigs[kStartConfigInitial];
+		startConfig.disc = 1;
+		startConfig.room = 1;
+		startConfig.screen = 0xa5;
+		startConfig.direction = 0;
+	} else
+		error("Don't have a start config for this game");
+
+	if (_gameID != GID_AD2044) {
+		_trayBackgroundGraphic = loadGraphic("Pocket", "", true);
+		_trayHighlightGraphic = loadGraphic("Select", "", true);
+		_trayCompassGraphic = loadGraphic("Select_1", "", true);
+		_trayCornerGraphic = loadGraphic("Select_2", "", true);
 	}
 
-	_trayBackgroundGraphic = loadGraphic("Pocket", true);
-	_trayHighlightGraphic = loadGraphic("Select", true);
-	_trayCompassGraphic = loadGraphic("Select_1", true);
-	_trayCornerGraphic = loadGraphic("Select_2", true);
+	if (_gameID == GID_AD2044)
+		_backgroundGraphic = loadGraphicFromPath("SCR0.BMP", true);
 
 	Common::Language lang = _defaultLanguage;
 
@@ -1389,31 +1905,40 @@ bool Runtime::bootGame(bool newGame) {
 		}
 	}
 
+	_language = lang;
+
 	debug(2, "Language index: %u   Default language index: %u", _languageIndex, _defaultLanguageIndex);
 
 	Common::CodePage codePage = Common::CodePage::kASCII;
 	resolveCodePageForLanguage(lang, codePage, _charSet);
 
-	bool subtitlesLoadedOK = loadSubtitles(codePage, false);
+	bool subtitlesLoadedOK = false;
 
-	if (!subtitlesLoadedOK) {
-		lang = _defaultLanguage;
-		_languageIndex = _defaultLanguageIndex;
-
-		warning("Localization data failed to load, retrying with default language");
-
-		resolveCodePageForLanguage(lang, codePage, _charSet);
+	if (_gameID == GID_AD2044) {
+		subtitlesLoadedOK = true;
+	} else {
 		subtitlesLoadedOK = loadSubtitles(codePage, false);
 
 		if (!subtitlesLoadedOK) {
-			if (_languageIndex != 0) {
-				codePage = Common::CodePage::kWindows1250;
-				_languageIndex = 0;
-				_defaultLanguageIndex = 0;
+			lang = _defaultLanguage;
+			_languageIndex = _defaultLanguageIndex;
 
-				warning("Localization data failed to load again, trying one more time and guessing the encoding");
+			warning("Localization data failed to load, retrying with default language");
 
-				subtitlesLoadedOK = loadSubtitles(codePage, true);
+			resolveCodePageForLanguage(lang, codePage, _charSet);
+
+			subtitlesLoadedOK = loadSubtitles(codePage, false);
+
+			if (!subtitlesLoadedOK) {
+				if (_languageIndex != 0) {
+					codePage = Common::CodePage::kWindows1250;
+					_languageIndex = 0;
+					_defaultLanguageIndex = 0;
+
+					warning("Localization data failed to load again, trying one more time and guessing the encoding");
+
+					subtitlesLoadedOK = loadSubtitles(codePage, true);
+				}
 			}
 		}
 	}
@@ -1425,21 +1950,28 @@ bool Runtime::bootGame(bool newGame) {
 	else
 		warning("Localization data failed to load!  Text and subtitles will be disabled.");
 
-	_uiGraphics.resize(24);
-	for (uint i = 0; i < _uiGraphics.size(); i++) {
-		if (_gameID == GID_REAH) {
-			_uiGraphics[i] = loadGraphic(Common::String::format("Image%03u", static_cast<uint>(_languageIndex * 100u + i)), false);
-			if (_languageIndex != 0 && !_uiGraphics[i])
-				_uiGraphics[i] = loadGraphic(Common::String::format("Image%03u", static_cast<uint>(i)), false);
-		} else if (_gameID == GID_SCHIZM) {
-			_uiGraphics[i] = loadGraphic(Common::String::format("Data%03u", i), false);
+	if (_gameID != GID_AD2044) {
+		_uiGraphics.resize(24);
+		for (uint i = 0; i < _uiGraphics.size(); i++) {
+			if (_gameID == GID_REAH) {
+				_uiGraphics[i] = loadGraphic(Common::String::format("Image%03u", static_cast<uint>(_languageIndex * 100u + i)), "", false);
+				if (_languageIndex != 0 && !_uiGraphics[i])
+					_uiGraphics[i] = loadGraphic(Common::String::format("Image%03u", static_cast<uint>(i)), "", false);
+			} else if (_gameID == GID_SCHIZM) {
+				_uiGraphics[i] = loadGraphic(Common::String::format("Data%03u", i), "", false);
+			}
 		}
 	}
+
+	if (_gameID == GID_AD2044)
+		_mapLoader.reset(new AD2044MapLoader());
+	else
+		_mapLoader.reset(new ReahSchizmMapLoader());
 
 	_gameState = kGameStateIdle;
 
 	if (newGame) {
-		if (ConfMan.hasKey("vcruise_skip_menu") && ConfMan.getBool("vcruise_skip_menu")) {
+		if (_gameID == GID_AD2044 || (ConfMan.hasKey("vcruise_skip_menu") && ConfMan.getBool("vcruise_skip_menu"))) {
 			_mostRecentValidSaveState = generateNewGameSnapshot();
 			restoreSaveGameSnapshot();
 		} else {
@@ -1547,6 +2079,13 @@ void Runtime::drawLabel(Graphics::ManagedSurface *surface, const Common::String 
 	uint32 realTextColor = surface->format.RGBToColor((textColorRGB >> 16) & 0xff, (textColorRGB >> 8) & 0xff, textColorRGB & 0xff);
 	font->drawString(surface, text, textPos.x, textPos.y, strWidth, realTextColor);
 }
+
+void Runtime::onMidiTimer() {
+	Common::StackLock lock(_midiPlayerMutex);
+	if (_musicMidiPlayer)
+		_musicMidiPlayer->onMidiTimer();
+}
+
 
 bool Runtime::runIdle() {
 	if (_havePendingScreenChange) {
@@ -1695,6 +2234,9 @@ bool Runtime::runIdle() {
 					return true;
 				case kKeymappedEventQuit:
 					changeToMenuPage(createMenuQuit(_gameID == GID_SCHIZM));
+					return true;
+				case kKeymappedEventPutItem:
+					cheatPutItem();
 					return true;
 				default:
 					break;
@@ -2488,7 +3030,7 @@ void Runtime::queueOSEvent(const OSEvent &evt) {
 	_pendingEvents.push_back(timedEvt);
 }
 
-void Runtime::loadIndex() {
+void Runtime::loadReahSchizmIndex() {
 	const char *indexPath = "Log/Index.txt";
 
 	Common::INIFile iniFile;
@@ -2542,20 +3084,212 @@ void Runtime::loadIndex() {
 	}
 }
 
+void Runtime::loadAD2044ExecutableResources() {
+	const byte searchPattern[] = {0x01, 0x01, 0xa1, 0x00, 0x04, 0x00, 0x00, 0x00, 0x00, 0x00, 0xc7, 0x00, 0xc7, 0x00, 0x00, 0x00};
+
+	Common::File f;
+	if (!f.open("ad2044.exe") || f.size() > 2u * 1024u * 1024u)
+		error("Couldn't open ad2044.exe to read animation index");
+
+	uint32 exeSize = static_cast<uint32>(f.size());
+
+	Common::Array<byte> exeContents;
+	exeContents.resize(exeSize);
+
+	if (exeSize < sizeof(searchPattern) || f.read(&exeContents[0], exeSize) != exeSize)
+		error("Couldn't load executable to scan for animation table");
+
+	uint endPoint = exeSize - sizeof(searchPattern);
+
+	bool foundAnimTable = false;
+	uint32 animTablePos = 0;
+
+	for (uint i = 0; i <= endPoint; i++) {
+		bool match = true;
+		for (uint j = 0; j < sizeof(searchPattern); j++) {
+			if (exeContents[i + j] != searchPattern[j]) {
+				match = false;
+				break;
+			}
+		}
+
+		if (match) {
+			if (foundAnimTable)
+				error("Found multiple byte patterns matching animation table in ad2044.exe");
+
+			foundAnimTable = true;
+			animTablePos = i;
+		}
+	}
+
+	if (!foundAnimTable)
+		error("Couldn't find animation table in ad2044.exe");
+
+	// Parse the animation table.  The unparsed values are the same for all entries.
+	for (uint entryPos = animTablePos; entryPos < exeSize - 15u; entryPos += 16) {
+		const byte *entry = &exeContents[entryPos];
+
+		AD2044AnimationDef animDef;
+		animDef.roomID = entry[1];
+		animDef.lookupID = entry[2];
+
+		animDef.fwdAnimationID = READ_LE_INT16(entry + 10);
+		animDef.revAnimationID = READ_LE_INT16(entry + 12);
+
+		if (animDef.lookupID == 0)	// Terminator
+			break;
+
+		_ad2044AnimationDefs.push_back(animDef);
+	}
+
+	f.seek(0);
+
+	Common::SharedPtr<Common::WinResources> winRes(Common::WinResources::createFromEXE(&f));
+
+	if (!winRes)
+		error("Couldn't open executable resources");
+
+	_ad2044Graphics.reset(new AD2044Graphics(winRes, _lowQualityGraphicsMode, _gameSection.pixFmt));
+
+	_ad2044Graphics->loadGraphic(&AD2044Graphics::invDownClicked, "GDOL");
+	_ad2044Graphics->loadGraphic(&AD2044Graphics::invUpClicked, "GGORA");
+	_ad2044Graphics->loadGraphic(&AD2044Graphics::musicClickedDeep, "GUZ03");
+	_ad2044Graphics->loadGraphic(&AD2044Graphics::soundClickedDeep, "GUZ06");
+	_ad2044Graphics->loadGraphic(&AD2044Graphics::exitClicked, "GUZ1");
+	_ad2044Graphics->loadGraphic(&AD2044Graphics::saveClicked, "GUZ10");
+	_ad2044Graphics->loadGraphic(&AD2044Graphics::resizeClicked, "GUZ2");
+	_ad2044Graphics->loadGraphic(&AD2044Graphics::musicClicked, "GUZ3");
+	_ad2044Graphics->loadGraphic(&AD2044Graphics::soundClicked, "GUZ6");
+	_ad2044Graphics->loadGraphic(&AD2044Graphics::musicVolUpClicked, "GUZ7");
+	_ad2044Graphics->loadGraphic(&AD2044Graphics::musicVolDownClicked, "GUZ8");
+	_ad2044Graphics->loadGraphic(&AD2044Graphics::loadClicked, "GUZ9");
+	_ad2044Graphics->loadGraphic(&AD2044Graphics::music, "GUZN3");
+	_ad2044Graphics->loadGraphic(&AD2044Graphics::musicVol, "GUZN4");
+	_ad2044Graphics->loadGraphic(&AD2044Graphics::sound, "GUZN6");
+	_ad2044Graphics->loadGraphic(&AD2044Graphics::soundVol, "GUZN7");
+	_ad2044Graphics->loadGraphic(&AD2044Graphics::musicDisabled, "NIC3");
+	_ad2044Graphics->loadGraphic(&AD2044Graphics::musicVolDisabled, "NIC4");
+	_ad2044Graphics->loadGraphic(&AD2044Graphics::soundDisabled, "NIC6");
+	_ad2044Graphics->loadGraphic(&AD2044Graphics::soundVolDisabled, "NIC7");
+	_ad2044Graphics->loadGraphic(&AD2044Graphics::examine, "OKO");
+	_ad2044Graphics->loadGraphic(&AD2044Graphics::examineDisabled, "OKOZ");
+
+	for (int i = 0; i < 8; i++)
+		_ad2044Graphics->invPage[i] = _ad2044Graphics->loadGraphic(Common::String::format("POJ%i", static_cast<int>(i + 1)));
+
+	_ad2044Graphics->finishLoading();
+
+	Common::HashMap<uint32, Common::Pair<uint32, uint> > stringHashToFilePosAndLength;
+
+	for (const AD2044ItemInfo &itemInfo : g_ad2044ItemInfos) {
+		if (_language == Common::PL_POL)
+			stringHashToFilePosAndLength[itemInfo.plNameCRC] = Common::Pair<uint32, uint>(0, 0);
+		else
+			stringHashToFilePosAndLength[itemInfo.enNameCRC] = Common::Pair<uint32, uint>(0, 0);
+	}
+
+	stringHashToFilePosAndLength.erase(0);
+
+	// Scan for strings
+	Common::CRC32 crc;
+
+	uint32 strStartPos = 0;
+	uint32 rollingCRC = crc.getInitRemainder();
+
+	for (uint i = 0; i < exeContents.size(); i++) {
+		byte b = exeContents[i];
+		if (b == 0) {
+			uint32 strLength = i - strStartPos;
+			rollingCRC = crc.finalize(rollingCRC);
+			if (strLength != 0) {
+				Common::HashMap<uint32, Common::Pair<uint32, uint> >::iterator it = stringHashToFilePosAndLength.find(rollingCRC);
+				if (it != stringHashToFilePosAndLength.end())
+					it->_value = Common::Pair<uint32, uint> (strStartPos, strLength);
+			}
+
+#if 1
+			if (strStartPos == 100460) {
+				debug(1, "Check CRC was %u", rollingCRC);
+			}
+#endif
+
+			rollingCRC = crc.getInitRemainder();
+			strStartPos = i + 1;
+		} else
+			rollingCRC = crc.processByte(b, rollingCRC);
+	}
+
+	_ad2044ItemNames.clear();
+	_ad2044ItemNames.reserve(ARRAYSIZE(g_ad2044ItemInfos));
+
+	for (const AD2044ItemInfo &itemInfo : g_ad2044ItemInfos) {
+		Common::String itemInfoUTF8;
+		uint32 hash = itemInfo.enNameCRC;
+
+		if (_language == Common::PL_POL)
+			hash = itemInfo.plNameCRC;
+
+		if (hash != 0) {
+			Common::HashMap<uint32, Common::Pair<uint32, uint> >::const_iterator strIt = stringHashToFilePosAndLength.find(hash);
+
+			if (strIt != stringHashToFilePosAndLength.end()) {
+				uint32 filePos = strIt->_value.first;
+				uint length = strIt->_value.second;
+
+				if (length > 0) {
+					Common::String str(reinterpret_cast<const char *>(&exeContents[filePos]), length);
+
+					itemInfoUTF8 = str.decode(Common::CodePage::kWindows1250).encode(Common::kUtf8);
+				}
+			}
+		}
+
+		_ad2044ItemNames.push_back(itemInfoUTF8);
+	}
+}
+
 void Runtime::findWaves() {
-	Common::ArchiveMemberList waves;
-	SearchMan.listMatchingMembers(waves, "Sfx/Waves-##/####*.wav", true);
+	if (_gameID == GID_AD2044) {
+		for (int disc = 0; disc < 2; disc++) {
+			for (int cat = 0; cat < 3; cat++) {
+				if (disc == 1 && cat == 0)
+					continue;
 
-	for (const Common::ArchiveMemberPtr &wave : waves) {
-		Common::String name = wave->getName();
+				char subdir[3] = {static_cast<char>('0' + disc), static_cast<char>('0' + cat), 0};
 
-		// Strip .wav extension
-		name = name.substr(0, name.size() - 4);
+				Common::String searchPattern = Common::String("sfx/WAVE-") + subdir + "/########.WAV";
 
-		// Make case-insensitive
-		name.toLowercase();
+				Common::ArchiveMemberList waves;
+				SearchMan.listMatchingMembers(waves, Common::Path(searchPattern, '/'), true);
 
-		_waves[name] = wave;
+				for (const Common::ArchiveMemberPtr &wave : waves) {
+					Common::String name = wave->getFileName();
+
+					// Strip .wav extension
+					name = name.substr(0, name.size() - 4);
+
+					// Make case-insensitive
+					name.toLowercase();
+
+					_waves[Common::String(subdir) + "-" + name] = wave;
+				}
+			}
+		}
+	} else {
+		Common::ArchiveMemberList waves;
+		SearchMan.listMatchingMembers(waves, "Sfx/Waves-##/####*.wav", true);
+
+		for (const Common::ArchiveMemberPtr &wave : waves) {
+			Common::String name = wave->getFileName();
+
+			// Strip .wav extension
+			name = name.substr(0, name.size() - 4);
+
+			// Make case-insensitive
+			name.toLowercase();
+
+			_waves[name] = wave;
+		}
 	}
 }
 
@@ -2795,8 +3529,16 @@ void Runtime::resolveSoundByName(const Common::String &soundName, bool load, Sta
 	Common::String sndName = soundName;
 
 	uint soundID = 0;
-	for (uint i = 0; i < 4; i++)
-		soundID = soundID * 10u + (sndName[i] - '0');
+
+	if (_gameID == GID_AD2044) {
+		for (uint i = 0; i < 2; i++)
+			soundID = soundID * 10u + (sndName[i] - '0');
+		for (uint i = 0; i < 5; i++)
+			soundID = soundID * 10u + (sndName[6 + i] - '0');
+	} else {
+		for (uint i = 0; i < 4; i++)
+			soundID = soundID * 10u + (sndName[i] - '0');
+	}
 
 	sndName.toLowercase();
 
@@ -2884,18 +3626,22 @@ void Runtime::changeToScreen(uint roomNumber, uint screenNumber) {
 
 				logicFile.close();
 			}
+		} else if (_gameID == GID_AD2044) {
+			_scriptSet.reset();
+
+			Common::Path logicFileName(Common::String::format("log/kom%i.log", static_cast<int>(roomNumber)));
+			Common::File logicFile;
+			if (logicFile.open(logicFileName)) {
+				_scriptSet = compileAD2044LogicFile(logicFile, static_cast<uint>(logicFile.size()), logicFileName);
+
+				logicFile.close();
+			}
 		} else
 			error("Don't know how to compile scripts for this game");
 
-		_map.clear();
+		_mapLoader->unload();
 
-		Common::Path mapFileName(Common::String::format("Map/Room%02i.map", static_cast<int>(roomNumber)));
-		Common::File mapFile;
-
-		if (mapFile.open(mapFileName)) {
-			loadMap(&mapFile);
-			mapFile.close();
-		}
+		_mapLoader->setRoomNumber(roomNumber);
 	}
 
 	if (changedScreen) {
@@ -2925,18 +3671,42 @@ void Runtime::changeToScreen(uint roomNumber, uint screenNumber) {
 			_havePanDownFromDirection[i] = false;
 		}
 
-		clearIdleAnimations();
+		if (!_keepStaticAnimationInIdle)
+			clearIdleAnimations();
 
-		for (uint i = 0; i < kNumDirections; i++)
-			_haveIdleAnimations[i] = false;
-
-		_havePendingPreIdleActions = true;
-		_haveIdleStaticAnimation = false;
-		_idleCurrentStaticAnimation.clear();
-		_havePendingPlayAmbientSounds = true;
 		_forceAllowSaves = false;
 
 		recordSaveGameSnapshot();
+
+		if (_keepStaticAnimationInIdle)
+			_keepStaticAnimationInIdle = false;
+
+		_placedItemRect = Common::Rect();
+		if (_gameID == GID_AD2044) {
+			const MapScreenDirectionDef *screenDef = _mapLoader->getScreenDirection(_screenNumber, _direction);
+			if (screenDef) {
+				for (const InteractionDef &interaction : screenDef->interactions) {
+					if (interaction.objectType == 2) {
+						_placedItemRect = interaction.rect;
+						break;
+					}
+				}
+			}
+
+			_placedItemRect = _placedItemRect.findIntersectingRect(Common::Rect(640, 480));
+
+			Common::Rect renderRect = _placedItemRect;
+			renderRect.translate(_gameSection.rect.left, _gameSection.rect.top);
+
+			_placedItemBackBufferSection.init(renderRect, _placedItemBackBufferSection.pixFmt);
+
+			if (!_placedItemRect.isEmpty())
+				_placedItemBackBufferSection.surf->blitFrom(*_gameSection.surf, _placedItemRect, Common::Point(0, 0));
+
+			updatePlacedItemCache();
+
+			drawPlacedItemGraphic();
+		}
 	}
 }
 
@@ -2944,9 +3714,9 @@ void Runtime::clearIdleAnimations() {
 	for (uint i = 0; i < kNumDirections; i++)
 		_haveIdleAnimations[i] = false;
 
-	_havePendingPreIdleActions = true;
 	_haveIdleStaticAnimation = false;
 	_idleCurrentStaticAnimation.clear();
+	_havePendingPreIdleActions = true;
 	_havePendingPlayAmbientSounds = true;
 }
 
@@ -2969,6 +3739,92 @@ void Runtime::changeHero() {
 		currentState->direction = _swapOutDirection;
 		currentState->havePendingPostSwapScreenReset = true;
 	}
+
+	snapshot->states[0] = alternateState;
+	snapshot->states[1] = currentState;
+
+	snapshot->hero ^= 1u;
+
+	changeToCursor(_cursors[kCursorArrow]);
+
+	_mostRecentValidSaveState = _mostRecentlyRecordedSaveState;
+
+	restoreSaveGameSnapshot();
+}
+
+void Runtime::changeToExamineItem() {
+	assert(canSave(true));
+	assert(_hero == 0);
+
+	InventoryItem itemToExamine = _inventoryActiveItem;
+
+	_inventoryActiveItem = InventoryItem();
+
+	recordSaveGameSnapshot();
+
+	SaveGameSnapshot *snapshot = _mostRecentlyRecordedSaveState.get();
+
+	Common::SharedPtr<SaveGameSwappableState> currentState = snapshot->states[0];
+	Common::SharedPtr<SaveGameSwappableState> alternateState = snapshot->states[1];
+
+	// Move inventory into the new state
+	alternateState->inventory.clear();
+	alternateState->inventory = Common::move(currentState->inventory);
+
+	// For some reason the screen number translation converts decimal to hex
+	uint highDigit = itemToExamine.itemID / 10u;
+	uint lowDigit = itemToExamine.itemID % 10u;
+
+	Common::HashMap<int, AnimFrameRange>::const_iterator frameRangeIt = _examineAnimIDToFrameRange.find(8700 + static_cast<int>(itemToExamine.itemID));
+
+	if (frameRangeIt == _examineAnimIDToFrameRange.end())
+		error("Couldn't resolve animation frame range to examine item %u", static_cast<uint>(itemToExamine.itemID));
+
+	alternateState->loadedAnimation = frameRangeIt->_value.animationNum;
+	alternateState->animDisplayingFrame = frameRangeIt->_value.firstFrame;
+
+	alternateState->havePendingPostSwapScreenReset = true;
+	alternateState->roomNumber = 87;
+	alternateState->screenNumber = (highDigit * 0x10u) + lowDigit;
+	alternateState->direction = 0;
+
+	alternateState->musicActive = currentState->musicActive;
+	alternateState->musicMuteDisabled = currentState->musicMuteDisabled;
+	alternateState->musicTrack = currentState->musicTrack;
+	alternateState->musicVolume = currentState->musicVolume;
+
+	snapshot->states[0] = alternateState;
+	snapshot->states[1] = currentState;
+
+	snapshot->hero ^= 1u;
+
+	changeToCursor(_cursors[kCursorArrow]);
+
+	_mostRecentValidSaveState = _mostRecentlyRecordedSaveState;
+
+	restoreSaveGameSnapshot();
+}
+
+void Runtime::returnFromExaminingItem() {
+	assert(canSave(true));
+	assert(_hero == 1);
+
+	InventoryItem itemToReturnWith = _inventoryActiveItem;
+
+	_inventoryActiveItem = InventoryItem();
+
+	recordSaveGameSnapshot();
+
+	SaveGameSnapshot *snapshot = _mostRecentlyRecordedSaveState.get();
+
+	Common::SharedPtr<SaveGameSwappableState> currentState = snapshot->states[0];
+	Common::SharedPtr<SaveGameSwappableState> alternateState = snapshot->states[1];
+
+	// Move inventory into the new state
+	alternateState->inventory.clear();
+	alternateState->inventory = Common::move(currentState->inventory);
+
+	snapshot->inventoryActiveItem = itemToReturnWith.itemID;
 
 	snapshot->states[0] = alternateState;
 	snapshot->states[1] = currentState;
@@ -3050,17 +3906,65 @@ void Runtime::returnToIdleState() {
 	(void) dischargeIdleMouseMove();
 }
 
-void Runtime::changeToCursor(const Common::SharedPtr<Graphics::WinCursorGroup> &cursor) {
+void Runtime::changeToCursor(const Common::SharedPtr<AnimatedCursor> &cursor) {
 	if (!cursor)
 		CursorMan.showMouse(false);
 	else {
-		CursorMan.replaceCursor(cursor->cursors[0].cursor);
+		_currentAnimatedCursor = cursor.get();
+
+		_cursorCycleLength = 0;
+		for (const AnimatedCursor::FrameDef &frame : cursor->frames)
+			_cursorCycleLength += frame.delay;
+
+		_cursorTimeBase = g_system->getMillis(true);
+
+		refreshCursor(_cursorTimeBase);
 		CursorMan.showMouse(true);
 	}
 }
 
+void Runtime::refreshCursor(uint32 currentTime) {
+	if (!_currentAnimatedCursor)
+		return;
+
+	uint32 timeSinceTimeBase = currentTime - _cursorTimeBase;
+
+	uint stepTime = 0;
+
+	if (_cursorCycleLength > 0) {
+		// 3 ticks at 60Hz is 50ms, so this will reduce the precision of the math that we have to do
+		timeSinceTimeBase %= _cursorCycleLength * 50u;
+		_cursorTimeBase = currentTime - timeSinceTimeBase;
+
+		stepTime = (timeSinceTimeBase * 60u / 1000u) % _cursorCycleLength;
+	}
+
+	uint imageIndex = 0;
+
+	if (_currentAnimatedCursor) {
+		uint frameStartTime = 0;
+		for (const AnimatedCursor::FrameDef &frame : _currentAnimatedCursor->frames) {
+			if (frameStartTime > stepTime)
+				break;
+
+			imageIndex = frame.imageIndex;
+			frameStartTime += frame.delay;
+		}
+	}
+
+	if (imageIndex >= _currentAnimatedCursor->images.size())
+		error("Out-of-bounds animated cursor image index");
+
+	Graphics::Cursor *cursor = _currentAnimatedCursor->images[imageIndex];
+
+	if (!cursor)
+		error("Missing cursor");
+
+	CursorMan.replaceCursor(cursor);
+}
+
 bool Runtime::dischargeIdleMouseMove() {
-	const MapScreenDirectionDef *sdDef = _map.getScreenDirection(_screenNumber, _direction);
+	const MapScreenDirectionDef *sdDef = _mapLoader->getScreenDirection(_screenNumber, _direction);
 
 	if (_inGameMenuState != kInGameMenuStateInvisible) {
 		checkInGameMenuHover();
@@ -3110,9 +4014,24 @@ bool Runtime::dischargeIdleMouseMove() {
 	uint interactionID = 0;
 	if (sdDef && !_idleLockInteractions) {
 		for (const InteractionDef &idef : sdDef->interactions) {
-			if (idef.objectType == 1 && idef.rect.contains(relMouse)) {
+			if (idef.objectType == 1 && interactionID == 0 && idef.rect.contains(relMouse)) {
 				isOnInteraction = true;
 				interactionID = idef.interactionID;
+			}
+
+			if (_gameID == GID_AD2044 && idef.objectType == 3 && idef.rect.contains(relMouse)) {
+				uint32 locationID = getLocationForScreen(_roomNumber, _screenNumber);
+				if (_placedItems.find(locationID) == _placedItems.end()) {
+					if (_inventoryActiveItem.itemID != 0) {
+						isOnInteraction = true;
+						interactionID = kObjectDropInteractionID;
+					}
+				} else {
+					if (_inventoryActiveItem.itemID == 0) {
+						isOnInteraction = true;
+						interactionID = kObjectPickupInteractionID;
+					}
+				}
 				break;
 			}
 		}
@@ -3125,6 +4044,40 @@ bool Runtime::dischargeIdleMouseMove() {
 		}
 	}
 
+	if (_gameID == GID_AD2044 && !isOnInteraction) {
+		Common::Rect invSlotRect = AD2044Interface::getFirstInvSlotRect();
+
+		for (uint i = 0; i < kNumInventorySlots; i++) {
+			bool isItemInInventory = (_inventory[i].itemID != 0);
+			bool isItemActive = (_inventoryActiveItem.itemID != 0);
+
+			if (invSlotRect.contains(_mousePos)) {
+				if (isItemInInventory && !isItemActive) {
+					isOnInteraction = true;
+					interactionID = kPickupInventorySlot0InteractionID + i;
+				} else if (!isItemInInventory && isItemActive) {
+					isOnInteraction = true;
+					interactionID = kReturnInventorySlot0InteractionID + i;
+				}
+
+				break;
+			}
+
+			invSlotRect.translate(static_cast<int16>(AD2044Interface::getInvSlotSpacing()), 0);
+		}
+
+		if (_inventoryActiveItem.itemID != 0 && _hero == 0) {
+			if (g_ad2044ItemInfos[_inventoryActiveItem.itemID].canBeExamined) {
+				Common::Rect examineRect = AD2044Interface::getRectForUI(AD2044InterfaceRectID::ExamineButton);
+
+				if (examineRect.contains(_mousePos)) {
+					isOnInteraction = true;
+					interactionID = kExamineItemInteractionID;
+				}
+			}
+		}
+	}
+
 	if (_idleIsOnInteraction && (!isOnInteraction || interactionID != _idleInteractionID)) {
 		// Mouse left the previous interaction
 		_idleIsOnInteraction = false;
@@ -3132,6 +4085,11 @@ bool Runtime::dischargeIdleMouseMove() {
 		_idleHaveDragInteraction = false;
 		changeToCursor(_cursors[kCursorArrow]);
 		resetInventoryHighlights();
+
+		if (_gameID == GID_AD2044 && _tooltipText.size() > 0) {
+			_tooltipText.clear();
+			redrawSubtitleSection();
+		}
 	}
 
 	bool changedCircuitState = false;
@@ -3182,12 +4140,23 @@ bool Runtime::dischargeIdleMouseMove() {
 		if (interactionID == kHeroChangeInteractionID) {
 			changeToCursor(_cursors[16]);
 			_idleHaveClickInteraction = true;
+		} else if (interactionID == kExamineItemInteractionID) {
+			changeToCursor(_cursors[5]);
+			_idleHaveClickInteraction = true;
+		} else if (interactionID == kObjectDropInteractionID || (interactionID >= kReturnInventorySlot0InteractionID && interactionID <= kReturnInventorySlot5InteractionID)) {
+			changeToCursor(_cursors[7]);
+			_idleHaveClickInteraction = true;
+		} else if (interactionID == kObjectPickupInteractionID || (interactionID >= kPickupInventorySlot0InteractionID && interactionID <= kPickupInventorySlot5InteractionID)) {
+			changeToCursor(_cursors[8]);
+			_idleHaveClickInteraction = true;
 		} else {
 			// New interaction, is there a script?
 			Common::SharedPtr<Script> script = findScriptForInteraction(interactionID);
 
 			if (script) {
-				activateScript(script, false, ScriptEnvironmentVars());
+				ScriptEnvironmentVars envVars;
+				envVars.clickInteractionID = interactionID;
+				activateScript(script, false, envVars);
 				return true;
 			}
 		}
@@ -3219,6 +4188,7 @@ bool Runtime::dischargeIdleMouseDown() {
 		if (script) {
 			ScriptEnvironmentVars vars;
 			vars.lmbDrag = true;
+			vars.clickInteractionID = _idleInteractionID;
 
 			activateScript(script, false, vars);
 			return true;
@@ -3234,15 +4204,39 @@ bool Runtime::dischargeIdleClick() {
 		if (_gameID == GID_SCHIZM && _idleInteractionID == kHeroChangeInteractionID) {
 			changeHero();
 			return true;
+		} else if (_gameID == GID_AD2044 && _idleInteractionID == kObjectDropInteractionID) {
+			dropActiveItem();
+			recordSaveGameSnapshot();
+			_havePendingReturnToIdleState = true;
+			return true;
+		} else if (_gameID == GID_AD2044 && _idleInteractionID == kObjectPickupInteractionID) {
+			pickupPlacedItem();
+			recordSaveGameSnapshot();
+			_havePendingReturnToIdleState = true;
+			return true;
+		} else if (_gameID == GID_AD2044 && _idleInteractionID == kExamineItemInteractionID) {
+			changeToExamineItem();
+			return true;
+		} else if (_gameID == GID_AD2044 && _idleInteractionID >= kPickupInventorySlot0InteractionID && _idleInteractionID <= kPickupInventorySlot5InteractionID) {
+			pickupInventoryItem(_idleInteractionID - kPickupInventorySlot0InteractionID);
+			recordSaveGameSnapshot();
+			_havePendingReturnToIdleState = true;
+			return true;
+		} else if (_gameID == GID_AD2044 && _idleInteractionID >= kReturnInventorySlot0InteractionID && _idleInteractionID <= kReturnInventorySlot5InteractionID) {
+			stashActiveItemToInventory(_idleInteractionID - kReturnInventorySlot0InteractionID);
+			recordSaveGameSnapshot();
+			_havePendingReturnToIdleState = true;
+			return true;
 		} else {
 			// Interaction, is there a script?
 			Common::SharedPtr<Script> script = findScriptForInteraction(_idleInteractionID);
 
-			_idleIsOnInteraction = false; // ?
+			_idleIsOnInteraction = false; // Clear so new interactions at the same mouse coord are detected
 
 			if (script) {
 				ScriptEnvironmentVars vars;
 				vars.lmb = true;
+				vars.clickInteractionID = _idleInteractionID;
 
 				activateScript(script, false, vars);
 				return true;
@@ -3252,55 +4246,6 @@ bool Runtime::dischargeIdleClick() {
 
 	// Didn't do anything
 	return false;
-}
-
-void Runtime::loadMap(Common::SeekableReadStream *stream) {
-	byte screenDefOffsets[MapDef::kNumScreens * kNumDirections * 4];
-
-	if (!stream->seek(16))
-		error("Error skipping map file header");
-
-	if (stream->read(screenDefOffsets, sizeof(screenDefOffsets)) != sizeof(screenDefOffsets))
-		error("Error reading map offset table");
-
-	for (uint screen = 0; screen < MapDef::kNumScreens; screen++) {
-		for (uint direction = 0; direction < kNumDirections; direction++) {
-			uint32 offset = READ_LE_UINT32(screenDefOffsets + (kNumDirections * screen + direction) * 4);
-			if (!offset)
-				continue;
-
-			if (!stream->seek(offset))
-				error("Error seeking to screen data");
-
-			byte screenDefHeader[16];
-			if (stream->read(screenDefHeader, 16) != 16)
-				error("Error reading screen def header");
-
-			uint16 numInteractions = READ_LE_UINT16(screenDefHeader + 0);
-
-			if (numInteractions > 0) {
-				Common::SharedPtr<MapScreenDirectionDef> screenDirectionDef(new MapScreenDirectionDef());
-				screenDirectionDef->interactions.resize(numInteractions);
-
-				for (uint i = 0; i < numInteractions; i++) {
-					InteractionDef &idef = screenDirectionDef->interactions[i];
-
-					byte interactionData[12];
-					if (stream->read(interactionData, 12) != 12)
-						error("Error reading interaction data");
-
-					idef.rect = Common::Rect(READ_LE_INT16(interactionData + 0), READ_LE_INT16(interactionData + 2), READ_LE_INT16(interactionData + 4), READ_LE_INT16(interactionData + 6));
-					idef.interactionID = READ_LE_UINT16(interactionData + 8);
-					idef.objectType = READ_LE_UINT16(interactionData + 10);
-				}
-
-				// QUIRK: The stone game in the tower in Reah (Room 06) has two 0cb screens and the second one is damaged,
-				// so it must be ignored.
-				if (!_map.screenDirections[screen][direction])
-					_map.screenDirections[screen][direction] = screenDirectionDef;
-			}
-		}
-	}
 }
 
 void Runtime::loadFrameData(Common::SeekableReadStream *stream) {
@@ -3330,13 +4275,28 @@ void Runtime::loadFrameData(Common::SeekableReadStream *stream) {
 		char decAreaFrameIndex[4];
 		memcpy(decAreaFrameIndex, frameData + 12, 4);
 
-		uint areaFrameIndex = 0;
-		for (int digit = 0; digit < 4; digit++) {
-			char c = decAreaFrameIndex[digit];
-			if (c < '0' || c > '9')
-				error("Invalid area frame index in DTA data");
+		bool isPadFrame = false;
 
-			areaFrameIndex = areaFrameIndex * 10u + static_cast<uint>(c - '0');
+		if (_gameID == GID_AD2044) {
+			isPadFrame = true;
+
+			for (uint j = 0; j < 8; j++) {
+				if (frameData[j + 8] != 0) {
+					isPadFrame = false;
+					break;
+				}
+			}
+		}
+
+		uint areaFrameIndex = 0;
+		if (!isPadFrame) {
+			for (int digit = 0; digit < 4; digit++) {
+				char c = decAreaFrameIndex[digit];
+				if (c < '0' || c > '9')
+					error("Invalid area frame index in DTA data");
+
+				areaFrameIndex = areaFrameIndex * 10u + static_cast<uint>(c - '0');
+			}
 		}
 
 		fd.areaFrameIndex = areaFrameIndex;
@@ -3372,11 +4332,111 @@ void Runtime::loadFrameData2(Common::SeekableReadStream *stream) {
 	}
 }
 
+void Runtime::loadTabData(Common::HashMap<int, AnimFrameRange> &animIDToFrameRangeMap, uint animNumber, Common::SeekableReadStream *stream) {
+	animIDToFrameRangeMap.clear();
+
+	int64 size64 = stream->size() - stream->pos();
+
+	if (size64 > UINT_MAX || size64 < 0)
+		error("Internal error: Oversized TAB file");
+
+	uint32 fileSize = static_cast<uint32>(size64);
+
+	Common::Array<Common::String> lines;
+
+	Common::Array<char> chars;
+	chars.resize(fileSize);
+
+	if (fileSize > 0 && stream->read(&chars[0], fileSize) != fileSize)
+		error("Failed to read TAB file data");
+
+	uint searchStart = 0;
+	while (searchStart < chars.size()) {
+		uint endPos = searchStart;
+		while (endPos != chars.size()) {
+			if (chars[endPos] == '\n' || chars[endPos] == '\r')
+				break;
+
+			endPos++;
+		}
+
+		if (endPos == searchStart)
+			lines.push_back(Common::String(""));
+		else
+			lines.push_back(Common::String(&chars[searchStart], endPos - searchStart));
+
+
+		if (endPos != chars.size() && chars[endPos] == '\r')
+			endPos++;
+		if (endPos != chars.size() && chars[endPos] == '\n')
+			endPos++;
+
+		searchStart = endPos;
+	}
+
+	for (const Common::String &line : lines) {
+		if (line.hasPrefix("//"))
+			continue;
+
+		uint32 openBracePos = line.find('{');
+		if (openBracePos == Common::String::npos)
+			continue;
+
+		uint32 closeBracePos = line.find("},", openBracePos + 1);
+		if (closeBracePos == Common::String::npos)
+			error("Strangely-formatted animation table line: %s", line.c_str());
+
+		Common::String enclosedContents = line.substr(1, closeBracePos - 1);
+
+		uint32 firstCommaPos = enclosedContents.find(',');
+		if (firstCommaPos == Common::String::npos)
+			error("Strangely-formatted animation table line: %s", line.c_str());
+
+		uint32 secondCommaPos = enclosedContents.find(',', firstCommaPos + 1);
+		if (secondCommaPos == Common::String::npos)
+			error("Strangely-formatted animation table line: %s", line.c_str());
+
+		Common::String numbers[3] = {
+			enclosedContents.substr(0, firstCommaPos),
+			enclosedContents.substr(firstCommaPos + 1, secondCommaPos - (firstCommaPos + 1)),
+			enclosedContents.substr(secondCommaPos + 1)
+		};
+
+		int parsedNumbers[3] = {0, 0, 0};
+
+		uint i = 0;
+		for (Common::String &str : numbers) {
+			str.trim();
+
+			if (sscanf(str.c_str(), "%i", &parsedNumbers[i]) != 1)
+				error("Strangely-formatted animation table line: %s", line.c_str());
+
+			i++;
+		}
+
+		AnimFrameRange frameRange;
+		frameRange.animationNum = animNumber;
+		frameRange.firstFrame = static_cast<uint>(parsedNumbers[1]);
+		frameRange.lastFrame = static_cast<uint>(parsedNumbers[2]);
+
+		// Animation ID 9099 is duplicated but it doesn't really matter since the duplicate is identical
+		if (animIDToFrameRangeMap.find(parsedNumbers[0]) == animIDToFrameRangeMap.end())
+			animIDToFrameRangeMap[parsedNumbers[0]] = frameRange;
+		else
+			warning("Animation ID %i was duplicated", parsedNumbers[0]);
+	}
+}
+
 void Runtime::changeMusicTrack(int track) {
-	if (track == _musicTrack && _musicPlayer.get() != nullptr)
+	if (track == _musicTrack && (_musicWavePlayer.get() != nullptr || _musicMidiPlayer.get() != nullptr))
 		return;
 
-	_musicPlayer.reset();
+	_musicWavePlayer.reset();
+	if (_musicMidiPlayer)
+	{
+		Common::StackLock lock(_midiPlayerMutex);
+		_musicMidiPlayer.reset();
+	}
 	_musicTrack = track;
 
 	if (!_musicActive)
@@ -3385,23 +4445,49 @@ void Runtime::changeMusicTrack(int track) {
 	if (_musicMute && !_musicMuteDisabled)
 		return;
 
-	Common::Path wavFileName(Common::String::format("Sfx/Music-%02i.wav", static_cast<int>(track)));
-	Common::File *wavFile = new Common::File();
-	if (wavFile->open(wavFileName)) {
-		if (Audio::SeekableAudioStream *audioStream = Audio::makeWAVStream(wavFile, DisposeAfterUse::YES)) {
-			Common::SharedPtr<Audio::AudioStream> loopingStream(Audio::makeLoopingAudioStream(audioStream, 0));
+	Common::String musicPathStr;
 
-			_musicPlayer.reset(new AudioPlayer(_mixer, loopingStream, Audio::Mixer::kMusicSoundType));
-			_musicPlayer->play(applyVolumeScale(_musicVolume), 0);
+	if (_gameID == GID_AD2044) {
+		if (!_midiDrv)
+			return;
+
+		musicPathStr = Common::String::format("sfx/music%02i.mid", static_cast<int>(track));
+	} else
+		musicPathStr = Common::String::format("Sfx/Music-%02i.wav", static_cast<int>(track));
+
+	Common::Path musicFileName(musicPathStr);
+	Common::File *musicFile = new Common::File();
+	if (musicFile->open(musicFileName)) {
+		if (_gameID == GID_AD2044) {
+			Common::ScopedPtr<Common::File> fileHolder(musicFile);
+
+			uint musicFileSize = static_cast<uint>(musicFile->size());
+
+			if (musicFileSize > 0) {
+				Common::Array<byte> musicData;
+				musicData.resize(musicFileSize);
+
+				musicFile->read(&musicData[0], musicFileSize);
+
+				Common::StackLock lock(_midiPlayerMutex);
+				_musicMidiPlayer.reset(new MidiPlayer(_midiDrv, Common::move(musicData), _musicVolume));
+			}
+		} else {
+			if (Audio::SeekableAudioStream *audioStream = Audio::makeWAVStream(musicFile, DisposeAfterUse::YES)) {
+				Common::SharedPtr<Audio::AudioStream> loopingStream(Audio::makeLoopingAudioStream(audioStream, 0));
+
+				_musicWavePlayer.reset(new AudioPlayer(_mixer, loopingStream, Audio::Mixer::kMusicSoundType));
+				_musicWavePlayer->play(applyVolumeScale(_musicVolume), 0);
+			}
 		}
 	} else {
-		warning("Music file '%s' is missing", wavFileName.toString(Common::Path::kNativeSeparator).c_str());
-		delete wavFile;
+		warning("Music file '%s' is missing", musicFileName.toString(Common::Path::kNativeSeparator).c_str());
+		delete musicFile;
 	}
 }
 
 void Runtime::startScoreSection() {
-	_musicPlayer.reset();
+	_musicWavePlayer.reset();
 	_scoreSectionEndTime = 0;
 
 	if (!_musicActive)
@@ -3428,8 +4514,8 @@ void Runtime::startScoreSection() {
 				Common::File *trackFile = new Common::File();
 				if (trackFile->open(trackFileName)) {
 					if (Audio::SeekableAudioStream *audioStream = Audio::makeVorbisStream(trackFile, DisposeAfterUse::YES)) {
-						_musicPlayer.reset(new AudioPlayer(_mixer, Common::SharedPtr<Audio::AudioStream>(audioStream), Audio::Mixer::kMusicSoundType));
-						_musicPlayer->play(applyVolumeScale(sectionDef.volumeOrDurationInSeconds), 0);
+						_musicWavePlayer.reset(new AudioPlayer(_mixer, Common::SharedPtr<Audio::AudioStream>(audioStream), Audio::Mixer::kMusicSoundType));
+						_musicWavePlayer->play(applyVolumeScale(sectionDef.volumeOrDurationInSeconds), 0);
 
 						_scoreSectionEndTime = static_cast<uint32>(audioStream->getLength().msecs()) + g_system->getMillis();
 					} else {
@@ -3458,11 +4544,16 @@ void Runtime::setMusicMute(bool muted) {
 	if (prevIsActuallyMuted != isActuallyMuted) {
 		if (isActuallyMuted) {
 			// Became muted
-			_musicPlayer.reset();
+			_musicWavePlayer.reset();
+			if (_musicMidiPlayer)
+			{
+				Common::StackLock lock(_midiPlayerMutex);
+				_musicMidiPlayer.reset();
+			}
 			_scoreSectionEndTime = 0;
 		} else {
 			// Became unmuted
-			if (_gameID == GID_REAH)
+			if (_gameID == GID_REAH || _gameID == GID_AD2044)
 				changeMusicTrack(_musicTrack);
 			else if (_gameID == GID_SCHIZM)
 				startScoreSection();
@@ -3487,6 +4578,8 @@ void Runtime::changeAnimation(const AnimationDef &animDef, uint initialFrame, bo
 	if (animFile < 0)
 		animFile = -animFile;
 
+	bool isAD2044 = (_gameID == GID_AD2044);
+
 	if (_loadedAnimation != static_cast<uint>(animFile)) {
 		_loadedAnimation = animFile;
 		_frameData.clear();
@@ -3494,7 +4587,7 @@ void Runtime::changeAnimation(const AnimationDef &animDef, uint initialFrame, bo
 		_animDecoder.reset();
 		_animDecoderState = kAnimDecoderStateStopped;
 
-		Common::Path aviFileName(Common::String::format("Anims/Anim%04i.avi", animFile));
+		Common::Path aviFileName(Common::String::format(isAD2044 ? "anims/ANIM%04i.AVI" : "Anims/Anim%04i.avi", animFile));
 		Common::File *aviFile = new Common::File();
 
 		if (aviFile->open(aviFileName)) {
@@ -3510,28 +4603,40 @@ void Runtime::changeAnimation(const AnimationDef &animDef, uint initialFrame, bo
 
 		applyAnimationVolume();
 
-		Common::Path sfxFileName(Common::String::format("Sfx/Anim%04i.sfx", animFile));
-		Common::File sfxFile;
-
 		_sfxData.reset();
 
-		if (sfxFile.open(sfxFileName))
-			_sfxData.load(sfxFile, _mixer);
-		sfxFile.close();
+		if (!isAD2044) {
+			Common::Path sfxFileName(Common::String::format("Sfx/Anim%04i.sfx", animFile));
+			Common::File sfxFile;
 
-		Common::Path dtaFileName(Common::String::format("Anims/Anim%04i.dta", animFile));
+			if (sfxFile.open(sfxFileName))
+				_sfxData.load(sfxFile, _mixer);
+			sfxFile.close();
+		}
+
+		Common::Path dtaFileName(Common::String::format(isAD2044 ? "anims/ANIM0001.DTA" : "Anims/Anim%04i.dta", animFile));
 		Common::File dtaFile;
 
 		if (dtaFile.open(dtaFileName))
 			loadFrameData(&dtaFile);
 		dtaFile.close();
 
-		Common::Path twoDtFileName(Common::String::format("Dta/Anim%04i.2dt", animFile));
-		Common::File twoDtFile;
+		if (!isAD2044) {
+			Common::Path twoDtFileName(Common::String::format("Dta/Anim%04i.2dt", animFile));
+			Common::File twoDtFile;
 
-		if (twoDtFile.open(twoDtFileName))
-			loadFrameData2(&twoDtFile);
-		twoDtFile.close();
+			if (twoDtFile.open(twoDtFileName))
+				loadFrameData2(&twoDtFile);
+			twoDtFile.close();
+		}
+
+		if (isAD2044) {
+			Common::Path tabFileName(Common::String::format("anims/ANIM%04i.TAB", animFile));
+			Common::File tabFile;
+
+			if (tabFile.open(tabFileName))
+				loadTabData(_currentRoomAnimIDToFrameRange, animFile, &tabFile);
+		}
 
 		_loadedAnimationHasSound = (_animDecoder->getAudioTrackCount() > 0);
 
@@ -3753,7 +4858,11 @@ void Runtime::stopSubtitles() {
 	_subtitleQueue.clear();
 	_isDisplayingSubtitles = false;
 	_isSubtitleSourceAnimation = false;
-	redrawTray();
+
+	if (_gameID == GID_AD2044)
+		redrawSubtitleSection();
+	else
+		redrawTray();
 }
 
 void Runtime::stopSound(SoundInstance &sound) {
@@ -3876,8 +4985,13 @@ void Runtime::updateSounds(uint32 timestamp) {
 			newVolume += static_cast<int32>(ramp);
 
 		if (newVolume != _musicVolume) {
-			if (_musicPlayer)
-				_musicPlayer->setVolume(applyVolumeScale(newVolume));
+			if (_musicWavePlayer)
+				_musicWavePlayer->setVolume(applyVolumeScale(newVolume));
+
+			if (_musicMidiPlayer) {
+				Common::StackLock lock(_midiPlayerMutex);
+				_musicMidiPlayer->setVolume(newVolume);
+			}
 			_musicVolume = newVolume;
 		}
 
@@ -3916,17 +5030,24 @@ void Runtime::updateSubtitles() {
 				_isDisplayingSubtitles = false;
 
 				if (_subtitleQueue.size() == 0) {
+					// Queue was exhausted
+
 					// Is this really what we want to be doing?
-					if (_escOn)
-						clearTray();
-					else
-						redrawTray();
+					if (_escOn) {
+						if (_gameID == GID_AD2044)
+							clearSubtitleSection();
+						else
+							clearTray();
+					} else {
+						if (_gameID == GID_AD2044)
+							redrawSubtitleSection();
+						else
+							redrawTray();
+					}
 				}
 			} else
 				break;
 		} else {
-			Graphics::ManagedSurface *surf = _traySection.surf.get();
-
 			Common::Array<Common::U32String> lines;
 
 			uint lineStart = 0;
@@ -3941,23 +5062,12 @@ void Runtime::updateSubtitles() {
 				lineStart = lineEnd + 1;
 			}
 
-			clearTray();
+			if (_gameID == GID_AD2044)
+				clearSubtitleSection();
+			else
+				clearTray();
 
-			if (_subtitleFont) {
-				int lineHeight = _subtitleFont->getFontHeight();
-
-				int topY = (surf->h - lineHeight * static_cast<int>(lines.size())) / 2;
-
-				uint32 textColor = surf->format.RGBToColor(queueItem.color[0], queueItem.color[1], queueItem.color[2]);
-
-				for (uint lineIndex = 0; lineIndex < lines.size(); lineIndex++) {
-					const Common::U32String &line = lines[lineIndex];
-					int lineWidth = _subtitleFont->getStringWidth(line);
-					_subtitleFont->drawString(surf, line, (surf->w - lineWidth) / 2, topY + static_cast<int>(lineIndex) * lineHeight, lineWidth, textColor);
-				}
-			}
-
-			commitSectionToScreen(_traySection, Common::Rect(0, 0, _traySection.rect.width(), _traySection.rect.height()));
+			drawSubtitleText(lines, queueItem.color);
 
 			_isDisplayingSubtitles = true;
 		}
@@ -4373,7 +5483,7 @@ void Runtime::drawDebugOverlay() {
 	uint32 whiteColor = pixFmt.ARGBToColor(255, 255, 255, 255);
 	uint32 blackColor = pixFmt.ARGBToColor(255, 0, 0, 0);
 
-	const MapScreenDirectionDef *sdDef = _map.getScreenDirection(_screenNumber, _direction);
+	const MapScreenDirectionDef *sdDef = _mapLoader->getScreenDirection(_screenNumber, _direction);
 	if (sdDef) {
 		for (const InteractionDef &idef : sdDef->interactions) {
 			Common::Rect rect = idef.rect;
@@ -4501,10 +5611,12 @@ void Runtime::inventoryAddItem(uint item) {
 	if (firstOpenSlot == kNumInventorySlots)
 		error("Tried to add an inventory item but ran out of slots");
 
-	Common::String itemFileName = getFileNameForItemGraphic(item);
+	Common::String itemFileName;
+	Common::String alphaFileName;
+	getFileNamesForItemGraphic(item, itemFileName, alphaFileName);
 
 	_inventory[firstOpenSlot].itemID = item;
-	_inventory[firstOpenSlot].graphic = loadGraphic(itemFileName, false);
+	_inventory[firstOpenSlot].graphic = loadGraphic(itemFileName, alphaFileName, false);
 
 	drawInventory(firstOpenSlot);
 }
@@ -4524,7 +5636,11 @@ void Runtime::inventoryRemoveItem(uint itemID) {
 }
 
 void Runtime::clearScreen() {
-	_system->fillScreen(_system->getScreenFormat().RGBToColor(0, 0, 0));
+	if (_gameID == GID_AD2044) {
+		_fullscreenMenuSection.surf->blitFrom(*_backgroundGraphic);
+		commitSectionToScreen(_fullscreenMenuSection, _fullscreenMenuSection.rect);
+	} else
+		_system->fillScreen(_system->getScreenFormat().RGBToColor(0, 0, 0));
 }
 
 void Runtime::redrawTray() {
@@ -4540,17 +5656,102 @@ void Runtime::redrawTray() {
 }
 
 void Runtime::clearTray() {
-	uint32 blackColor = _traySection.surf->format.RGBToColor(0, 0, 0);
-	Common::Rect trayRect(0, 0, _traySection.surf->w, _traySection.surf->h);
+	Common::Rect trayRect;
+	if (_gameID == GID_AD2044) {
+		trayRect = _traySection.rect;
+		trayRect.translate(-trayRect.left, -trayRect.top);
+		_traySection.surf->blitFrom(*_backgroundGraphic, _traySection.rect, trayRect);
+	} else {
+		uint32 blackColor = _traySection.surf->format.RGBToColor(0, 0, 0);
+		trayRect = Common::Rect(0, 0, _traySection.surf->w, _traySection.surf->h);
 
-	_traySection.surf->fillRect(trayRect, blackColor);
+		_traySection.surf->fillRect(trayRect, blackColor);
+	}
 
-	this->commitSectionToScreen(_traySection, trayRect);
+	drawSectionToScreen(_traySection, trayRect);
+}
+
+void Runtime::redrawSubtitleSection() {
+	if (_subtitleQueue.size() != 0)
+		return;
+
+	clearSubtitleSection();
+
+	if (!_tooltipText.empty()) {
+		Common::CodePage codePage = Common::kWindows1250;
+
+		Common::Array<Common::U32String> lines;
+
+		uint32 lastStringStart = 0;
+		for (;;) {
+			uint32 backslashPos = _tooltipText.find('\\', lastStringStart);
+			if (backslashPos == Common::String::npos)
+				break;
+
+			Common::String slice = _tooltipText.substr(lastStringStart, backslashPos - lastStringStart);
+			lines.push_back(slice.decode(codePage));
+			lastStringStart = backslashPos + 1;
+		}
+
+		Common::String lastSlice = _tooltipText.substr(lastStringStart, _tooltipText.size() - lastStringStart);
+		lines.push_back(lastSlice.decode(codePage));
+
+		uint8 color[3] = {255, 255, 0};
+		drawSubtitleText(lines, color);
+	}
+}
+
+void Runtime::clearSubtitleSection() {
+	Common::Rect stRect;
+	if (_gameID == GID_AD2044) {
+		stRect = _subtitleSection.rect;
+		stRect.translate(-stRect.left, -stRect.top);
+		_subtitleSection.surf->blitFrom(*_backgroundGraphic, _subtitleSection.rect, stRect);
+	}
+
+	this->commitSectionToScreen(_subtitleSection, stRect);
+}
+
+void Runtime::drawSubtitleText(const Common::Array<Common::U32String> &lines, const uint8 (&color)[3]) {
+	RenderSection &stSection = (_gameID == GID_AD2044) ? _subtitleSection : _traySection;
+	Graphics::ManagedSurface *surf = stSection.surf.get();
+
+	if (_subtitleFont) {
+		int lineHeight = (_gameID == GID_AD2044) ? 24 : _subtitleFont->getFontHeight();
+
+		int xOffset = 0;
+		int topY = 0;
+		if (_gameID == GID_AD2044) {
+			topY = 13;
+			xOffset = 5;
+		} else
+			topY = (surf->h - lineHeight * static_cast<int>(lines.size())) / 2;
+
+		uint32 textColor = surf->format.RGBToColor(color[0], color[1], color[2]);
+
+		for (uint lineIndex = 0; lineIndex < lines.size(); lineIndex++) {
+			const Common::U32String &line = lines[lineIndex];
+			int lineWidth = _subtitleFont->getStringWidth(line);
+
+			int xPos = (surf->w - lineWidth) / 2 + xOffset;
+			int yPos = topY + static_cast<int>(lineIndex) * lineHeight;
+
+			_subtitleFont->drawString(surf, line, xPos + 2, yPos + 2, lineWidth, 0);
+			_subtitleFont->drawString(surf, line, xPos, yPos, lineWidth, textColor);
+		}
+	}
+
+	commitSectionToScreen(stSection, Common::Rect(0, 0, stSection.rect.width(), stSection.rect.height()));
 }
 
 void Runtime::drawInventory(uint slot) {
 	if (!isTrayVisible())
 		return;
+
+	if (_gameID == GID_AD2044) {
+		drawInventoryItemGraphic(slot);
+		return;
+	}
 
 	Common::Rect trayRect = _traySection.rect;
 	trayRect.translate(-trayRect.left, -trayRect.top);
@@ -4590,6 +5791,9 @@ void Runtime::drawInventory(uint slot) {
 
 void Runtime::drawCompass() {
 	if (!isTrayVisible())
+		return;
+
+	if (_gameID == GID_AD2044)
 		return;
 
 	bool haveHorizontalRotate = false;
@@ -4699,22 +5903,233 @@ void Runtime::resetInventoryHighlights() {
 	}
 }
 
-Common::String Runtime::getFileNameForItemGraphic(uint itemID) const {
-	if (_gameID == GID_REAH)
-		return Common::String::format("Thing%u", itemID);
-	else if (_gameID == GID_SCHIZM)
-		return Common::String::format("Item%u", itemID);
-	else {
-		error("Unknown game, can't format inventory item");
-		return "";
+void Runtime::loadInventoryFromPage() {
+	for (uint slot = 0; slot < kNumInventorySlots; slot++)
+		_inventory[slot] = _inventoryPages[_inventoryActivePage][slot];
+}
+
+void Runtime::copyInventoryToPage() {
+	for (uint slot = 0; slot < kNumInventorySlots; slot++)
+		_inventoryPages[_inventoryActivePage][slot] = _inventory[slot];
+}
+
+void Runtime::cheatPutItem() {
+	uint32 location = getLocationForScreen(_roomNumber, _screenNumber);
+
+	uint8 &pid = _placedItems[location];
+	pid++;
+
+	if (pid == 30 || pid == 45 || pid == 49 || pid == 59)
+		pid++;
+	else if (pid == 62)
+		pid += 2;
+	else if (pid == 74)
+		pid = 1;
+
+	updatePlacedItemCache();
+
+	clearPlacedItemGraphic();
+	drawPlacedItemGraphic();
+}
+
+uint32 Runtime::getLocationForScreen(uint roomNumber, uint screenNumber) {
+	return roomNumber * 10000u + screenNumber;
+}
+
+void Runtime::updatePlacedItemCache() {
+	uint32 placedItemLocationID = getLocationForScreen(_roomNumber, _screenNumber);
+	Common::HashMap<uint32, uint8>::const_iterator placedItemIt = _placedItems.find(placedItemLocationID);
+	if (placedItemIt != _placedItems.end()) {
+		uint8 itemID = placedItemIt->_value;
+
+		if (_inventoryPlacedItemCache.itemID != itemID) {
+			Common::String itemFileName;
+			Common::String alphaFileName;
+
+			_inventoryPlacedItemCache.itemID = itemID;
+			getFileNamesForItemGraphic(itemID, itemFileName, alphaFileName);
+			_inventoryPlacedItemCache.graphic = loadGraphic(itemFileName, alphaFileName, false);
+		}
+	} else {
+		_inventoryPlacedItemCache = InventoryItem();
 	}
 }
 
-Common::SharedPtr<Graphics::Surface> Runtime::loadGraphic(const Common::String &graphicName, bool required) {
-	Common::Path filePath("Gfx/");
-	filePath.appendInPlace(graphicName);
-	filePath.appendInPlace(".bmp");
+void Runtime::drawPlacedItemGraphic() {
+	const Graphics::Surface *surf = _inventoryPlacedItemCache.graphic.get();
+	if (surf) {
+		Common::Point drawPos((_placedItemRect.left + _placedItemRect.right - surf->w) / 2, (_placedItemRect.top + _placedItemRect.bottom - surf->h) / 2);
 
+		_gameSection.surf->blitFrom(*surf, drawPos);
+		drawSectionToScreen(_gameSection, _placedItemRect);
+	}
+}
+
+void Runtime::clearPlacedItemGraphic() {
+	if (!_placedItemRect.isEmpty()) {
+		_gameSection.surf->blitFrom(*_placedItemBackBufferSection.surf, Common::Point(_placedItemRect.left, _placedItemRect.top));
+		drawSectionToScreen(_gameSection, _placedItemRect);
+	}
+}
+
+void Runtime::drawActiveItemGraphic() {
+	if (_inventoryActiveItem.graphic) {
+		Common::Rect itemRect = AD2044Interface::getRectForUI(AD2044InterfaceRectID::ActiveItemRender);
+
+		_fullscreenMenuSection.surf->blitFrom(*_inventoryActiveItem.graphic, Common::Point(itemRect.left, itemRect.top));
+		drawSectionToScreen(_fullscreenMenuSection, itemRect);
+	}
+
+	if (g_ad2044ItemInfos[_inventoryActiveItem.itemID].canBeExamined && _hero == 0) {
+		Common::Rect examineRect = AD2044Interface::getRectForUI(AD2044InterfaceRectID::ExamineButton);
+
+		_fullscreenMenuSection.surf->blitFrom(*_ad2044Graphics->examine, Common::Point(examineRect.left, examineRect.top));
+		drawSectionToScreen(_fullscreenMenuSection, examineRect);
+	}
+}
+
+void Runtime::clearActiveItemGraphic() {
+	Common::Rect rectsToClear[] = {
+		AD2044Interface::getRectForUI(AD2044InterfaceRectID::ActiveItemRender),
+		AD2044Interface::getRectForUI(AD2044InterfaceRectID::ExamineButton),
+	};
+
+	for (const Common::Rect &rectToClear : rectsToClear) {
+		_fullscreenMenuSection.surf->blitFrom(*_backgroundGraphic, rectToClear, rectToClear);
+		drawSectionToScreen(_fullscreenMenuSection, rectToClear);
+	}
+}
+
+void Runtime::drawInventoryItemGraphic(uint slot) {
+	if (_inventory[slot].graphic) {
+		Common::Rect rect = AD2044Interface::getRectForUI(static_cast<AD2044InterfaceRectID>(static_cast<uint>(AD2044InterfaceRectID::InventoryRender0) + slot));
+
+		_fullscreenMenuSection.surf->blitFrom(*_inventory[slot].graphic, Common::Point(rect.left, rect.top));
+		drawSectionToScreen(_fullscreenMenuSection, rect);
+	}
+}
+
+void Runtime::clearInventoryItemGraphic(uint slot) {
+	Common::Rect rect = AD2044Interface::getRectForUI(static_cast<AD2044InterfaceRectID>(static_cast<uint>(AD2044InterfaceRectID::InventoryRender0) + slot));
+
+	_fullscreenMenuSection.surf->blitFrom(*_backgroundGraphic, rect, rect);
+	drawSectionToScreen(_fullscreenMenuSection, rect);
+}
+
+void Runtime::dropActiveItem() {
+	if (_inventoryActiveItem.itemID == 0)
+		return;
+
+	uint32 locationID = getLocationForScreen(_roomNumber, _screenNumber);
+	uint8 &placedItemIDRef = _placedItems[locationID];
+
+	if (placedItemIDRef == 0) {
+		placedItemIDRef = static_cast<uint8>(_inventoryActiveItem.itemID);
+		_inventoryPlacedItemCache = _inventoryActiveItem;
+		_inventoryActiveItem = InventoryItem();
+	}
+
+	drawPlacedItemGraphic();
+	clearActiveItemGraphic();
+}
+
+void Runtime::pickupPlacedItem() {
+	if (_inventoryActiveItem.itemID != 0)
+		return;
+
+	uint32 locationID = getLocationForScreen(_roomNumber, _screenNumber);
+	Common::HashMap<uint32, uint8>::iterator placedItemIt = _placedItems.find(locationID);
+	if (placedItemIt == _placedItems.end())
+		return;
+
+	if (placedItemIt->_value != _inventoryPlacedItemCache.itemID)
+		error("Placed item cache desynced somehow, please report this as a bug");
+
+	_placedItems.erase(placedItemIt);
+	_inventoryActiveItem = _inventoryPlacedItemCache;
+	_inventoryPlacedItemCache = InventoryItem();
+
+	clearPlacedItemGraphic();
+	drawActiveItemGraphic();
+}
+
+void Runtime::stashActiveItemToInventory(uint slot) {
+	if (_inventoryActiveItem.itemID == 0)
+		return;
+
+	if (_inventory[slot].itemID != 0)
+		return;
+
+	_inventory[slot] = _inventoryActiveItem;
+	_inventoryActiveItem = InventoryItem();
+
+
+	clearActiveItemGraphic();
+	drawInventoryItemGraphic(slot);
+}
+
+void Runtime::pickupInventoryItem(uint slot) {
+	if (_inventoryActiveItem.itemID != 0)
+		return;
+
+	if (_inventory[slot].itemID == 0)
+		return;
+
+	_inventoryActiveItem = _inventory[slot];
+	_inventory[slot] = InventoryItem();
+
+	clearInventoryItemGraphic(slot);
+	drawActiveItemGraphic();
+}
+
+void Runtime::getFileNamesForItemGraphic(uint itemID, Common::String &outFileName, Common::String &outAlphaFileName) const {
+	if (_gameID == GID_REAH)
+		outFileName = Common::String::format("Thing%u", itemID);
+	else if (_gameID == GID_SCHIZM)
+		outFileName = Common::String::format("Item%u", itemID);
+	else if (_gameID == GID_AD2044) {
+		outFileName = Common::String::format(_lowQualityGraphicsMode ? "RZB%u" : "RZE%u", itemID);
+		outAlphaFileName = Common::String::format("MAS%u", itemID);
+	} else
+		error("Unknown game, can't format inventory item");
+}
+
+Common::SharedPtr<Graphics::Surface> Runtime::loadGraphic(const Common::String &graphicName, const Common::String &alphaName, bool required) {
+	Common::Path filePath((_gameID == GID_AD2044) ? "rze/" : "Gfx/");
+
+	filePath.appendInPlace(graphicName);
+	filePath.appendInPlace((_gameID == GID_AD2044) ? ".BMP" : ".bmp");
+
+	Common::SharedPtr<Graphics::Surface> surf = loadGraphicFromPath(filePath, required);
+
+	if (surf && !alphaName.empty()) {
+		Common::SharedPtr<Graphics::Surface> alphaSurf = loadGraphic(alphaName, "", required);
+		if (alphaSurf) {
+			if (surf->w != alphaSurf->w || surf->h != alphaSurf->h)
+				error("Mismatched graphic sizes");
+
+			int h = surf->h;
+			int w = surf->w;
+			for (int y = 0; y < h; y++) {
+				for (int x = 0; x < w; x++) {
+					uint32 alphaSurfPixel = alphaSurf->getPixel(x, y);
+
+					uint8 r = 0;
+					uint8 g = 0;
+					uint8 b = 0;
+					uint8 a = 0;
+					alphaSurf->format.colorToARGB(alphaSurfPixel, a, r, g, b);
+					if (r < 128)
+						surf->setPixel(x, y, 0);
+				}
+			}
+		}
+	}
+
+	return surf;
+}
+
+Common::SharedPtr<Graphics::Surface> Runtime::loadGraphicFromPath(const Common::Path &filePath, bool required) {
 	Common::File f;
 	if (!f.open(filePath)) {
 		warning("Couldn't open BMP file '%s'", filePath.toString(Common::Path::kNativeSeparator).c_str());
@@ -4733,7 +6148,8 @@ Common::SharedPtr<Graphics::Surface> Runtime::loadGraphic(const Common::String &
 
 	Common::SharedPtr<Graphics::Surface> surf(new Graphics::Surface(), Graphics::SurfaceDeleter());
 	surf->copyFrom(*bmpDecoder.getSurface());
-	surf = Common::SharedPtr<Graphics::Surface>(surf->convertTo(Graphics::createPixelFormat<8888>()), Graphics::SurfaceDeleter());
+	surf = Common::SharedPtr<Graphics::Surface>(surf->convertTo(Graphics::createPixelFormat<8888>(), bmpDecoder.getPalette(), bmpDecoder.getPaletteColorCount()), Graphics::SurfaceDeleter());
+
 	return surf;
 }
 
@@ -4954,6 +6370,10 @@ void Runtime::changeToMenuPage(MenuPage *menuPage) {
 }
 
 void Runtime::checkInGameMenuHover() {
+	// TODO
+	if (_gameID == GID_AD2044)
+		return;
+
 	if (_inGameMenuState == kInGameMenuStateInvisible) {
 		if (_menuSection.rect.contains(_mousePos) && _isInGame) {
 			// Figure out what elements should be visible
@@ -5305,6 +6725,75 @@ Common::Rect Runtime::padCircuitInteractionRect(const Common::Rect &rect) {
 	return result;
 }
 
+Common::SharedPtr<AnimatedCursor> Runtime::winCursorGroupToAnimatedCursor(const Common::SharedPtr<Graphics::WinCursorGroup> &cursorGroup) {
+	Common::SharedPtr<AnimatedCursor> result(new AnimatedCursor());
+
+	result->cursorGroupKeepAlive = cursorGroup;
+	result->images.push_back(cursorGroup->cursors[0].cursor);
+
+	AnimatedCursor::FrameDef frameDef;
+	frameDef.delay = 1;
+	frameDef.imageIndex = 0;
+
+	result->frames.push_back(frameDef);
+
+	return result;
+}
+
+Common::SharedPtr<AnimatedCursor> Runtime::aniFileToAnimatedCursor(Image::AniDecoder &aniDecoder) {
+	Common::SharedPtr<AnimatedCursor> result(new AnimatedCursor());
+
+	const Image::AniDecoder::Metadata &metadata = aniDecoder.getMetadata();
+
+	if (!metadata.isCURFormat)
+		error("ANI file isn't CUR format");
+
+	for (uint step = 0; step < metadata.numSteps; step++) {
+		const Image::AniDecoder::FrameDef frame = aniDecoder.getSequenceFrame(step);
+
+		AnimatedCursor::FrameDef outFrameDef;
+		outFrameDef.delay = frame.delay;
+		outFrameDef.imageIndex = frame.imageIndex;
+
+		result->frames.push_back(outFrameDef);
+	}
+
+	for (uint frame = 0; frame < metadata.numFrames; frame++) {
+		Common::ScopedPtr<Common::SeekableReadStream> stream(aniDecoder.openImageStream(frame));
+
+		if (!stream)
+			error("Couldn't open animated cursor frame");
+
+		Image::IcoCurDecoder icoCurDecoder;
+		icoCurDecoder.open(*stream);
+
+		Graphics::Cursor *cursor = icoCurDecoder.loadItemAsCursor(0);
+
+		if (!cursor)
+			error("Couldn't load cursor frame");
+
+		result->cursorKeepAlive.push_back(Common::SharedPtr<Graphics::Cursor>(cursor));
+		result->images.push_back(cursor);
+	}
+
+	return result;
+}
+
+Common::SharedPtr<AnimatedCursor> Runtime::staticCursorToAnimatedCursor(const Common::SharedPtr<Graphics::Cursor> &cursor) {
+	Common::SharedPtr<AnimatedCursor> result(new AnimatedCursor());
+
+	result->cursorKeepAlive.push_back(cursor);
+	result->images.push_back(cursor.get());
+
+	AnimatedCursor::FrameDef frameDef;
+	frameDef.delay = 1;
+	frameDef.imageIndex = 0;
+
+	result->frames.push_back(frameDef);
+
+	return result;
+}
+
 void Runtime::onLButtonDown(int16 x, int16 y) {
 	onMouseMove(x, y);
 
@@ -5351,7 +6840,7 @@ void Runtime::onKeymappedEvent(KeymappedEvent kme) {
 
 bool Runtime::canSave(bool onCurrentScreen) const {
 	if (onCurrentScreen) {
-		return (_mostRecentlyRecordedSaveState.get() != nullptr && (_haveHorizPanAnimations || _forceAllowSaves));
+		return (_mostRecentlyRecordedSaveState.get() != nullptr && (_haveHorizPanAnimations || _forceAllowSaves || _gameID == GID_AD2044));
 	} else {
 		return _mostRecentValidSaveState.get() != nullptr && _isInGame;
 	}
@@ -5376,19 +6865,23 @@ void Runtime::recordSaveGameSnapshot() {
 	snapshot->states[0].reset(new SaveGameSwappableState());
 	if (_gameID == GID_REAH)
 		snapshot->numStates = 1;
-	else if (_gameID == GID_SCHIZM) {
+	else if (_gameID == GID_SCHIZM || _gameID == GID_AD2044) {
 		snapshot->numStates = 2;
 		snapshot->states[1] = _altState;
 	}
 
 	SaveGameSwappableState *mainState = snapshot->states[0].get();
 
-	for (const InventoryItem &inventoryItem : _inventory) {
-		SaveGameSwappableState::InventoryItem saveItem;
-		saveItem.itemID = inventoryItem.itemID;
-		saveItem.highlighted = inventoryItem.highlighted;
+	if (_gameID == GID_AD2044) {
+		copyInventoryToPage();
+	} else {
+		for (const InventoryItem &inventoryItem : _inventory) {
+			SaveGameSwappableState::InventoryItem saveItem;
+			saveItem.itemID = inventoryItem.itemID;
+			saveItem.highlighted = inventoryItem.highlighted;
 
-		mainState->inventory.push_back(saveItem);
+			mainState->inventory.push_back(saveItem);
+		}
 	}
 
 	mainState->roomNumber = _roomNumber;
@@ -5396,6 +6889,8 @@ void Runtime::recordSaveGameSnapshot() {
 	mainState->direction = _direction;
 	mainState->havePendingPostSwapScreenReset = false;
 	snapshot->hero = _hero;
+	snapshot->inventoryPage = _inventoryActivePage;
+	snapshot->inventoryActiveItem = _inventoryActiveItem.itemID;
 
 	snapshot->pendingStaticAnimParams = _pendingStaticAnimParams;
 
@@ -5422,6 +6917,17 @@ void Runtime::recordSaveGameSnapshot() {
 	mainState->loadedAnimation = _loadedAnimation;
 	mainState->animDisplayingFrame = _animDisplayingFrame;
 
+	if (_gameID == GID_AD2044) {
+		mainState->haveIdleAnimationLoop = _haveIdleAnimations[_direction];
+
+		if (mainState->haveIdleAnimationLoop) {
+			mainState->idleAnimNum = _idleAnimations[0].animDefs[0].animNum;
+			mainState->idleFirstFrame = _idleAnimations[0].animDefs[0].firstFrame;
+			mainState->idleLastFrame = _idleAnimations[0].animDefs[0].lastFrame;
+		}
+	} else
+		mainState->haveIdleAnimationLoop = false;
+
 	recordSounds(*mainState);
 
 	snapshot->pendingSoundParams3D = _pendingSoundParams3D;
@@ -5432,6 +6938,28 @@ void Runtime::recordSaveGameSnapshot() {
 	snapshot->listenerX = _listenerX;
 	snapshot->listenerY = _listenerY;
 	snapshot->listenerAngle = _listenerAngle;
+
+	for (const Common::HashMap<uint32, uint8>::Node &placedItem : _placedItems) {
+		SaveGameSnapshot::PlacedInventoryItem saveItem;
+		saveItem.locationID = placedItem._key;
+		saveItem.itemID = placedItem._value;
+
+		snapshot->placedItems.push_back(saveItem);
+	}
+
+	for (uint page = 0; page < kNumInventoryPages; page++) {
+		for (uint slot = 0; slot < kNumInventorySlots; slot++) {
+			uint itemID = _inventoryPages[page][slot].itemID;
+			if (itemID != 0) {
+				SaveGameSnapshot::PagedInventoryItem pagedItem;
+				pagedItem.page = page;
+				pagedItem.slot = slot;
+				pagedItem.itemID = itemID;
+
+				snapshot->pagedItems.push_back(pagedItem);
+			}
+		}
+	}
 }
 
 void Runtime::recordSounds(SaveGameSwappableState &state) {
@@ -5482,23 +7010,80 @@ void Runtime::restoreSaveGameSnapshot() {
 
 	SaveGameSwappableState *mainState = snapshot->states[0].get();
 
-	for (uint i = 0; i < kNumInventorySlots && i < mainState->inventory.size(); i++) {
-		const SaveGameSwappableState::InventoryItem &saveItem = mainState->inventory[i];
+	if (_gameID == GID_AD2044) {
+		for (uint page = 0; page < kNumInventoryPages; page++)
+			for (uint slot = 0; slot < kNumInventorySlots; slot++)
+				_inventoryPages[page][slot].itemID = 0;
 
-		_inventory[i].itemID = saveItem.itemID;
-		_inventory[i].highlighted = saveItem.highlighted;
+		for (const SaveGameSnapshot::PagedInventoryItem &pagedItem : snapshot->pagedItems) {
+			if (pagedItem.page >= kNumInventoryPages || pagedItem.slot >= kNumInventorySlots)
+				error("Invalid item slot in save game snapshot");
 
-		if (saveItem.itemID) {
-			Common::String itemFileName = getFileNameForItemGraphic(saveItem.itemID);
-			_inventory[i].graphic = loadGraphic(itemFileName, false);
+			InventoryItem &invItem = _inventoryPages[pagedItem.page][pagedItem.slot];
+			invItem.itemID = pagedItem.itemID;			
+
+			if (invItem.itemID) {
+				Common::String itemFileName;
+				Common::String alphaFileName;
+				getFileNamesForItemGraphic(invItem.itemID, itemFileName, alphaFileName);
+				invItem.graphic = loadGraphic(itemFileName, alphaFileName, false);
+			}
+		}
+
+		for (uint page = 0; page < kNumInventoryPages; page++) {
+			for (uint slot = 0; slot < kNumInventorySlots; slot++) {
+				InventoryItem &invItem = _inventoryPages[page][slot];
+				if (!invItem.itemID)
+					invItem.graphic.reset();
+			}
+		}
+
+		_inventoryActiveItem.itemID = snapshot->inventoryActiveItem;
+		if (_inventoryActiveItem.itemID) {
+			Common::String itemFileName;
+			Common::String alphaFileName;
+			getFileNamesForItemGraphic(_inventoryActiveItem.itemID, itemFileName, alphaFileName);
+			_inventoryActiveItem.graphic = loadGraphic(itemFileName, alphaFileName, false);
 		} else {
-			_inventory[i].graphic.reset();
+			_inventoryActiveItem.graphic.reset();
+		}
+
+		_inventoryPlacedItemCache = InventoryItem();
+
+		if (snapshot->inventoryPage >= kNumInventoryPages)
+			error("Invalid inventory page");
+
+		_inventoryActivePage = snapshot->inventoryPage;
+
+		loadInventoryFromPage();
+
+		_placedItems.clear();
+		for (const SaveGameSnapshot::PlacedInventoryItem &placedItem : snapshot->placedItems) {
+			_placedItems[placedItem.locationID] = placedItem.itemID;
+		}
+	} else {
+		for (uint i = 0; i < kNumInventorySlots && i < mainState->inventory.size(); i++) {
+			const SaveGameSwappableState::InventoryItem &saveItem = mainState->inventory[i];
+
+			_inventory[i].itemID = saveItem.itemID;
+			_inventory[i].highlighted = saveItem.highlighted;
+
+			if (saveItem.itemID) {
+				Common::String itemFileName;
+				Common::String alphaFileName;
+				getFileNamesForItemGraphic(saveItem.itemID, itemFileName, alphaFileName);
+				_inventory[i].graphic = loadGraphic(itemFileName, alphaFileName, false);
+			} else {
+				_inventory[i].graphic.reset();
+			}
 		}
 	}
 
+	_keepStaticAnimationInIdle = false;
 	_roomNumber = mainState->roomNumber;
 	_screenNumber = mainState->screenNumber;
 	_direction = mainState->direction;
+	_disc = mainState->disc;
 	_havePendingPostSwapScreenReset = mainState->havePendingPostSwapScreenReset;
 	_hero = snapshot->hero;
 	_swapOutRoom = snapshot->swapOutRoom;
@@ -5535,7 +7120,7 @@ void Runtime::restoreSaveGameSnapshot() {
 		_musicMuteDisabled = mainState->musicMuteDisabled;
 		_scoreTrack = mainState->scoreTrack;
 
-		if (_gameID == GID_REAH)
+		if (_gameID == GID_REAH || _gameID == GID_AD2044)
 			changeMusicTrack(mainState->musicTrack);
 		if (_gameID == GID_SCHIZM) {
 			// Only restart music if a new track is playing
@@ -5543,13 +7128,21 @@ void Runtime::restoreSaveGameSnapshot() {
 				_scoreSection = mainState->scoreSection;
 
 			if (!musicMutedBeforeRestore && musicMutedAfterRestore) {
-				_musicPlayer.reset();
+				_musicWavePlayer.reset();
+				{
+					Common::StackLock lock(_midiPlayerMutex);
+					_musicMidiPlayer.reset();
+				}
 				_scoreSectionEndTime = 0;
 			} else if (!musicMutedAfterRestore && (isNewTrack || musicMutedBeforeRestore))
 				startScoreSection();
 		}
 	} else {
-		_musicPlayer.reset();
+		_musicWavePlayer.reset();
+		if (_musicMidiPlayer) {
+			Common::StackLock lock(_midiPlayerMutex);
+			_musicMidiPlayer.reset();
+		}
 		_scoreSectionEndTime = 0;
 	}
 
@@ -5612,6 +7205,32 @@ void Runtime::restoreSaveGameSnapshot() {
 	stopSubtitles();
 	clearScreen();
 	redrawTray();
+
+	if (_gameID == GID_AD2044) {
+		drawActiveItemGraphic();
+
+		clearIdleAnimations();
+
+		if (mainState->haveIdleAnimationLoop) {
+			_keepStaticAnimationInIdle = true;
+
+			
+			AnimationDef idleAnimDef;
+			idleAnimDef.animNum = mainState->idleAnimNum;
+			idleAnimDef.firstFrame = mainState->idleFirstFrame;
+			idleAnimDef.lastFrame = mainState->idleLastFrame;
+
+			_keepStaticAnimationInIdle = true;
+
+			_haveIdleAnimations[0] = true;
+
+			StaticAnimation staticAnim;
+			staticAnim.animDefs[0] = idleAnimDef;
+			staticAnim.animDefs[1] = idleAnimDef;
+
+			_idleAnimations[0] = staticAnim;
+		}
+	}
 }
 
 Common::SharedPtr<SaveGameSnapshot> Runtime::generateNewGameSnapshot() const {
@@ -5641,6 +7260,34 @@ Common::SharedPtr<SaveGameSnapshot> Runtime::generateNewGameSnapshot() const {
 		altState->loadedAnimation = altState->screenNumber;
 	} else
 		mainState->loadedAnimation = 1;
+
+	// AD2044 new game normally loads a pre-packaged save.  Unlike Reah and Schizm,
+	// it doesn't appear to have a startup script, so we need to set up everything
+	// that it needs here.
+	if (_gameID == GID_AD2044) {
+		mainState->animDisplayingFrame = 345;
+		mainState->musicActive = true;
+		mainState->musicTrack = 1;
+
+		SaveGameSnapshot::PagedInventoryItem item;
+		item.page = 0;
+		item.slot = 1;
+		item.itemID = 54;	// Electronic goaler (sic)
+
+		for (const InitialItemPlacement &itemPlacement : g_ad2044InitialItemPlacements) {
+			SaveGameSnapshot::PlacedInventoryItem placedItem;
+			placedItem.locationID = getLocationForScreen(itemPlacement.roomNumber, itemPlacement.screenNumber);
+			placedItem.itemID = itemPlacement.itemID;
+
+			snapshot->placedItems.push_back(placedItem);
+		}
+
+		snapshot->pagedItems.push_back(item);
+
+		// Alt state is for item inspection
+		snapshot->numStates = 2;
+		snapshot->states[1].reset(new SaveGameSwappableState());
+	}
 
 	return snapshot;
 }

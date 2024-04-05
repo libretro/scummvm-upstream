@@ -231,7 +231,11 @@ static int is_route_possible(int fromx, int fromy, int tox, int toy, Bitmap *wss
 		int tryFirstX = tox - 50, tryToX = tox + 50;
 		int tryFirstY = toy - 50, tryToY = toy + 50;
 
-		if (!find_nearest_walkable_area(tempw, tryFirstX, tryFirstY, tryToX, tryToY, tox, toy, 3)) {
+		// This is a fix for the Treppenbug in old (pre-3.0) Maniac Mansion Mania games.
+		// Using a higher granularity the find_nearest_walkable_area sets a wrong coordinate that prevents
+		// the staircase in Bernard's home from working.
+		int sweep_granularity = _G(loaded_game_file_version) > kGameVersion_272 ? 3 : 1;
+		if (!find_nearest_walkable_area(tempw, tryFirstX, tryFirstY, tryToX, tryToY, tox, toy, sweep_granularity)) {
 			// Nothing found, sweep the whole room at 5 pixel granularity
 			find_nearest_walkable_area(tempw, 0, 0, tempw->GetWidth(), tempw->GetHeight(), tox, toy, 5);
 		}
@@ -627,24 +631,17 @@ findroutebk:
 	return 1;
 }
 
-void set_route_move_speed(int speed_x, int speed_y) {
+inline fixed input_speed_to_fixed(int speed_val) {
 	// negative move speeds like -2 get converted to 1/2
-	if (speed_x < 0) {
-		_G(move_speed_x) = itofix(1) / (-speed_x);
+	if (speed_val < 0) {
+		return itofix(1) / (-speed_val);
 	} else {
-		_G(move_speed_x) = itofix(speed_x);
-	}
-
-	if (speed_y < 0) {
-		_G(move_speed_y) = itofix(1) / (-speed_y);
-	} else {
-		_G(move_speed_y) = itofix(speed_y);
+		return itofix(speed_val);
 	}
 }
 
-// Calculates the X and Y per game loop, for this stage of the
-// movelist
-void calculate_move_stage(MoveList *mlsp, int aaa) {
+// Calculates the X and Y per game loop, for this stage of the movelist
+void calculate_move_stage(MoveList *mlsp, int aaa, fixed move_speed_x, fixed move_speed_y) {
 	assert(mlsp != nullptr);
 
 	// work out the x & y per move. First, opp/adj=tan, so work out the angle
@@ -662,7 +659,7 @@ void calculate_move_stage(MoveList *mlsp, int aaa) {
 	// Special case for vertical and horizontal movements
 	if (ourx == destx) {
 		mlsp->xpermove[aaa] = 0;
-		mlsp->ypermove[aaa] = _G(move_speed_y);
+		mlsp->ypermove[aaa] = move_speed_y;
 		if (desty < oury)
 			mlsp->ypermove[aaa] = -mlsp->ypermove[aaa];
 
@@ -670,7 +667,7 @@ void calculate_move_stage(MoveList *mlsp, int aaa) {
 	}
 
 	if (oury == desty) {
-		mlsp->xpermove[aaa] = _G(move_speed_x);
+		mlsp->xpermove[aaa] = move_speed_x;
 		mlsp->ypermove[aaa] = 0;
 		if (destx < ourx)
 			mlsp->xpermove[aaa] = -mlsp->xpermove[aaa];
@@ -683,19 +680,19 @@ void calculate_move_stage(MoveList *mlsp, int aaa) {
 
 	fixed useMoveSpeed;
 
-	if (_G(move_speed_x) == _G(move_speed_y)) {
-		useMoveSpeed = _G(move_speed_x);
+	if (move_speed_x == move_speed_y) {
+		useMoveSpeed = move_speed_x;
 	} else {
 		// different X and Y move speeds
 		// the X proportion of the movement is (x / (x + y))
 		fixed xproportion = fixdiv(xdist, (xdist + ydist));
 
-		if (_G(move_speed_x) > _G(move_speed_y)) {
+		if (move_speed_x > move_speed_y) {
 			// speed = y + ((1 - xproportion) * (x - y))
-			useMoveSpeed = _G(move_speed_y) + fixmul(xproportion, _G(move_speed_x) - _G(move_speed_y));
+			useMoveSpeed = move_speed_y + fixmul(xproportion, move_speed_x - move_speed_y);
 		} else {
 			// speed = x + (xproportion * (y - x))
-			useMoveSpeed = _G(move_speed_x) + fixmul(itofix(1) - xproportion, _G(move_speed_y) - _G(move_speed_x));
+			useMoveSpeed = move_speed_x + fixmul(itofix(1) - xproportion, move_speed_y - move_speed_x);
 		}
 	}
 
@@ -724,10 +721,9 @@ void calculate_move_stage(MoveList *mlsp, int aaa) {
 #endif
 }
 
-
 #define MAKE_INTCOORD(x,y) (((unsigned short)x << 16) | ((unsigned short)y))
 
-int find_route(short srcx, short srcy, short xx, short yy, Bitmap *onscreen, int movlst, int nocross, int ignore_walls) {
+int find_route(short srcx, short srcy, short xx, short yy, int move_speed_x, int move_speed_y, Bitmap *onscreen, int movlst, int nocross, int ignore_walls) {
 	assert(onscreen != nullptr);
 	assert((int)_GP(mls).size() > movlst);
 	assert(pathbackx != nullptr);
@@ -845,8 +841,10 @@ stage_again:
 		AGS::Shared::Debug::Printf("stages: %d\n", numstages);
 #endif
 
+		const fixed fix_speed_x = input_speed_to_fixed(move_speed_x);
+		const fixed fix_speed_y = input_speed_to_fixed(move_speed_y);
 		for (aaa = 0; aaa < numstages - 1; aaa++) {
-			calculate_move_stage(&_GP(mls)[mlist], aaa);
+			calculate_move_stage(&_GP(mls)[mlist], aaa, fix_speed_x, fix_speed_y);
 		}
 
 		_GP(mls)[mlist].fromx = orisrcx;
@@ -868,6 +866,20 @@ stage_again:
 #ifdef DEBUG_PATHFINDER
 	// __unnormscreen();
 #endif
+}
+
+bool add_waypoint_direct(MoveList *mlsp, short x, short y, int move_speed_x, int move_speed_y) {
+	if (mlsp->numstage >= MAXNEEDSTAGES)
+		return false;
+
+	const fixed fix_speed_x = input_speed_to_fixed(move_speed_x);
+	const fixed fix_speed_y = input_speed_to_fixed(move_speed_y);
+	mlsp->pos[mlsp->numstage] = MAKE_INTCOORD(x, y);
+	calculate_move_stage(mlsp, mlsp->numstage - 1, fix_speed_x, fix_speed_y);
+	mlsp->numstage++;
+	mlsp->lastx = x;
+	mlsp->lasty = y;
+	return true;
 }
 
 void shutdown_pathfinder() {

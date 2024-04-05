@@ -296,7 +296,7 @@ static const ADGameDescription gameDescriptions[] = {
 	},
 	{
 		"driller",
-		"Packed data",
+		"This release requires unpacking, check the wiki for instructions: https://wiki.scummvm.org/index.php?title=Driller/Demos#AtariST_demos",
 		{
 			{"driller.prg", 0, "ae9b03e247def6f0793174b1cb4352b5", 1821},
 			{"data", 0, "0c927fbc6c390afd0d0c15b2d7f8766f", 10893},
@@ -569,6 +569,32 @@ static const ADGameDescription gameDescriptions[] = {
 		Common::kPlatformDOS,
 		ADGF_TESTING,
 		GUIO3(GUIO_NOMIDI, GUIO_RENDEREGA, GUIO_RENDERCGA)
+	},
+	{
+		"totaleclipse",
+		"",
+		{
+			{"0.TEC", 0, "e8b362cd913a2d58f8601e4df11a643a", 89500},
+			{"1.TEC", 0, "3a2e304706bde3e34ac2a730eff8567b", 305286},
+			AD_LISTEND
+		},
+		Common::EN_ANY,
+		Common::kPlatformAmiga,
+		ADGF_UNSUPPORTED,
+		GUIO1(GUIO_NOMIDI)
+	},
+	{ // Stampede Atari, Issue 7
+		"totaleclipse",
+		"",
+		{
+			{"0.TEC", 0, "c20a3bfea7147f73dc4fcd8aecf4faf8", 49402},
+			{"1.TEC", 0, "fb65655f60b11040285aa947d4ed1193", 263453},
+			AD_LISTEND
+		},
+		Common::EN_ANY,
+		Common::kPlatformAtariST,
+		ADGF_UNSUPPORTED,
+		GUIO1(GUIO_NOMIDI)
 	},
 	{
 		"spacestationoblivion",

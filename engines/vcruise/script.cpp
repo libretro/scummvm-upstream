@@ -32,6 +32,7 @@ namespace VCruise {
 enum ScriptDialect {
 	kScriptDialectReah,
 	kScriptDialectSchizm,
+	kScriptDialectAD2044,
 };
 
 class LogicUnscrambleStream : public Common::ReadStream {
@@ -155,14 +156,14 @@ public:
 	void compileScriptSet(ScriptSet *ss);
 
 private:
-	bool parseNumber(const Common::String &token, uint32 &outNumber) const;
+	bool parseNumber(const Common::String &token, uint32 &outNumber, bool mayStartWithNonZeroDigit) const;
 	static bool parseDecNumber(const Common::String &token, uint start, uint32 &outNumber);
 	static bool parseHexNumber(const Common::String &token, uint start, uint32 &outNumber);
 	static bool parseBinNumber(const Common::String &token, uint start, uint32 &outNumber);
-	void expectNumber(uint32 &outNumber);
+	void expectNumber(uint32 &outNumber, bool mayStartWithNonZeroDigit);
 
 	void compileRoomScriptSet(RoomScriptSet *rss);
-	void compileReahScreenScriptSet(ScreenScriptSet *sss);
+	void compileReahOrAD2044ScreenScriptSet(ScreenScriptSet *sss);
 	void compileSchizmScreenScriptSet(ScreenScriptSet *sss);
 	void compileFunction(Script *script);
 	bool compileInstructionToken(ProtoScript &script, const Common::String &token);
@@ -231,15 +232,24 @@ ScriptCompiler::ScriptCompiler(TextParser &parser, const Common::Path &blamePath
 	  _scrToken(nullptr), _eroomToken(nullptr) {
 }
 
-bool ScriptCompiler::parseNumber(const Common::String &token, uint32 &outNumber) const {
+bool ScriptCompiler::parseNumber(const Common::String &token, uint32 &outNumber, bool mayStartWithNonZeroDigit) const {
 	if (token.size() == 0)
 		return false;
 
-	if (_dialect == kScriptDialectReah) {
-		if (token[0] == 'd')
-			return parseDecNumber(token, 1, outNumber);
+	if (_dialect == kScriptDialectReah && token[0] == 'd')
+		return parseDecNumber(token, 1, outNumber);
 
-		if (token[0] == '0') {
+	if (_dialect == kScriptDialectReah || _dialect == kScriptDialectAD2044) {
+		bool isValidNumber = false;
+
+		char firstChar = token[0];
+
+		if (_dialect == kScriptDialectReah || !mayStartWithNonZeroDigit)
+			isValidNumber = (firstChar == '0');
+		else
+			isValidNumber = (firstChar >= '0' && firstChar <= '9');	// Some room numbers lack a 0 prefix
+
+		if (isValidNumber) {
 			switch (_numberParsingMode) {
 			case kNumberParsingDec:
 				return parseDecNumber(token, 0, outNumber);
@@ -328,11 +338,11 @@ bool ScriptCompiler::parseBinNumber(const Common::String &token, uint start, uin
 	return true;
 }
 
-void ScriptCompiler::expectNumber(uint32 &outNumber) {
+void ScriptCompiler::expectNumber(uint32 &outNumber, bool mayStartWithNonZeroDigit) {
 	TextParserState state;
 	Common::String token;
 	if (_parser.parseToken(token, state)) {
-		if (!parseNumber(token, outNumber))
+		if (!parseNumber(token, outNumber, mayStartWithNonZeroDigit))
 			error("Error compiling script at line %i col %i: Expected number but found '%s'", static_cast<int>(state._lineNum), static_cast<int>(state._col), token.c_str());
 	} else {
 		error("Error compiling script at line %i col %i: Expected number", static_cast<int>(state._lineNum), static_cast<int>(state._col));
@@ -349,7 +359,7 @@ void ScriptCompiler::compileScriptSet(ScriptSet *ss) {
 
 	const char *roomToken = nullptr;
 
-	if (_dialect == kScriptDialectReah) {
+	if (_dialect == kScriptDialectReah || _dialect == kScriptDialectAD2044) {
 		roomToken = "~ROOM";
 		_eroomToken = "~EROOM";
 		_scrToken = "~SCR";
@@ -372,7 +382,7 @@ void ScriptCompiler::compileScriptSet(ScriptSet *ss) {
 				uint32 roomNumber = 0;
 
 				if (_parser.parseToken(token, state)) {
-					if (!parseNumber(token, roomNumber))
+					if (!parseNumber(token, roomNumber, true))
 						error("Error compiling script at line %i col %i: Expected number but found '%s'", static_cast<int>(state._lineNum), static_cast<int>(state._col), token.c_str());
 
 					ss->roomScripts[roomNumber] = roomScript;
@@ -405,13 +415,12 @@ void ScriptCompiler::compileRoomScriptSet(RoomScriptSet *rss) {
 			return;
 		} else if (token == _scrToken) {
 			uint32 screenNumber = 0;
-			expectNumber(screenNumber);
+			expectNumber(screenNumber, false);
 
 			Common::SharedPtr<ScreenScriptSet> sss(new ScreenScriptSet());
-			if (_dialect == kScriptDialectReah)
-				compileReahScreenScriptSet(sss.get());
+			if (_dialect == kScriptDialectReah || _dialect == kScriptDialectAD2044)
+				compileReahOrAD2044ScreenScriptSet(sss.get());
 			else if (_dialect == kScriptDialectSchizm) {
-
 				if (!_parser.parseToken(token, state))
 					error("Error compiling script at line %i col %i: Expected screen name", static_cast<int>(state._lineNum), static_cast<int>(state._col));
 
@@ -438,7 +447,7 @@ void ScriptCompiler::compileRoomScriptSet(RoomScriptSet *rss) {
 			}
 
 			uint32 number = 0;
-			if (!parseNumber(value, number))
+			if (!parseNumber(value, number, false))
 				error("Error compiling script at line %i col %i: Expected number", static_cast<int>(state._lineNum), static_cast<int>(state._col));
 
 			int32 signedNumber = static_cast<int32>(number);
@@ -475,7 +484,7 @@ void ScriptCompiler::compileRoomScriptSet(RoomScriptSet *rss) {
 	error("Error compiling script: Room wasn't terminated");
 }
 
-void ScriptCompiler::compileReahScreenScriptSet(ScreenScriptSet *sss) {
+void ScriptCompiler::compileReahOrAD2044ScreenScriptSet(ScreenScriptSet *sss) {
 	TextParserState state;
 	Common::String token;
 
@@ -492,7 +501,7 @@ void ScriptCompiler::compileReahScreenScriptSet(ScreenScriptSet *sss) {
 			return;
 		} else if (token == "~*") {
 			uint32 interactionNumber = 0;
-			expectNumber(interactionNumber);
+			expectNumber(interactionNumber, false);
 
 			codeGenScript(protoScript, *currentScript);
 
@@ -506,7 +515,7 @@ void ScriptCompiler::compileReahScreenScriptSet(ScreenScriptSet *sss) {
 			_numberParsingMode = kNumberParsingHex;
 		} else if (token == "BIN") {
 			_numberParsingMode = kNumberParsingBin;
-		} else if (token == "dubbing") {
+		} else if (_dialect == kScriptDialectReah && token == "dubbing") {
 			Common::String dubbingName;
 			_parser.expectToken(dubbingName, _blamePath);
 			protoScript.instrs.push_back(ProtoInstruction(ScriptOps::kDubbing, indexString(dubbingName)));
@@ -535,7 +544,7 @@ void ScriptCompiler::compileSchizmScreenScriptSet(ScreenScriptSet *sss) {
 			return;
 		} else if (token == "~*") {
 			uint32 interactionNumber = 0;
-			expectNumber(interactionNumber);
+			expectNumber(interactionNumber, false);
 
 			codeGenScript(protoScript, *currentScript);
 
@@ -570,6 +579,151 @@ void ScriptCompiler::compileFunction(Script *script) {
 		}
 	}
 }
+
+static ScriptNamedInstruction g_ad2044NamedInstructions[] = {
+	//{"rotate", ProtoOp::kProtoOpScript, ScriptOps::kRotate},
+	//{"angle", ProtoOp::kProtoOpScript, ScriptOps::kAngle},
+	//{"angleG@", ProtoOp::kProtoOpScript, ScriptOps::kAngleGGet},
+	//{"speed", ProtoOp::kProtoOpScript, ScriptOps::kSpeed},
+	//{"sanimL", ProtoOp::kProtoOpScript, ScriptOps::kSAnimL},
+	//{"changeL", ProtoOp::kProtoOpScript, ScriptOps::kChangeL},
+	//{"changeL1", ProtoOp::kProtoOpScript, ScriptOps::kChangeL}, // This seems wrong, but not sure what changeL1 does differently from changeL yet
+	//{"animF", ProtoOp::kProtoOpScript, ScriptOps::kAnimF},
+	//{"animG", ProtoOp::kProtoOpScript, ScriptOps::kAnimG},
+	//{"animN", ProtoOp::kProtoOpScript, ScriptOps::kAnimN},
+	//{"animR", ProtoOp::kProtoOpScript, ScriptOps::kAnimR},
+	//{"animS", ProtoOp::kProtoOpScript, ScriptOps::kAnimS},
+	//{"anim", ProtoOp::kProtoOpScript, ScriptOps::kAnim},
+	{"animT", ProtoOp::kProtoOpScript, ScriptOps::kAnimT},
+	{"ani+", ProtoOp::kProtoOpScript, ScriptOps::kAnimForward},
+	{"ani-", ProtoOp::kProtoOpScript, ScriptOps::kAnimReverse},
+	{"kani+", ProtoOp::kProtoOpScript, ScriptOps::kAnimForward},	// FIXME: Do we really want to use this op?
+	{"anis+", ProtoOp::kProtoOpScript, ScriptOps::kAnimForward}, // FIXME: Do we really want to use this op?
+	{"anis-", ProtoOp::kProtoOpScript, ScriptOps::kAnimReverse}, // FIXME: Do we really want to use this op?
+	//{"static", ProtoOp::kProtoOpScript, ScriptOps::kStatic},
+	{"yes@", ProtoOp::kProtoOpScript, ScriptOps::kVarLoad},
+	{"yes!", ProtoOp::kProtoOpScript, ScriptOps::kVarStore},
+	{"yesg@", ProtoOp::kProtoOpScript, ScriptOps::kVarGlobalLoad},
+	{"yesg!", ProtoOp::kProtoOpScript, ScriptOps::kVarGlobalStore},
+	//{"setaX+!", ProtoOp::kProtoOpScript, ScriptOps::kVarAddAndStore},
+	//{"cr?", ProtoOp::kProtoOpScript, ScriptOps::kItemCheck},
+	//{"cr!", ProtoOp::kProtoOpScript, ScriptOps::kItemRemove},
+	//{"sr!", ProtoOp::kProtoOpScript, ScriptOps::kItemHighlightSet},
+	//{"r?", ProtoOp::kProtoOpScript, ScriptOps::kItemHaveSpace},
+	//{"r!", ProtoOp::kProtoOpScript, ScriptOps::kItemAdd},
+	{"r@", ProtoOp::kProtoOpScript, ScriptOps::kRGet},
+	{"r!", ProtoOp::kProtoOpScript, ScriptOps::kRSet},
+	{"endr!", ProtoOp::kProtoOpScript, ScriptOps::kEndRSet},
+	//{"clearPocket", ProtoOp::kProtoOpScript, ScriptOps::kItemClear},
+	{"cursor!", ProtoOp::kProtoOpScript, ScriptOps::kSetCursor},
+	{"room!", ProtoOp::kProtoOpScript, ScriptOps::kSetRoom},
+	{"lmb", ProtoOp::kProtoOpScript, ScriptOps::kLMB},
+	//{"lmb1", ProtoOp::kProtoOpScript, ScriptOps::kLMB1},
+	//{"volumeDn2", ProtoOp::kProtoOpScript, ScriptOps::kVolumeDn2},
+	//{"volumeDn3", ProtoOp::kProtoOpScript, ScriptOps::kVolumeDn3},
+	//{"volumeDn4", ProtoOp::kProtoOpScript, ScriptOps::kVolumeDn4},
+	//{"volumeUp3", ProtoOp::kProtoOpScript, ScriptOps::kVolumeUp3},
+	{"rnd", ProtoOp::kProtoOpScript, ScriptOps::kRandom},
+	//{"drop", ProtoOp::kProtoOpScript, ScriptOps::kDrop},
+	//{"dup", ProtoOp::kProtoOpScript, ScriptOps::kDup},
+	//{"swap", ProtoOp::kProtoOpScript, ScriptOps::kSwap},
+	//{"say1", ProtoOp::kProtoOpScript, ScriptOps::kSay1},
+	//{"say2", ProtoOp::kProtoOpScript, ScriptOps::kSay2},
+	//{"say3", ProtoOp::kProtoOpScript, ScriptOps::kSay3},
+	//{"say3@", ProtoOp::kProtoOpScript, ScriptOps::kSay3Get},
+	{"say2k", ProtoOp::kProtoOpScript, ScriptOps::kSay2K},
+	{"say3k", ProtoOp::kProtoOpScript, ScriptOps::kSay3K},
+	//{"setTimer", ProtoOp::kProtoOpScript, ScriptOps::kSetTimer},
+	//{"getTimer", ProtoOp::kProtoOpScript, ScriptOps::kGetTimer},
+	//{"delay", ProtoOp::kProtoOpScript, ScriptOps::kDelay},
+	//{"lo!", ProtoOp::kProtoOpScript, ScriptOps::kLoSet},
+	//{"lo@", ProtoOp::kProtoOpScript, ScriptOps::kLoGet},
+	//{"hi!", ProtoOp::kProtoOpScript, ScriptOps::kHiSet},
+	//{"hi@", ProtoOp::kProtoOpScript, ScriptOps::kHiGet},
+
+	{"and", ProtoOp::kProtoOpScript, ScriptOps::kAnd},
+	{"or", ProtoOp::kProtoOpScript, ScriptOps::kOr},
+	{"+", ProtoOp::kProtoOpScript, ScriptOps::kAdd},
+	{"-", ProtoOp::kProtoOpScript, ScriptOps::kSub},
+	{"not", ProtoOp::kProtoOpScript, ScriptOps::kNot},
+	{"=", ProtoOp::kProtoOpScript, ScriptOps::kCmpEq},
+	{">", ProtoOp::kProtoOpScript, ScriptOps::kCmpGt},
+	{"<", ProtoOp::kProtoOpScript, ScriptOps::kCmpLt},
+
+	//{"bit@", ProtoOp::kProtoOpScript, ScriptOps::kBitLoad},
+	//{"bit0!", ProtoOp::kProtoOpScript, ScriptOps::kBitSet0},
+	//{"bit1!", ProtoOp::kProtoOpScript, ScriptOps::kBitSet1},
+
+	//{"soundS1", ProtoOp::kProtoOpScript, ScriptOps::kSoundS1},
+	//{"soundS2", ProtoOp::kProtoOpScript, ScriptOps::kSoundS2},
+	//{"soundS3", ProtoOp::kProtoOpScript, ScriptOps::kSoundS3},
+	//{"soundL1", ProtoOp::kProtoOpScript, ScriptOps::kSoundL1},
+	//{"soundL2", ProtoOp::kProtoOpScript, ScriptOps::kSoundL2},
+	//{"soundL3", ProtoOp::kProtoOpScript, ScriptOps::kSoundL3},
+	//{"3DsoundS2", ProtoOp::kProtoOpScript, ScriptOps::k3DSoundS2},
+	//{"3DsoundL2", ProtoOp::kProtoOpScript, ScriptOps::k3DSoundL2},
+	//{"3DsoundL3", ProtoOp::kProtoOpScript, ScriptOps::k3DSoundL3},
+	//{"stopaL", ProtoOp::kProtoOpScript, ScriptOps::kStopAL},
+	//{"range", ProtoOp::kProtoOpScript, ScriptOps::kRange},
+	//{"addXsound", ProtoOp::kProtoOpScript, ScriptOps::kAddXSound},
+	//{"clrXsound", ProtoOp::kProtoOpScript, ScriptOps::kClrXSound},
+	//{"stopSndLA", ProtoOp::kProtoOpScript, ScriptOps::kStopSndLA},
+	//{"stopSndLO", ProtoOp::kProtoOpScript, ScriptOps::kStopSndLO},
+
+	//{"music", ProtoOp::kProtoOpScript, ScriptOps::kMusic},
+	//{"musicUp", ProtoOp::kProtoOpScript, ScriptOps::kMusicVolRamp},
+	//{"musicDn", ProtoOp::kProtoOpScript, ScriptOps::kMusicVolRamp},
+
+	//{"parm0", ProtoOp::kProtoOpScript, ScriptOps::kParm0},
+	//{"parm1", ProtoOp::kProtoOpScript, ScriptOps::kParm1},
+	//{"parm2", ProtoOp::kProtoOpScript, ScriptOps::kParm2},
+	//{"parm3", ProtoOp::kProtoOpScript, ScriptOps::kParm3},
+	//{"parmG", ProtoOp::kProtoOpScript, ScriptOps::kParmG},
+	//{"sparmX", ProtoOp::kProtoOpScript, ScriptOps::kSParmX},
+	//{"sanimX", ProtoOp::kProtoOpScript, ScriptOps::kSAnimX},
+
+	//{"disc1", ProtoOp::kProtoOpScript, ScriptOps::kDisc1},
+	//{"disc2", ProtoOp::kProtoOpScript, ScriptOps::kDisc2},
+	//{"disc3", ProtoOp::kProtoOpScript, ScriptOps::kDisc3},
+
+	//{"goto", ProtoOp::kProtoOpScript, ScriptOps::kGoto},
+
+	{"stop", ProtoOp::kProtoOpScript, ScriptOps::kStop},
+
+	{"#if", ProtoOp::kProtoOpIf, ScriptOps::kInvalid},
+	{"#eif", ProtoOp::kProtoOpEndIf, ScriptOps::kInvalid},
+	{"#else", ProtoOp::kProtoOpElse, ScriptOps::kInvalid},
+
+	{"#switch:", ProtoOp::kProtoOpSwitch, ScriptOps::kInvalid},
+	{"#eswitch", ProtoOp::kProtoOpEndSwitch, ScriptOps::kInvalid},
+	{"break", ProtoOp::kProtoOpBreak, ScriptOps::kInvalid},
+	{"#default", ProtoOp::kProtoOpDefault, ScriptOps::kInvalid},
+
+	//{"esc_on", ProtoOp::kProtoOpScript, ScriptOps::kEscOn},
+	//{"esc_off", ProtoOp::kProtoOpScript, ScriptOps::kEscOff},
+	//{"esc_get@", ProtoOp::kProtoOpScript, ScriptOps::kEscGet},
+	//{"backStart", ProtoOp::kProtoOpScript, ScriptOps::kBackStart},
+	//{"saveAs", ProtoOp::kProtoOpScript, ScriptOps::kSaveAs},
+	//{"save0", ProtoOp::kProtoOpNoop, ScriptOps::kSave0},
+	//{"exit", ProtoOp::kProtoOpScript, ScriptOps::kExit},
+	//{"allowedSave", ProtoOp::kProtoOpScript, ScriptOps::kAllowSaves},
+
+	{"NO_UPDATE", ProtoOp::kProtoOpScript, ScriptOps::kNoUpdate},
+	{"no_clear", ProtoOp::kProtoOpScript, ScriptOps::kNoClear},
+	{"#M\"", ProtoOp::kProtoOpScript, ScriptOps::kM},
+	{"#EM", ProtoOp::kProtoOpScript, ScriptOps::kEM},
+	{"e\"", ProtoOp::kProtoOpScript, ScriptOps::kE},
+	{"se\"", ProtoOp::kProtoOpScript, ScriptOps::kSE},
+	{".\"", ProtoOp::kProtoOpScript, ScriptOps::kDot},
+	{"s.\"", ProtoOp::kProtoOpScript, ScriptOps::kSDot},
+	{"say1", ProtoOp::kProtoOpScript, ScriptOps::kSay1_AD2044},
+	{"say2", ProtoOp::kProtoOpScript, ScriptOps::kSay2_AD2044},
+	{"say1rnd", ProtoOp::kProtoOpScript, ScriptOps::kSay1Rnd},
+	{"sound", ProtoOp::kProtoOpScript, ScriptOps::kSound},
+	{"isound", ProtoOp::kProtoOpScript, ScriptOps::kISound},
+	{"usound", ProtoOp::kProtoOpScript, ScriptOps::kUSound},
+	{"r@", ProtoOp::kProtoOpScript, ScriptOps::kRGet},
+};
 
 static ScriptNamedInstruction g_reahNamedInstructions[] = {
 	{"rotate", ProtoOp::kProtoOpScript, ScriptOps::kRotate},
@@ -687,8 +841,6 @@ static ScriptNamedInstruction g_reahNamedInstructions[] = {
 	{"exit", ProtoOp::kProtoOpScript, ScriptOps::kExit},
 	{"allowedSave", ProtoOp::kProtoOpScript, ScriptOps::kAllowSaves},
 };
-
-
 
 static ScriptNamedInstruction g_schizmNamedInstructions[] = {
 	{"StopScore", ProtoOp::kProtoOpScript, ScriptOps::kMusicStop},
@@ -827,15 +979,15 @@ bool ScriptCompiler::compileInstructionToken(ProtoScript &script, const Common::
 	}
 
 	if (_dialect == kScriptDialectSchizm && token.hasPrefix("-")) {
-		uint32 unumber = 0;
-		if (parseNumber(token.substr(1), unumber)) {
-			script.instrs.push_back(ProtoInstruction(ScriptOps::kNumber, -static_cast<int32>(unumber)));
+		uint32 number = 0;
+		if (parseNumber(token.substr(1), number, false)) {
+			script.instrs.push_back(ProtoInstruction(ScriptOps::kNumber, -static_cast<int32>(number)));
 			return true;
 		}
 	}
 
 	uint32 number = 0;
-	if (parseNumber(token, number)) {
+	if (parseNumber(token, number, false)) {
 		script.instrs.push_back(ProtoInstruction(ScriptOps::kNumber, number));
 		return true;
 	}
@@ -863,7 +1015,7 @@ bool ScriptCompiler::compileInstructionToken(ProtoScript &script, const Common::
 		return true;
 	}
 
-	if (_dialect == kScriptDialectReah) {
+	if (_dialect == kScriptDialectReah || _dialect == kScriptDialectAD2044) {
 		if (token.hasPrefix("CUR_")) {
 			script.instrs.push_back(ProtoInstruction(ScriptOps::kCursorName, indexString(token)));
 			return true;
@@ -879,7 +1031,7 @@ bool ScriptCompiler::compileInstructionToken(ProtoScript &script, const Common::
 	if (token == "#case") {
 		uint32 caseNumber = 0;
 		_parser.expect(":", _blamePath);
-		expectNumber(caseNumber);
+		expectNumber(caseNumber, false);
 
 		script.instrs.push_back(ProtoInstruction(kProtoOpCase, ScriptOps::kInvalid, caseNumber));
 		return true;
@@ -887,13 +1039,44 @@ bool ScriptCompiler::compileInstructionToken(ProtoScript &script, const Common::
 
 	if (token == "#case:") {
 		uint32 caseNumber = 0;
-		expectNumber(caseNumber);
+		expectNumber(caseNumber, false);
 
 		script.instrs.push_back(ProtoInstruction(kProtoOpCase, ScriptOps::kInvalid, caseNumber));
 		return true;
 	}
 
-	if (_dialect == kScriptDialectReah) {
+	if (_dialect == kScriptDialectAD2044) {
+		for (const ScriptNamedInstruction &namedInstr : g_ad2044NamedInstructions) {
+			if (token == namedInstr.str) {
+				int32 paramArg = 0;
+
+				if (token.hasSuffix("\"")) {
+					TextParserState state;
+
+					char c = 0;
+					if (!_parser.skipWhitespaceAndComments(c, state))
+						error("Error compiling script at line %i col %i: Unterminated string", static_cast<int>(state._lineNum), static_cast<int>(state._col));
+
+					Common::String str;
+					for (;;) {
+						if (c == '\"')
+							break;
+
+						str += c;
+
+						if (!_parser.readOneChar(c, state)) {
+							error("Error compiling script at line %i col %i: Unterminated string", static_cast<int>(state._lineNum), static_cast<int>(state._col));
+						}
+					}
+
+					paramArg = indexString(str);
+				}
+
+				script.instrs.push_back(ProtoInstruction(namedInstr.protoOp, namedInstr.op, paramArg));
+				return true;
+			}
+		}
+	} else if (_dialect == kScriptDialectReah) {
 		for (const ScriptNamedInstruction &namedInstr : g_reahNamedInstructions) {
 			if (token == namedInstr.str) {
 				script.instrs.push_back(ProtoInstruction(namedInstr.protoOp, namedInstr.op, 0));
@@ -1372,6 +1555,13 @@ Common::SharedPtr<ScriptSet> compileReahLogicFile(Common::ReadStream &stream, ui
 	Common::SharedPtr<ScriptSet> scriptSet(new ScriptSet());
 
 	compileLogicFile(*scriptSet, stream, streamSize, blamePath, kScriptDialectReah, 0, 0, nullptr);
+	return scriptSet;
+}
+
+Common::SharedPtr<ScriptSet> compileAD2044LogicFile(Common::ReadStream &stream, uint streamSize, const Common::Path &blamePath) {
+	Common::SharedPtr<ScriptSet> scriptSet(new ScriptSet());
+
+	compileLogicFile(*scriptSet, stream, streamSize, blamePath, kScriptDialectAD2044, 0, 0, nullptr);
 	return scriptSet;
 }
 

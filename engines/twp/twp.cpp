@@ -56,6 +56,8 @@
 
 namespace Twp {
 
+#define TWP_SAVEGAME_VERSION 1
+
 TwpEngine *g_twp;
 
 TwpEngine::TwpEngine(OSystem *syst, const TwpGameDescription *gameDesc)
@@ -1057,6 +1059,9 @@ Common::Error TwpEngine::loadGameStream(Common::SeekableReadStream *stream) {
 	if (!_saveGameManager->loadGame(*stream)) {
 		return Common::kUnknownError;
 	}
+	Common::String md5 = stream->readString(0, 32);
+	uint16 savegameVersion = stream->readUint16LE();
+	debug("Load game with MD5: %s, version: %u", md5.c_str(), savegameVersion);
 	return Common::kNoError;
 }
 
@@ -1092,6 +1097,8 @@ Common::Error TwpEngine::saveGameState(int slot, const Common::String &desc, boo
 
 Common::Error TwpEngine::saveGameStream(Common::WriteStream *stream, bool isAutosave) {
 	_saveGameManager->saveGame(stream);
+	stream->writeString(_gameDescription->desc.filesDescriptions[0].md5);
+	stream->writeUint16LE(TWP_SAVEGAME_VERSION);
 	return Common::kNoError;
 }
 
@@ -1139,7 +1146,8 @@ static void onGetPairs(const Common::String &k, HSQOBJECT &oTable, void *data) {
 				}
 			}
 
-			sqgetf(params->room->_table, k, obj->_table);
+			if(SQ_FAILED(sqgetf(params->room->_table, k, obj->_table)))
+				error("Failed to get room object");
 			const int id = g_twp->_resManager->newObjId();
 			setId(obj->_table, id);
 			g_twp->_resManager->_allObjects[id] = obj;
@@ -1152,7 +1160,8 @@ static void onGetPairs(const Common::String &k, HSQOBJECT &oTable, void *data) {
 			if (sqrawexists(obj->_table, "initState")) {
 				// info fmt"initState {obj.key}"
 				SQInteger state;
-				sqgetf(obj->_table, "initState", state);
+				if(SQ_FAILED(sqgetf(obj->_table, "initState", state)))
+					error("Failed to get initState");
 				obj->setState(state, true);
 			} else {
 				obj->setState(0, true);
@@ -1184,7 +1193,8 @@ Common::SharedPtr<Room> TwpEngine::defineRoom(const Common::String &name, HSQOBJ
 	} else {
 		result.reset(new Room(name, table));
 		Common::String background;
-		sqgetf(table, "background", background);
+		if(SQ_FAILED(sqgetf(table, "background", background)))
+			error("Failed to get room background");
 		GGPackEntryReader entry;
 		entry.open(*_pack, background + ".wimpy");
 		Room::load(result, entry);
@@ -1224,7 +1234,8 @@ Common::SharedPtr<Room> TwpEngine::defineRoom(const Common::String &name, HSQOBJ
 				} else {
 					if (pseudo) {
 						// if it's a pseudo room we need to clone each object
-						sqgetf(result->_table, obj->_key, obj->_table);
+						if(SQ_FAILED(sqgetf(result->_table, obj->_key, obj->_table)))
+							error("Failed to get room object");
 						sq_pushobject(v, obj->_table);
 						sq_clone(v, -1);
 						sq_getstackobj(v, -1, &obj->_table);
@@ -1262,7 +1273,8 @@ Common::SharedPtr<Room> TwpEngine::defineRoom(const Common::String &name, HSQOBJ
 	params.pseudo = pseudo;
 	params.v = v;
 	params.room = result;
-	sqgetpairs(result->_table, onGetPairs, &params);
+	if (SQ_FAILED(sqgetpairs(result->_table, onGetPairs, &params)))
+		error("Falied to define objects");
 
 	// declare the room in the root table
 	setId(result->_table, g_twp->_resManager->newRoomId());

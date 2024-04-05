@@ -22,13 +22,17 @@
 #ifndef VCRUISE_RUNTIME_H
 #define VCRUISE_RUNTIME_H
 
+#include "graphics/pixelformat.h"
+
 #include "common/hashmap.h"
 #include "common/keyboard.h"
+#include "common/mutex.h"
 #include "common/rect.h"
 
 #include "vcruise/detection.h"
 
 class OSystem;
+class MidiDriver;
 
 namespace Common {
 
@@ -53,6 +57,7 @@ struct PixelFormat;
 struct WinCursorGroup;
 class ManagedSurface;
 class Font;
+class Cursor;
 
 } // End of namespace Graphics
 
@@ -61,6 +66,12 @@ namespace Video {
 class AVIDecoder;
 
 } // End of namespace Video
+
+namespace Image {
+
+class AniDecoder;
+
+} // End of namespace Image
 
 namespace VCruise {
 
@@ -77,6 +88,7 @@ enum StartConfig {
 
 class AudioPlayer;
 class CircuitPuzzle;
+class MidiPlayer;
 class MenuInterface;
 class MenuPage;
 class RuntimeMenuInterface;
@@ -88,6 +100,7 @@ struct Instruction;
 struct RoomScriptSet;
 struct SoundLoopInfo;
 class SampleLoopAudioStream;
+struct AD2044Graphics;
 
 enum GameState {
 	kGameStateBoot,							// Booting the game
@@ -107,6 +120,13 @@ enum GameState {
 	kGameStatePanRight,
 
 	kGameStateMenu,
+};
+
+struct AD2044AnimationDef {
+	byte roomID;
+	byte lookupID;
+	short fwdAnimationID;
+	short revAnimationID;
 };
 
 struct AnimationDef {
@@ -143,20 +163,23 @@ struct MapScreenDirectionDef {
 	Common::Array<InteractionDef> interactions;
 };
 
-struct MapDef {
-	static const uint kNumScreens = 96;
-	static const uint kFirstScreen = 0xa0;
+class MapLoader {
+public:
+	virtual ~MapLoader();
 
-	Common::SharedPtr<MapScreenDirectionDef> screenDirections[kNumScreens][kNumDirections];
+	virtual void setRoomNumber(uint roomNumber) = 0;
+	virtual const MapScreenDirectionDef *getScreenDirection(uint screen, uint direction) = 0;
+	virtual void unload() = 0;
 
-	void clear();
-	const MapScreenDirectionDef *getScreenDirection(uint screen, uint direction);
+protected:
+	static Common::SharedPtr<MapScreenDirectionDef> loadScreenDirectionDef(Common::ReadStream &stream);
 };
 
 struct ScriptEnvironmentVars {
 	ScriptEnvironmentVars();
 
 	uint panInteractionID;
+	uint clickInteractionID;
 	uint fpsOverride;
 	uint lastHighlightedItem;
 	uint animChangeFrameOffset;
@@ -361,6 +384,14 @@ struct FrameData2 {
 	uint16 unknown;	// Subarea or something?
 };
 
+struct AnimFrameRange {
+	AnimFrameRange();
+
+	uint animationNum;
+	uint firstFrame;
+	uint lastFrame;	// Inclusive
+};
+
 struct InventoryItem {
 	InventoryItem();
 
@@ -427,10 +458,15 @@ struct SaveGameSwappableState {
 	uint roomNumber;
 	uint screenNumber;
 	uint direction;
+	uint disc;
 	bool havePendingPostSwapScreenReset;
 
 	uint loadedAnimation;
 	uint animDisplayingFrame;
+	bool haveIdleAnimationLoop;
+	uint idleAnimNum;
+	uint idleFirstFrame;
+	uint idleLastFrame;
 
 	int musicTrack;
 
@@ -448,13 +484,34 @@ struct SaveGameSwappableState {
 };
 
 struct SaveGameSnapshot {
+	struct PagedInventoryItem {
+		PagedInventoryItem();
+
+		uint8 page;
+		uint8 slot;
+		uint8 itemID;
+
+		void write(Common::WriteStream *stream) const;
+		void read(Common::ReadStream *stream, uint saveGameVersion);
+	};
+
+	struct PlacedInventoryItem {
+		PlacedInventoryItem();
+
+		uint32 locationID;
+		uint8 itemID;
+
+		void write(Common::WriteStream *stream) const;
+		void read(Common::ReadStream *stream, uint saveGameVersion);
+	};
+
 	SaveGameSnapshot();
 
 	void write(Common::WriteStream *stream) const;
 	LoadGameOutcome read(Common::ReadStream *stream);
 
 	static const uint kSaveGameIdentifier = 0x53566372;
-	static const uint kSaveGameCurrentVersion = 9;
+	static const uint kSaveGameCurrentVersion = 10;
 	static const uint kSaveGameEarliestSupportedVersion = 2;
 	static const uint kMaxStates = 2;
 
@@ -465,6 +522,8 @@ struct SaveGameSnapshot {
 	uint swapOutRoom;
 	uint swapOutScreen;
 	uint swapOutDirection;
+	uint8 inventoryPage;
+	uint8 inventoryActiveItem;
 
 	uint numStates;
 	Common::SharedPtr<SaveGameSwappableState> states[kMaxStates];
@@ -483,6 +542,8 @@ struct SaveGameSnapshot {
 
 	Common::HashMap<uint32, int32> variables;
 	Common::HashMap<uint, uint32> timers;
+	Common::Array<PagedInventoryItem> pagedItems;
+	Common::Array<PlacedInventoryItem> placedItems;
 };
 
 enum OSEventType {
@@ -514,6 +575,8 @@ enum KeymappedEvent {
 	kKeymappedEventSoundVolumeUp,
 
 	kKeymappedEventSkipAnimation,
+
+	kKeymappedEventPutItem,
 };
 
 struct OSEvent {
@@ -560,6 +623,19 @@ struct FontCacheItem {
 typedef Common::HashMap<Common::String, uint> ScreenNameToRoomMap_t;
 typedef Common::HashMap<uint, ScreenNameToRoomMap_t> RoomToScreenNameToRoomMap_t;
 
+struct AnimatedCursor {
+	struct FrameDef {
+		uint imageIndex;
+		uint delay;
+	};
+
+	Common::Array<FrameDef> frames;
+	Common::Array<Graphics::Cursor *> images;
+
+	Common::Array<Common::SharedPtr<Graphics::Cursor> > cursorKeepAlive;
+	Common::SharedPtr<Graphics::WinCursorGroup> cursorGroupKeepAlive;
+};
+
 class Runtime {
 public:
 	friend class RuntimeMenuInterface;
@@ -573,14 +649,15 @@ public:
 		kCharSetChineseSimplified,
 	};
 
-	Runtime(OSystem *system, Audio::Mixer *mixer, const Common::FSNode &rootFSNode, VCruiseGameID gameID, Common::Language defaultLanguage);
+	Runtime(OSystem *system, Audio::Mixer *mixer, MidiDriver *midiDrv, const Common::FSNode &rootFSNode, VCruiseGameID gameID, Common::Language defaultLanguage);
 	virtual ~Runtime();
 
-	void initSections(const Common::Rect &gameRect, const Common::Rect &menuRect, const Common::Rect &trayRect, const Common::Rect &fullscreenMenuRect, const Graphics::PixelFormat &pixFmt);
+	void initSections(const Common::Rect &gameRect, const Common::Rect &menuRect, const Common::Rect &trayRect, const Common::Rect &subtitleRect, const Common::Rect &fullscreenMenuRect, const Graphics::PixelFormat &pixFmt);
 
 	void loadCursors(const char *exeName);
 	void setDebugMode(bool debugMode);
 	void setFastAnimationMode(bool fastAnimationMode);
+	void setLowQualityGraphicsMode(bool lowQualityGraphicsMode);
 
 	bool runFrame();
 	void drawFrame();
@@ -607,6 +684,8 @@ public:
 
 	void drawLabel(Graphics::ManagedSurface *surface, const Common::String &labelID, const Common::Rect &contentRect);
 	void getLabelDef(const Common::String &labelID, const Graphics::Font *&outFont, const Common::String *&outTextUTF8, uint32 &outColor, uint32 &outShadowColor, uint32 &outShadowOffset);
+
+	void onMidiTimer();
 
 private:
 	enum IndexParseType {
@@ -635,6 +714,7 @@ private:
 	struct RenderSection {
 		Common::SharedPtr<Graphics::ManagedSurface> surf;
 		Common::Rect rect;
+		Graphics::PixelFormat pixFmt;
 
 		void init(const Common::Rect &paramRect, const Graphics::PixelFormat &fmt);
 	};
@@ -736,6 +816,7 @@ private:
 	static const uint kPanoramaHorizFlags = (kPanoramaLeftFlag | kPanoramaRightFlag);
 
 	static const uint kNumInventorySlots = 6;
+	static const uint kNumInventoryPages = 8;
 
 	typedef int32 ScriptArg_t;
 	typedef int32 StackInt_t;
@@ -822,7 +903,8 @@ private:
 
 	void processUniversalKeymappedEvents(KeymappedEvent evt);
 
-	void loadIndex();
+	void loadReahSchizmIndex();
+	void loadAD2044ExecutableResources();
 	void findWaves();
 	void loadConfig(const char *cfgPath);
 	void loadScore();
@@ -837,15 +919,18 @@ private:
 	void changeToScreen(uint roomNumber, uint screenNumber);
 	void clearIdleAnimations();
 	void changeHero();
+	void changeToExamineItem();
+	void returnFromExaminingItem();
 	bool triggerPreIdleActions();
 	void returnToIdleState();
-	void changeToCursor(const Common::SharedPtr<Graphics::WinCursorGroup> &cursor);
+	void changeToCursor(const Common::SharedPtr<AnimatedCursor> &cursor);
+	void refreshCursor(uint32 currentTime);
 	bool dischargeIdleMouseMove();
 	bool dischargeIdleMouseDown();
 	bool dischargeIdleClick();
-	void loadMap(Common::SeekableReadStream *stream);
 	void loadFrameData(Common::SeekableReadStream *stream);
 	void loadFrameData2(Common::SeekableReadStream *stream);
+	void loadTabData(Common::HashMap<int, AnimFrameRange> &animIDToFrameRangeMap, uint animNumber, Common::SeekableReadStream *stream);
 
 	void changeMusicTrack(int musicID);
 	void startScoreSection();
@@ -900,13 +985,32 @@ private:
 	void clearScreen();
 	void redrawTray();
 	void clearTray();
+	void redrawSubtitleSection();
+	void clearSubtitleSection();
+	void drawSubtitleText(const Common::Array<Common::U32String> &lines, const uint8 (&color)[3]);
 	void drawInventory(uint slot);
 	void drawCompass();
 	bool isTrayVisible() const;
 	void resetInventoryHighlights();
+	void loadInventoryFromPage();
+	void copyInventoryToPage();
+	void cheatPutItem();
+	static uint32 getLocationForScreen(uint roomNumber, uint screenNumber);
+	void updatePlacedItemCache();
+	void drawPlacedItemGraphic();
+	void clearPlacedItemGraphic();
+	void drawActiveItemGraphic();
+	void clearActiveItemGraphic();
+	void drawInventoryItemGraphic(uint slot);
+	void clearInventoryItemGraphic(uint slot);
+	void dropActiveItem();
+	void pickupPlacedItem();
+	void stashActiveItemToInventory(uint slot);
+	void pickupInventoryItem(uint slot);
 
-	Common::String getFileNameForItemGraphic(uint itemID) const;
-	Common::SharedPtr<Graphics::Surface> loadGraphic(const Common::String &graphicName, bool required);
+	void getFileNamesForItemGraphic(uint itemID, Common::String &outGraphicFileName, Common::String &outAlphaFileName) const;
+	Common::SharedPtr<Graphics::Surface> loadGraphic(const Common::String &graphicName, const Common::String &alphaName, bool required);
+	Common::SharedPtr<Graphics::Surface> loadGraphicFromPath(const Common::Path &path, bool required);
 
 	bool loadSubtitles(Common::CodePage codePage, bool guessCodePage);
 
@@ -924,6 +1028,10 @@ private:
 	void clearCircuitHighlightRect(const Common::Rect &rect);
 	void drawCircuitHighlightRect(const Common::Rect &rect);
 	static Common::Rect padCircuitInteractionRect(const Common::Rect &rect);
+
+	static Common::SharedPtr<AnimatedCursor> winCursorGroupToAnimatedCursor(const Common::SharedPtr<Graphics::WinCursorGroup> &cursorGroup);
+	static Common::SharedPtr<AnimatedCursor> aniFileToAnimatedCursor(Image::AniDecoder &aniDecoder);
+	static Common::SharedPtr<AnimatedCursor> staticCursorToAnimatedCursor(const Common::SharedPtr<Graphics::Cursor> &cursor);
 
 	// Script things
 	void scriptOpNumber(ScriptArg_t arg);
@@ -1109,15 +1217,50 @@ private:
 	void scriptOpFn(ScriptArg_t arg);
 	void scriptOpItemHighlightSetTrue(ScriptArg_t arg);
 
-	Common::Array<Common::SharedPtr<Graphics::WinCursorGroup> > _cursors;		// Cursors indexed as CURSOR_CUR_##
-	Common::Array<Common::SharedPtr<Graphics::WinCursorGroup> > _cursorsShort;	// Cursors indexed as CURSOR_#
+	// AD2044 ops
+	void scriptOpAnimAD2044(bool isForward);
+	void scriptOpAnimT(ScriptArg_t arg);
+	void scriptOpAnimForward(ScriptArg_t arg);
+	void scriptOpAnimReverse(ScriptArg_t arg);
+	void scriptOpAnimKForward(ScriptArg_t arg);
+	void scriptOpNoUpdate(ScriptArg_t arg);
+	void scriptOpNoClear(ScriptArg_t arg);
+	void scriptOpSay1_AD2044(ScriptArg_t arg);
+	void scriptOpSay2_AD2044(ScriptArg_t arg);
+	void scriptOpSay1Rnd(ScriptArg_t arg);
+	void scriptOpM(ScriptArg_t arg);
+	void scriptOpEM(ScriptArg_t arg);
+	void scriptOpSE(ScriptArg_t arg);
+	void scriptOpSDot(ScriptArg_t arg);
+	void scriptOpE(ScriptArg_t arg);
+	void scriptOpDot(ScriptArg_t arg);
+	void scriptOpSound(ScriptArg_t arg);
+	void scriptOpISound(ScriptArg_t arg);
+	void scriptOpUSound(ScriptArg_t arg);
+	void scriptOpSayCycle_AD2044(const StackInt_t *values, uint numValues);
+	void scriptOpSay2K(ScriptArg_t arg);
+	void scriptOpSay3K(ScriptArg_t arg);
+	void scriptOpRGet(ScriptArg_t arg);
+	void scriptOpRSet(ScriptArg_t arg);
+	void scriptOpEndRSet(ScriptArg_t arg);
+	void scriptOpStop(ScriptArg_t arg);
+
+	Common::Array<Common::SharedPtr<AnimatedCursor> > _cursors;      // Cursors indexed as CURSOR_CUR_##
+	Common::Array<Common::SharedPtr<AnimatedCursor> > _cursorsShort;      // Cursors indexed as CURSOR_#
 
 	InventoryItem _inventory[kNumInventorySlots];
+	InventoryItem _inventoryPages[kNumInventoryPages][kNumInventorySlots];
+	Common::HashMap<uint32, uint8> _placedItems;
+	uint8 _inventoryActivePage;
+	InventoryItem _inventoryActiveItem;
+	InventoryItem _inventoryPlacedItemCache;
+	Common::Rect _placedItemRect;
 
 	Common::SharedPtr<Graphics::Surface> _trayCompassGraphic;
 	Common::SharedPtr<Graphics::Surface> _trayBackgroundGraphic;
 	Common::SharedPtr<Graphics::Surface> _trayHighlightGraphic;
 	Common::SharedPtr<Graphics::Surface> _trayCornerGraphic;
+	Common::SharedPtr<Graphics::Surface> _backgroundGraphic;
 
 	Common::Array<Common::SharedPtr<Graphics::Surface> > _uiGraphics;
 
@@ -1131,6 +1274,7 @@ private:
 	uint _screenNumber;
 	uint _direction;
 	uint _hero;
+	uint _disc;
 
 	uint _swapOutRoom;
 	uint _swapOutScreen;
@@ -1147,6 +1291,7 @@ private:
 	StaticAnimation _idleAnimations[kNumDirections];
 	bool _haveIdleAnimations[kNumDirections];
 	bool _haveIdleStaticAnimation;
+	bool _keepStaticAnimationInIdle;
 	Common::String _idleCurrentStaticAnimation;
 	StaticAnimParams _pendingStaticAnimParams;
 
@@ -1192,6 +1337,7 @@ private:
 	bool _escOn;
 	bool _debugMode;
 	bool _fastAnimationMode;
+	bool _lowQualityGraphicsMode;
 
 	VCruiseGameID _gameID;
 
@@ -1199,6 +1345,7 @@ private:
 	Common::Array<uint> _roomDuplicationOffsets;
 	RoomToScreenNameToRoomMap_t _globalRoomScreenNameToScreenIDs;
 	Common::SharedPtr<ScriptSet> _scriptSet;
+	Common::Array<AD2044AnimationDef> _ad2044AnimationDefs;
 
 	Common::Array<CallStackFrame> _scriptCallStack;
 
@@ -1207,7 +1354,9 @@ private:
 
 	Common::SharedPtr<Common::RandomSource> _rng;
 
-	Common::SharedPtr<AudioPlayer> _musicPlayer;
+	Common::SharedPtr<AudioPlayer> _musicWavePlayer;
+	Common::Mutex _midiPlayerMutex;
+	Common::SharedPtr<MidiPlayer> _musicMidiPlayer;
 	int _musicTrack;
 	int32 _musicVolume;
 	bool _musicActive;
@@ -1248,8 +1397,13 @@ private:
 	Common::Array<FrameData2> _frameData2;
 	//uint32 _loadedArea;
 
+	// Reah/Schizm animation map
 	Common::Array<Common::String> _animDefNames;
 	Common::HashMap<Common::String, uint> _animDefNameToIndex;
+
+	// AD2044 animation map
+	Common::HashMap<int, AnimFrameRange> _currentRoomAnimIDToFrameRange;
+	Common::HashMap<int, AnimFrameRange> _examineAnimIDToFrameRange;
 
 	bool _idleLockInteractions;
 	bool _idleIsOnInteraction;
@@ -1270,14 +1424,17 @@ private:
 	bool _inGameMenuButtonActive[5];
 
 	Audio::Mixer *_mixer;
+	MidiDriver *_midiDrv;
 
-	MapDef _map;
+	Common::SharedPtr<MapLoader> _mapLoader;
 
 	RenderSection _gameSection;
 	RenderSection _gameDebugBackBuffer;
 	RenderSection _menuSection;
 	RenderSection _traySection;
 	RenderSection _fullscreenMenuSection;
+	RenderSection _subtitleSection;
+	RenderSection _placedItemBackBufferSection;
 
 	Common::Point _mousePos;
 	Common::Point _lmbDownPos;
@@ -1315,11 +1472,31 @@ private:
 	static const uint kAnimDefStackArgs = 8;
 
 	static const uint kCursorArrow = 0;
+	static const uint kCursorWait = 29;
 
 	static const int kPanoramaPanningMarginX = 11;
 	static const int kPanoramaPanningMarginY = 11;
 
 	static const uint kSoundCacheSize = 16;
+
+	static const uint kExamineItemInteractionID = 0xfffffff0u;
+
+	static const uint kReturnInventorySlot0InteractionID = 0xfffffff1u;
+	static const uint kReturnInventorySlot1InteractionID = 0xfffffff2u;
+	static const uint kReturnInventorySlot2InteractionID = 0xfffffff3u;
+	static const uint kReturnInventorySlot3InteractionID = 0xfffffff4u;
+	static const uint kReturnInventorySlot4InteractionID = 0xfffffff5u;
+	static const uint kReturnInventorySlot5InteractionID = 0xfffffff6u;
+
+	static const uint kPickupInventorySlot0InteractionID = 0xfffffff7u;
+	static const uint kPickupInventorySlot1InteractionID = 0xfffffff8u;
+	static const uint kPickupInventorySlot2InteractionID = 0xfffffff9u;
+	static const uint kPickupInventorySlot3InteractionID = 0xfffffffau;
+	static const uint kPickupInventorySlot4InteractionID = 0xfffffffbu;
+	static const uint kPickupInventorySlot5InteractionID = 0xfffffffcu;
+
+	static const uint kObjectPickupInteractionID = 0xfffffffdu;
+	static const uint kObjectDropInteractionID = 0xfffffffeu;
 
 	static const uint kHeroChangeInteractionID = 0xffffffffu;
 
@@ -1335,6 +1512,7 @@ private:
 	Common::SharedPtr<Graphics::Font> _subtitleFontKeepalive;
 	uint _defaultLanguageIndex;
 	uint _languageIndex;
+	Common::Language _language;
 	CharSet _charSet;
 	bool _isCDVariant;
 	StartConfigDef _startConfigs[kNumStartConfigs];
@@ -1357,7 +1535,19 @@ private:
 
 	Common::Array<Common::SharedPtr<FontCacheItem> > _fontCache;
 
+	AnimatedCursor *_currentAnimatedCursor;
+	Graphics::Cursor *_currentCursor;
+	uint32 _cursorTimeBase;
+	uint32 _cursorCycleLength;
+
 	int32 _dbToVolume[49];
+
+	// AD2044 tooltips
+	Common::String _tooltipText;
+	Common::String _subtitleText;
+
+	Common::SharedPtr<AD2044Graphics> _ad2044Graphics;
+	Common::Array<Common::String> _ad2044ItemNames;
 };
 
 } // End of namespace VCruise

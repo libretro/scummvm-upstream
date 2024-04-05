@@ -138,10 +138,12 @@ void OpenGLShaderRenderer::drawTexturedRect2D(const Common::Rect &screenRect, co
 }
 
 void OpenGLShaderRenderer::updateProjectionMatrix(float fov, float nearClipPlane, float farClipPlane) {
-	float aspectRatio = _screenW / (float)_screenH;
+	// Determining xmaxValue and ymaxValue still needs some work for matching the 3D view in freescape games
+	/*float aspectRatio = _screenW / (float)_screenH;
 	float xmaxValue = nearClipPlane * tan(Common::deg2rad(fov) / 2);
 	float ymaxValue = xmaxValue / aspectRatio;
-	_projectionMatrix = Math::makeFrustumMatrix(xmaxValue, -xmaxValue, -ymaxValue, ymaxValue, nearClipPlane, farClipPlane);
+	_projectionMatrix = Math::makeFrustumMatrix(xmaxValue, -xmaxValue, -ymaxValue, ymaxValue, nearClipPlane, farClipPlane);*/
+	_projectionMatrix = Math::makeFrustumMatrix(1.5, -1.5, -0.625, 0.625, nearClipPlane, farClipPlane);
 }
 
 void OpenGLShaderRenderer::positionCamera(const Math::Vector3d &pos, const Math::Vector3d &interest) {
@@ -217,7 +219,7 @@ void OpenGLShaderRenderer::renderPlayerShootBall(byte color, const Common::Point
 	float coef = (9 - frame) / 9.0;
 	float radius = (1 - coef) * 4.0;
 
-	Common::Point position(_position.x, _screenH - _position.y); 
+	Common::Point position(_position.x, _screenH - _position.y);
 
 	Common::Point initial_position(viewArea.left + viewArea.width() / 2 + 2, _screenH - (viewArea.height() + viewArea.top));
 	Common::Point ball_position = coef * position + (1 - coef) * initial_position;
@@ -302,6 +304,7 @@ void OpenGLShaderRenderer::drawCelestialBody(Math::Vector3d position, float radi
 
 	int triangleAmount = 20;
 	float twicePi = (float)(2.0 * M_PI);
+	float adj = 1.25; // Perspective correction
 
 	// Quick billboard effect inspired from this code:
 	// http://www.lighthouse3d.com/opengl/billboarding/index.php?billCheat
@@ -330,7 +333,7 @@ void OpenGLShaderRenderer::drawCelestialBody(Math::Vector3d position, float radi
 	for(int i = 0; i <= triangleAmount; i++) {
 		float x = position.x();
 		float y = position.y() + (radius * cos(i *  twicePi / triangleAmount));
-		float z = position.z() + (radius * sin(i * twicePi / triangleAmount));
+		float z = position.z() + (adj * radius * sin(i * twicePi / triangleAmount));
 		copyToVertexArray(i + 1, Math::Vector3d(x, y, z));
 	}
 

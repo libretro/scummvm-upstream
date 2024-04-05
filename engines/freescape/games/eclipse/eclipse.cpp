@@ -156,11 +156,12 @@ void EclipseEngine::gotoArea(uint16 areaID, int entranceID) {
 	_currentAreaMessages.clear();
 	_currentAreaMessages.push_back(_currentArea->_name);
 
-	if (entranceID == -1)
-		return;
-
-	assert(entranceID > 0);
-	traverseEntrance(entranceID);
+	if (entranceID > 0)
+		traverseEntrance(entranceID);
+	else if (entranceID == -1)
+		debugC(1, kFreescapeDebugMove, "Loading game, no change in position");
+	else
+		error("Invalid area change!");
 
 	_lastPosition = _position;
 
@@ -290,6 +291,7 @@ void EclipseEngine::drawInfoMenu() {
 	drawStringInSurface("T-TOGGLE", 128, 81, front, black, surface);
 	drawStringInSurface("SOUND ON/OFF", 113, 88, front, black, surface);
 
+	Texture *menuTexture = _gfx->createTexture(surface);
 	Common::Event event;
 	bool cont = true;
 	while (!shouldQuit() && cont) {
@@ -328,7 +330,7 @@ void EclipseEngine::drawInfoMenu() {
 			}
 		}
 		drawFrame();
-		drawFullscreenSurface(surface);
+		_gfx->drawTexturedRect2D(_fullscreenViewArea, _fullscreenViewArea, menuTexture);
 
 		_gfx->flipBuffer();
 		g_system->updateScreen();
@@ -339,6 +341,7 @@ void EclipseEngine::drawInfoMenu() {
 	delete _savedScreen;
 	surface->free();
 	delete surface;
+	delete menuTexture;
 	pauseToken.clear();
 }
 
@@ -445,7 +448,10 @@ void EclipseEngine::drawIndicator(Graphics::Surface *surface, int xPosition, int
 		return;
 
 	for (int i = 0; i < 5; i++) {
-		if (_gameStateVars[kVariableEclipseAnkhs] > i)
+		if (isSpectrum()) {
+			if (_gameStateVars[kVariableEclipseAnkhs] <= i)
+				continue;
+		} else if (_gameStateVars[kVariableEclipseAnkhs] > i)
 			continue;
 		surface->copyRectToSurface(*_indicators[0], xPosition + separation * i, yPosition, Common::Rect(_indicators[0]->w, _indicators[0]->h));
 	}

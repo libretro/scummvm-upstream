@@ -1033,7 +1033,8 @@ public:
 	 */
 
 	int _guis_need_update = 1;
-	int _all_buttons_disabled = -1, _gui_inv_pic = -1;
+	AGS::Shared::GuiDisableStyle _all_buttons_disabled = AGS::Shared::kGuiDis_Undefined;
+	int _gui_inv_pic = -1;
 
 	/**@}*/
 
@@ -1235,7 +1236,6 @@ public:
 	int32_t *_navpoints;
 	Navigation *_nav;
 	int _num_navpoints = 0;
-	fixed _move_speed_x = 0, _move_speed_y = 0;
 	AGS::Shared::Bitmap *_wallscreen = nullptr;
 	int _lastcx = 0, _lastcy = 0;
 	std::unique_ptr<IRouteFinder> *_route_finder_impl;

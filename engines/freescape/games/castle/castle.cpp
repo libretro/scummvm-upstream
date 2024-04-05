@@ -23,6 +23,7 @@
 #include "common/memstream.h"
 
 #include "freescape/freescape.h"
+#include "freescape/games/castle/castle.h"
 #include "freescape/language/8bitDetokeniser.h"
 
 namespace Freescape {
@@ -334,6 +335,21 @@ void CastleEngine::initGameState() {
 	FreescapeEngine::initGameState();
 	_playerHeightNumber = 1;
 	_playerHeight = _playerHeights[_playerHeightNumber];
+
+	_gameStateVars[k8bitVariableShield] = 1;
+	_gameStateVars[k8bitVariableEnergy] = 1;
+	_countdown = INT_MAX;
+}
+
+void CastleEngine::endGame() {
+	_shootingFrames = 0;
+	_delayedShootObject = nullptr;
+	_endGamePlayerEndArea = true;
+
+	if (_endGameKeyPressed) {
+		_gameStateControl = kFreescapeGameStateRestart;
+		_endGameKeyPressed = false;
+	}
 }
 
 void CastleEngine::executePrint(FCLInstruction &instruction) {

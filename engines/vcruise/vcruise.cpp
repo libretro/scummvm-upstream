@@ -32,6 +32,7 @@
 #include "common/algorithm.h"
 #include "common/translation.h"
 
+#include "audio/mididrv.h"
 #include "audio/mixer.h"
 
 #include "gui/message.h"
@@ -75,6 +76,14 @@ void VCruiseEngine::handleEvents() {
 	}
 }
 
+void VCruiseEngine::staticHandleMidiTimer(void *refCon) {
+	static_cast<VCruiseEngine *>(refCon)->handleMidiTimer();
+}
+
+void VCruiseEngine::handleMidiTimer() {
+	_runtime->onMidiTimer();
+}
+
 Common::Error VCruiseEngine::run() {
 	Common::List<Graphics::PixelFormat> pixelFormats = _system->getSupportedFormats();
 
@@ -103,6 +112,17 @@ Common::Error VCruiseEngine::run() {
 		dialog.runModal();
 	}
 #endif
+
+	Common::ScopedPtr<MidiDriver> midiDrv;
+	if (_gameDescription->gameID == GID_AD2044) {
+		MidiDriver::DeviceHandle midiDevHdl = MidiDriver::detectDevice(MDT_MIDI | MDT_ADLIB | MDT_PREFER_GM);
+		if (midiDevHdl) {
+			midiDrv.reset(MidiDriver::createMidi(midiDevHdl));
+
+			if (midiDrv->open() != 0)
+				midiDrv.reset();
+		}
+	}
 
 	if (_gameDescription->desc.flags & VCRUISE_GF_GENTEE_PACKAGE) {
 		Common::File *f = new Common::File();
@@ -135,37 +155,52 @@ Common::Error VCruiseEngine::run() {
 	// Figure out screen layout
 	Common::Point size;
 
-	Common::Point videoSize;
-	Common::Point traySize;
-	Common::Point menuBarSize;
+	if (_gameDescription->gameID == GID_AD2044) {
+		size = Common::Point(640, 480);
 
-	if (_gameDescription->gameID == GID_REAH) {
-		videoSize = Common::Point(608, 348);
-		menuBarSize = Common::Point(640, 44);
-		traySize = Common::Point(640, 88);
-	} else if (_gameDescription->gameID == GID_SCHIZM) {
-		videoSize = Common::Point(640, 360);
-		menuBarSize = Common::Point(640, 32);
-		traySize = Common::Point(640, 88);
+		Common::Point traySize = Common::Point(640, 97);
+		Common::Point menuBarSize = Common::Point(188, 102);
+		Common::Point videoTL = Common::Point(20, 21);
+
+		Common::Point videoSize = Common::Point(432, 307);
+
+		_menuBarRect = Common::Rect(size.x - menuBarSize.x, 0, size.x, menuBarSize.y);
+		_videoRect = Common::Rect(videoTL, videoTL + videoSize);
+		_trayRect = Common::Rect(0, size.y - traySize.y, size.x, size.y);
+		_subtitleRect = Common::Rect(_videoRect.left, _videoRect.bottom, _videoRect.right, _trayRect.top);
 	} else {
-		error("Unknown game");
+		Common::Point videoSize;
+		Common::Point traySize;
+		Common::Point menuBarSize;
+
+		if (_gameDescription->gameID == GID_REAH) {
+			videoSize = Common::Point(608, 348);
+			menuBarSize = Common::Point(640, 44);
+			traySize = Common::Point(640, 88);
+		} else if (_gameDescription->gameID == GID_SCHIZM) {
+			videoSize = Common::Point(640, 360);
+			menuBarSize = Common::Point(640, 32);
+			traySize = Common::Point(640, 88);
+		} else {
+			error("Unknown game");
+		}
+
+		size.x = videoSize.x;
+		if (menuBarSize.x > size.x)
+			size.x = menuBarSize.x;
+		if (traySize.x > size.x)
+			size.x = traySize.x;
+
+		size.y = videoSize.y + menuBarSize.y + traySize.y;
+
+		Common::Point menuTL = Common::Point((size.x - menuBarSize.x) / 2, 0);
+		Common::Point videoTL = Common::Point((size.x - videoSize.x) / 2, menuTL.y + menuBarSize.y);
+		Common::Point trayTL = Common::Point((size.x - traySize.x) / 2, videoTL.y + videoSize.y);
+
+		_menuBarRect = Common::Rect(menuTL.x, menuTL.y, menuTL.x + menuBarSize.x, menuTL.y + menuBarSize.y);
+		_videoRect = Common::Rect(videoTL.x, videoTL.y, videoTL.x + videoSize.x, videoTL.y + videoSize.y);
+		_trayRect = Common::Rect(trayTL.x, trayTL.y, trayTL.x + traySize.x, trayTL.y + traySize.y);
 	}
-
-	size.x = videoSize.x;
-	if (menuBarSize.x > size.x)
-		size.x = menuBarSize.x;
-	if (traySize.x > size.x)
-		size.x = traySize.x;
-
-	size.y = videoSize.y + menuBarSize.y + traySize.y;
-
-	Common::Point menuTL = Common::Point((size.x - menuBarSize.x) / 2, 0);
-	Common::Point videoTL = Common::Point((size.x - videoSize.x) / 2, menuTL.y + menuBarSize.y);
-	Common::Point trayTL = Common::Point((size.x - traySize.x) / 2, videoTL.y + videoSize.y);
-
-	_menuBarRect = Common::Rect(menuTL.x, menuTL.y, menuTL.x + menuBarSize.x, menuTL.y + menuBarSize.y);
-	_videoRect = Common::Rect(videoTL.x, videoTL.y, videoTL.x + videoSize.x, videoTL.y + videoSize.y);
-	_trayRect = Common::Rect(trayTL.x, trayTL.y, trayTL.x + traySize.x, trayTL.y + traySize.y);
 
 	if (fmt32)
 		initGraphics(size.x, size.y, fmt32);
@@ -178,8 +213,11 @@ Common::Error VCruiseEngine::run() {
 
 	_system->fillScreen(0);
 
-	_runtime.reset(new Runtime(_system, _mixer, _rootFSNode, _gameDescription->gameID, _gameDescription->defaultLanguage));
-	_runtime->initSections(_videoRect, _menuBarRect, _trayRect, Common::Rect(640, 480), _system->getScreenFormat());
+	_runtime.reset(new Runtime(_system, _mixer, midiDrv.get(), _rootFSNode, _gameDescription->gameID, _gameDescription->defaultLanguage));
+	_runtime->initSections(_videoRect, _menuBarRect, _trayRect, _subtitleRect, Common::Rect(640, 480), _system->getScreenFormat());
+
+	if (midiDrv)
+		midiDrv->setTimerCallback(this, VCruiseEngine::staticHandleMidiTimer);
 
 	const char *exeName = _gameDescription->desc.filesDescriptions[0].fileName;
 
@@ -194,6 +232,10 @@ Common::Error VCruiseEngine::run() {
 
 	if (ConfMan.getBool("vcruise_fast_animations")) {
 		_runtime->setFastAnimationMode(true);
+	}
+
+	if (ConfMan.getBool("vcruise_use_4bit")) {
+		_runtime->setLowQualityGraphicsMode(true);
 	}
 
 	if (ConfMan.hasKey("save_slot")) {
@@ -215,10 +257,17 @@ Common::Error VCruiseEngine::run() {
 			break;
 
 		_runtime->drawFrame();
-		_system->delayMillis(10);
+		_system->delayMillis(5);
 	}
 
+
+	if (midiDrv)
+		midiDrv->setTimerCallback(nullptr, nullptr);
+
 	_runtime.reset();
+
+	if (midiDrv)
+		midiDrv->close();
 
 	if (_gameDescription->desc.flags & VCRUISE_GF_GENTEE_PACKAGE)
 		SearchMan.remove("VCruiseInstallerPackage");

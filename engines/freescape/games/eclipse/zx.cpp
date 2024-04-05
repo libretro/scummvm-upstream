@@ -28,7 +28,7 @@
 namespace Freescape {
 
 void EclipseEngine::initZX() {
-	_viewArea = Common::Rect(56, 28, 265, 132+6);
+	_viewArea = Common::Rect(56, 36, 265, 139);
 	_maxEnergy = 63;
 	_maxShield = 63;
 }
@@ -73,9 +73,17 @@ void EclipseEngine::loadAssetsZXFullGame() {
 		if (isTotalEclipse2 && it._value->getAreaID() == 1)
 			continue;
 
+		if (isEclipse2() && it._value->getAreaID() == _startArea)
+			continue;
+
 		for (int16 id = 183; id < 207; id++)
 			it._value->addObjectFromArea(id, _areaMap[255]);
 	}
+
+	_indicators.push_back(loadBundledImage("eclipse_ankh_indicator"));
+
+	for (auto &it : _indicators)
+		it->convertToInPlace(_gfx->_texturePixelFormat);
 }
 
 void EclipseEngine::loadAssetsZXDemo() {
@@ -120,13 +128,10 @@ void EclipseEngine::loadAssetsZXDemo() {
 			it._value->addObjectFromArea(id, _areaMap[255]);
 	}
 
-	/*_indicators.push_back(loadBundledImage("dark_fallen_indicator"));
-	_indicators.push_back(loadBundledImage("dark_crouch_indicator"));
-	_indicators.push_back(loadBundledImage("dark_walk_indicator"));
-	_indicators.push_back(loadBundledImage("dark_jet_indicator"));
+	_indicators.push_back(loadBundledImage("eclipse_ankh_indicator"));
 
 	for (auto &it : _indicators)
-		it->convertToInPlace(_gfx->_texturePixelFormat);*/
+		it->convertToInPlace(_gfx->_texturePixelFormat);
 }
 
 void EclipseEngine::drawZXUI(Graphics::Surface *surface) {
@@ -188,8 +193,8 @@ void EclipseEngine::drawZXUI(Graphics::Surface *surface) {
 		drawStringInSurface("<", 240, 141, back, yellow, surface, 'Z' - '$' + 1);
 	}
 	drawAnalogClock(surface, 89, 172, back, back, gray);
+	drawIndicator(surface, 65, 7, 8);
 	drawEclipseIndicator(surface, 215, 3, front, gray);
-
 }
 
 } // End of namespace Freescape

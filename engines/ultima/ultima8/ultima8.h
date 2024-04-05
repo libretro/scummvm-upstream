@@ -55,7 +55,6 @@ class Mouse;
 class AvatarMoverProcess;
 class Texture;
 class AudioMixer;
-class FileSystem;
 class ConfigFileManager;
 struct GameInfo;
 
@@ -75,7 +74,6 @@ private:
 	const UltimaGameDescription *_gameDescription;
 
 	// minimal system
-	FileSystem *_fileSystem;
 	ConfigFileManager *_configFileMan;
 
 	static Ultima8Engine *_instance;
@@ -177,6 +175,8 @@ protected:
 public:
 	Ultima8Engine(OSystem *syst, const Ultima::UltimaGameDescription *gameDesc);
 	~Ultima8Engine() override;
+
+	void initializePath(const Common::FSNode &gamePath) override;
 
 	static Ultima8Engine *get_instance() {
 		return _instance;

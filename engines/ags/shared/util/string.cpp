@@ -89,7 +89,7 @@ bool String::IsNullOrSpace() const {
 	if (_len == 0)
 		return true;
 	for (const char *ptr = _cstr; *ptr; ++ptr) {
-		if (!Common::isSpace(*ptr))
+		if (!Common::isSpace(static_cast<uint8_t>(*ptr)))
 			return false;
 	}
 	return true;
@@ -780,7 +780,7 @@ void String::TrimLeft(char c) {
 		if (c && t != c) {
 			break;
 		}
-		if (!c && !Common::isSpace(t)) {
+		if (!c && !Common::isSpace(static_cast<uint8_t>(t))) {
 			break;
 		}
 		trim_ptr++;
@@ -807,7 +807,7 @@ void String::TrimRight(char c) {
 		if (c && t != c) {
 			break;
 		}
-		if (!c && !Common::isSpace(t)) {
+		if (!c && !Common::isSpace(static_cast<uint8_t>(t))) {
 			break;
 		}
 		trim_ptr--;

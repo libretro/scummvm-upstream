@@ -18,31 +18,30 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
-
-#ifndef ULTIMA8_FILESYS_FILESYSTEM_H
-#define ULTIMA8_FILESYS_FILESYSTEM_H
-
 #include "common/file.h"
+#include "common/memstream.h"
 
-namespace Ultima {
-namespace Ultima8 {
+#include "freescape/freescape.h"
+#include "freescape/games/dark/dark.h"
+#include "freescape/language/8bitDetokeniser.h"
 
-class FileSystem {
-public:
-	FileSystem();
-	~FileSystem();
+namespace Freescape {
 
-	static FileSystem *get_instance() {
-		return _fileSystem;
+void DarkEngine::loadAssetsAtariFullGame() {
+	Common::SeekableReadStream *stream = decryptFile("1.drk", "0.drk", 840);
+	parseAmigaAtariHeader(stream);
+
+	_border = loadAndConvertNeoImage(stream, 0xd710);
+	load8bitBinary(stream, 0x20918, 16);
+	loadMessagesVariableSize(stream, 0x3f6f, 66);
+	loadPalettes(stream, 0x205e6);
+	loadGlobalObjects(stream, 0x32f6, 24);
+
+	for (auto &it : _areaMap) {
+		addWalls(it._value);
+		addECDs(it._value);
+		addSkanner(it._value);
 	}
+}
 
-	Common::SeekableReadStream *ReadFile(const Common::Path &path);
-
-private:
-	static FileSystem *_fileSystem;
-};
-
-} // End of namespace Ultima8
-} // End of namespace Ultima
-
-#endif
+} // End of namespace Freescape

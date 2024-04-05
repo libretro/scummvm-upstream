@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: ScummVM 1.8.0svn\n"
 "Report-Msgid-Bugs-To: scummvm-devel@lists.scummvm.org\n"
-"POT-Creation-Date: 2024-03-25 01:43+0000\n"
+"POT-Creation-Date: 2024-04-03 09:40+0000\n"
 "PO-Revision-Date: 2024-03-15 20:14+0000\n"
 "Last-Translator: Eugene Sandulenko <sev@scummvm.org>\n"
 "Language-Team: Russian <https://translations.scummvm.org/projects/scummvm/"
@@ -87,7 +87,7 @@ msgstr "Вверх"
 #: gui/saveload-dialog.cpp:526 gui/saveload-dialog.cpp:828
 #: gui/saveload-dialog.cpp:1224 gui/shaderbrowser-dialog.cpp:80
 #: gui/themebrowser.cpp:54 gui/unknown-game-dialog.cpp:53 base/main.cpp:604
-#: dists/android.strings.xml.cpp:43 engines/engine.cpp:749
+#: dists/android.strings.xml.cpp:43 engines/engine.cpp:760
 #: backends/dialogs/gtk/gtk-dialogs.cpp:65
 #: backends/events/default/default-events.cpp:193
 #: backends/events/default/default-events.cpp:217
@@ -103,7 +103,7 @@ msgstr "Вверх"
 #: engines/mohawk/riven_stacks/aspit.cpp:455
 #: engines/parallaction/saveload.cpp:270
 #: engines/scumm/dialog-createsession.cpp:47
-#: engines/scumm/dialog-sessionselector.cpp:67 engines/sword1/control.cpp:2796
+#: engines/scumm/dialog-sessionselector.cpp:67 engines/sword1/control.cpp:2798
 #: engines/wintermute/wintermute.cpp:182
 msgid "Cancel"
 msgstr "Отмена"
@@ -241,7 +241,7 @@ msgid "Paste code from clipboard"
 msgstr "Вставить код из буфера обмена"
 
 #: gui/cloudconnectionwizard.cpp:362 gui/launcher.cpp:316
-#: engines/dialogs.cpp:94 engines/engine.cpp:917 engines/mm/xeen/saves.cpp:259
+#: engines/dialogs.cpp:94 engines/engine.cpp:928 engines/mm/xeen/saves.cpp:259
 #: engines/parallaction/metaengine.cpp:127
 #: engines/parallaction/saveload.cpp:193 engines/pegasus/pegasus.cpp:388
 #: engines/trecision/saveload.cpp:253 engines/tsage/scenes.cpp:638
@@ -294,7 +294,7 @@ msgstr "Сейчас работает другое хранилище. Вы хо
 #: gui/cloudconnectionwizard.cpp:499 gui/downloaddialog.cpp:118
 #: gui/downloaddialog.cpp:152 gui/filebrowser-dialog.cpp:135
 #: gui/fluidsynth-dialog.cpp:209 gui/launcher.cpp:420 gui/launcher.cpp:449
-#: gui/launcher.cpp:492 gui/options.cpp:3440 gui/options.cpp:3821
+#: gui/launcher.cpp:501 gui/options.cpp:3440 gui/options.cpp:3821
 #: base/main.cpp:604 backends/events/default/default-events.cpp:193
 #: engines/buried/buried.cpp:590 engines/director/events.cpp:89
 #: engines/director/lingo/xlibs/jitdraw3.cpp:139 engines/grim/grim.cpp:366
@@ -308,7 +308,7 @@ msgstr "Да"
 #: gui/cloudconnectionwizard.cpp:499 gui/downloaddialog.cpp:118
 #: gui/downloaddialog.cpp:153 gui/filebrowser-dialog.cpp:135
 #: gui/fluidsynth-dialog.cpp:209 gui/launcher.cpp:420 gui/launcher.cpp:449
-#: gui/launcher.cpp:492 gui/options.cpp:3440 gui/options.cpp:3821
+#: gui/launcher.cpp:501 gui/options.cpp:3440 gui/options.cpp:3821
 #: engines/buried/buried.cpp:590 engines/director/events.cpp:89
 #: engines/director/lingo/xlibs/jitdraw3.cpp:139 engines/grim/grim.cpp:366
 #: engines/kyra/gui/saveload_eob.cpp:598 engines/kyra/gui/saveload_eob.cpp:631
@@ -329,14 +329,14 @@ msgstr "Содержимое кода JSON имеет неверный форм�
 
 #: gui/cloudconnectionwizard.cpp:557 gui/downloaddialog.cpp:146
 #: gui/editgamedialog.cpp:363 gui/editrecorddialog.cpp:67
-#: gui/fluidsynth-dialog.cpp:153 gui/launcher.cpp:548 gui/launcher.cpp:552
+#: gui/fluidsynth-dialog.cpp:153 gui/launcher.cpp:557 gui/launcher.cpp:561
 #: gui/massadd.cpp:90 gui/options.cpp:2354 gui/predictivedialog.cpp:69
 #: gui/saveload-dialog.cpp:1225 dists/android.strings.xml.cpp:32
-#: engines/engine.cpp:552 engines/engine.cpp:575
+#: engines/engine.cpp:563 engines/engine.cpp:586
 #: backends/platform/wii/options.cpp:46 engines/agos/animation.cpp:577
 #: engines/agos/midi.cpp:320 engines/agos/midi.cpp:378
 #: engines/agos/midi.cpp:457 engines/buried/saveload.cpp:83
-#: engines/director/lingo/lingo-builtins.cpp:1906
+#: engines/director/lingo/lingo-builtins.cpp:1908
 #: engines/drascula/saveload.cpp:48 engines/grim/inputdialog.cpp:83
 #: engines/groovie/script.cpp:660 engines/mtropolis/mtropolis.cpp:114
 #: engines/mtropolis/mtropolis.cpp:124 engines/parallaction/saveload.cpp:270
@@ -345,10 +345,10 @@ msgstr "Содержимое кода JSON имеет неверный форм�
 #: engines/scumm/scumm.cpp:1604 engines/scumm/scumm.cpp:2080
 #: engines/scumm/scumm.cpp:2096 engines/sky/compact.cpp:140
 #: engines/sword1/animation.cpp:532 engines/sword1/animation.cpp:563
-#: engines/sword1/animation.cpp:571 engines/sword1/control.cpp:2796
+#: engines/sword1/animation.cpp:571 engines/sword1/control.cpp:2798
 #: engines/sword1/logic.cpp:1732 engines/sword2/animation.cpp:426
 #: engines/sword2/animation.cpp:456 engines/sword2/animation.cpp:466
-#: engines/vcruise/vcruise.cpp:92 engines/vcruise/vcruise.cpp:102
+#: engines/vcruise/vcruise.cpp:101 engines/vcruise/vcruise.cpp:111
 #: engines/zvision/file/save_manager.cpp:225
 msgid "OK"
 msgstr "OK"
@@ -437,7 +437,7 @@ msgstr ""
 "Похоже, что ваше соединение ограничено. Вы действительно хотите загрузить "
 "файлы?"
 
-#: gui/downloaddialog.cpp:136 gui/launcher.cpp:650
+#: gui/downloaddialog.cpp:136 gui/launcher.cpp:659
 msgid "ScummVM couldn't open the specified directory!"
 msgstr "ScummVM не смог открыть указанный каталог!"
 
@@ -548,7 +548,7 @@ msgstr "пакетов иконок"
 msgid "shader packs"
 msgstr "пакетов шейдеров"
 
-#: gui/dump-all-dialogs.cpp:126 gui/launcher.cpp:701
+#: gui/dump-all-dialogs.cpp:126 gui/launcher.cpp:710
 msgid "Pick the game:"
 msgstr "Выберите игру:"
 
@@ -1319,7 +1319,7 @@ msgstr "Год"
 msgid "Select Group by"
 msgstr "Выбрать как группировать"
 
-#: gui/launcher.cpp:233 gui/launcher.cpp:886
+#: gui/launcher.cpp:233 gui/launcher.cpp:895
 msgid "Group:"
 msgstr "Группа:"
 
@@ -1415,17 +1415,17 @@ msgctxt "lowres"
 msgid "Mass Add..."
 msgstr "Много игр..."
 
-#: gui/launcher.cpp:301 gui/launcher.cpp:856 gui/shaderbrowser-dialog.cpp:61
+#: gui/launcher.cpp:301 gui/launcher.cpp:865 gui/shaderbrowser-dialog.cpp:61
 #: gui/shaderbrowser-dialog.cpp:97
 msgid "Search in game list"
 msgstr "Поиск в списке игр"
 
-#: gui/launcher.cpp:305 gui/launcher.cpp:877 gui/shaderbrowser-dialog.cpp:65
+#: gui/launcher.cpp:305 gui/launcher.cpp:886 gui/shaderbrowser-dialog.cpp:65
 #: gui/shaderbrowser-dialog.cpp:107
 msgid "Search:"
 msgstr "Поиск:"
 
-#: gui/launcher.cpp:316 engines/dialogs.cpp:94 engines/engine.cpp:917
+#: gui/launcher.cpp:316 engines/dialogs.cpp:94 engines/engine.cpp:928
 #: engines/mm/xeen/saves.cpp:259 engines/pegasus/pegasus.cpp:388
 #: engines/trecision/saveload.cpp:253 engines/tsage/scenes.cpp:638
 #: engines/wage/saveload.cpp:736
@@ -1450,19 +1450,19 @@ msgstr ""
 msgid "Do you really want to remove this game configuration?"
 msgstr "Вы действительно хотите удалить настройки для этой игры?"
 
-#: gui/launcher.cpp:491
+#: gui/launcher.cpp:500
 msgid "Do you want to load saved game?"
 msgstr "Вы хотите загрузить игру?"
 
-#: gui/launcher.cpp:548
+#: gui/launcher.cpp:557
 msgid "This game does not support loading games from the launcher."
 msgstr "Эта игра не поддерживает загрузку сохранённых игр через главное меню."
 
-#: gui/launcher.cpp:552
+#: gui/launcher.cpp:561
 msgid "ScummVM could not find any engine capable of running the selected game!"
 msgstr "ScummVM не смог найти движок для запуска выбранной игры!"
 
-#: gui/launcher.cpp:653 gui/launcher.cpp:677
+#: gui/launcher.cpp:662 gui/launcher.cpp:686
 msgid ""
 "Did you add this directory to the SAF? Press the help button [?] on the top "
 "for detailed instructions"
@@ -1470,96 +1470,96 @@ msgstr ""
 "Добавили ли вы эту папку в SAF? Нажмите кнопку помощи [?] в верху окна для "
 "подробных инструкций"
 
-#: gui/launcher.cpp:674
+#: gui/launcher.cpp:683
 msgid "ScummVM could not find any game in the specified directory!"
 msgstr "ScummVM не смог найти игру в указанном каталоге!"
 
 #. I18N: Unknown game variant
-#: gui/launcher.cpp:695
+#: gui/launcher.cpp:704
 msgid "Unknown variant"
 msgstr "Неизвестный вариант"
 
-#: gui/launcher.cpp:926 gui/saveload-dialog.cpp:381
+#: gui/launcher.cpp:935 gui/saveload-dialog.cpp:381
 msgid "List view"
 msgstr "Вид списка"
 
-#: gui/launcher.cpp:927 gui/saveload-dialog.cpp:382
+#: gui/launcher.cpp:936 gui/saveload-dialog.cpp:382
 msgid "Grid view"
 msgstr "Вид сетки"
 
-#: gui/launcher.cpp:1089
+#: gui/launcher.cpp:1100
 msgid "~S~tart"
 msgstr "П~у~ск"
 
-#: gui/launcher.cpp:1089
+#: gui/launcher.cpp:1100
 msgid "Start selected game"
 msgstr "Запустить выбранную игру"
 
-#: gui/launcher.cpp:1092
+#: gui/launcher.cpp:1103
 msgid "~L~oad..."
 msgstr "~З~агрузить..."
 
-#: gui/launcher.cpp:1092
+#: gui/launcher.cpp:1103
 msgid "Load saved game for selected game"
 msgstr "Загрузить сохранение для выбранной игры"
 
-#: gui/launcher.cpp:1094
+#: gui/launcher.cpp:1105
 msgid "Record..."
 msgstr "Запись..."
 
-#: gui/launcher.cpp:1100
+#: gui/launcher.cpp:1111
 msgid "~G~ame Options..."
 msgstr "Настройки ~и~гры..."
 
-#: gui/launcher.cpp:1100
+#: gui/launcher.cpp:1111
 msgid "Change game options"
 msgstr "Изменить настройки игры"
 
-#: gui/launcher.cpp:1100
+#: gui/launcher.cpp:1111
 msgctxt "lowres"
 msgid "~G~ame Opts..."
 msgstr "Настр. ~и~гры..."
 
 #. I18N: List grouping when no engine is specified
 #. I18N: List grouping when no enginr is specified
-#: gui/launcher.cpp:1192 gui/launcher.cpp:1388
+#: gui/launcher.cpp:1209 gui/launcher.cpp:1405
 msgid "Unknown Engine"
 msgstr "Неизвестный движок"
 
 #. I18N: List grouping when no pubisher is specified
 #. I18N: List group when no publisher is specified
-#: gui/launcher.cpp:1209 gui/launcher.cpp:1405
+#: gui/launcher.cpp:1226 gui/launcher.cpp:1422
 msgid "Unknown Publisher"
 msgstr "Неизвестный издатель"
 
 #. I18N: List group when no game series is specified
 #. I18N: List grouping when no game series is specified
-#: gui/launcher.cpp:1226 gui/launcher.cpp:1422
+#: gui/launcher.cpp:1243 gui/launcher.cpp:1439
 msgid "No Series"
 msgstr "Без серии"
 
 #. I18N: List group when no languageis specified
 #. I18N: List group when no language is specified
-#: gui/launcher.cpp:1240 gui/launcher.cpp:1436
+#: gui/launcher.cpp:1257 gui/launcher.cpp:1453
 msgid "Language not detected"
 msgstr "Язык не определён"
 
 #. I18N: List group when no platform is specified
-#: gui/launcher.cpp:1254 gui/launcher.cpp:1450
+#: gui/launcher.cpp:1271 gui/launcher.cpp:1467
 msgid "Platform not detected"
 msgstr "Платформа не определена"
 
 #. I18N: List group when no year is specified
-#: gui/launcher.cpp:1271 gui/launcher.cpp:1467
+#: gui/launcher.cpp:1288 gui/launcher.cpp:1484
 msgid "Unknown Year"
 msgstr "Год неизвестен"
 
 #. I18N: Group for All items
-#: gui/launcher.cpp:1474 gui/widgets/groupedlist.cpp:81
+#: gui/launcher.cpp:1491 gui/widgets/groupedlist.cpp:81
 msgid "All"
 msgstr "Все"
 
-#: gui/launcher.cpp:1623
+#: gui/launcher.cpp:1646
 msgid "Icons per row:"
 msgstr "Иконок в ряду:"
 
@@ -2531,7 +2531,7 @@ msgstr ""
 "\n"
 "Далее..."
 
-#: gui/options.cpp:2899 engines/engine.cpp:604
+#: gui/options.cpp:2899 engines/engine.cpp:615
 msgid "Move"
 msgstr "Переместить"
 
@@ -2662,7 +2662,7 @@ msgstr "Воспроизвести или записать игровой про
 
 #: gui/recorderdialog.cpp:72 gui/recorderdialog.cpp:212
 #: gui/saveload-dialog.cpp:459 gui/saveload-dialog.cpp:526
-#: dists/android.strings.xml.cpp:44 engines/engine.cpp:598
+#: dists/android.strings.xml.cpp:44 engines/engine.cpp:609
 msgid "Delete"
 msgstr "Удалить"
 
@@ -2920,7 +2920,7 @@ msgstr ""
 "Повторите шаги 1 и 6 для каждой игры."
 
 #: base/main.cpp:671 base/main.cpp:696
-#: engines/director/lingo/lingo-builtins.cpp:1275
+#: engines/director/lingo/lingo-builtins.cpp:1276
 #: engines/director/lingo/xlibs/jitdraw3.cpp:123
 #: engines/director/lingo/xlibs/jitdraw3.cpp:131
 msgid "Ok"
@@ -3330,7 +3330,7 @@ msgctxt "lowres"
 msgid "~R~eturn to Launcher"
 msgstr "~В~ главное меню"
 
-#: engines/dialogs.cpp:95 engines/engine.cpp:946 engines/agi/saveload.cpp:766
+#: engines/dialogs.cpp:95 engines/engine.cpp:957 engines/agi/saveload.cpp:766
 #: engines/avalanche/parser.cpp:1918 engines/cine/various.cpp:349
 #: engines/dm/loadsave.cpp:199 engines/drascula/saveload.cpp:382
 #: engines/dreamweb/saveload.cpp:261 engines/glk/streams.cpp:1432
@@ -3350,7 +3350,7 @@ msgstr "~В~ главное меню"
 msgid "Save game:"
 msgstr "Сохранить игру:"
 
-#: engines/dialogs.cpp:95 engines/engine.cpp:946 engines/agi/saveload.cpp:766
+#: engines/dialogs.cpp:95 engines/engine.cpp:957 engines/agi/saveload.cpp:766
 #: engines/avalanche/parser.cpp:1918 engines/cine/various.cpp:349
 #: engines/dm/loadsave.cpp:199 engines/drascula/saveload.cpp:382
 #: engines/dreamweb/saveload.cpp:261 engines/glk/streams.cpp:1432
@@ -3424,42 +3424,42 @@ msgstr "~O~K"
 msgid "~C~ancel"
 msgstr "О~т~мена"
 
-#: engines/engine.cpp:368
+#: engines/engine.cpp:379
 #, c-format
 msgid "Could not switch to resolution '%dx%d'."
 msgstr "Не удалось переключиться на разрешение \"%dx%d\"."
 
-#: engines/engine.cpp:377
+#: engines/engine.cpp:388
 msgid "Could not initialize color format."
 msgstr "Не могу инициализировать формат цвета."
 
-#: engines/engine.cpp:386
+#: engines/engine.cpp:397
 #, c-format
 msgid "Could not switch to video mode '%s'."
 msgstr "Не удалось перейти в режим видео '%s'."
 
-#: engines/engine.cpp:394
+#: engines/engine.cpp:405
 #, c-format
 msgid "Could not switch to stretch mode '%s'."
 msgstr "Не удалось переключиться в режим растяжения '%s'."
 
-#: engines/engine.cpp:401
+#: engines/engine.cpp:412
 msgid "Could not apply aspect ratio setting."
 msgstr "Не удалось использовать коррекцию соотношения сторон."
 
-#: engines/engine.cpp:406
+#: engines/engine.cpp:417
 msgid "Could not apply fullscreen setting."
 msgstr "Не удалось применить полноэкранный режим."
 
-#: engines/engine.cpp:411
+#: engines/engine.cpp:422
 msgid "Could not apply filtering setting."
 msgstr "Не удалось применить настройки фильтрации."
 
-#: engines/engine.cpp:485
+#: engines/engine.cpp:496
 msgid "Error"
 msgstr "Ошибка"
 
-#: engines/engine.cpp:548
+#: engines/engine.cpp:559
 msgid ""
 "You appear to be playing this game directly\n"
 "from the CD. This is known to cause problems,\n"
@@ -3473,7 +3473,7 @@ msgstr ""
 "файлы данных вместо этого на ваш жесткий диск.\n"
 "Подробности см. в документации (аудио компакт-диск)."
 
-#: engines/engine.cpp:571
+#: engines/engine.cpp:582
 msgid ""
 "This game has audio tracks on its CD. These\n"
 "tracks need to be ripped from the CD using\n"
@@ -3487,11 +3487,11 @@ msgstr ""
 "чтобы в игре появилась музыка.\n"
 "Подробности см. в документации (CD-аудио)."
 
-#: engines/engine.cpp:599
+#: engines/engine.cpp:610
 msgid "Skip autosave"
 msgstr "Пропустить автосохранение"
 
-#: engines/engine.cpp:601
+#: engines/engine.cpp:612
 #, c-format
 msgid ""
 "WARNING: The autosave slot contains a saved game named %S, and an autosave "
@@ -3507,21 +3507,21 @@ msgstr ""
 "Также вы можете пропустить это автосохранение (повторная попытка через 5 "
 "минут)."
 
-#: engines/engine.cpp:611
+#: engines/engine.cpp:622
 msgid "ERROR: Could not copy the savegame to a new slot"
 msgstr "ОШИБКА: Не удалось перенести сохранение в новый слот"
 
-#: engines/engine.cpp:638 engines/savestate.cpp:98
+#: engines/engine.cpp:649 engines/savestate.cpp:98
 #: backends/platform/ios7/ios7_osys_main.cpp:294 engines/mm/xeen/saves.cpp:293
 #: engines/sky/metaengine.cpp:216
 msgid "Autosave"
 msgstr "Автосохранение"
 
-#: engines/engine.cpp:646
+#: engines/engine.cpp:657
 msgid "Error occurred making autosave"
 msgstr "Ошибка создания автоматического сохранения"
 
-#: engines/engine.cpp:721
+#: engines/engine.cpp:732
 #, c-format
 msgid ""
 "Failed to load saved game (%s)! Please consult the README for basic "
@@ -3530,15 +3530,15 @@ msgstr ""
 "Не удалось прочитать сохранённую игру (%s)! Пожалуйста, обратитесь к файлу "
 "README за подробностями и указаниями к получению дальнейшей помощи."
 
-#: engines/engine.cpp:745
+#: engines/engine.cpp:756
 msgid "WARNING: "
 msgstr "ПРЕДУПРЕЖДЕНИЕ: "
 
-#: engines/engine.cpp:745
+#: engines/engine.cpp:756
 msgid " Shall we still run the game?"
 msgstr " Вы всё ещё хотите запустить игру?"
 
-#: engines/engine.cpp:746
+#: engines/engine.cpp:757
 msgid ""
 "WARNING: The game you are about to start is not yet fully supported by "
 "ScummVM. As such, it is likely to be unstable, and any saved game you make "
@@ -3548,15 +3548,15 @@ msgstr ""
 "скорее всего, не будет работать стабильно, и сохранения игр могут не "
 "работать в будущих версиях ScummVM."
 
-#: engines/engine.cpp:749 engines/wintermute/wintermute.cpp:182
+#: engines/engine.cpp:760 engines/wintermute/wintermute.cpp:182
 msgid "Start anyway"
 msgstr "Всё равно запустить"
 
-#: engines/engine.cpp:767
+#: engines/engine.cpp:778
 msgid "This game is not supported."
 msgstr "Эта игра не поддерживается."
 
-#: engines/engine.cpp:767
+#: engines/engine.cpp:778
 msgid ""
 "This game is not supported for the following reason:\n"
 "\n"
@@ -3564,11 +3564,11 @@ msgstr ""
 "Эта игра не поддерживается по нижеследующим причинам:\n"
 "\n"
 
-#: engines/engine.cpp:913
+#: engines/engine.cpp:924
 msgid "Loading game is currently unavailable"
 msgstr "В данный момент загрузка игры недоступна"
 
-#: engines/engine.cpp:942
+#: engines/engine.cpp:953
 msgid "Saving game is currently unavailable"
 msgstr "В данный момент сохранение игры недоступно"
 
@@ -3799,7 +3799,7 @@ msgstr "Aудио SegaCD"
 msgid "Initializing MT-32 Emulator"
 msgstr "Настраиваю эмулятор MT-32"
 
-#: audio/softsynth/mt32.cpp:435
+#: audio/softsynth/mt32.cpp:441
 msgid "MT-32 emulator"
 msgstr "Эмулятор MT-32"
 
@@ -5777,7 +5777,7 @@ msgstr "Проверить обновления..."
 #: engines/mortevielle/mortevielle.cpp:300 engines/sky/compact.cpp:129
 #: engines/supernova/supernova.cpp:463 engines/teenagent/resources.cpp:97
 #: engines/tony/tony.cpp:187 engines/toon/toon.cpp:5416
-#: engines/ultima/ultima8/ultima8.cpp:183
+#: engines/ultima/ultima8/ultima8.cpp:188
 #, c-format
 msgid "Unable to locate the '%s' engine data file."
 msgstr "Не удалось найти файл движка %s."
@@ -5832,7 +5832,7 @@ msgstr "Всегда используйте четкий монохромный 
 msgid "Do not emulate NTSC artifacts for text"
 msgstr "Не эмулируйте артефакты NTSC для текста"
 
-#: engines/agi/detection_tables.h:316
+#: engines/agi/detection_tables.h:313
 msgid "Early AGI games for Tandy Color Computer are not yet supported."
 msgstr "Ранние AGI игры для Tandy Color Computer ещё не поддерживаются."
 
@@ -6574,7 +6574,7 @@ msgstr ""
 "сообщение появится снова при следующем запуске игры.\n"
 
 #: engines/buried/saveload.cpp:179 engines/mtropolis/saveload.cpp:158
-#: engines/vcruise/vcruise.cpp:314
+#: engines/vcruise/vcruise.cpp:363
 msgid "Saved game was created with a newer version of ScummVM. Unable to load."
 msgstr ""
 "Этот файл сохранения был создан в более новой версии ScummVM. Не могу его "
@@ -6914,60 +6914,60 @@ msgstr "Рисует графику с использованием яркой �
 msgid "Enable Text to Speech for Objects, Options, and the Bible Quote"
 msgstr "Включить озвучку текста для объектов, опций и цитаты из Библии"
 
-#: engines/freescape/metaengine.cpp:39
+#: engines/freescape/metaengine.cpp:40
 msgid "Prerecorded sounds"
 msgstr "Записанные звуки"
 
-#: engines/freescape/metaengine.cpp:40
+#: engines/freescape/metaengine.cpp:41
 msgid "Use high-quality pre-recorded sounds instead of pc speaker emulation"
 msgstr ""
 "Использовать высококачественные записи звуков вместо эмуляции PC Speaker"
 
-#: engines/freescape/metaengine.cpp:50
+#: engines/freescape/metaengine.cpp:51
 msgid "Extended timer"
 msgstr "Продлённый таймер"
 
-#: engines/freescape/metaengine.cpp:51
+#: engines/freescape/metaengine.cpp:52
 msgid "Start the game timer at 99:59:59"
 msgstr "Стартовать таймер в игре с 99:59:59"
 
-#: engines/freescape/metaengine.cpp:61
+#: engines/freescape/metaengine.cpp:62
 msgid "Automatic drilling"
 msgstr "Автоматическое сверление"
 
-#: engines/freescape/metaengine.cpp:62
+#: engines/freescape/metaengine.cpp:63
 msgid "Allow to succefully drill in any part of the area in Driller"
 msgstr "Позволяет успешно сверлить любую часть пространства в Driller"
 
-#: engines/freescape/metaengine.cpp:72
+#: engines/freescape/metaengine.cpp:73
 msgid "Disable demo mode"
 msgstr "Выключить режим демо"
 
-#: engines/freescape/metaengine.cpp:73
+#: engines/freescape/metaengine.cpp:74
 msgid "Never activate demo mode"
 msgstr "Никогда не включать режим демо"
 
-#: engines/freescape/metaengine.cpp:83
+#: engines/freescape/metaengine.cpp:84
 msgid "Disable sensors"
 msgstr "Выключить сенсоры"
 
-#: engines/freescape/metaengine.cpp:84
+#: engines/freescape/metaengine.cpp:85
 msgid "Sensors will not shoot the player"
 msgstr "Сенсоры не будут стрелять в игрока"
 
-#: engines/freescape/metaengine.cpp:94
+#: engines/freescape/metaengine.cpp:95
 msgid "Disable falling"
 msgstr "Запретить падение"
 
-#: engines/freescape/metaengine.cpp:95
+#: engines/freescape/metaengine.cpp:96
 msgid "Player cannot fall over edges"
 msgstr "Игрок не будет падать в пропасть"
 
-#: engines/freescape/metaengine.cpp:105
+#: engines/freescape/metaengine.cpp:106
 msgid "Invert Y-axis on mouse"
 msgstr "Инвертировать ось Y мыши"
 
-#: engines/freescape/metaengine.cpp:106
+#: engines/freescape/metaengine.cpp:107
 msgid "Use alternative camera controls"
 msgstr "Использовать альтернативное управление камерой"
 
@@ -8303,7 +8303,7 @@ msgstr ""
 "действия будут утеряны."
 
 #: engines/mohawk/myst_stacks/menu.cpp:283
-#: engines/mohawk/riven_stacks/aspit.cpp:349 engines/vcruise/metaengine.cpp:134
+#: engines/mohawk/riven_stacks/aspit.cpp:349 engines/vcruise/metaengine.cpp:145
 #: engines/wintermute/keymapper_tables.h:925
 #: engines/wintermute/keymapper_tables.h:1265
 msgid "Load game"
@@ -8497,14 +8497,14 @@ msgstr "Заставляет проигрывать все ролики до к�
 msgid "Failed to read version information from save file"
 msgstr "Не удалось загрузить информацию о версии из сохранения"
 
-#: engines/mtropolis/saveload.cpp:150 engines/vcruise/vcruise.cpp:309
+#: engines/mtropolis/saveload.cpp:150 engines/vcruise/vcruise.cpp:358
 msgid ""
 "Failed to load save, the save file doesn't contain valid version information."
 msgstr ""
 "Не удалось загрузить игру, в файле сохранения отсутствует информация о "
 "версии."
 
-#: engines/mtropolis/saveload.cpp:166 engines/vcruise/vcruise.cpp:319
+#: engines/mtropolis/saveload.cpp:166 engines/vcruise/vcruise.cpp:368
 msgid ""
 "Saved game was created with an earlier, incompatible version of ScummVM. "
 "Unable to load."
@@ -9542,7 +9542,7 @@ msgstr "Esc"
 msgid "Space"
 msgstr "Пробел"
 
-#: engines/scumm/help.cpp:80 engines/vcruise/metaengine.cpp:149
+#: engines/scumm/help.cpp:80 engines/vcruise/metaengine.cpp:160
 msgid "Pause game"
 msgstr "Пауза игры"
 
@@ -10502,7 +10502,7 @@ msgstr ""
 msgid "Cutscene '%s' not found"
 msgstr "Заставка '%s' не найдена"
 
-#: engines/sword1/control.cpp:2794
+#: engines/sword1/control.cpp:2796
 msgid ""
 "ScummVM found that you have old saved games for Broken Sword 1 that should "
 "be converted.\n"
@@ -10520,7 +10520,7 @@ msgstr ""
 "Нажмите ОК, чтобы перевести их в новый формат сейчас, в противном случае это "
 "сообщение появится снова при следующем запуске игры.\n"
 
-#: engines/sword1/control.cpp:2980
+#: engines/sword1/control.cpp:2982
 #, c-format
 msgid ""
 "Target new saved game already exists!\n"
@@ -10529,11 +10529,11 @@ msgstr ""
 "Сохранение игры с таким именем уже существует!\n"
 "Вы хотите оставить старое название (%s) или сделать новое (%s)?\n"
 
-#: engines/sword1/control.cpp:2983
+#: engines/sword1/control.cpp:2985
 msgid "Keep the old one"
 msgstr "Оставить старое"
 
-#: engines/sword1/control.cpp:2983
+#: engines/sword1/control.cpp:2985
 msgid "Keep the new one"
 msgstr "Сделать новое"
 
@@ -11165,7 +11165,7 @@ msgstr "Ultima VIII Cheats"
 msgid "Ultima VIII Debug"
 msgstr "Ultima VIII Отладка"
 
-#: engines/ultima/ultima8/games/cru_game.cpp:165
+#: engines/ultima/ultima8/games/cru_game.cpp:164
 msgid ""
 "Crusader intro movie file missing - check that the FLICS and SOUND "
 "directories have been copied from the CD.  More instructions are on the "
@@ -11205,55 +11205,71 @@ msgstr "Пропустить главное меню"
 msgid "Starts a new game upon launching instead of going to the main menu."
 msgstr "Запускает новую игру при запуске вместо перехода в главное меню."
 
-#: engines/vcruise/metaengine.cpp:124
+#: engines/vcruise/metaengine.cpp:86
+#, fuzzy
+#| msgid "Color graphics"
+msgid "Use 16-color graphics"
+msgstr "Цветная графика"
+
+#: engines/vcruise/metaengine.cpp:87
+#, fuzzy
+#| msgid "Color graphics"
+msgid "Uses 16-color graphics."
+msgstr "Цветная графика"
+
+#: engines/vcruise/metaengine.cpp:135
 msgid "Display help screen"
 msgstr "Показать экран помощи"
 
-#: engines/vcruise/metaengine.cpp:129 engines/wintermute/keymapper_tables.h:920
+#: engines/vcruise/metaengine.cpp:140 engines/wintermute/keymapper_tables.h:920
 msgid "Save game"
 msgstr "Сохранить игру"
 
-#: engines/vcruise/metaengine.cpp:139
+#: engines/vcruise/metaengine.cpp:150
 msgid "Open sound settings"
 msgstr "Открыть настройки звука"
 
-#: engines/vcruise/metaengine.cpp:144
+#: engines/vcruise/metaengine.cpp:155
 msgid "Quit game"
 msgstr "Выйти из игры"
 
-#: engines/vcruise/metaengine.cpp:155
+#: engines/vcruise/metaengine.cpp:166
 msgid "Toggle music on/off"
 msgstr "Вкл/выкл музыку"
 
-#: engines/vcruise/metaengine.cpp:160
+#: engines/vcruise/metaengine.cpp:171
 msgid "Toggle sound effects on/off"
 msgstr "Вкл/выкл звуковые эффекты"
 
-#: engines/vcruise/metaengine.cpp:165
+#: engines/vcruise/metaengine.cpp:176
 msgid "Music volume down"
 msgstr "Уменьшить громкость музыки"
 
-#: engines/vcruise/metaengine.cpp:170
+#: engines/vcruise/metaengine.cpp:181
 msgid "Music volume up"
 msgstr "Увеличить громкость музыки"
 
-#: engines/vcruise/metaengine.cpp:175
+#: engines/vcruise/metaengine.cpp:186
 msgid "Sound effect volume down"
 msgstr "Уменьшить громкость звуковых эффектов"
 
-#: engines/vcruise/metaengine.cpp:180
+#: engines/vcruise/metaengine.cpp:191
 msgid "Sound effect volume up"
 msgstr "Увеличить громкость звуковых эффектов"
 
-#: engines/vcruise/metaengine.cpp:185
+#: engines/vcruise/metaengine.cpp:196
 msgid "Skip current animation"
 msgstr "Пропустить текущую анимацию"
 
-#: engines/vcruise/vcruise.cpp:83
+#: engines/vcruise/metaengine.cpp:200
+msgid "Cycle item in scene (debug cheat)"
+msgstr ""
+
+#: engines/vcruise/vcruise.cpp:92
 msgid "This game requires JPEG support, which was not compiled in."
 msgstr "Эта игра требует поддержку JPEG, которая не была скомпилирована."
 
-#: engines/vcruise/vcruise.cpp:90
+#: engines/vcruise/vcruise.cpp:99
 msgid ""
 "Music for this game requires Ogg Vorbis support, which was not compiled in.\n"
 "The game will still play, but will not have any music."
@@ -11262,7 +11278,7 @@ msgstr ""
 "скомпилирована.\n"
 "Игра запустится, но без музыки."
 
-#: engines/vcruise/vcruise.cpp:100
+#: engines/vcruise/vcruise.cpp:109
 msgid ""
 "Music for this game requires MP3 support, which was not compiled in.\n"
 "The game will still play, but will not have any music."
@@ -11270,15 +11286,15 @@ msgstr ""
 "Музыка в этой игре требует поддержку MP3, которая не была скомпилирована.\n"
 "Игра запустится, но без музыки."
 
-#: engines/vcruise/vcruise.cpp:299
+#: engines/vcruise/vcruise.cpp:348
 msgid "Failed to load save, the save data appears to be damaged."
 msgstr "Не удалось загрузить игру, файл сохранения выглядит повреждённым."
 
-#: engines/vcruise/vcruise.cpp:304
+#: engines/vcruise/vcruise.cpp:353
 msgid "Failed to read version information from save file."
 msgstr "Не удалось загрузить информацию о версии из сохранения."
 
-#: engines/vcruise/vcruise.cpp:324
+#: engines/vcruise/vcruise.cpp:373
 msgid "An unknown error occurred while attempting to load the saved game."
 msgstr "Возникла неизвестная ошибка при попытке чтения сохранения игры."
 

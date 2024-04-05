@@ -21,6 +21,7 @@
 
 #include "common/random.h"
 
+#include "vcruise/ad2044_items.h"
 #include "vcruise/audio_player.h"
 #include "vcruise/circuitpuzzle.h"
 #include "vcruise/runtime.h"
@@ -28,6 +29,27 @@
 
 
 namespace VCruise {
+
+struct AD2044UnusualAnimationRules {
+	enum Type {
+		kTypeLoop,	// Loop the animation
+		kTypePlayFirstFrameOnly,
+		kTypeSkip,
+	};
+
+	uint roomNumber;
+	uint screenNumber;
+	uint interactionID;
+	uint8 animLookupID;
+	Type ruleType;
+};
+
+AD2044UnusualAnimationRules g_unusualAnimationRules[] = {
+	// Room, screen, interaction, animation lookup ID, rule
+	{87, 0x24, 0xa4, 0xa7, AD2044UnusualAnimationRules::kTypePlayFirstFrameOnly},	// Taking cigarette, don't play box spin
+	{87, 0x68, 0xa3, 0xa5, AD2044UnusualAnimationRules::kTypeLoop},					// Loop lit cigarette animation
+	{87, 0x69, 0xa3, 0xa5, AD2044UnusualAnimationRules::kTypeSkip},					// Taking lit cigarette, don't play cycling animation
+};
 
 #ifdef PEEK_STACK
 #error "PEEK_STACK is already defined"
@@ -743,8 +765,8 @@ void Runtime::scriptOpMusicVolRamp(ScriptArg_t arg) {
 
 	if (duration == 0) {
 		_musicVolume = newVolume;
-		if (_musicPlayer)
-			_musicPlayer->setVolume(newVolume);
+		if (_musicWavePlayer)
+			_musicWavePlayer->setVolume(newVolume);
 	} else {
 		if (newVolume != _musicVolume) {
 			uint32 timestamp = g_system->getMillis();
@@ -1183,8 +1205,8 @@ void Runtime::scriptOpExit(ScriptArg_t arg) {
 		terminateScript();
 
 		changeMusicTrack(0);
-		if (_musicPlayer)
-			_musicPlayer->setVolumeAndBalance(applyVolumeScale(getDefaultSoundVolume()), 0);
+		if (_musicWavePlayer)
+			_musicWavePlayer->setVolumeAndBalance(applyVolumeScale(getDefaultSoundVolume()), 0);
 	} else {
 		error("Don't know what screen to go to on exit");
 	}
@@ -1485,7 +1507,11 @@ void Runtime::scriptOpJump(ScriptArg_t arg) {
 }
 
 void Runtime::scriptOpMusicStop(ScriptArg_t arg) {
-	_musicPlayer.reset();
+	_musicWavePlayer.reset();
+	if (_musicMidiPlayer) {
+		Common::StackLock lock(_midiPlayerMutex);
+		_musicMidiPlayer.reset();
+	}
 	_musicActive = false;
 }
 
@@ -1513,7 +1539,11 @@ void Runtime::scriptOpScoreNormal(ScriptArg_t arg) {
 	_musicMuteDisabled = false;
 
 	if (_musicMute) {
-		_musicPlayer.reset();
+		_musicWavePlayer.reset();
+		if (_musicMidiPlayer) {
+			Common::StackLock lock(_midiPlayerMutex);
+			_musicMidiPlayer.reset();
+		}
 		_scoreSectionEndTime = 0;
 	}
 }
@@ -2041,6 +2071,268 @@ void Runtime::scriptOpPuzzleDone(ScriptArg_t arg) {
 	_circuitPuzzle.reset();
 }
 
+// AD2044 ops
+void Runtime::scriptOpAnimT(ScriptArg_t arg) {
+	TAKE_STACK_INT(1);
+
+	StackInt_t animationID = stackArgs[0];
+
+	Common::HashMap<int, AnimFrameRange>::const_iterator animRangeIt = _currentRoomAnimIDToFrameRange.find(animationID);
+	if (animRangeIt == _currentRoomAnimIDToFrameRange.end())
+		error("Couldn't resolve animation ID %i", static_cast<int>(animationID));
+
+	AnimationDef animDef;
+	animDef.animNum = animRangeIt->_value.animationNum;
+	animDef.firstFrame = animRangeIt->_value.firstFrame;
+	animDef.lastFrame = animRangeIt->_value.lastFrame;
+
+	_keepStaticAnimationInIdle = true;
+
+	_haveIdleAnimations[0] = true;
+
+	StaticAnimation &outAnim = _idleAnimations[0];
+
+	outAnim = StaticAnimation();
+	outAnim.animDefs[0] = animDef;
+	outAnim.animDefs[1] = animDef;
+}
+
+void Runtime::scriptOpAnimAD2044(bool isForward) {
+	TAKE_STACK_INT(2);
+
+	int16 animationID = 0;
+
+	bool found = false;
+
+	for (const AD2044AnimationDef &def : _ad2044AnimationDefs) {
+		if (def.roomID == _roomNumber && static_cast<StackInt_t>(def.lookupID) == stackArgs[0]) {
+			animationID = isForward ? def.fwdAnimationID : def.revAnimationID;
+			found = true;
+			break;
+		}
+	}
+
+	if (!found)
+		error("Couldn't resolve animation lookup ID %i", static_cast<int>(stackArgs[0]));
+
+	Common::HashMap<int, AnimFrameRange>::const_iterator animRangeIt = _currentRoomAnimIDToFrameRange.find(animationID);
+	if (animRangeIt == _currentRoomAnimIDToFrameRange.end())
+		error("Couldn't resolve animation ID %i", static_cast<int>(animationID));
+
+	AnimationDef animDef;
+	animDef.animNum = animRangeIt->_value.animationNum;
+	animDef.firstFrame = animRangeIt->_value.firstFrame;
+	animDef.lastFrame = animRangeIt->_value.lastFrame;
+
+	for (const AD2044UnusualAnimationRules &unusualAnimRule : g_unusualAnimationRules) {
+		if (static_cast<StackInt_t>(unusualAnimRule.animLookupID) == stackArgs[0] && unusualAnimRule.interactionID == _scriptEnv.clickInteractionID && unusualAnimRule.roomNumber == _roomNumber && unusualAnimRule.screenNumber == _screenNumber) {
+			switch (unusualAnimRule.ruleType) {
+			case AD2044UnusualAnimationRules::kTypePlayFirstFrameOnly:
+				animDef.lastFrame = animDef.firstFrame;
+				break;
+			default:
+				error("Unknown unusual animation rule");
+			}
+			break;
+		}
+	}
+
+	changeAnimation(animDef, animDef.firstFrame, true, _animSpeedDefault);
+
+	_gameState = kGameStateWaitingForAnimation;
+	_screenNumber = stackArgs[1];
+	_havePendingScreenChange = true;
+
+	clearIdleAnimations();
+
+	if (_loadedAnimationHasSound)
+		changeToCursor(nullptr);
+	else {
+		changeToCursor(_cursors[kCursorWait]);
+	}
+}
+
+void Runtime::scriptOpAnimForward(ScriptArg_t arg) {
+	scriptOpAnimAD2044(true);
+}
+
+void Runtime::scriptOpAnimReverse(ScriptArg_t arg) {
+	scriptOpAnimAD2044(false);
+}
+
+OPCODE_STUB(AnimKForward)
+
+void Runtime::scriptOpNoUpdate(ScriptArg_t arg) {
+}
+
+void Runtime::scriptOpNoClear(ScriptArg_t arg) {
+}
+
+void Runtime::scriptOpSayCycle_AD2044(const StackInt_t *values, uint numValues) {
+	// Checking the scripts, there don't appear to be any cycles that can't be tracked from
+	// the first value, so just use that.
+	uint &cyclePosRef = _sayCycles[static_cast<uint32>(values[0])];
+
+	Common::String soundName = Common::String::format("%02i-%08i", static_cast<int>(_disc * 10u + 1u), static_cast<int>(values[cyclePosRef]));
+
+	cyclePosRef = (cyclePosRef + 1u) % numValues;
+
+	StackInt_t soundID = 0;
+	SoundInstance *cachedSound = nullptr;
+	resolveSoundByName(soundName, true, soundID, cachedSound);
+
+	if (cachedSound) {
+		TriggeredOneShot oneShot;
+		oneShot.soundID = soundID;
+		oneShot.uniqueSlot = _disc;
+
+		triggerSound(kSoundLoopBehaviorNo, *cachedSound, 100, 0, false, true);
+	}
+}
+
+void Runtime::scriptOpSay2K(ScriptArg_t arg) {
+	TAKE_STACK_INT(2);
+
+	scriptOpSayCycle_AD2044(stackArgs, 2);
+}
+
+void Runtime::scriptOpSay3K(ScriptArg_t arg) {
+	TAKE_STACK_INT(3);
+
+	scriptOpSayCycle_AD2044(stackArgs, 3);
+}
+
+void Runtime::scriptOpSay1_AD2044(ScriptArg_t arg) {
+	TAKE_STACK_INT(1);
+
+	Common::String soundName = Common::String::format("%02i-%08i", static_cast<int>(_disc * 10u + 1u), static_cast<int>(stackArgs[0]));
+
+	StackInt_t soundID = 0;
+	SoundInstance *cachedSound = nullptr;
+	resolveSoundByName(soundName, true, soundID, cachedSound);
+
+	if (cachedSound) {
+		TriggeredOneShot oneShot;
+		oneShot.soundID = soundID;
+		oneShot.uniqueSlot = _disc;
+
+		if (Common::find(_triggeredOneShots.begin(), _triggeredOneShots.end(), oneShot) == _triggeredOneShots.end()) {
+			triggerSound(kSoundLoopBehaviorNo, *cachedSound, 100, 0, false, true);
+			_triggeredOneShots.push_back(oneShot);
+		}
+	}
+}
+
+void Runtime::scriptOpSay1Rnd(ScriptArg_t arg) {
+	scriptOpSay1_AD2044(arg);
+}
+
+void Runtime::scriptOpSay2_AD2044(ScriptArg_t arg) {
+	scriptOpSay1_AD2044(arg);
+}
+
+void Runtime::scriptOpM(ScriptArg_t arg) {
+	// Looks like this is possibly support to present a mouse click prompt and end
+	// with the #EM instruction, but so far as best I can tell, it just stops
+	// execution.
+	scriptOpLMB(arg);
+}
+
+void Runtime::scriptOpEM(ScriptArg_t arg) {
+}
+
+void Runtime::scriptOpSE(ScriptArg_t arg) {
+	// English subtitle
+	if (_language == Common::PL_POL)
+		return;
+
+	_subtitleText = _scriptSet->strings[arg];
+}
+
+void Runtime::scriptOpSDot(ScriptArg_t arg) {
+	// Polish subtitle
+	if (_language == Common::PL_POL)
+		return;
+
+	_subtitleText = _scriptSet->strings[arg];
+}
+
+void Runtime::scriptOpE(ScriptArg_t arg) {
+	if (_language == Common::PL_POL)
+		return;
+
+	_tooltipText = _scriptSet->strings[arg];
+	redrawSubtitleSection();
+}
+
+void Runtime::scriptOpDot(ScriptArg_t arg) {
+	if (_language != Common::PL_POL)
+		return;
+
+	_tooltipText = _scriptSet->strings[arg];
+	redrawSubtitleSection();
+}
+
+void Runtime::scriptOpSound(ScriptArg_t arg) {
+	TAKE_STACK_INT(2);
+}
+
+void Runtime::scriptOpISound(ScriptArg_t arg) {
+	TAKE_STACK_INT(2);
+}
+
+OPCODE_STUB(USound)
+
+void Runtime::scriptOpRGet(ScriptArg_t arg) {
+	StackInt_t itemID = 0x2000;
+
+	if (_inventoryActiveItem.itemID < kNumAD2044Items) {
+		itemID = g_ad2044ItemInfos[_inventoryActiveItem.itemID].scriptItemID;
+		if (itemID == 0 && _inventoryActiveItem.itemID != 0) {
+			warning("No script item ID for item type %i", static_cast<int>(_inventoryActiveItem.itemID));
+			itemID = 0x2000;
+		}
+	} else
+		error("Invalid item ID");
+
+	_scriptStack.push_back(StackValue(itemID));
+}
+
+void Runtime::scriptOpRSet(ScriptArg_t arg) {
+	TAKE_STACK_INT(1);
+
+	for (uint itemID = 0; itemID < kNumAD2044Items; itemID++) {
+		if (static_cast<StackInt_t>(g_ad2044ItemInfos[itemID].scriptItemID) == stackArgs[0]) {
+
+			if (_inventoryActiveItem.itemID != itemID) {
+				Common::String itemFileName;
+				Common::String alphaFileName;
+
+				_inventoryActiveItem.itemID = itemID;
+				getFileNamesForItemGraphic(itemID, itemFileName, alphaFileName);
+				_inventoryActiveItem.graphic = loadGraphic(itemFileName, alphaFileName, false);
+
+				clearActiveItemGraphic();
+				drawActiveItemGraphic();
+			}
+			return;
+		}
+	}
+
+	error("Couldn't resolve item ID for script item 0x%x", static_cast<int>(stackArgs[0]));
+}
+
+void Runtime::scriptOpEndRSet(ScriptArg_t arg) {
+	scriptOpRSet(arg);
+
+	returnFromExaminingItem();
+}
+
+void Runtime::scriptOpStop(ScriptArg_t arg) {
+	terminateScript();
+}
+
+// Unused Schizm ops
 // Only used in fnRandomBirds and fnRandomMachines in Room 60, both of which are unused
 OPCODE_STUB(SndAddRandom)
 OPCODE_STUB(SndClearRandom)
@@ -2109,6 +2401,7 @@ bool Runtime::runScript() {
 			DISPATCH_OP(AnimN);
 			DISPATCH_OP(AnimG);
 			DISPATCH_OP(AnimS);
+			DISPATCH_OP(AnimT);
 			DISPATCH_OP(Anim);
 
 			DISPATCH_OP(Static);
@@ -2273,6 +2566,34 @@ bool Runtime::runScript() {
 			DISPATCH_OP(PuzzleWhoWon);
 			DISPATCH_OP(Fn);
 			DISPATCH_OP(ItemHighlightSetTrue);
+
+			DISPATCH_OP(AnimForward);
+			DISPATCH_OP(AnimReverse);
+			DISPATCH_OP(AnimKForward);
+			DISPATCH_OP(NoUpdate);
+			DISPATCH_OP(NoClear);
+
+			DISPATCH_OP(Say1_AD2044);
+			DISPATCH_OP(Say2_AD2044);
+			DISPATCH_OP(Say1Rnd);
+
+			DISPATCH_OP(M);
+			DISPATCH_OP(EM);
+			DISPATCH_OP(SE);
+			DISPATCH_OP(SDot);
+			DISPATCH_OP(E);
+			DISPATCH_OP(Dot);
+
+			DISPATCH_OP(Sound);
+			DISPATCH_OP(ISound);
+
+			DISPATCH_OP(RGet);
+			DISPATCH_OP(RSet);
+			DISPATCH_OP(EndRSet);
+
+			DISPATCH_OP(Say2K);
+			DISPATCH_OP(Say3K);
+			DISPATCH_OP(Stop);
 
 		default:
 			error("Unimplemented opcode %i", static_cast<int>(instr.op));

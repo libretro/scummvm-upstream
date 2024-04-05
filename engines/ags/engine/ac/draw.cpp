@@ -934,6 +934,7 @@ Bitmap *recycle_bitmap(Bitmap *bimp, int coldep, int wid, int hit, bool make_tra
 		// same colour depth, width and height -> reuse
 		if ((bimp->GetColorDepth() == coldep) && (bimp->GetWidth() == wid)
 		        && (bimp->GetHeight() == hit)) {
+			bimp->ResetClip();
 			if (make_transparent) {
 				bimp->ClearTransparent();
 			}
@@ -1872,7 +1873,7 @@ void draw_fps(const Rect &viewport) {
 
 // Draw GUI controls as separate sprites
 void draw_gui_controls(GUIMain &gui) {
-	if (_G(all_buttons_disabled) && (GUI::Options.DisabledStyle == kGuiDis_Blackout))
+	if (_G(all_buttons_disabled >= 0) && (GUI::Options.DisabledStyle == kGuiDis_Blackout))
 		return; // don't draw GUI controls
 
 	int draw_index = _GP(guiobjddbref)[gui.ID];
@@ -1992,7 +1993,7 @@ void draw_gui_and_overlays() {
 
 	// If not adding gui controls as textures, simply move the resulting sprlist to render
 	if (!draw_controls_as_textures ||
-		(_G(all_buttons_disabled) && (GUI::Options.DisabledStyle == kGuiDis_Blackout))) {
+		(_G(all_buttons_disabled >= 0) && (GUI::Options.DisabledStyle == kGuiDis_Blackout))) {
 		draw_sprite_list(false);
 		put_sprite_list_on_screen(false);
 		return;

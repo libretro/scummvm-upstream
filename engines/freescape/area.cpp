@@ -145,14 +145,11 @@ void Area::loadObjects(Common::SeekableReadStream *stream, Area *global) {
 		float y = stream->readFloatLE();
 		float z = stream->readFloatLE();
 		Object *obj = nullptr;
-		if (_objectsByID->contains(key)) {
-			obj = (*_objectsByID)[key];
-		} else {
-			obj = global->objectWithID(key);
-			assert(obj);
-			obj = (Object *)((GeometricObject *)obj)->duplicate();
-			addObject(obj);
-		}
+		if (!_objectsByID->contains(key))
+			addObjectFromArea(key, global);
+
+		obj = (*_objectsByID)[key];
+		assert(obj);
 		obj->setObjectFlags(flags);
 		obj->setOrigin(Math::Vector3d(x, y, z));
 	}
@@ -262,7 +259,7 @@ Object *Area::checkCollisionRay(const Math::Ray &ray, int raySize) {
 			if (collidedDistance >= 1.0)
 				continue;
 
-			if (collidedDistance < distance || (collidedDistance == distance && gobj->getSize().length() < size)) {
+			if (collidedDistance < distance || (ABS(collidedDistance - distance) <= 0.05 && gobj->getSize().length() < size)) {
 				collided = obj;
 				size = gobj->getSize().length();
 				distance = collidedDistance;
@@ -397,12 +394,13 @@ void Area::addFloor() {
 	for (int i = 0; i < 6; i++)
 		gColors->push_back(_groundColor);
 
+	int maxSize = 10000000 / 4;
 	Object *obj = (Object *)new GeometricObject(
 		ObjectType::kCubeType,
 		id,
-		0,                             // flags
-		Math::Vector3d(-4128, -1, -4128),      // Position
-		Math::Vector3d(4128 * 4, 1, 4128 * 4), // size
+		0,                                           // flags
+		Math::Vector3d(-maxSize, -3, -maxSize),      // Position
+		Math::Vector3d(maxSize * 4, 1, maxSize * 4), // size
 		gColors,
 		nullptr,
 		FCLInstructionVector());
@@ -436,6 +434,11 @@ void Area::changeObjectID(uint16 objectID, uint16 newObjectID) {
 
 	(*_objectsByID).erase(objectID);
 	(*_objectsByID)[newObjectID] = obj;
+}
+
+
+bool Area::isOutside() {
+	return _skyColor < 255 && _groundColor < 255;
 }
 
 } // End of namespace Freescape

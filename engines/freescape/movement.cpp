@@ -184,7 +184,12 @@ void FreescapeEngine::activate() {
 
 
 void FreescapeEngine::shoot() {
-	if (isSpectrum()) {
+	if (_shootingFrames > 0) // No more than one shot at a time
+		return;
+
+	if (isDriller())
+		playSound(1, false);
+	else if (isSpectrum()) {
 		if (isDark())
 			playSound(15, false);
 		else if (isEclipse())
@@ -213,7 +218,7 @@ void FreescapeEngine::shoot() {
 		if (!gobj->_conditionSource.empty())
 			debugC(1, kFreescapeDebugMove, "Must use shot = true when executing: %s", gobj->_conditionSource.c_str());
 
-		executeObjectConditions(gobj, true, false, false);
+		_delayedShootObject = gobj;
 	}
 	executeLocalGlobalConditions(true, false, false); // Only execute "on shot" room/global conditions
 }
@@ -295,11 +300,19 @@ void FreescapeEngine::lower() {
 }
 
 void FreescapeEngine::checkIfStillInArea() {
+	int maxPositiveDistance = 8192;
+	int maxNegativeDistance	= 0;
+
+	if (_currentArea->isOutside()) {
+		maxPositiveDistance = 16384;
+		maxNegativeDistance = -16384;
+	}
+
 	for (int i = 0; i < 3; i++) {
-		if (_position.getValue(i) < 0)
-			_position.setValue(i, 0);
-		else if (_position.getValue(i) > 8128)
-			_position.setValue(i, 8128);
+		if (_position.getValue(i) < maxNegativeDistance)
+			_position.setValue(i, maxNegativeDistance);
+		else if (_position.getValue(i) > maxPositiveDistance)
+			_position.setValue(i, maxPositiveDistance);
 	}
 	if (_position.y() >= 2016)
 		_position.y() = _lastPosition.z();
