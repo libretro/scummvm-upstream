@@ -124,6 +124,7 @@ public class ScummVMActivity extends Activity implements OnKeyboardVisibilityLis
 	FrameLayout _videoLayout = null;
 
 	private EditableSurfaceView _main_surface = null;
+	private LinearLayout _buttonLayout = null;
 	private ImageView _toggleTouchModeKeyboardBtnIcon = null;
 	private ImageView _openMenuBtnIcon = null;
 
@@ -154,6 +155,8 @@ public class ScummVMActivity extends Activity implements OnKeyboardVisibilityLis
 		if (hwKeyboard) {
 			hideScreenKeyboard();
 		}
+
+		layoutButtonLayout(newConfig.orientation, false);
 	}
 
 	private boolean isHWKeyboardConnected() {
@@ -520,6 +523,28 @@ public class ScummVMActivity extends Activity implements OnKeyboardVisibilityLis
 		}
 	}
 
+	private void layoutButtonLayout(int orientation, boolean force) {
+		int newOrientation = orientation == Configuration.ORIENTATION_LANDSCAPE ? LinearLayout.VERTICAL : LinearLayout.HORIZONTAL;
+
+		if (!force && newOrientation == _buttonLayout.getOrientation()) {
+			return;
+		}
+
+		_buttonLayout.setOrientation(newOrientation);
+		_buttonLayout.removeAllViews();
+		if (newOrientation == LinearLayout.VERTICAL) {
+			_buttonLayout.addView(_openMenuBtnIcon, new FrameLayout.LayoutParams(FrameLayout.LayoutParams.WRAP_CONTENT, FrameLayout.LayoutParams.WRAP_CONTENT));
+			_buttonLayout.bringChildToFront(_openMenuBtnIcon);
+			_buttonLayout.addView(_toggleTouchModeKeyboardBtnIcon, new FrameLayout.LayoutParams(FrameLayout.LayoutParams.WRAP_CONTENT, FrameLayout.LayoutParams.WRAP_CONTENT));
+			_buttonLayout.bringChildToFront(_toggleTouchModeKeyboardBtnIcon);
+		} else {
+			_buttonLayout.addView(_toggleTouchModeKeyboardBtnIcon, new FrameLayout.LayoutParams(FrameLayout.LayoutParams.WRAP_CONTENT, FrameLayout.LayoutParams.WRAP_CONTENT));
+			_buttonLayout.bringChildToFront(_toggleTouchModeKeyboardBtnIcon);
+			_buttonLayout.addView(_openMenuBtnIcon, new FrameLayout.LayoutParams(FrameLayout.LayoutParams.WRAP_CONTENT, FrameLayout.LayoutParams.WRAP_CONTENT));
+			_buttonLayout.bringChildToFront(_openMenuBtnIcon);
+		}
+	}
+
 	public void showScreenKeyboard() {
 		final boolean bGlobalsCompatibilityHacksTextInputEmulatesHwKeyboard = true;
 		final int dGlobalsTextInputKeyboard = 1;
@@ -758,10 +783,10 @@ public class ScummVMActivity extends Activity implements OnKeyboardVisibilityLis
 		}
 
 		@Override
-		protected void showKeyboardControl(final boolean enable) {
+		protected void showOnScreenControls(final int enableMask) {
 			runOnUiThread(new Runnable() {
 				public void run() {
-					showToggleKeyboardBtnIcon(enable);
+					showToggleOnScreenBtnIcons(enableMask);
 				}
 			});
 		}
@@ -919,22 +944,21 @@ public class ScummVMActivity extends Activity implements OnKeyboardVisibilityLis
 
 		_videoLayout.addView(_main_surface, new FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT));
 
-		LinearLayout buttonLayout = new LinearLayout(this);
-		buttonLayout.setOrientation(LinearLayout.HORIZONTAL);
+		_buttonLayout = new LinearLayout(this);
 		FrameLayout.LayoutParams buttonLayoutParams = new FrameLayout.LayoutParams(FrameLayout.LayoutParams.WRAP_CONTENT, FrameLayout.LayoutParams.WRAP_CONTENT, Gravity.TOP | Gravity.RIGHT);
 		buttonLayoutParams.topMargin = 5;
 		buttonLayoutParams.rightMargin = 5;
-		_videoLayout.addView(buttonLayout, buttonLayoutParams);
-		_videoLayout.bringChildToFront(buttonLayout);
-
-		_toggleTouchModeKeyboardBtnIcon = new ImageView(this);
-		buttonLayout.addView(_toggleTouchModeKeyboardBtnIcon, new FrameLayout.LayoutParams(FrameLayout.LayoutParams.WRAP_CONTENT, FrameLayout.LayoutParams.WRAP_CONTENT));
-		buttonLayout.bringChildToFront(_toggleTouchModeKeyboardBtnIcon);
+		_videoLayout.addView(_buttonLayout, buttonLayoutParams);
+		_videoLayout.bringChildToFront(_buttonLayout);
 
 		_openMenuBtnIcon = new ImageView(this);
 		_openMenuBtnIcon.setImageResource(R.drawable.ic_action_menu);
-		buttonLayout.addView(_openMenuBtnIcon, new FrameLayout.LayoutParams(FrameLayout.LayoutParams.WRAP_CONTENT, FrameLayout.LayoutParams.WRAP_CONTENT));
-		buttonLayout.bringChildToFront(_openMenuBtnIcon);
+
+		_toggleTouchModeKeyboardBtnIcon = new ImageView(this);
+
+		// Hide by default all buttons, they will be shown when native code will start
+		showToggleOnScreenBtnIcons(0);
+		layoutButtonLayout(getResources().getConfiguration().orientation, true);
 
 		_main_surface.setFocusable(true);
 		_main_surface.setFocusableInTouchMode(true);
@@ -1120,7 +1144,7 @@ public class ScummVMActivity extends Activity implements OnKeyboardVisibilityLis
 		if (isScreenKeyboardShown()) {
 			hideScreenKeyboard();
 		}
-		showToggleKeyboardBtnIcon(false);
+		showToggleOnScreenBtnIcons(0);
 	}
 
 
@@ -1294,14 +1318,14 @@ public class ScummVMActivity extends Activity implements OnKeyboardVisibilityLis
 //	}
 
 	// Show or hide the semi-transparent onscreen controls
-	// Called by the override of showKeyboardControl()
-	private void showToggleKeyboardBtnIcon(boolean show) {
+	// Called by the override of showOnScreenControls()
+	private void showToggleOnScreenBtnIcons(int enableMask) {
 		if (_openMenuBtnIcon != null ) {
-			_openMenuBtnIcon.setVisibility(show ? View.VISIBLE : View.GONE);
+			_openMenuBtnIcon.setVisibility((enableMask & ScummVM.SHOW_ON_SCREEN_MENU) != 0 ? View.VISIBLE : View.GONE);
 		}
 
 		if (_toggleTouchModeKeyboardBtnIcon != null ) {
-			_toggleTouchModeKeyboardBtnIcon.setVisibility(show ? View.VISIBLE : View.GONE);
+			_toggleTouchModeKeyboardBtnIcon.setVisibility((enableMask & ScummVM.SHOW_ON_SCREEN_INPUT_MODE) != 0 ? View.VISIBLE : View.GONE);
 		}
 	}
 

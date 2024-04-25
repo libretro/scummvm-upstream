@@ -19,25 +19,18 @@
  *
  */
 
-#ifndef CONFIG_3DS_H
-#define CONFIG_3DS_H
+#ifndef TWP_ACHIEVEMENTS_H
+#define TWP_ACHIEVEMENTS_H
 
-#include "common/str.h"
+#include "engines/achievements.h"
 
-namespace N3DS {
+namespace Twp {
 
-struct Config {
-	bool showCursor;
-	bool snapToBorder;
-	bool stretchToFit;
-	int screen;
-};
+static const Common::AchievementDescriptionList achievementDescriptionList[] = {
+	{"twp", Common::STEAM_ACHIEVEMENTS, "569860"},
 
-extern Config config;
+	ACHIEVEMENT_DESC_TABLE_END_MARKER};
 
-void loadConfig();
-void saveConfig();
+} // namespace Twp
 
-} // namespace N3DS
-
-#endif // CONFIG_3DS_H
+#endif // TWP_ACHIEVEMENTS_H

@@ -38,19 +38,19 @@ public:
 typedef bool Predicate();
 
 template<typename Predicate>
-class BreakWhileCond : public Task {
+class BreakWhileCond final : public Task {
 public:
 	BreakWhileCond(int parentId, const Common::String &name, Predicate cond)
 		: _parentId(parentId),
 		  _name(name),
-		  _cond(cond) {
+		  _cond(Common::move(cond)) {
 	}
 	virtual ~BreakWhileCond() override final {}
 
 	virtual bool update(float elapsed) override final {
 		if (_cond())
 			return false;
-		Common::SharedPtr<ThreadBase> pt = sqthread(_parentId);
+		Common::SharedPtr<Thread> pt(sqthread(_parentId));
 		if (pt) {
 			debugC(kDebugGame, "Resume task: %d, %s", _parentId, pt->getName().c_str());
 			pt->resume();

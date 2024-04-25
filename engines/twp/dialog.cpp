@@ -19,10 +19,12 @@
  *
  */
 
+#include "common/config-manager.h"
 #include "twp/twp.h"
 #include "twp/detection.h"
 #include "twp/dialog.h"
 #include "twp/motor.h"
+#include "twp/resmanager.h"
 #include "twp/squtil.h"
 #include "twp/tsv.h"
 
@@ -206,10 +208,8 @@ void Dialog::choose(DialogSlot *slot) {
 		YChoice *choice = getChoice(slot);
 		if (slot->_dlg->_context.parrot) {
 			slot->_dlg->_state = DialogState::Active;
-			slot->_dlg->_action = Common::SharedPtr<SerialMotors>(new SerialMotors(
-				{slot->_dlg->_tgt->say(slot->_dlg->_context.actor, choice->_text),
-				 Common::SharedPtr<SelectLabelMotor>(new SelectLabelMotor(slot->_dlg, choice->_goto->_line, choice->_goto->_name))}));
-			slot->_dlg->clearSlots();
+			slot->_dlg->_tgt->say(slot->_dlg->_context.actor, choice->_text);
+			slot->_dlg->_action = Common::SharedPtr<SelectLabelMotor>(new SelectLabelMotor(slot->_dlg, choice->_goto->_line, choice->_goto->_name));
 		} else {
 			slot->_dlg->selectLabel(choice->_goto->_line, choice->_goto->_name);
 		}
@@ -233,6 +233,7 @@ void Dialog::start(const Common::String &actor, const Common::String &name, cons
 }
 
 void Dialog::update(float dt) {
+	_fadeTime += dt;
 	switch (_state) {
 	case DialogState::None:
 		break;
@@ -245,8 +246,25 @@ void Dialog::update(float dt) {
 		for (size_t i = 0; i < MAXDIALOGSLOTS; i++) {
 			DialogSlot *slot = &_slots[i];
 			if (slot->_isValid) {
-				Rectf rect = Rectf::fromPosAndSize(slot->getPos() - Math::Vector2d(0.f, -slot->_text.getBounds().getY() / 2.f), slot->_text.getBounds());
+				Rectf rect = Rectf::fromPosAndSize(slot->getPos() - Math::Vector2d(0.f, -slot->getSize().getY() / 2.f), slot->getSize());
 				bool over = rect.contains(_mousePos);
+				// shake choice when cursor is over
+				if ((slot->_shakeTime > 0.0f) && slot->_shake) {
+					slot->_shake->update(dt);
+					slot->_shakeTime -= dt;
+					if (slot->_shakeTime < 0.f) {
+						slot->_shakeTime = 0.f;
+					}
+				}
+				if (over && !slot->_over && slot->_shakeTime < 0.1f) {
+					slot->_shakeTime = 0.25f;
+					slot->_shake = Common::ScopedPtr<Motor>(new Shake(slot, 0.6f));
+					slot->_over = over;
+				}
+				if (!over) {
+					slot->_over = false;
+				}
+				// slide choice text wen text is too large
 				if (rect.r.w > (SCREEN_WIDTH - SLOTMARGIN)) {
 					if (over) {
 						if ((rect.r.w + slot->getPos().getX()) > (SCREEN_WIDTH - SLOTMARGIN)) {
@@ -358,6 +376,7 @@ void Dialog::gotoNextLabel() {
 
 void Dialog::updateChoiceStates() {
 	_state = WaitingForChoice;
+	_fadeTime = 0.f;
 	for (auto &_slot : _slots) {
 		DialogSlot *slot = &_slot;
 		if (slot->_isValid) {
@@ -415,6 +434,11 @@ void Dialog::running(float dt) {
 				_action->update(dt);
 				return;
 			} else {
+				IsShutup isShutup;
+				statmt->_exp->accept(isShutup);
+				if (g_twp->isSomeoneTalking() && !isShutup._isShutup) {
+					return;
+				}
 				run(statmt);
 				if (_lbl && (_currentStatement == _lbl->_stmts.size()))
 					gotoNextLabel();
@@ -442,7 +466,11 @@ void Dialog::addSlot(Common::SharedPtr<YStatement> stmt) {
 		slot->_text.setText(Common::String::format("● %s", text(choice->_text).c_str()));
 		slot->_stmt = stmt;
 		slot->_dlg = this;
-		slot->setPos(Math::Vector2d(SLOTMARGIN, SLOTMARGIN + slot->_text.getBounds().getY() * (MAXCHOICES - numSlots())));
+		Math::Vector2d slotSize(slot->_text.getBounds());
+		float slotHeight = slotSize.getY() - 3.f;
+		slot->setSize({slotSize.getX(), slotHeight});
+		const float y = slotHeight * (MAXCHOICES - numSlots() - 2);
+		slot->setPos(Math::Vector2d(SLOTMARGIN, y));
 		slot->_isValid = true;
 	}
 }
@@ -463,12 +491,28 @@ void Dialog::clearSlots() {
 }
 
 void Dialog::drawCore(const Math::Matrix4 &trsf) {
+	if (_state == WaitingForChoice) {
+		// draw HUD background
+		SpriteSheet *gameSheet = g_twp->_resManager->spriteSheet("GameSheet");
+		const SpriteSheetFrame &backingFrame = gameSheet->getFrame("ui_backing_tall");
+		Texture *gameTexture = g_twp->_resManager->texture(gameSheet->meta.image);
+		float alpha = 0.33f; // prefs(UiBackingAlpha);
+		g_twp->getGfx().drawSprite(backingFrame.frame, *gameTexture, Color(0, 0, 0, alpha * getAlpha()), trsf);
+	}
+
+	const float slotDelay = 0.1f;
+	float fadeTime = MIN(_fadeTime, 1.0f + slotDelay * MAXCHOICES);
+	int slotNum = 0;
 	for (auto &_slot : _slots) {
 		DialogSlot *slot = &_slot;
 		if (slot->_isValid) {
-			Math::Matrix4 t(trsf);
-			t.translate(Math::Vector3d(slot->getPos().getX(), slot->getPos().getY(), 0.f));
+			Color c = slot->_text.getColor();
+			Math::Matrix4 t(slot->getTrsf(trsf));
+			float alpha = CLIP(6.f * (fadeTime - slotNum * slotDelay), 0.f, 1.f);
+			t.translate(Math::Vector3d(0.f, (6.f * alpha), 0.f));
+			slot->_text.setColor(Color::withAlpha(c, alpha));
 			slot->_text.draw(g_twp->getGfx(), t);
+			slotNum++;
 		}
 	}
 }

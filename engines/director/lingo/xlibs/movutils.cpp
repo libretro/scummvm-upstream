@@ -24,6 +24,7 @@
  * USED IN:
  * Gahan Wilson's Ultimate Haunted House
  * Momi no Ki no Shita de: The Day of St. Claus
+ * Virtual Nightclub
  *
  *************************************/
 
@@ -139,7 +140,7 @@ void MovUtilsXObj::close(ObjectType type) {
 	}
 }
 
-MovieUtilsXObject::MovieUtilsXObject(ObjectType ObjectType) :Object<MovieUtilsXObject>("MovUtilsXObj") {
+MovieUtilsXObject::MovieUtilsXObject(ObjectType ObjectType) :Object<MovieUtilsXObject>("MovUtils") {
 	_objType = ObjectType;
 }
 

@@ -58,6 +58,7 @@ class InputState;
 struct Light;
 class Lighting;
 class LightingNode;
+class Motor;
 class NoOverrideNode;
 class Object;
 class PathNode;
@@ -69,7 +70,7 @@ class Scene;
 struct ShaderParams;
 class Task;
 class TextDb;
-class ThreadBase;
+class Thread;
 struct TwpGameDescription;
 struct Verb;
 struct VerbId;
@@ -119,7 +120,7 @@ public:
 	void updateSettingVars();
 
 	bool canLoadGameStateCurrently(Common::U32String *msg = nullptr) override {
-		return !_cutscene;
+		return _cutscene.id == 0;
 	}
 	bool canSaveGameStateCurrently(Common::U32String *msg = nullptr) override;
 
@@ -136,9 +137,11 @@ public:
 	Math::Vector2d screenToRoom(const Math::Vector2d &pos);
 
 	void setActor(Common::SharedPtr<Object> actor, bool userSelected = false);
-	Common::SharedPtr<Object> objAt(const Math::Vector2d& pos);
+	Common::SharedPtr<Object> objAt(const Math::Vector2d &pos);
 	void flashSelectableActor(int flash);
+	void sayLineAt(const Math::Vector2d &pos, const Color &color, Common::SharedPtr<Object> actor, float duration, const Common::String &text);
 	void stopTalking();
+	bool isSomeoneTalking() const;
 	void walkFast(bool state = true);
 
 	void actorEnter(Common::SharedPtr<Object> actor);
@@ -147,7 +150,7 @@ public:
 	void setRoom(Common::SharedPtr<Room> room, bool force = false);
 	void enterRoom(Common::SharedPtr<Room> room, Common::SharedPtr<Object> door = nullptr);
 
-	void cameraAt(const Math::Vector2d& at);
+	void cameraAt(const Math::Vector2d &at);
 	// Returns the camera position: the position of the middle of the screen.
 	Math::Vector2d cameraPos();
 	void follow(Common::SharedPtr<Object> actor);
@@ -162,6 +165,8 @@ public:
 	float getRandom(float min, float max) const;
 
 	int runDialog(GUI::Dialog &dialog) override;
+
+	SQRESULT skipCutscene();
 
 private:
 	void update(float elapsedMs);
@@ -181,18 +186,16 @@ private:
 	Common::Array<ActorSwitcherSlot> actorSwitcherSlots();
 	ActorSwitcherSlot actorSwitcherSlot(ActorSlot *slot);
 	Scaling *getScaling(const Common::String &name);
-	void skipCutscene();
 
 private:
 	unique_ptr<Vm> _vm;
 
 public:
-	Graphics::Screen *_screen = nullptr;
 	unique_ptr<GGPackSet> _pack;
 	unique_ptr<ResManager> _resManager;
 	Common::Array<Common::SharedPtr<Room> > _rooms;
 	Common::Array<Common::SharedPtr<Object> > _actors;
-	Common::Array<Common::SharedPtr<ThreadBase> > _threads;
+	Common::Array<Common::SharedPtr<Thread> > _threads;
 	Common::Array<Common::SharedPtr<Task> > _tasks;
 	Common::Array<Common::SharedPtr<Callback> > _callbacks;
 	Common::SharedPtr<Object> _actor;
@@ -208,7 +211,14 @@ public:
 	float _nextHoldToMoveTime = 0.f;
 	int _frameCounter = 0;
 	Common::SharedPtr<Lighting> _lighting;
-	Common::SharedPtr<Cutscene> _cutscene;
+	struct {
+		int id = 0;
+		InputStateFlag inputState = (InputStateFlag)0;
+		bool showCursor = false;
+		bool inOverride = false;
+		HSQOBJECT envObj;
+		HSQOBJECT closureOverride;
+	} _cutscene;
 	unique_ptr<Scene> _scene;
 	unique_ptr<Scene> _screenScene;
 	unique_ptr<NoOverrideNode> _noOverride;
@@ -224,6 +234,10 @@ public:
 		bool oldRightDown = false;
 		bool rightDown = false;
 		int doubleClick = false;
+		bool holdLeft = false;
+		bool holdRight = false;
+		bool holdUp = false;
+		bool holdDown = false;
 
 		void update() {
 			oldLeftDown = leftDown;
@@ -263,6 +277,7 @@ private:
 	unique_ptr<Shader> _sepiaShader;
 	int _speed = 1;
 	bool _control = false;
+	unique_ptr<Motor> _talking;
 };
 
 extern TwpEngine *g_twp;

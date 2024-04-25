@@ -10,8 +10,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: ScummVM 1.3.0svn\n"
 "Report-Msgid-Bugs-To: scummvm-devel@lists.scummvm.org\n"
-"POT-Creation-Date: 2024-04-03 09:40+0000\n"
-"PO-Revision-Date: 2024-04-01 09:12+0000\n"
+"POT-Creation-Date: 2024-04-25 00:36+0000\n"
+"PO-Revision-Date: 2024-04-24 16:32+0000\n"
 "Last-Translator: Walter Agazzi <walter.agazzi@protonmail.com>\n"
 "Language-Team: Italian <https://translations.scummvm.org/projects/scummvm/"
 "scummvm/it/>\n"
@@ -301,7 +301,7 @@ msgstr "Un altro servizio di archiviazione è attivo. Vuoi interromperlo?"
 #: engines/director/lingo/xlibs/jitdraw3.cpp:139 engines/grim/grim.cpp:366
 #: engines/kyra/gui/saveload_eob.cpp:598 engines/kyra/gui/saveload_eob.cpp:631
 #: engines/parallaction/metaengine.cpp:145
-#: engines/sci/graphics/controls32.cpp:929 engines/scumm/scumm.cpp:3893
+#: engines/sci/graphics/controls32.cpp:929 engines/scumm/scumm.cpp:3902
 #: engines/toon/toon.cpp:1538
 msgid "Yes"
 msgstr "Sì"
@@ -314,7 +314,7 @@ msgstr "Sì"
 #: engines/director/lingo/xlibs/jitdraw3.cpp:139 engines/grim/grim.cpp:366
 #: engines/kyra/gui/saveload_eob.cpp:598 engines/kyra/gui/saveload_eob.cpp:631
 #: engines/parallaction/metaengine.cpp:151
-#: engines/sci/graphics/controls32.cpp:929 engines/scumm/scumm.cpp:3893
+#: engines/sci/graphics/controls32.cpp:929 engines/scumm/scumm.cpp:3902
 #: engines/toon/toon.cpp:1538
 msgid "No"
 msgstr "No"
@@ -337,14 +337,14 @@ msgstr "Il codice JSON non è valido."
 #: backends/platform/wii/options.cpp:46 engines/agos/animation.cpp:577
 #: engines/agos/midi.cpp:320 engines/agos/midi.cpp:378
 #: engines/agos/midi.cpp:457 engines/buried/saveload.cpp:83
-#: engines/director/lingo/lingo-builtins.cpp:1908
+#: engines/director/lingo/lingo-builtins.cpp:1907
 #: engines/drascula/saveload.cpp:48 engines/grim/inputdialog.cpp:83
 #: engines/groovie/script.cpp:660 engines/mtropolis/mtropolis.cpp:114
 #: engines/mtropolis/mtropolis.cpp:124 engines/parallaction/saveload.cpp:270
 #: engines/saga/music.cpp:102 engines/sci/engine/kgraphics.cpp:75
-#: engines/sci/graphics/controls32.cpp:926 engines/scumm/scumm.cpp:1226
-#: engines/scumm/scumm.cpp:1604 engines/scumm/scumm.cpp:2080
-#: engines/scumm/scumm.cpp:2096 engines/sky/compact.cpp:140
+#: engines/sci/graphics/controls32.cpp:926 engines/scumm/scumm.cpp:1235
+#: engines/scumm/scumm.cpp:1613 engines/scumm/scumm.cpp:2089
+#: engines/scumm/scumm.cpp:2105 engines/sky/compact.cpp:140
 #: engines/sword1/animation.cpp:532 engines/sword1/animation.cpp:563
 #: engines/sword1/animation.cpp:571 engines/sword1/control.cpp:2798
 #: engines/sword1/logic.cpp:1732 engines/sword2/animation.cpp:426
@@ -514,7 +514,7 @@ msgstr "Download completato, scaricato/i %d pacchetto/i, %s %S"
 #: gui/unknown-game-dialog.cpp:53 backends/platform/android/options.cpp:492
 #: engines/scumm/help.cpp:127 engines/scumm/help.cpp:142
 #: engines/scumm/help.cpp:167 engines/scumm/help.cpp:195
-#: engines/scumm/help.cpp:213
+#: engines/scumm/help.cpp:213 engines/twp/metaengine.cpp:173
 msgid "Close"
 msgstr "Chiudi"
 
@@ -947,7 +947,8 @@ msgstr "Interazione"
 #: engines/griffon/metaengine.cpp:121 engines/grim/grim.cpp:473
 #: engines/grim/grim.cpp:554 engines/icb/icb.cpp:68 engines/icb/icb.cpp:152
 #: engines/scumm/metaengine.cpp:848 engines/twine/metaengine.cpp:465
-#: engines/twine/metaengine.cpp:532 engines/wintermute/keymapper_tables.h:1290
+#: engines/twine/metaengine.cpp:532 engines/twp/metaengine.cpp:153
+#: engines/wintermute/keymapper_tables.h:1290
 #: engines/wintermute/keymapper_tables.h:1373
 #: engines/wintermute/keymapper_tables.h:1449
 #: engines/wintermute/keymapper_tables.h:1920
@@ -961,7 +962,8 @@ msgstr "Su"
 #: engines/griffon/metaengine.cpp:127 engines/grim/grim.cpp:478
 #: engines/grim/grim.cpp:559 engines/icb/icb.cpp:73 engines/icb/icb.cpp:157
 #: engines/scumm/metaengine.cpp:815 engines/twine/metaengine.cpp:472
-#: engines/twine/metaengine.cpp:540 engines/wintermute/keymapper_tables.h:1296
+#: engines/twine/metaengine.cpp:540 engines/twp/metaengine.cpp:154
+#: engines/wintermute/keymapper_tables.h:1296
 #: engines/wintermute/keymapper_tables.h:1379
 #: engines/wintermute/keymapper_tables.h:1456
 #: engines/wintermute/keymapper_tables.h:1926
@@ -975,7 +977,7 @@ msgstr "Giù"
 #: engines/grim/grim.cpp:483 engines/grim/grim.cpp:564 engines/icb/icb.cpp:78
 #: engines/icb/icb.cpp:162 engines/scumm/metaengine.cpp:828
 #: engines/twine/metaengine.cpp:487 engines/twine/metaengine.cpp:555
-#: engines/wintermute/keymapper_tables.h:320
+#: engines/twp/metaengine.cpp:151 engines/wintermute/keymapper_tables.h:320
 #: engines/wintermute/keymapper_tables.h:1302
 #: engines/wintermute/keymapper_tables.h:1385
 #: engines/wintermute/keymapper_tables.h:1908
@@ -990,7 +992,7 @@ msgstr "Sinistra"
 #: engines/grim/grim.cpp:488 engines/grim/grim.cpp:569 engines/icb/icb.cpp:83
 #: engines/icb/icb.cpp:167 engines/scumm/metaengine.cpp:835
 #: engines/twine/metaengine.cpp:479 engines/twine/metaengine.cpp:548
-#: engines/wintermute/keymapper_tables.h:326
+#: engines/twp/metaengine.cpp:152 engines/wintermute/keymapper_tables.h:326
 #: engines/wintermute/keymapper_tables.h:1308
 #: engines/wintermute/keymapper_tables.h:1391
 #: engines/wintermute/keymapper_tables.h:1914
@@ -1330,14 +1332,9 @@ msgstr "Gruppo:"
 msgid "Select a criteria to group the entries"
 msgstr "Seleziona un criterio per raggruppare i titoli"
 
-#. I18N: This keymap opens KIA's HELP tab.
-#. In Blade Runner's official localizations, there is a description of this keymap
-#. on the KIA Help Page, under Keyboard Shortcuts. In the English version it is
-#. ONLINE HELP
-#: gui/launcher.cpp:262 backends/platform/sdl/macosx/appmenu_osx.mm:262
-#: engines/bladerunner/metaengine.cpp:321 engines/zvision/metaengine.cpp:226
-msgid "Help"
-msgstr "Aiuto"
+#: gui/launcher.cpp:262
+msgid "Click here to see Help"
+msgstr "Clicca per visualizzare l'aiuto"
 
 #. I18N: Button Quit ScummVM program. Q is the shortcut, Ctrl+Q, put it in parens for non-latin (~Q~)
 #: gui/launcher.cpp:266 engines/dialogs.cpp:91
@@ -1573,21 +1570,21 @@ msgstr "Icone per riga:"
 msgid "... progress ..."
 msgstr "... in corso..."
 
-#: gui/massadd.cpp:256
+#: gui/massadd.cpp:283
 msgid "Scan complete!"
 msgstr "Scansione completata!"
 
-#: gui/massadd.cpp:259
+#: gui/massadd.cpp:286
 #, c-format
 msgid "Discovered %d new games, ignored %d previously added games."
 msgstr "Rilevati %d nuovi giochi, ignorati %d giochi aggiunti in precedenza."
 
-#: gui/massadd.cpp:263
+#: gui/massadd.cpp:290
 #, c-format
 msgid "Scanned %d directories ..."
 msgstr "%d cartelle analizzate..."
 
-#: gui/massadd.cpp:266
+#: gui/massadd.cpp:293
 #, c-format
 msgid "Discovered %d new games, ignored %d previously added games ..."
 msgstr "Rilevati %d nuovi giochi, ignorati %d giochi aggiunti in precedenza..."
@@ -3112,7 +3109,7 @@ msgstr "<Valore non valido>"
 
 #. I18N: Abbreviation for 'bytes' as data size
 #. I18N: Hardware key
-#: common/util.cpp:183 backends/platform/3ds/osystem-events.cpp:48
+#: common/util.cpp:183 backends/platform/3ds/osystem-events.cpp:46
 #: backends/platform/ds/osystem_ds.cpp:173
 #: backends/platform/sdl/miyoo/miyoo.cpp:61
 #: backends/platform/sdl/miyoo/miyoo.cpp:88
@@ -3323,7 +3320,7 @@ msgstr "~R~iprendi gioco"
 msgid "~L~oad"
 msgstr "~C~arica"
 
-#: engines/dialogs.cpp:71 backends/platform/3ds/options-dialog.cpp:45
+#: engines/dialogs.cpp:71
 msgid "~S~ave"
 msgstr "~S~alva"
 
@@ -3676,11 +3673,11 @@ msgstr "Finestra input predittivo"
 msgid "Confirm"
 msgstr "Conferma"
 
-#: engines/metaengine.cpp:402
+#: engines/metaengine.cpp:407
 msgid "Autosave on"
 msgstr "Salvataggi automatici attivi"
 
-#: engines/metaengine.cpp:402
+#: engines/metaengine.cpp:407
 msgid "Autosave off"
 msgstr "Salvataggi automatici disattivati"
 
@@ -4017,32 +4014,32 @@ msgid "Resolution: %dx%d"
 msgstr "Risoluzione: %dx%d"
 
 #: backends/graphics/openglsdl/openglsdl-graphics.cpp:786
-#: backends/graphics/surfacesdl/surfacesdl-graphics.cpp:2653
+#: backends/graphics/surfacesdl/surfacesdl-graphics.cpp:2654
 msgid "Active graphics filter:"
 msgstr "Filtro grafico attivo:"
 
 #: backends/graphics/openglsdl/openglsdl-graphics.cpp:807
-#: backends/graphics/surfacesdl/surfacesdl-graphics.cpp:2687
+#: backends/graphics/surfacesdl/surfacesdl-graphics.cpp:2688
 msgid "Enabled aspect ratio correction"
 msgstr "Correzione proporzioni attivata"
 
 #: backends/graphics/openglsdl/openglsdl-graphics.cpp:809
-#: backends/graphics/surfacesdl/surfacesdl-graphics.cpp:2693
+#: backends/graphics/surfacesdl/surfacesdl-graphics.cpp:2694
 msgid "Disabled aspect ratio correction"
 msgstr "Correzione proporzioni disattivata"
 
 #: backends/graphics/openglsdl/openglsdl-graphics.cpp:822
-#: backends/graphics/surfacesdl/surfacesdl-graphics.cpp:2709
+#: backends/graphics/surfacesdl/surfacesdl-graphics.cpp:2710
 msgid "Filtering enabled"
 msgstr "Filtro video attivato"
 
 #: backends/graphics/openglsdl/openglsdl-graphics.cpp:824
-#: backends/graphics/surfacesdl/surfacesdl-graphics.cpp:2711
+#: backends/graphics/surfacesdl/surfacesdl-graphics.cpp:2712
 msgid "Filtering disabled"
 msgstr "Filtro video disattivato"
 
 #: backends/graphics/openglsdl/openglsdl-graphics.cpp:850
-#: backends/graphics/surfacesdl/surfacesdl-graphics.cpp:2738
+#: backends/graphics/surfacesdl/surfacesdl-graphics.cpp:2739
 msgid "Stretch mode"
 msgstr "Ridimensionamento"
 
@@ -4187,7 +4184,7 @@ msgid "Right Shoulder"
 msgstr "Grilletto Inferiore Destro"
 
 #: backends/keymapper/hardware-input.cpp:266
-#: backends/platform/3ds/osystem-events.cpp:57
+#: backends/platform/3ds/osystem-events.cpp:55
 #: backends/platform/ds/osystem_ds.cpp:180
 #: backends/platform/sdl/miyoo/miyoo.cpp:74
 #: backends/platform/sdl/miyoo/miyoo.cpp:101
@@ -4198,7 +4195,7 @@ msgid "D-pad Up"
 msgstr "D-pad Su"
 
 #: backends/keymapper/hardware-input.cpp:267
-#: backends/platform/3ds/osystem-events.cpp:58
+#: backends/platform/3ds/osystem-events.cpp:56
 #: backends/platform/ds/osystem_ds.cpp:181
 #: backends/platform/sdl/miyoo/miyoo.cpp:75
 #: backends/platform/sdl/miyoo/miyoo.cpp:102
@@ -4209,7 +4206,7 @@ msgid "D-pad Down"
 msgstr "D-pad Giù"
 
 #: backends/keymapper/hardware-input.cpp:268
-#: backends/platform/3ds/osystem-events.cpp:59
+#: backends/platform/3ds/osystem-events.cpp:57
 #: backends/platform/ds/osystem_ds.cpp:182
 #: backends/platform/sdl/miyoo/miyoo.cpp:76
 #: backends/platform/sdl/miyoo/miyoo.cpp:103
@@ -4220,7 +4217,7 @@ msgid "D-pad Left"
 msgstr "D-pad Sinistra"
 
 #: backends/keymapper/hardware-input.cpp:269
-#: backends/platform/3ds/osystem-events.cpp:60
+#: backends/platform/3ds/osystem-events.cpp:58
 #: backends/platform/ds/osystem_ds.cpp:183
 #: backends/platform/sdl/miyoo/miyoo.cpp:77
 #: backends/platform/sdl/miyoo/miyoo.cpp:104
@@ -4482,43 +4479,39 @@ msgstr "Nessun file specificato!"
 msgid "Uploaded successfully!"
 msgstr "Inviato correttamente!"
 
-#: backends/platform/3ds/options-dialog.cpp:44 engines/scumm/dialogs.cpp:284
-msgid "~C~lose"
-msgstr "~C~hiudi"
-
-#: backends/platform/3ds/options-dialog.cpp:47
+#: backends/platform/3ds/options.cpp:64
 msgid "Show mouse cursor"
 msgstr "Mostra cursore"
 
-#: backends/platform/3ds/options-dialog.cpp:50
+#: backends/platform/3ds/options.cpp:65
 msgid "Snap to edges"
 msgstr "Aggancia ai bordi"
 
-#: backends/platform/3ds/options-dialog.cpp:53
+#: backends/platform/3ds/options.cpp:66
 msgid "Stretch to fit"
 msgstr "Adatta schermo"
 
-#: backends/platform/3ds/options-dialog.cpp:56
+#: backends/platform/3ds/options.cpp:68
 msgid "Use Screen:"
 msgstr "Usa schermo:"
 
-#: backends/platform/3ds/options-dialog.cpp:58
+#: backends/platform/3ds/options.cpp:70
 msgctxt "3ds-screen"
 msgid "Top"
 msgstr "Sup."
 
-#: backends/platform/3ds/options-dialog.cpp:59
+#: backends/platform/3ds/options.cpp:71
 msgctxt "3ds-screen"
 msgid "Bottom"
 msgstr "Inferiore"
 
-#: backends/platform/3ds/options-dialog.cpp:60
+#: backends/platform/3ds/options.cpp:72
 msgctxt "3ds-screen"
 msgid "Both"
 msgstr "Duale"
 
 #. I18N: Hardware key
-#: backends/platform/3ds/osystem-events.cpp:47
+#: backends/platform/3ds/osystem-events.cpp:45
 #: backends/platform/ds/osystem_ds.cpp:172
 #: backends/platform/sdl/miyoo/miyoo.cpp:59
 #: backends/platform/sdl/miyoo/miyoo.cpp:86
@@ -4528,7 +4521,7 @@ msgid "A"
 msgstr "A"
 
 #. I18N: Hardware key
-#: backends/platform/3ds/osystem-events.cpp:49
+#: backends/platform/3ds/osystem-events.cpp:47
 #: backends/platform/ds/osystem_ds.cpp:174
 #: backends/platform/sdl/miyoo/miyoo.cpp:63
 #: backends/platform/sdl/miyoo/miyoo.cpp:90
@@ -4538,7 +4531,7 @@ msgid "X"
 msgstr "X"
 
 #. I18N: Hardware key
-#: backends/platform/3ds/osystem-events.cpp:50
+#: backends/platform/3ds/osystem-events.cpp:48
 #: backends/platform/ds/osystem_ds.cpp:175
 #: backends/platform/sdl/miyoo/miyoo.cpp:65
 #: backends/platform/sdl/miyoo/miyoo.cpp:92
@@ -4550,7 +4543,7 @@ msgstr "Y"
 #. I18N: Hardware key
 #. I18N: Return key
 #. I18N: Select party member command in Might & Magic 1
-#: backends/platform/3ds/osystem-events.cpp:51
+#: backends/platform/3ds/osystem-events.cpp:49
 #: backends/platform/ds/osystem_ds.cpp:176
 #: backends/platform/sdl/miyoo/miyoo.cpp:67
 #: backends/platform/sdl/miyoo/miyoo.cpp:94
@@ -4561,7 +4554,7 @@ msgid "Select"
 msgstr "Select"
 
 #. I18N: Hardware key
-#: backends/platform/3ds/osystem-events.cpp:52
+#: backends/platform/3ds/osystem-events.cpp:50
 #: backends/platform/ds/osystem_ds.cpp:177
 #: backends/platform/sdl/miyoo/miyoo.cpp:69
 #: backends/platform/sdl/miyoo/miyoo.cpp:96
@@ -4570,18 +4563,18 @@ msgstr "Select"
 msgid "Start"
 msgstr "Start"
 
-#: backends/platform/3ds/osystem-events.cpp:53
+#: backends/platform/3ds/osystem-events.cpp:51
 #: backends/platform/sdl/switch/switch.cpp:56
 msgid "ZL"
 msgstr "ZL"
 
-#: backends/platform/3ds/osystem-events.cpp:54
+#: backends/platform/3ds/osystem-events.cpp:52
 #: backends/platform/sdl/switch/switch.cpp:57
 msgid "ZR"
 msgstr "ZR"
 
 #. I18N: Hardware key
-#: backends/platform/3ds/osystem-events.cpp:55
+#: backends/platform/3ds/osystem-events.cpp:53
 #: backends/platform/ds/osystem_ds.cpp:178
 #: backends/platform/sdl/miyoo/miyoo.cpp:71
 #: backends/platform/sdl/miyoo/miyoo.cpp:98
@@ -4592,7 +4585,7 @@ msgid "L"
 msgstr "L"
 
 #. I18N: Hardware key
-#: backends/platform/3ds/osystem-events.cpp:56
+#: backends/platform/3ds/osystem-events.cpp:54
 #: backends/platform/ds/osystem_ds.cpp:179
 #: backends/platform/sdl/miyoo/miyoo.cpp:73
 #: backends/platform/sdl/miyoo/miyoo.cpp:100
@@ -4602,32 +4595,28 @@ msgstr "L"
 msgid "R"
 msgstr "R"
 
-#: backends/platform/3ds/osystem-events.cpp:65
+#: backends/platform/3ds/osystem-events.cpp:63
 msgid "C-Pad X"
 msgstr "Pad Scorr. X"
 
-#: backends/platform/3ds/osystem-events.cpp:66
+#: backends/platform/3ds/osystem-events.cpp:64
 msgid "C-Pad Y"
 msgstr "Pad Scorr. Y"
 
-#: backends/platform/3ds/osystem-events.cpp:71
+#: backends/platform/3ds/osystem-events.cpp:69
 #: backends/platform/ds/osystem_ds.cpp:192
 msgid "Touch"
 msgstr "Tocco"
 
-#: backends/platform/3ds/osystem-events.cpp:311
+#: backends/platform/3ds/osystem-events.cpp:309
 msgid "Toggle Drag Mode"
 msgstr "Modo Puntatore/Trascinamento"
 
-#: backends/platform/3ds/osystem-events.cpp:316
+#: backends/platform/3ds/osystem-events.cpp:314
 msgid "Toggle Magnify Mode"
 msgstr "Vista Ingrandita"
 
-#: backends/platform/3ds/osystem-events.cpp:321
-msgid "Open 3DS Settings"
-msgstr "Impostazioni 3DS"
-
-#: backends/platform/3ds/osystem-events.cpp:359
+#: backends/platform/3ds/osystem-events.cpp:349
 msgid ""
 "Magnify Mode Off. Reactivating Drag Mode.\n"
 "Returning to Launcher..."
@@ -4636,33 +4625,33 @@ msgstr ""
 "Riattivo Modalità Trascinamento.\n"
 "Ritorno all'elenco dei giochi..."
 
-#: backends/platform/3ds/osystem-events.cpp:361
+#: backends/platform/3ds/osystem-events.cpp:351
 msgid "Magnify Mode Off. Returning to Launcher..."
 msgstr ""
 "Vista Ingrandita disattivata.\n"
 "Ritorno all'elenco dei giochi..."
 
-#: backends/platform/3ds/osystem-events.cpp:395
+#: backends/platform/3ds/osystem-events.cpp:385
 msgid "Hover Mode"
 msgstr "Modalità Puntatore"
 
-#: backends/platform/3ds/osystem-events.cpp:399
+#: backends/platform/3ds/osystem-events.cpp:389
 msgid "Drag Mode"
 msgstr "Modalità Trascinamento"
 
-#: backends/platform/3ds/osystem-events.cpp:401
+#: backends/platform/3ds/osystem-events.cpp:391
 msgid "Cannot Switch to Drag Mode while Magnify Mode is On"
 msgstr ""
 "Non è possibile passare alla Modalità Trascinamento\n"
 "quando la Vista Ingrandita è attivata"
 
-#: backends/platform/3ds/osystem-events.cpp:408
+#: backends/platform/3ds/osystem-events.cpp:398
 msgid "Magnify Mode cannot be activated in menus."
 msgstr ""
 "La Vista Ingrandita\n"
 "non può essere attivata nei menu."
 
-#: backends/platform/3ds/osystem-events.cpp:411
+#: backends/platform/3ds/osystem-events.cpp:401
 msgid ""
 "Magnify Mode can only be activated\n"
 " when both screens are enabled."
@@ -4670,38 +4659,38 @@ msgstr ""
 "La Vista Ingrandita può essere attivata\n"
 " quando entrambi gli schermi sono abilitati."
 
-#: backends/platform/3ds/osystem-events.cpp:413
+#: backends/platform/3ds/osystem-events.cpp:403
 msgid "In-game resolution too small to magnify."
 msgstr ""
 "La risoluzione del gioco è troppo\n"
 "bassa per essere ingrandita."
 
-#: backends/platform/3ds/osystem-events.cpp:419
+#: backends/platform/3ds/osystem-events.cpp:409
 msgid "Magnify Mode On. Switching to Hover Mode..."
 msgstr ""
 "Vista Ingrandita attivata.\n"
 "Passo a Modalità Puntatore..."
 
-#: backends/platform/3ds/osystem-events.cpp:421
+#: backends/platform/3ds/osystem-events.cpp:411
 msgid "Magnify Mode On"
 msgstr "Vista Ingrandita attivata"
 
-#: backends/platform/3ds/osystem-events.cpp:428
+#: backends/platform/3ds/osystem-events.cpp:418
 msgid "Magnify Mode Off. Reactivating Drag Mode..."
 msgstr ""
 "Vista Ingrandita disattivata.\n"
 "Riattivo Modalità Trascinamento..."
 
-#: backends/platform/3ds/osystem-events.cpp:430
+#: backends/platform/3ds/osystem-events.cpp:420
 msgid "Magnify Mode Off"
 msgstr "Vista Ingrandita disattivata"
 
-#: backends/platform/android/android.cpp:1025
+#: backends/platform/android/android.cpp:1048
 #: backends/platform/ios7/ios7_osys_misc.mm:249
 msgid "Getting help"
 msgstr "Ottenere aiuto"
 
-#: backends/platform/android/android.cpp:1028
+#: backends/platform/android/android.cpp:1051
 msgid ""
 "## Help, I'm lost!\n"
 "\n"
@@ -4743,13 +4732,13 @@ msgstr ""
 "complicati, talvolta a livelli impensabili. Se rimani bloccato, prova a "
 "cercare qualche guida online. Buona fortuna!\n"
 
-#: backends/platform/android/android.cpp:1037
+#: backends/platform/android/android.cpp:1060
 #: backends/platform/ios7/ios7_osys_misc.mm:261
 #: backends/platform/ios7/ios7_osys_misc.mm:357
 msgid "Touch Controls"
 msgstr "Controlli Touch"
 
-#: backends/platform/android/android.cpp:1040
+#: backends/platform/android/android.cpp:1063
 msgid ""
 "## Touch control modes\n"
 "The touch control mode can be changed by tapping or clicking on the "
@@ -4889,13 +4878,13 @@ msgstr ""
 "  ![Icona tastiera](keyboard.png \"Icona tastiera\"){w=10em}\n"
 "\n"
 
-#: backends/platform/android/android.cpp:1096
+#: backends/platform/android/android.cpp:1119
 #: backends/platform/ios7/ios7_osys_misc.mm:336
 #: backends/platform/ios7/ios7_osys_misc.mm:380
 msgid "Adding Games"
 msgstr "Aggiungere Giochi"
 
-#: backends/platform/android/android.cpp:1099
+#: backends/platform/android/android.cpp:1122
 msgid ""
 "## Adding Games \n"
 "\n"
@@ -5563,6 +5552,15 @@ msgstr "Finestra"
 msgid "Minimize"
 msgstr "Contrai"
 
+#. I18N: This keymap opens KIA's HELP tab.
+#. In Blade Runner's official localizations, there is a description of this keymap
+#. on the KIA Help Page, under Keyboard Shortcuts. In the English version it is
+#. ONLINE HELP
+#: backends/platform/sdl/macosx/appmenu_osx.mm:262
+#: engines/bladerunner/metaengine.cpp:321 engines/zvision/metaengine.cpp:226
+msgid "Help"
+msgstr "Aiuto"
+
 #: backends/platform/sdl/macosx/appmenu_osx.mm:267
 msgid "User Manual"
 msgstr "Manuale dell'utente"
@@ -5809,7 +5807,7 @@ msgstr "Cerca aggiornamenti..."
 #: engines/mortevielle/mortevielle.cpp:300 engines/sky/compact.cpp:129
 #: engines/supernova/supernova.cpp:463 engines/teenagent/resources.cpp:97
 #: engines/tony/tony.cpp:187 engines/toon/toon.cpp:5416
-#: engines/ultima/ultima8/ultima8.cpp:188
+#: engines/ultima/ultima8/ultima8.cpp:189
 #, c-format
 msgid "Unable to locate the '%s' engine data file."
 msgstr "File dati del motore '%s' non trovato."
@@ -6016,7 +6014,7 @@ msgid "Quick load or save game isn't supported in this location"
 msgstr ""
 "Il salvataggio/caricamento rapido non è disponibile in questa locazione"
 
-#: engines/agos/saveload.cpp:161 engines/scumm/scumm.cpp:2896
+#: engines/agos/saveload.cpp:161 engines/scumm/scumm.cpp:2905
 #, c-format
 msgid ""
 "Failed to load saved game from file:\n"
@@ -6027,7 +6025,7 @@ msgstr ""
 "\n"
 "%s"
 
-#: engines/agos/saveload.cpp:196 engines/scumm/scumm.cpp:2883
+#: engines/agos/saveload.cpp:196 engines/scumm/scumm.cpp:2892
 #, c-format
 msgid ""
 "Failed to save game to file:\n"
@@ -6038,7 +6036,7 @@ msgstr ""
 "\n"
 "%s"
 
-#: engines/agos/saveload.cpp:204 engines/scumm/scumm.cpp:2916
+#: engines/agos/saveload.cpp:204 engines/scumm/scumm.cpp:2925
 #, c-format
 msgid ""
 "Successfully saved game in file:\n"
@@ -6322,23 +6320,24 @@ msgstr ""
 
 #: engines/bladerunner/detection_tables.h:123 engines/cge/detection.cpp:54
 #: engines/cge/detection.cpp:60 engines/cge/detection.cpp:66
-#: engines/gob/detection/tables_adi5.h:39
-#: engines/gob/detection/tables_adi5.h:54
-#: engines/gob/detection/tables_adi5.h:71
-#: engines/gob/detection/tables_adi5.h:85
-#: engines/gob/detection/tables_adibou3.h:38
-#: engines/gob/detection/tables_adibou3.h:52
-#: engines/gob/detection/tables_adibou3.h:69
-#: engines/gob/detection/tables_adibou3.h:84
-#: engines/gob/detection/tables_adibou3.h:99
-#: engines/gob/detection/tables_adibou3.h:114
-#: engines/gob/detection/tables_adibou3.h:131
-#: engines/gob/detection/tables_adiboupresente.h:38
-#: engines/gob/detection/tables_adiboupresente.h:54
-#: engines/gob/detection/tables_adiboudchou.h:40
-#: engines/gob/detection/tables_adiboudchou.h:55
-#: engines/gob/detection/tables_adiboudchou.h:68
-#: engines/gob/detection/tables_adiboudchou.h:81
+#: engines/gob/detection/tables_adi5.h:40
+#: engines/gob/detection/tables_adi5.h:55
+#: engines/gob/detection/tables_adi5.h:72
+#: engines/gob/detection/tables_adi5.h:86
+#: engines/gob/detection/tables_adibou3.h:39
+#: engines/gob/detection/tables_adibou3.h:53
+#: engines/gob/detection/tables_adibou3.h:70
+#: engines/gob/detection/tables_adibou3.h:85
+#: engines/gob/detection/tables_adibou3.h:100
+#: engines/gob/detection/tables_adibou3.h:115
+#: engines/gob/detection/tables_adibou3.h:132
+#: engines/gob/detection/tables_adiboupresente.h:39
+#: engines/gob/detection/tables_adiboupresente.h:55
+#: engines/gob/detection/tables_adiboupresente.h:71
+#: engines/gob/detection/tables_adiboudchou.h:41
+#: engines/gob/detection/tables_adiboudchou.h:56
+#: engines/gob/detection/tables_adiboudchou.h:69
+#: engines/gob/detection/tables_adiboudchou.h:82
 #: engines/groovie/detection.cpp:100 engines/lure/detection.cpp:229
 #: engines/mohawk/detection_tables.h:768 engines/mohawk/detection_tables.h:783
 #: engines/mohawk/detection_tables.h:798 engines/mohawk/detection_tables.h:812
@@ -6485,7 +6484,7 @@ msgstr "Attiva / Disattiva modalità combattimento"
 
 #. I18N: This keymap allows skipping video cutscenes
 #: engines/bladerunner/metaengine.cpp:229 engines/scumm/help.cpp:79
-#: engines/scumm/metaengine.cpp:874 engines/twp/metaengine.cpp:138
+#: engines/scumm/metaengine.cpp:874 engines/twp/metaengine.cpp:155
 #: engines/zvision/metaengine.cpp:284
 msgid "Skip cutscene"
 msgstr "Salta scena di intermezzo"
@@ -6916,7 +6915,7 @@ msgstr ""
 "\n"
 "Per ulteriori informazioni: %s"
 
-#: engines/dragons/metaengine.cpp:137
+#: engines/dragons/metaengine.cpp:137 engines/twp/metaengine.cpp:150
 msgid "Action"
 msgstr "Azione"
 
@@ -7450,7 +7449,7 @@ msgstr "Movimento verso destra"
 #: engines/scumm/help.cpp:172 engines/scumm/help.cpp:202
 #: engines/scumm/help.cpp:217 engines/scumm/help.cpp:228
 #: engines/scumm/help.cpp:254 engines/sky/metaengine.cpp:94
-#: engines/wintermute/keymapper_tables.h:140
+#: engines/twp/metaengine.cpp:180 engines/wintermute/keymapper_tables.h:140
 #: engines/wintermute/keymapper_tables.h:1552
 msgid "Use"
 msgstr "Usa"
@@ -7710,26 +7709,26 @@ msgstr ""
 msgid "Eye of Beholder support is not compiled in"
 msgstr "Il supporto per Eye of Beholder non è stato incluso nella compilazione"
 
-#: engines/kyra/engine/eobcommon.cpp:368 engines/kyra/engine/lol.cpp:496
+#: engines/kyra/engine/eobcommon.cpp:368 engines/kyra/engine/lol.cpp:502
 #: engines/ultima/ultima4/metaengine.cpp:224
 #: engines/ultima/nuvie/metaengine.cpp:217
 #: engines/ultima/ultima8/metaengine.cpp:145
 msgid "Interact via Left Click"
 msgstr "Interazione tramite Clic Sinistro"
 
-#: engines/kyra/engine/eobcommon.cpp:369 engines/kyra/engine/lol.cpp:497
+#: engines/kyra/engine/eobcommon.cpp:369 engines/kyra/engine/lol.cpp:503
 #: engines/ultima/ultima4/metaengine.cpp:230
 #: engines/ultima/nuvie/metaengine.cpp:223
 #: engines/ultima/ultima8/metaengine.cpp:151
 msgid "Interact via Right Click"
 msgstr "Interazione tramite Clic Destro"
 
-#: engines/kyra/engine/eobcommon.cpp:370 engines/kyra/engine/lol.cpp:504
+#: engines/kyra/engine/eobcommon.cpp:370 engines/kyra/engine/lol.cpp:510
 #: engines/twine/metaengine.cpp:380
 msgid "Move Forward"
 msgstr "Avanza"
 
-#: engines/kyra/engine/eobcommon.cpp:371 engines/kyra/engine/lol.cpp:505
+#: engines/kyra/engine/eobcommon.cpp:371 engines/kyra/engine/lol.cpp:511
 msgid "Move Back"
 msgstr "Arretra"
 
@@ -7741,13 +7740,13 @@ msgstr "Vai a sinistra"
 msgid "Move Right"
 msgstr "Vai a destra"
 
-#: engines/kyra/engine/eobcommon.cpp:374 engines/kyra/engine/lol.cpp:508
+#: engines/kyra/engine/eobcommon.cpp:374 engines/kyra/engine/lol.cpp:514
 #: engines/mm/mm1/metaengine.cpp:97 engines/pegasus/pegasus.cpp:2740
 #: engines/twine/metaengine.cpp:401 engines/zvision/metaengine.cpp:209
 msgid "Turn Left"
 msgstr "Gira a sinistra"
 
-#: engines/kyra/engine/eobcommon.cpp:375 engines/kyra/engine/lol.cpp:509
+#: engines/kyra/engine/eobcommon.cpp:375 engines/kyra/engine/lol.cpp:515
 #: engines/mm/mm1/metaengine.cpp:98 engines/pegasus/pegasus.cpp:2747
 #: engines/twine/metaengine.cpp:394 engines/zvision/metaengine.cpp:215
 msgid "Turn Right"
@@ -7793,40 +7792,40 @@ msgstr "Incantesimo di livello 5"
 msgid "Spell Level 6"
 msgstr "Incantesimo di livello 6"
 
-#: engines/kyra/engine/lol.cpp:500
+#: engines/kyra/engine/lol.cpp:506
 msgid "Attack 1"
 msgstr "Attacco 1"
 
-#: engines/kyra/engine/lol.cpp:501
+#: engines/kyra/engine/lol.cpp:507
 msgid "Attack 2"
 msgstr "Attacco 2"
 
-#: engines/kyra/engine/lol.cpp:502
+#: engines/kyra/engine/lol.cpp:508
 msgid "Attack 3"
 msgstr "Attacco 3"
 
-#: engines/kyra/engine/lol.cpp:503 engines/mm/mm1/metaengine.cpp:103
+#: engines/kyra/engine/lol.cpp:509 engines/mm/mm1/metaengine.cpp:103
 msgid "Show Map"
 msgstr "Mostra mappa"
 
-#: engines/kyra/engine/lol.cpp:506
+#: engines/kyra/engine/lol.cpp:512
 msgid "Slide Left"
 msgstr "Scorri a sinistra"
 
-#: engines/kyra/engine/lol.cpp:507
+#: engines/kyra/engine/lol.cpp:513
 msgid "Slide Right"
 msgstr "Scorri a destra"
 
 #. I18N: Action of hero party in Might & Magic 1
-#: engines/kyra/engine/lol.cpp:510 engines/mm/mm1/metaengine.cpp:109
+#: engines/kyra/engine/lol.cpp:516 engines/mm/mm1/metaengine.cpp:109
 msgid "Rest"
 msgstr "Riposa"
 
-#: engines/kyra/engine/lol.cpp:511
+#: engines/kyra/engine/lol.cpp:517
 msgid "Options"
 msgstr "Opzioni"
 
-#: engines/kyra/engine/lol.cpp:512
+#: engines/kyra/engine/lol.cpp:518
 msgid "Choose Spell"
 msgstr "Scegli incantesimo"
 
@@ -9310,7 +9309,7 @@ msgid "Your Name:"
 msgstr "Tuo Nome:"
 
 #. I18N: Button, start hosting online multiplayer game
-#: engines/scumm/dialog-createsession.cpp:49 engines/scumm/scumm.cpp:3899
+#: engines/scumm/dialog-createsession.cpp:49 engines/scumm/scumm.cpp:3908
 msgid "Host"
 msgstr "Ospita"
 
@@ -9320,7 +9319,7 @@ msgid "Querying games..."
 msgstr "Ricerca partite..."
 
 #. I18N: Join online multiplayer game
-#: engines/scumm/dialog-sessionselector.cpp:64 engines/scumm/scumm.cpp:3899
+#: engines/scumm/dialog-sessionselector.cpp:64 engines/scumm/scumm.cpp:3908
 msgid "Join"
 msgstr "Unisciti"
 
@@ -9339,6 +9338,10 @@ msgstr "~P~recedenti"
 #: engines/scumm/dialogs.cpp:283
 msgid "~N~ext"
 msgstr "~S~uccessivi"
+
+#: engines/scumm/dialogs.cpp:284
+msgid "~C~lose"
+msgstr "~C~hiudi"
 
 #: engines/scumm/dialogs.cpp:965
 msgid "Speech Only"
@@ -9743,24 +9746,24 @@ msgid "Main game controls:"
 msgstr "Controlli principali di gioco:"
 
 #: engines/scumm/help.cpp:123 engines/scumm/help.cpp:138
-#: engines/scumm/help.cpp:163
+#: engines/scumm/help.cpp:163 engines/twp/metaengine.cpp:178
 msgid "Push"
 msgstr "Premi"
 
 #: engines/scumm/help.cpp:124 engines/scumm/help.cpp:139
-#: engines/scumm/help.cpp:164
+#: engines/scumm/help.cpp:164 engines/twp/metaengine.cpp:179
 msgid "Pull"
 msgstr "Tira"
 
 #: engines/scumm/help.cpp:125 engines/scumm/help.cpp:140
 #: engines/scumm/help.cpp:165 engines/scumm/help.cpp:201
-#: engines/scumm/help.cpp:211
+#: engines/scumm/help.cpp:211 engines/twp/metaengine.cpp:174
 msgid "Give"
 msgstr "Dai"
 
 #: engines/scumm/help.cpp:126 engines/scumm/help.cpp:141
 #: engines/scumm/help.cpp:166 engines/scumm/help.cpp:194
-#: engines/scumm/help.cpp:212
+#: engines/scumm/help.cpp:212 engines/twp/metaengine.cpp:172
 msgid "Open"
 msgstr "Apri"
 
@@ -9797,7 +9800,8 @@ msgstr "Cammina verso"
 
 #: engines/scumm/help.cpp:145 engines/scumm/help.cpp:170
 #: engines/scumm/help.cpp:199 engines/scumm/help.cpp:214
-#: engines/scumm/help.cpp:231 engines/wintermute/keymapper_tables.h:134
+#: engines/scumm/help.cpp:231 engines/twp/metaengine.cpp:175
+#: engines/wintermute/keymapper_tables.h:134
 #: engines/wintermute/keymapper_tables.h:1546
 msgid "Pick up"
 msgstr "Raccogli"
@@ -9884,13 +9888,14 @@ msgid "pull (Yank)"
 msgstr "Tira"
 
 #: engines/scumm/help.cpp:200 engines/scumm/help.cpp:216
-#: engines/scumm/help.cpp:252 engines/wintermute/keymapper_tables.h:128
+#: engines/scumm/help.cpp:252 engines/twp/metaengine.cpp:177
+#: engines/wintermute/keymapper_tables.h:128
 #: engines/wintermute/keymapper_tables.h:1558
 msgid "Talk to"
 msgstr "Parla con"
 
 #: engines/scumm/help.cpp:203 engines/scumm/help.cpp:215
-#: engines/wintermute/keymapper_tables.h:122
+#: engines/twp/metaengine.cpp:176 engines/wintermute/keymapper_tables.h:122
 #: engines/wintermute/keymapper_tables.h:1534
 msgid "Look at"
 msgstr "Esamina"
@@ -10293,20 +10298,20 @@ msgstr ""
 "Perchè funzioni, devi abilitare anche l'opzione \"Riduci la risoluzione "
 "verticale\" presente nella scheda \"motore\"."
 
-#: engines/scumm/scumm.cpp:1180
+#: engines/scumm/scumm.cpp:1189
 msgid "This game requires the 'Indy' Macintosh executable for its fonts."
 msgstr ""
 "Questo gioco richiede l'eseguibile Macintosh 'Indy', per caricare i "
 "caratteri."
 
-#: engines/scumm/scumm.cpp:1205
+#: engines/scumm/scumm.cpp:1214
 msgid ""
 "This game requires the 'Loom' Macintosh executable for its music and fonts."
 msgstr ""
 "Questo gioco richiede l'eseguibile Macintosh 'Loom', per caricare la musica "
 "e caratteri."
 
-#: engines/scumm/scumm.cpp:1225
+#: engines/scumm/scumm.cpp:1234
 msgid ""
 "Could not find the 'Monkey Island' Macintosh executable to read the\n"
 "instruments from. Music will be disabled."
@@ -10314,18 +10319,18 @@ msgstr ""
 "L'eseguibile Macintosh di 'Monkey Island', necessario per caricare gli\n"
 "strumenti, non è stato trovato. La musica non verrà riprodotta."
 
-#: engines/scumm/scumm.cpp:1233
+#: engines/scumm/scumm.cpp:1242
 #, c-format
 msgid "Could not open Macintosh resource file %s"
 msgstr "Non è stato possibile aprire il file risorsa Macintosh %s"
 
-#: engines/scumm/scumm.cpp:1236
+#: engines/scumm/scumm.cpp:1245
 #, c-format
 msgid "Could not find resource fork in Macintosh resource file %s"
 msgstr ""
 "Non è stato possibile trovare la resource fork nel file risorsa Macintosh %s"
 
-#: engines/scumm/scumm.cpp:1601
+#: engines/scumm/scumm.cpp:1610
 msgid ""
 "Audio files compressed with ScummVM Tools were detected; *.BUN/*.SOU\n"
 "compression is not supported anymore for this game, audio will be disabled.\n"
@@ -10337,7 +10342,7 @@ msgstr ""
 "disabilitato.\n"
 "Per favore, copia tali files dai supporti originali senza comprimerli."
 
-#: engines/scumm/scumm.cpp:2078
+#: engines/scumm/scumm.cpp:2087
 #, c-format
 msgid ""
 "Native MIDI support requires the Roland Upgrade from LucasArts,\n"
@@ -10346,7 +10351,7 @@ msgstr ""
 "Il supporto nativo MIDI richiede il Roland Upgrade della LucasArts,\n"
 "ma %s non è presente. Verrà usato AdLib."
 
-#: engines/scumm/scumm.cpp:2094
+#: engines/scumm/scumm.cpp:2103
 msgid ""
 "This particular version of Monkey Island 1 is known to miss some\n"
 "required resources for MT-32. Using AdLib instead."
@@ -10354,7 +10359,7 @@ msgstr ""
 "Questa specifica versione di Monkey Island 1 è priva di alcune\n"
 "risorse necessarie per il sonoro MT-32. Verrà utilizzato AdLib."
 
-#: engines/scumm/scumm.cpp:3788
+#: engines/scumm/scumm.cpp:3797
 msgid ""
 "Usually, Maniac Mansion would start now. But for that to work, the game "
 "files for Maniac Mansion have to be in the 'Maniac' directory inside the "
@@ -10365,7 +10370,7 @@ msgstr ""
 "sottocartella \"MANIAC\" all'interno della cartella principale di Day Of The "
 "Tentacle. Il gioco deve inoltre essere aggiunto a ScummVM."
 
-#: engines/scumm/scumm.cpp:3899
+#: engines/scumm/scumm.cpp:3908
 msgid "Would you like to host or join a network play session?"
 msgstr "Desideri ospitare o collegarti ad una sessione di gioco in rete?"
 
@@ -11066,67 +11071,67 @@ msgstr "Frase classica"
 msgid "Ransome *unbeeped* (DLC)"
 msgstr "Ransome *debippato* (DLC)"
 
-#: engines/twp/metaengine.cpp:139
+#: engines/twp/metaengine.cpp:156
 msgid "Select Actor 1"
 msgstr "Seleziona personaggio 1"
 
-#: engines/twp/metaengine.cpp:140
+#: engines/twp/metaengine.cpp:157
 msgid "Select Actor 2"
 msgstr "Seleziona personaggio 2"
 
-#: engines/twp/metaengine.cpp:141
+#: engines/twp/metaengine.cpp:158
 msgid "Select Actor 3"
 msgstr "Seleziona personaggio 3"
 
-#: engines/twp/metaengine.cpp:142
+#: engines/twp/metaengine.cpp:159
 msgid "Select Actor 4"
 msgstr "Seleziona personaggio 4"
 
-#: engines/twp/metaengine.cpp:143
+#: engines/twp/metaengine.cpp:160
 msgid "Select Actor 5"
 msgstr "Seleziona personaggio 5"
 
-#: engines/twp/metaengine.cpp:144
+#: engines/twp/metaengine.cpp:161
 msgid "Select Actor 6"
 msgstr "Seleziona personaggio 6"
 
-#: engines/twp/metaengine.cpp:145
+#: engines/twp/metaengine.cpp:162
 msgid "Select Choice 1"
 msgstr "Seleziona opzione 1"
 
-#: engines/twp/metaengine.cpp:146
+#: engines/twp/metaengine.cpp:163
 msgid "Select Choice 2"
 msgstr "Seleziona opzione 2"
 
-#: engines/twp/metaengine.cpp:147
+#: engines/twp/metaengine.cpp:164
 msgid "Select Choice 3"
 msgstr "Seleziona opzione 3"
 
-#: engines/twp/metaengine.cpp:148
+#: engines/twp/metaengine.cpp:165
 msgid "Select Choice 4"
 msgstr "Seleziona opzione 4"
 
-#: engines/twp/metaengine.cpp:149
+#: engines/twp/metaengine.cpp:166
 msgid "Select Choice 5"
 msgstr "Seleziona opzione 5"
 
-#: engines/twp/metaengine.cpp:150
+#: engines/twp/metaengine.cpp:167
 msgid "Select Choice 6"
 msgstr "Seleziona opzione 6"
 
-#: engines/twp/metaengine.cpp:151
+#: engines/twp/metaengine.cpp:168
 msgid "Select Next Actor"
 msgstr "Seleziona personaggio successivo"
 
-#: engines/twp/metaengine.cpp:152
+#: engines/twp/metaengine.cpp:169
 msgid "Select Previous Actor"
 msgstr "Seleziona personaggio precedente"
 
-#: engines/twp/metaengine.cpp:153
+#: engines/twp/metaengine.cpp:170
 msgid "Skip Text"
 msgstr "Salta battuta"
 
-#: engines/twp/metaengine.cpp:154
+#: engines/twp/metaengine.cpp:171
 msgid "Show hotspots"
 msgstr "Mostra aree interattive"
 
@@ -12121,6 +12126,36 @@ msgstr ""
 "GNU. Ti serviranno tutti i font presenti nel pacchetto di tua preferenza, "
 "precisamente: LiberationMono, LiberationSans e LiberationSerif; oppure "
 "FreeMono, FreeSans e FreeSerif."
+
+#~ msgid "Open action"
+#~ msgstr "Azione: Apri"
+
+#~ msgid "Close action"
+#~ msgstr "Azione: Chiudi"
+
+#~ msgid "Give action"
+#~ msgstr "Azione: Dai"
+
+#~ msgid "Pick up action"
+#~ msgstr "Azione: Raccogli"
+
+#~ msgid "Look at action"
+#~ msgstr "Azione: Guarda"
+
+#~ msgid "Talk to action"
+#~ msgstr "Azione: Parla"
+
+#~ msgid "Push action"
+#~ msgstr "Azione: Premi"
+
+#~ msgid "Pull action"
+#~ msgstr "Azione: Tira"
+
+#~ msgid "Use action"
+#~ msgstr "Azione: Usa"
+
+#~ msgid "Open 3DS Settings"
+#~ msgstr "Impostazioni 3DS"
 
 #, fuzzy
 #~| msgid "Very large"

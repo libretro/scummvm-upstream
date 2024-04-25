@@ -356,7 +356,7 @@ Common::SharedPtr<YCond> YackParser::parseCondition() {
 		return Common::SharedPtr<YTempOnce>(new YTempOnce(line));
 	}
 	Common::SharedPtr<YCodeCond> pCondition(new YCodeCond(line));
-	pCondition->_code = conditionText;
+	pCondition->_code = Common::move(conditionText);
 	return pCondition;
 }
 
@@ -382,7 +382,7 @@ Common::SharedPtr<YSay> YackParser::parseSayExpression() {
 	auto text = _reader.readText(*_it);
 	_it++;
 	Common::SharedPtr<YSay> pExp(new YSay());
-	pExp->_actor = actor;
+	pExp->_actor = Common::move(actor);
 	pExp->_text = text.substr(1, text.size() - 2);
 	return pExp;
 }
@@ -391,7 +391,7 @@ Common::SharedPtr<YExp> YackParser::parseWaitWhileExpression() {
 	auto waitwhile = _reader.readText(*_it++);
 	auto code = waitwhile.substr(10);
 	Common::SharedPtr<YWaitWhile> pExp(new YWaitWhile());
-	pExp->_cond = code;
+	pExp->_cond = Common::move(code);
 	return pExp;
 }
 
@@ -410,7 +410,7 @@ Common::SharedPtr<YExp> YackParser::parseInstructionExpression() {
 		Common::SharedPtr<YWaitFor> pExp(new YWaitFor());
 		if (_it->id == YackTokenId::Identifier) {
 			auto actor = _reader.readText(*_it++);
-			pExp->_actor = actor;
+			pExp->_actor = Common::move(actor);
 		}
 		return pExp;
 	} else if (identifier == "parrot") {
@@ -426,7 +426,7 @@ Common::SharedPtr<YExp> YackParser::parseInstructionExpression() {
 		Common::SharedPtr<YDialog> pExp(new YDialog());
 		if (_it->id == YackTokenId::Identifier) {
 			auto actor = _reader.readText(*_it++);
-			pExp->_actor = actor;
+			pExp->_actor = Common::move(actor);
 		}
 		return pExp;
 	} else if (identifier == "override") {
@@ -434,7 +434,7 @@ Common::SharedPtr<YExp> YackParser::parseInstructionExpression() {
 		Common::SharedPtr<YOverride> pExp(new YOverride());
 		if (_it->id == YackTokenId::Identifier) {
 			auto node = _reader.readText(*_it++);
-			pExp->_node = node;
+			pExp->_node = Common::move(node);
 		}
 		return pExp;
 	} else if (identifier == "allowobjects") {
@@ -462,7 +462,7 @@ Common::SharedPtr<YGoto> YackParser::parseGotoExpression() {
 	int line = _it->line;
 	auto name = _reader.readText(*_it++);
 	Common::SharedPtr<YGoto> pExp(new YGoto(line));
-	pExp->_name = name;
+	pExp->_name = Common::move(name);
 	return pExp;
 }
 
@@ -487,7 +487,7 @@ Common::SharedPtr<YChoice> YackParser::parseChoiceExpression() {
 	_it++;
 	Common::SharedPtr<YChoice> pExp(new YChoice());
 	pExp->_number = number;
-	pExp->_text = text;
+	pExp->_text = Common::move(text);
 	pExp->_goto = parseGotoExpression();
 	return pExp;
 }

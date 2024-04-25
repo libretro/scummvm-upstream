@@ -19,80 +19,79 @@
  *
  */
 
-/*************************************
-*
-* USED IN:
-* jman-win
-*
-*************************************/
-
-/**
- *  -- QuickTime for Windows Player External Factory. 02oct92 JT
- * DPWQTW
- * X  +mStartup -- First time init
- * X  +mQuit  -- Major bye bye
- * XI     mNew qtPacket -- create a window
- * X      mDispose -- close and dispose window
- * XII    mVerb msg, qtPacker -- do something
- */
+#include "common/system.h"
 
 #include "director/director.h"
 #include "director/lingo/lingo.h"
 #include "director/lingo/lingo-object.h"
+#include "director/lingo/lingo-utils.h"
 #include "director/lingo/xlibs/dpwqtw.h"
 
+/**************************************************
+ *
+ * USED IN:
+ * jman-win
+ * hellcab-win
+ *
+ **************************************************/
+
+/*
+-- QuickTime for Windows Player External Factory. 02oct92 JT
+--DPWQTW
+X  +mStartup -- First time init
+X  +mQuit  -- Major bye bye
+XI     mNew qtPacket -- create a window
+X      mDispose -- close and dispose window
+XII    mVerb msg, qtPacker -- do something
+ */
 
 namespace Director {
 
-// The name is different from the obj filename.
-const char *DPwQTw::xlibName = "dpwqtw";
-const char *DPwQTw::fileNames[] = {
-	"dpwqtw",
+const char *DPWQTWXObj::xlibName = "DPWQTW";
+const char *DPWQTWXObj::fileNames[] = {
+	"DPWQTW",
 	nullptr
 };
 
 static MethodProto xlibMethods[] = {
-	{ "new",		DPwQTw::m_new,			 0, 1,	400 },	// D4
-	{ "startup",	DPwQTw::m_startup,		 0, 0,	400 },	// D4
-	{ "quit",		DPwQTw::m_quit,			 0, 0,	400 },	// D4
-	{ "verb",		DPwQTw::m_verb,			 2, 2,	400 },	// D4
+	{ "startup",				DPWQTWXObj::m_startup,		 0, 0,	300 },
+	{ "quit",				DPWQTWXObj::m_quit,		 0, 0,	300 },
+	{ "new",				DPWQTWXObj::m_new,		 1, 1,	300 },
+	{ "dispose",				DPWQTWXObj::m_dispose,		 0, 0,	300 },
+	{ "verb",				DPWQTWXObj::m_verb,		 2, 2,	300 },
 	{ nullptr, nullptr, 0, 0, 0 }
 };
 
-void DPwQTw::open(ObjectType type, const Common::Path &path) {
-	if (type == kXObj) {
-		DPwQTwXObject::initMethods(xlibMethods);
-		DPwQTwXObject *xobj = new DPwQTwXObject(kXObj);
-		g_lingo->exposeXObject(xlibName, xobj);
-	}
-}
+static BuiltinProto xlibBuiltins[] = {
+	{ nullptr, nullptr, 0, 0, 0, VOIDSYM }
+};
 
-void DPwQTw::close(ObjectType type) {
-	if (type == kXObj) {
-		DPwQTwXObject::cleanupMethods();
-		g_lingo->_globalvars[xlibName] = Datum();
-	}
-}
-
-
-DPwQTwXObject::DPwQTwXObject(ObjectType ObjectType) : Object<DPwQTwXObject>("dpwqtw") {
+DPWQTWXObject::DPWQTWXObject(ObjectType ObjectType) :Object<DPWQTWXObject>("DPWQTW") {
 	_objType = ObjectType;
 }
 
-void DPwQTw::m_new(int nargs) {
+void DPWQTWXObj::open(ObjectType type, const Common::Path &path) {
+    DPWQTWXObject::initMethods(xlibMethods);
+    DPWQTWXObject *xobj = new DPWQTWXObject(type);
+    g_lingo->exposeXObject(xlibName, xobj);
+    g_lingo->initBuiltIns(xlibBuiltins);
+}
+
+void DPWQTWXObj::close(ObjectType type) {
+    DPWQTWXObject::cleanupMethods();
+    g_lingo->_globalvars[xlibName] = Datum();
+
+}
+
+void DPWQTWXObj::m_new(int nargs) {
+	g_lingo->printSTUBWithArglist("DPWQTWXObj::m_new", nargs);
+	g_lingo->dropStack(nargs);
 	g_lingo->push(g_lingo->_state->me);
 }
 
-void DPwQTw::m_startup(int nargs) {
-	// no op
-}
+XOBJSTUBNR(DPWQTWXObj::m_startup)
+XOBJSTUBNR(DPWQTWXObj::m_quit)
+XOBJSTUBNR(DPWQTWXObj::m_dispose)
+XOBJSTUBNR(DPWQTWXObj::m_verb)
 
-void DPwQTw::m_quit(int nargs) {
-	// no op
 }
-
-void DPwQTw::m_verb(int nargs) {
-	g_lingo->printSTUBWithArglist("DPwQTw::m_verb", nargs);
-}
-
-} // End of namespace Director

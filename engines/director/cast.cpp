@@ -25,6 +25,7 @@
 #include "common/memstream.h"
 #include "common/substream.h"
 
+#include "director/types.h"
 #include "graphics/macgui/macfontmanager.h"
 #include "graphics/macgui/macwindowmanager.h"
 
@@ -194,6 +195,14 @@ int Cast::getCastMaxID() {
 	return result;
 }
 
+int Cast::getNextUnusedID() {
+	int result = 1;
+	while (_loadedCast->contains(result)) {
+		result += 1;
+	}
+	return result;
+}
+
 Common::Rect Cast::getCastMemberInitialRect(int castId) {
 	CastMember *cast = _loadedCast->getVal(castId);
 
@@ -216,20 +225,67 @@ void Cast::setCastMemberModified(int castId) {
 	cast->setModified(true);
 }
 
-CastMember *Cast::setCastMember(CastMemberID castId, CastMember *cast) {
-	if (_loadedCast->contains(castId.member)) {
-		_loadedCast->erase(castId.member);
+CastMember *Cast::setCastMember(int castId, CastMember *cast) {
+	if (_loadedCast->contains(castId)) {
+		_loadedCast->erase(castId);
 	}
 
-	_loadedCast->setVal(castId.member, cast);
+	_loadedCast->setVal(castId, cast);
 	return cast;
 }
 
-bool Cast::eraseCastMember(CastMemberID castId) {
-	if (_loadedCast->contains(castId.member)) {
-		CastMember *member = _loadedCast->getVal(castId.member);
+bool Cast::duplicateCastMember(CastMember *source, int targetId) {
+	if (_loadedCast->contains(targetId)) {
+		eraseCastMember(targetId);
+	}
+	// duplicating a cast member with a non-existent source
+	// is the same as deleting the target
+	if (!source)
+		return true;
+	CastMember *target = nullptr;
+	switch (source->_type) {
+	case kCastBitmap:
+		target = (CastMember *)(new BitmapCastMember(this, targetId, *(BitmapCastMember *)source));
+		break;
+	case kCastDigitalVideo:
+		target = (CastMember *)(new DigitalVideoCastMember(this, targetId, *(DigitalVideoCastMember *)source));
+		break;
+	case kCastFilmLoop:
+		target = (CastMember *)(new FilmLoopCastMember(this, targetId, *(FilmLoopCastMember *)source));
+		break;
+	case kCastMovie:
+		target = (CastMember *)(new MovieCastMember(this, targetId, *(MovieCastMember *)source));
+		break;
+	case kCastPalette:
+		target = (CastMember *)(new PaletteCastMember(this, targetId, *(PaletteCastMember *)source));
+		break;
+	case kCastLingoScript:
+		target = (CastMember *)(new ScriptCastMember(this, targetId, *(ScriptCastMember *)source));
+		break;
+	case kCastShape:
+		target = (CastMember *)(new ShapeCastMember(this, targetId, *(ShapeCastMember *)source));
+		break;
+	case kCastText:
+		target = (CastMember *)(new TextCastMember(this, targetId, *(TextCastMember *)source));
+		break;
+	case kCastTransition:
+		target = (CastMember *)(new TransitionCastMember(this, targetId, *(TransitionCastMember *)source));
+		break;
+	default:
+		warning("Cast::duplicateCastMember(): unsupported cast type %s", castType2str(source->_type));
+		return false;
+		break;
+	}
+
+	setCastMember(targetId, target);
+	return true;
+}
+
+bool Cast::eraseCastMember(int castId) {
+	if (_loadedCast->contains(castId)) {
+		CastMember *member = _loadedCast->getVal(castId);
 		delete member;
-		_loadedCast->erase(castId.member);
+		_loadedCast->erase(castId);
 		return true;
 	}
 
@@ -1155,7 +1211,7 @@ void Cast::loadScriptV2(Common::SeekableReadStreamEndian &stream, uint16 id) {
 	if (ConfMan.getBool("dump_scripts"))
 		dumpScript(script.c_str(), kMovieScript, id);
 
-	_lingoArchive->addCode(script.decode(Common::kMacRoman), kMovieScript, id, nullptr, kLPPForceD2);
+	_lingoArchive->addCode(script.decode(Common::kMacRoman), kMovieScript, id, nullptr, kLPPForceD2|kLPPTrimGarbage);
 }
 
 void Cast::dumpScript(const char *script, ScriptType type, uint16 id) {

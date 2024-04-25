@@ -24,12 +24,12 @@
 
 namespace Director {
 
-class DPwQTwXObject : public Object<DPwQTwXObject> {
+class DPWQTWXObject : public Object<DPWQTWXObject> {
 public:
-	DPwQTwXObject(ObjectType objType);
+	DPWQTWXObject(ObjectType objType);
 };
 
-namespace DPwQTw {
+namespace DPWQTWXObj {
 
 extern const char *xlibName;
 extern const char *fileNames[];
@@ -37,12 +37,13 @@ extern const char *fileNames[];
 void open(ObjectType type, const Common::Path &path);
 void close(ObjectType type);
 
-void m_new(int nargs);
 void m_startup(int nargs);
 void m_quit(int nargs);
+void m_new(int nargs);
+void m_dispose(int nargs);
 void m_verb(int nargs);
 
-} // End of namespace DPwQTw
+} // End of namespace DPWQTWXObj
 
 } // End of namespace Director
 

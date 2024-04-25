@@ -631,7 +631,19 @@ void DisposeOutPts(OutPt *&pp) {
 //------------------------------------------------------------------------------
 
 inline void InitEdge(TEdge *e, TEdge *eNext, TEdge *ePrev, const IntPoint &Pt) {
-	memset(e, 0, sizeof(TEdge));
+	e->Bot = IntPoint();
+	e->Top = IntPoint();
+	e->Dx = 0.0;
+	e->PolyTyp = ptSubject;
+	e->Side = esLeft; // side only refers to current side of solution poly
+	e->WindDelta = 0; // 1 or -1 depending on winding direction
+	e->WindCnt = 0;
+	e->WindCnt2 = 0; // winding count of the opposite polytype
+	e->NextInLML = nullptr;
+	e->NextInAEL = nullptr;
+	e->PrevInAEL = nullptr;
+	e->NextInSEL = nullptr;
+	e->PrevInSEL = nullptr;
 	e->Next = eNext;
 	e->Prev = ePrev;
 	e->Curr = Pt;
@@ -897,7 +909,7 @@ TEdge *ClipperBase::ProcessBound(TEdge *E, bool NextIsForward) {
 			EStart = E->Next;
 		if (IsHorizontal(*EStart)) // ie an adjoining horizontal skip edge
 		{
-			if (EStart->Bot.X != E->Bot.X && EStart->Top.X != E->Bot.X)
+			if (EStart->Bot.X != E->Bot.X && EStart->Top.X != E->Top.X)
 				ReverseHorizontal(*E);
 		} else if (EStart->Bot.X != E->Bot.X)
 			ReverseHorizontal(*E);
@@ -3550,7 +3562,7 @@ void ReversePath(Path &p) {
 	for (uint i = 0; i < p.size(); i++) {
 		reversed[p.size() - 1 - i] = p[i];
 	}
-	p = reversed;
+	p = Common::move(reversed);
 }
 //------------------------------------------------------------------------------
 

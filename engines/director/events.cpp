@@ -41,9 +41,9 @@ namespace Director {
 uint32 DirectorEngine::getMacTicks() { return (g_system->getMillis() * 60 / 1000.) - _tickBaseline; }
 
 bool DirectorEngine::processEvents(bool captureClick, bool skipWindowManager) {
-	debugC(5, kDebugEvents, "\n@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
-	debugC(5, kDebugEvents, "@@@@   Processing events");
-	debugC(5, kDebugEvents, "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
+	debugC(9, kDebugEvents, "\n@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
+	debugC(9, kDebugEvents, "@@@@   Processing events");
+	debugC(9, kDebugEvents, "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
 
 	Common::Event event;
 	while (g_system->getEventManager()->pollEvent(event)) {
@@ -158,14 +158,13 @@ bool Movie::processEvent(Common::Event &event) {
 
 		if (_currentDraggedChannel) {
 			if (_currentDraggedChannel->_sprite->_moveable) {
-				pos = _window->getMousePos();
+				pos = _draggingSpriteOffset + _window->getMousePos();
 				if (!_currentDraggedChannel->_sprite->_trails) {
 					g_director->getCurrentMovie()->getWindow()->addDirtyRect(_currentDraggedChannel->getBbox());
 				}
 				_currentDraggedChannel->setPosition(pos.x, pos.y, true);
 				_currentDraggedChannel->_dirty = true;
 				g_director->getCurrentMovie()->getWindow()->addDirtyRect(_currentDraggedChannel->getBbox());
-				_draggingSpritePos = pos;
 			} else {
 				_currentDraggedChannel = nullptr;
 			}
@@ -188,9 +187,9 @@ bool Movie::processEvent(Common::Event &event) {
 			else
 				spriteId = sc->getMouseSpriteIDFromPos(pos);
 
-			// Set `the clickOn` Lingo property.
-			// Even in D4, `the clickOn` uses the old "active" sprite instead of mouse sprite.
-			_currentClickOnSpriteId = sc->getActiveSpriteIDFromPos(pos);
+			_currentActiveSpriteId = sc->getActiveSpriteIDFromPos(pos);
+			_currentMouseSpriteId = sc->getMouseSpriteIDFromPos(pos);
+			_currentMouseDownCastID = sc->_channels[spriteId]->_sprite->_castId;
 
 			if (!spriteId && _isBeepOn) {
 				g_lingo->func_beep(1);
@@ -218,7 +217,7 @@ bool Movie::processEvent(Common::Event &event) {
 			queueUserEvent(kEventMouseDown, spriteId);
 
 			if (sc->_channels[spriteId]->_sprite->_moveable) {
-				_draggingSpritePos = _window->getMousePos();
+				_draggingSpriteOffset = sc->_channels[spriteId]->_currentPoint - _window->getMousePos();
 				_currentDraggedChannel = sc->_channels[spriteId];
 			}
 		}
@@ -230,9 +229,9 @@ bool Movie::processEvent(Common::Event &event) {
 		pos = _window->getMousePos();
 
 		if (g_director->getVersion() < 400)
-			spriteId = sc->getActiveSpriteIDFromPos(pos);
+			spriteId = _currentActiveSpriteId;
 		else
-			spriteId = sc->getMouseSpriteIDFromPos(pos);
+			spriteId = _currentMouseSpriteId;
 
 		if (_currentHiliteChannelId && sc->_channels[_currentHiliteChannelId]) {
 			g_director->getCurrentWindow()->setDirty(true);

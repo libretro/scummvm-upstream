@@ -646,7 +646,7 @@ static SQInteger actorUsePos(HSQUIRRELVM v) {
 		else
 			actor->_useDir = (Direction)dir;
 	}
-	actor->_usePos = usePos;
+	actor->_usePos = Common::move(usePos);
 	return 0;
 }
 
@@ -810,8 +810,9 @@ static SQInteger createActor(HSQUIRRELVM v) {
 	g_twp->_resManager->_allObjects[id] = actor;
 
 	Common::String key;
-	if (SQ_FAILED(sqgetf(actor->_table, "_key", key)))
+	if (sqrawexists(actor->_table, "_key") && SQ_FAILED(sqgetf(actor->_table, "_key", key))) {
 		return sq_throwerror(v, "failed to get actor key");
+	}
 	actor->_key = key;
 
 	debugC(kDebugActScript, "Create actor %s %d", key.c_str(), actor->getId());
@@ -898,6 +899,7 @@ static SQInteger sayLineAt(HSQUIRRELVM v) {
 	SQInteger x, y;
 	Common::String text;
 	float duration = -1.0f;
+	Common::SharedPtr<Object> actor;
 	if (SQ_FAILED(sqget(v, 2, x)))
 		return sq_throwerror(v, "failed to get x");
 	if (SQ_FAILED(sqget(v, 3, y)))
@@ -908,23 +910,20 @@ static SQInteger sayLineAt(HSQUIRRELVM v) {
 		if (SQ_FAILED(sqget(v, 4, c)))
 			return sq_throwerror(v, "failed to get color");
 		color = Color::rgb(c);
-		if (SQ_FAILED(sqget(v, 5, duration)))
-			return sq_throwerror(v, "failed to get duration");
-		if (SQ_FAILED(sqget(v, 6, text)))
-			return sq_throwerror(v, "failed to get text");
 	} else {
-		Common::SharedPtr<Object> actor = sqactor(v, 4);
+		actor = sqactor(v, 4);
 		if (!actor)
 			return sq_throwerror(v, "failed to get actor");
-		Math::Vector2d pos = g_twp->roomToScreen(actor->_node->getAbsPos());
-		x = pos.getX();
-		y = pos.getY();
 		color = actor->_talkColor;
-		if (SQ_FAILED(sqget(v, 6, text)))
-			return sq_throwerror(v, "failed to get text");
 	}
 
-	warning("TODO: saylineAt: (%lld,%lld) text=%s color=%s duration=%f", x, y, text.c_str(), color.toStr().c_str(), duration);
+	if (SQ_FAILED(sqget(v, 5, duration)))
+		return sq_throwerror(v, "failed to get duration");
+	if (SQ_FAILED(sqget(v, 6, text)))
+		return sq_throwerror(v, "failed to get text");
+
+	debugC(kDebugActScript, "saylineAt: (%lld,%lld) text=%s color=%s duration=%f", x, y, text.c_str(), color.toStr().c_str(), duration);
+	g_twp->sayLineAt(Math::Vector2d(x, y), color, actor, duration, text);
 	return 0;
 }
 

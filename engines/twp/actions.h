@@ -25,6 +25,11 @@
 namespace Twp {
 
 enum TwpAction {
+	kDefaultAction,
+	kMoveLeft,
+	kMoveRight,
+	kMoveUp,
+	kMoveDown,
 	kSkipCutscene,
 	kSelectActor1,
 	kSelectActor2,
@@ -41,7 +46,16 @@ enum TwpAction {
 	kSelectPreviousActor,
 	kSelectNextActor,
 	kSkipText,
-	kShowHotspots
+	kShowHotspots,
+	kOpen,
+	kClose,
+	kGive,
+	kPickUp,
+	kLookAt,
+	kTalkTo,
+	kPush,
+	kPull,
+	kUse
 };
 
 }

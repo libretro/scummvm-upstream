@@ -125,7 +125,7 @@ SQInteger sqpush(HSQUIRRELVM v, Rectf value) {
 }
 
 template<>
-HSQOBJECT sqtoobj(HSQUIRRELVM v, int value) {
+HSQOBJECT sqtoobj(HSQUIRRELVM v, SQInteger value) {
 	SQObject o;
 	o._type = OT_INTEGER;
 	o._unVal.nInteger = value;
@@ -342,7 +342,8 @@ int sqparamCount(HSQUIRRELVM v, HSQOBJECT obj, const Common::String &name) {
 void sqpushfunc(HSQUIRRELVM v, HSQOBJECT o, const char *name) {
 	sq_pushobject(v, o);
 	sq_pushstring(v, name, -1);
-	sq_get(v, -2);
+	if (SQ_FAILED(sq_get(v, -2)))
+		warning("Failed to push function %s", name);
 }
 
 void sqexec(HSQUIRRELVM v, const char *code, const char *filename) {
@@ -360,22 +361,16 @@ void sqexec(HSQUIRRELVM v, const char *code, const char *filename) {
 	sq_settop(v, top);
 }
 
-Common::SharedPtr<ThreadBase> sqthread(HSQUIRRELVM v, int i) {
+Common::SharedPtr<Thread> sqthread(HSQUIRRELVM v, int i) {
 	SQInteger id;
 	if (SQ_SUCCEEDED(sqget(v, i, id)))
 		return sqthread(id);
 	return nullptr;
 }
 
-Common::SharedPtr<ThreadBase> sqthread(int id) {
-	if (g_twp->_cutscene) {
-		if (g_twp->_cutscene->getId() == id) {
-			return g_twp->_cutscene;
-		}
-	}
-
+Common::SharedPtr<Thread> sqthread(int id) {
 	for (size_t i = 0; i < g_twp->_threads.size(); i++) {
-		Common::SharedPtr<ThreadBase> t = g_twp->_threads[i];
+		Common::SharedPtr<Thread> t = g_twp->_threads[i];
 		if (t->getId() == id) {
 			return t;
 		}
@@ -405,7 +400,7 @@ Light *sqlight(HSQUIRRELVM v, int i) {
 
 struct GetThread {
 	explicit GetThread(HSQUIRRELVM v) : _v(v) {}
-	bool operator()(Common::SharedPtr<ThreadBase> t) {
+	bool operator()(Common::SharedPtr<Thread> t) {
 		return t->getThread() == _v;
 	}
 
@@ -413,13 +408,7 @@ private:
 	HSQUIRRELVM _v;
 };
 
-Common::SharedPtr<ThreadBase> sqthread(HSQUIRRELVM v) {
-	if (g_twp->_cutscene) {
-		if (g_twp->_cutscene->getThread() == v) {
-			return g_twp->_cutscene;
-		}
-	}
-
+Common::SharedPtr<Thread> sqthread(HSQUIRRELVM v) {
 	auto it = Common::find_if(g_twp->_threads.begin(), g_twp->_threads.end(), GetThread(v));
 	if (it != g_twp->_threads.end())
 		return *it;

@@ -136,6 +136,15 @@ void Hud::drawSprite(const SpriteSheetFrame &sf, Texture *texture, const Color &
 	g_twp->getGfx().drawSprite(sf.frame, *texture, color, trsf);
 }
 
+void Hud::selectVerb(const Verb &verb) {
+	if (_verb.id.id == verb.id.id)
+		return;
+	_verb = verb;
+	if (_verb.flags & VERBFLAG_INSTANT) {
+		g_twp->callVerb(g_twp->_actor, _verb.id, nullptr);
+	}
+}
+
 void Hud::drawCore(const Math::Matrix4 &trsf) {
 	ActorSlot *slot = actorSlot(_actor);
 	if (!slot)
@@ -175,7 +184,7 @@ void Hud::drawCore(const Math::Matrix4 &trsf) {
 			isOver |= over;
 			Color color = (over || (verb.id.id == _defaultVerbId)) ? verbHighlight : verbColor;
 			if (_mouseClick && over) {
-				_verb = verb;
+				selectVerb(verb);
 			}
 			drawSprite(verbFrame, verbTexture, Color::withAlpha(color, getAlpha()), trsf);
 		}
@@ -195,16 +204,10 @@ void Hud::update(float elapsed, const Math::Vector2d &pos, Common::SharedPtr<Obj
 
 	if (_fadeTime > 2.f) {
 		_fadeTime = 2.f;
-		if (!_fadeIn) {
-			setVisible(false);
-		}
 	}
 
 	if (_fadeIn) {
 		float alpha = MIN(_fadeTime, 2.0f) / 2.0f;
-		setAlpha(alpha);
-	} else {
-		float alpha = MAX(2.0f - _fadeTime, 0.0f) / 2.0f;
 		setAlpha(alpha);
 	}
 }
@@ -212,9 +215,7 @@ void Hud::update(float elapsed, const Math::Vector2d &pos, Common::SharedPtr<Obj
 void Hud::setVisible(bool visible) {
 	if (_fadeIn != visible) {
 		_fadeIn = visible;
-		if (visible) {
-			Node::setVisible(visible);
-		}
+		Node::setVisible(visible);
 		_fadeTime = 0;
 	}
 }

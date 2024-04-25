@@ -65,6 +65,11 @@ struct CachedFile {
 	const byte *data;
 	int32 size;			// Specify -1 if strlen(data) is the size
 } const cachedFiles[] = {
+	{
+		"directortest", Common::kPlatformUnknown,
+		"0testfile",
+			(const byte *)"", 0
+	},
 	{ "trektech", Common::kPlatformWindows,
 		"NCC1701D.INI",
 			(const byte *)"cdromdrive=D\n", -1
@@ -87,6 +92,12 @@ struct CachedFile {
 		"WINDOWS/TX2SAVES",
 			(const byte *)"", 0
 	},
+	{ "paws", Common::kPlatformWindows,
+		// PAWS: Personal Automated Wagging System checks a file to determine
+		// the location of the CD.
+		"INSTALL.INF",
+			(const byte *)"CDDrive=D:\\\r\nSourcePath=D:\\\r\nDestPath=C:\\", -1
+	},
 	{ nullptr, Common::kPlatformUnknown, nullptr, nullptr, 0 }
 };
 
@@ -107,6 +118,10 @@ static void quirkWarlock() {
 
 static void quirkLimit15FPS() {
 	g_director->_fpsLimit = 15;
+}
+
+static void quirkVirtualNightclub() {
+	g_director->_colorDepth = 16;
 }
 
 static void quirkHollywoodHigh() {
@@ -193,6 +208,10 @@ struct Quirk {
 	{ "easternmind", Common::kPlatformMacintosh, &quirkLimit15FPS },
 	{ "easternmind", Common::kPlatformWindows, &quirkLimit15FPS },
 
+	// Sections of Hell Cab such as the prehistoric times need capped framerate.
+	{ "hellcab", Common::kPlatformMacintosh, &quirkLimit15FPS },
+	{ "hellcab", Common::kPlatformWindows, &quirkLimit15FPS },
+
 	// Wrath of the Gods has shooting gallery minigames which are
 	// clocked to 60fps; in reality this is far too fast to be playable.
 	{ "wrath", Common::kPlatformMacintosh, &quirkLimit15FPS },
@@ -211,6 +230,10 @@ struct Quirk {
 
 	// Pippin game that uses Unix path separators rather than Mac
 	{ "pipcatalog", Common::kPlatformPippin, &quirkPipCatalog },
+
+	// Virtual Nightclub pops up a nag mesasage if the color depth isn't
+	// exactly 16 bit.
+	{ "vnc", Common::kPlatformWindows, &quirkVirtualNightclub },
 
 	{ nullptr, Common::kPlatformUnknown, nullptr }
 };

@@ -656,7 +656,7 @@ bool GGPackDecoder::open(Common::SeekableReadStream *s, const XorKey &key) {
 		int offset = (int)file["offset"]->asIntegerNumber();
 		int size = (int)file["size"]->asIntegerNumber();
 		_entries[filename] = GGPackEntry{offset, size};
-		debug(kDebugGGPack, "filename: %s, off: %d, size: %d", filename.c_str(), offset, size);
+		debugC(kDebugGGPack, "filename: %s, off: %d, size: %d", filename.c_str(), offset, size);
 	}
 
 	return true;
@@ -737,7 +737,7 @@ bool GGPackSet::containsDLC() const {
 	return _packs.find(3) != _packs.end();
 }
 
-void GGPackSet::init(const XorKey& key) {
+void GGPackSet::init(const XorKey &key) {
 	Common::ArchiveMemberList fileList;
 	SearchMan.listMatchingMembers(fileList, "*.ggpack*");
 
@@ -753,7 +753,7 @@ void GGPackSet::init(const XorKey& key) {
 		Common::SeekableReadStream *stream = m.createReadStream();
 		GGPackDecoder pack;
 		if (stream && pack.open(stream, key)) {
-			_packs[index] = pack;
+			_packs[index] = Common::move(pack);
 		}
 	}
 

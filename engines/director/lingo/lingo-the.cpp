@@ -424,7 +424,8 @@ Datum Lingo::getTheEntity(int entity, Datum &id, int field) {
 		d.type = POINT;
 		break;
 	case kTheClickOn:
-		d = (int)movie->_currentClickOnSpriteId;
+		// Even in D4, `the clickOn` uses the old "active" sprite instead of mouse sprite.
+		d = (int)movie->_currentActiveSpriteId;
 		break;
 	case kTheColorDepth:
 		// bpp. 1, 2, 4, 8, 32
@@ -1483,7 +1484,8 @@ void Lingo::setTheSprite(Datum &id1, int field, Datum &d) {
 
 			if (castMember && castMember->_type == kCastDigitalVideo) {
 				if (((DigitalVideoCastMember *)castMember)->loadVideoFromCast()) {
-					((DigitalVideoCastMember *)castMember)->startVideo(channel);
+					((DigitalVideoCastMember *)castMember)->setChannel(channel);
+					((DigitalVideoCastMember *)castMember)->startVideo();
 					// b_updateStage needs to have _videoPlayback set to render video
 					// in the regular case Score::renderSprites sets it.
 					// However Score::renderSprites is not in the current code path.

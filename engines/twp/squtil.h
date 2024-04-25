@@ -48,7 +48,7 @@ SQInteger sqpush(HSQUIRRELVM v, T value);
 template<typename T, typename... Args>
 void sqpush(HSQUIRRELVM v, T first, Args... args) {
 	sqpush(v, first);
-	sqpush(v, args...);
+	sqpush(v, Common::move(args)...);
 }
 
 // set field
@@ -58,7 +58,7 @@ void sqsetf(HSQOBJECT o, const Common::String &key, T obj) {
 	SQInteger top = sq_gettop(v);
 	sq_pushobject(v, o);
 	sq_pushstring(v, key.c_str(), -1);
-	sqpush(v, obj);
+	sqpush(v, Common::move(obj));
 	sq_rawset(v, -3);
 	sq_settop(v, top);
 }
@@ -179,9 +179,9 @@ Common::SharedPtr<Object> sqactor(HSQOBJECT table);
 Common::SharedPtr<Object> sqactor(HSQUIRRELVM v, int i);
 Common::SharedPtr<SoundDefinition> sqsounddef(HSQUIRRELVM v, int i);
 Common::SharedPtr<SoundDefinition> sqsounddef(int id);
-Common::SharedPtr<ThreadBase> sqthread(HSQUIRRELVM v);
-Common::SharedPtr<ThreadBase> sqthread(HSQUIRRELVM v, int id);
-Common::SharedPtr<ThreadBase> sqthread(int id);
+Common::SharedPtr<Thread> sqthread(HSQUIRRELVM v);
+Common::SharedPtr<Thread> sqthread(HSQUIRRELVM v, int id);
+Common::SharedPtr<Thread> sqthread(int id);
 Light *sqlight(int id);
 Light *sqlight(HSQUIRRELVM v, int i);
 

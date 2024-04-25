@@ -118,8 +118,7 @@ int AgiEngine::agiInit() {
 	// to ask Ego's name again. The name is supposed to be maintained in string 1.
 	// Fixes bug #5673.
 	if (!_restartGame) {
-		for (int i = 0; i < MAX_STRINGS; i++)
-			_game.strings[i][0] = 0;
+		memset(_game.strings, 0, sizeof(_game.strings));
 	}
 
 	// setup emulation
@@ -660,6 +659,31 @@ void AgiEngine::artificialDelayTrigger_DrawPicture(int16 newPictureNr) {
 		}
 	}
 	_artificialDelayCurrentPicture = newPictureNr;
+}
+
+const char *AgiGame::getString(int number) {
+	if (0 <= number && number <= MAX_STRINGS) {
+		return strings[number];
+	} else {
+		// WORKAROUND: Flag Quest detects the interpreter version by comparing
+		// out of bounds strings to values know to be in memory in Sierra's
+		// interpreters. The game only starts if a known value matches an
+		// allowed version. We return the value for version 2.917. Bug #15060
+		if (number == 56) {
+			return ".917";
+		}
+		warning("invalid string number: %d", number);
+		return "";
+	}
+}
+
+void AgiGame::setString(int number, const char *str) {
+	if (0 <= number && number <= MAX_STRINGS) {
+		Common::strlcpy(strings[number], str, MAX_STRINGLEN);
+	} else {
+		// Occurs in Groza, number = 150
+		warning("invalid string number: %d, '%s'", number, str);
+	}
 }
 
 void AgiGame::setAppleIIgsSpeedLevel(int i) {

@@ -110,6 +110,7 @@ public:
 	CastMember *getCastMember(CastMemberID memberID);
 	CastMember *createOrReplaceCastMember(CastMemberID memberID, CastMember *cast);
 	bool eraseCastMember(CastMemberID memberID);
+	bool duplicateCastMember(CastMemberID source, CastMemberID target);
 	CastMemberID getCastMemberIDByMember(int memberID);
 	int getCastLibIDByName(const Common::String &name);
 	CastMemberID getCastMemberIDByName(const Common::String &name);
@@ -143,7 +144,9 @@ public:
 	uint16 _version;
 	Common::Platform _platform;
 	Common::Rect _movieRect;
-	uint16 _currentClickOnSpriteId;
+	uint16 _currentActiveSpriteId;
+	uint16 _currentMouseSpriteId;
+	CastMemberID _currentMouseDownCastID;
 	uint16 _currentEditableTextChannel;
 	uint32 _lastEventTime;
 	uint32 _lastRollTime;
@@ -202,7 +205,7 @@ private:
 
 	bool _mouseDownWasInButton;
 	Channel *_currentDraggedChannel;
-	Common::Point _draggingSpritePos;
+	Common::Point _draggingSpriteOffset;
 };
 
 } // End of namespace Director

@@ -69,6 +69,8 @@ TwpEngine::TwpEngine(OSystem *syst, const TwpGameDescription *gameDesc)
 	_dialog.reset(new Dialog());
 	_dialog->_tgt.reset(new EngineDialogTarget());
 	sq_resetobject(&_defaultObj);
+	sq_resetobject(&_cutscene.closureOverride);
+	sq_resetobject(&_cutscene.envObj);
 
 	_audio.reset(new AudioSystem());
 	_scene.reset(new Scene());
@@ -101,7 +103,6 @@ TwpEngine::~TwpEngine() {
 #endif
 
 	_mixer->stopAll();
-	delete _screen;
 }
 
 Math::Vector2d TwpEngine::winToScreen(const Math::Vector2d &pos) {
@@ -157,7 +158,7 @@ bool TwpEngine::preWalk(Common::SharedPtr<Object> actor, VerbId verbId, Common::
 		sqcallfunc(result, actor->_table, "actorPreWalk", verbId.id, noun1->_table, n2Table);
 	}
 	if (!result) {
-		Common::String funcName = g_twp->_resManager->isActor(noun1->getId()) ? "actorPreWalk" : "objectPreWalk";
+		Common::String funcName = _resManager->isActor(noun1->getId()) ? "actorPreWalk" : "objectPreWalk";
 		if (sqrawexists(noun1->_table, funcName)) {
 			sqcallfunc(result, noun1->_table, funcName.c_str(), verbId.id, noun1->_table, n2Table);
 			debugC(kDebugGame, "%s %d n1=%s(%s) n2=%s -> %s", funcName.c_str(), verbId.id, noun1->_name.c_str(), noun1->_key.c_str(), n2Name.c_str(), result ? "yes" : "no");
@@ -179,7 +180,7 @@ bool TwpEngine::execSentence(Common::SharedPtr<Object> actor, VerbId verbId, Com
 	Common::String noun1name = !noun1 ? "null" : noun1->_key;
 	Common::String noun2name = !noun2 ? "null" : noun2->_key;
 	debugC(kDebugGame, "exec(%s,%d,%s,%s)", name.c_str(), verbId.id, noun1name.c_str(), noun2name.c_str());
-	actor = !actor ? g_twp->_actor : actor;
+	actor = !actor ? _actor : actor;
 	if ((verbId.id <= 0) || (verbId.id > MAX_VERBS) || (!noun1) || (!actor))
 		return false;
 
@@ -254,7 +255,7 @@ void TwpEngine::clickedAt(const Math::Vector2d &scrPos) {
 				cancelSentence(_actor);
 				if (_actor->_room == _room)
 					Object::walk(_actor, roomPos);
-				_hud->_verb = _hud->actorSlot(_actor)->verbs[0];
+				_hud->selectVerb(_hud->actorSlot(_actor)->verbs[0]);
 				_holdToMove = true;
 			}
 
@@ -341,7 +342,7 @@ public:
 
 Common::SharedPtr<Object> inventoryAt(Math::Vector2d pos) {
 	Common::SharedPtr<Object> result;
-	objsAt(pos, InInventory(result));
+	objsAt(Common::move(pos), InInventory(result));
 	return result;
 }
 
@@ -452,6 +453,8 @@ void TwpEngine::update(float elapsed) {
 
 	_audio->update(elapsed);
 	_noOverride->update(elapsed);
+	if (_talking)
+		_talking->update(elapsed);
 
 	// update mouse pos
 	Math::Vector2d scrPos = winToScreen(_cursor.pos);
@@ -486,9 +489,9 @@ void TwpEngine::update(float elapsed) {
 			// if cursor is in the margin of the screen and if camera can move again
 			// then show a left arrow or right arrow
 			Math::Vector2d screenSize = _room->getScreenSize();
-			if ((scrPos.getX() < SCREEN_MARGIN) && (cameraPos().getX() >= 1.f)) {
+			if ((scrPos.getX() < SCREEN_MARGIN) && (_gfx.cameraPos().getX() >= 1.f)) {
 				_inputState.setCursorShape(CursorShape::Left);
-			} else if ((scrPos.getX() > (SCREEN_WIDTH - SCREEN_MARGIN)) && cameraPos().getX() < (_room->_roomSize.getX() - screenSize.getX())) {
+			} else if ((scrPos.getX() > (SCREEN_WIDTH - SCREEN_MARGIN)) && _gfx.cameraPos().getX() < (_room->_roomSize.getX() - screenSize.getX())) {
 				_inputState.setCursorShape(CursorShape::Right);
 			} else if (_room->_fullscreen == FULLSCREENROOM && _noun1) {
 				// if the object is a door, it has a flag indicating its direction: left, right, front, back
@@ -508,11 +511,11 @@ void TwpEngine::update(float elapsed) {
 			}
 
 			_inputState.setHotspot(_noun1 != nullptr);
-			bool hudVisible = _inputState.getInputActive() && _inputState.getInputVerbsActive() && _dialog->getState() == DialogState::None && !_cutscene;
+			bool hudVisible = _inputState.getInputActive() && _inputState.getInputVerbsActive() && _dialog->getState() == DialogState::None && !_cutscene.id;
 			_hud->setVisible(hudVisible);
 			_sentence.setVisible(_hud->isVisible());
 			_uiInv.setVisible(hudVisible);
-			_actorSwitcher.setVisible((_dialog->getState() == DialogState::None) && !_cutscene);
+			_actorSwitcher.setVisible((_dialog->getState() == DialogState::None) && !_cutscene.id);
 			// Common::String cursortxt = Common::String::format("%s (%d, %d) - (%d, %d)", cursorText().c_str(), (int)roomPos.getX(), (int)roomPos.getY(), (int)scrPos.getX(), (int)scrPos.getY());
 			//_sentence.setText(cursortxt.c_str());
 			_sentence.setText(cursorText());
@@ -557,30 +560,32 @@ void TwpEngine::update(float elapsed) {
 	_actorSwitcher.update(actorSwitcherSlots(), elapsed);
 	const uint32 endMiscTime = _system->getMillis();
 
-	// update cutscene
-	if (_cutscene) {
-		if (_cutscene->update(elapsed)) {
-			_cutscene.reset();
-		}
-	}
 	const uint32 endUpdateCutsceneTime = _system->getMillis();
 
 	// update threads: make a copy of the threads because during threads update, new threads can be added
-	Common::Array<Common::SharedPtr<ThreadBase> > threads(_threads);
-	Common::Array<Common::SharedPtr<ThreadBase> > threadsToRemove;
+	Common::Array<Common::SharedPtr<Thread> > threads(_threads);
+	Common::Array<Common::SharedPtr<Thread> > threadsToRemove;
 
 	bool isNotInDialog = _dialog->getState() == DialogState::None;
 	for (auto it = threads.begin(); it != threads.end(); it++) {
-		Common::SharedPtr<ThreadBase> thread(*it);
+		Common::SharedPtr<Thread> thread(*it);
 		if ((isNotInDialog || !thread->isGlobal()) && thread->update(elapsed)) {
 			threadsToRemove.push_back(thread);
 		}
 	}
 	// remove threads that are terminated
 	for (auto it = threadsToRemove.begin(); it != threadsToRemove.end(); it++) {
-		Common::SharedPtr<ThreadBase> thread(*it);
+		Common::SharedPtr<Thread> thread(*it);
 		size_t i = find(_threads, *it);
 		if (i != (size_t)-1) {
+			// if cutscene reset information
+			if (it->get()->getId() == _cutscene.id) {
+				_cutscene.id = 0;
+				g_twp->_inputState.setState(_cutscene.inputState);
+				g_twp->_inputState.setShowCursor(_cutscene.showCursor);
+				if (_cutscene.showCursor)
+					g_twp->_inputState.setInputActive(true);
+			}
 			_threads.remove_at(i);
 		}
 	}
@@ -694,7 +699,7 @@ void TwpEngine::draw(RenderTexture *outTexture) {
 		setShaderEffect(_room->_effect);
 		_lighting->update(_room->_lights);
 	}
-	_shaderParams->randomValue[0] = g_twp->getRandom();
+	_shaderParams->randomValue[0] = getRandom();
 	_shaderParams->timeLapse = fmodf(_time, 1000.f);
 	_shaderParams->iGlobalTime = _shaderParams->timeLapse;
 	_shaderParams->updateShader();
@@ -791,9 +796,18 @@ void TwpEngine::updateSettingVars() {
 	sqcall("setSettingVar", "ransome_unbeeped", ConfMan.getBool("ransomeUnbeeped") && _pack->containsDLC());
 }
 
+static void setVerbAction(int verbSlot) {
+	ActorSlot *slot = g_twp->_hud->actorSlot(g_twp->_actor);
+	if (!slot)
+		return;
+	g_twp->_hud->selectVerb(slot->verbs[verbSlot]);
+}
+
 Common::Error TwpEngine::run() {
+	const Common::String &gameTarget = ConfMan.getActiveDomainName();
+	AchMan.setActiveDomain(getMetaEngine()->getAchievementsInfo(gameTarget));
+
 	initGraphics3d(SCREEN_WIDTH, SCREEN_HEIGHT);
-	_screen = new Graphics::Screen(SCREEN_WIDTH, SCREEN_HEIGHT);
 
 	// Set the engine's debugger console
 	setDebugger(new Console());
@@ -872,7 +886,6 @@ Common::Error TwpEngine::run() {
 	Common::Event e;
 	uint time = _system->getMillis();
 	while (!shouldQuit()) {
-		Math::Vector2d camPos = _gfx.cameraPos();
 		while (_system->getEventManager()->pollEvent(e)) {
 			switch (e.type) {
 			case Common::EVENT_CUSTOM_ENGINE_ACTION_START: {
@@ -886,7 +899,7 @@ Common::Error TwpEngine::run() {
 				case TwpAction::kSelectActor4:
 				case TwpAction::kSelectActor5:
 				case TwpAction::kSelectActor6:
-					if (g_twp->_actorSwitcher._mode == asOn) {
+					if (_actorSwitcher._mode == asOn) {
 						int index = (TwpAction)e.customType - kSelectActor1;
 						ActorSlot *slot = &_hud->_actorSlots[index];
 						if (slot->selectable && slot->actor && (slot->actor->_room->_name != "Void")) {
@@ -895,7 +908,7 @@ Common::Error TwpEngine::run() {
 					}
 					break;
 				case TwpAction::kSelectPreviousActor:
-					if ((g_twp->_actorSwitcher._mode == asOn) && _actor) {
+					if ((_actorSwitcher._mode == asOn) && _actor) {
 						Common::Array<Common::SharedPtr<Object> > actors;
 						for (int i = 0; i < NUMACTORS; i++) {
 							ActorSlot *slot = &_hud->_actorSlots[i];
@@ -910,7 +923,7 @@ Common::Error TwpEngine::run() {
 					}
 					break;
 				case TwpAction::kSelectNextActor:
-					if ((g_twp->_actorSwitcher._mode == asOn) && _actor) {
+					if ((_actorSwitcher._mode == asOn) && _actor) {
 						Common::Array<Common::SharedPtr<Object> > actors;
 						for (int i = 0; i < NUMACTORS; i++) {
 							ActorSlot *slot = &_hud->_actorSlots[i];
@@ -941,16 +954,38 @@ Common::Error TwpEngine::run() {
 				case TwpAction::kShowHotspots:
 					_hotspotMarker->setVisible(!_hotspotMarker->isVisible());
 					break;
-				}
+				case TwpAction::kOpen:
+				case TwpAction::kClose:
+				case TwpAction::kGive:
+				case TwpAction::kPickUp:
+				case TwpAction::kLookAt:
+				case TwpAction::kTalkTo:
+				case TwpAction::kPush:
+				case TwpAction::kPull:
+				case TwpAction::kUse:
+					setVerbAction(1 + (int)e.customType - (int)TwpAction::kOpen);
+					break;
+				default:
 				break;
+				}
 			} break;
 			case Common::EVENT_KEYDOWN:
 				switch (e.kbd.keycode) {
 				case Common::KEYCODE_LEFT:
-					_speed = MAX(_speed - 1, 1);
+					if(_control)
+						_speed = MAX(_speed - 1, 1);
+					_cursor.holdLeft = true;
 					break;
 				case Common::KEYCODE_RIGHT:
-					_speed = MIN(_speed + 1, 8);
+					if(_control)
+						_speed = MIN(_speed + 1, 8);
+					_cursor.holdRight = true;
+					break;
+				case Common::KEYCODE_UP:
+					_cursor.holdUp = true;
+					break;
+				case Common::KEYCODE_DOWN:
+					_cursor.holdDown = true;
 					break;
 				case Common::KEYCODE_LCTRL:
 					_control = true;
@@ -961,6 +996,18 @@ Common::Error TwpEngine::run() {
 				break;
 			case Common::EVENT_KEYUP:
 				switch (e.kbd.keycode) {
+				case Common::KEYCODE_LEFT:
+					_cursor.holdLeft = false;
+					break;
+				case Common::KEYCODE_RIGHT:
+					_cursor.holdRight = false;
+					break;
+				case Common::KEYCODE_UP:
+					_cursor.holdUp = false;
+					break;
+				case Common::KEYCODE_DOWN:
+					_cursor.holdDown = false;
+					break;
 				case Common::KEYCODE_LCTRL:
 					_control = false;
 					break;
@@ -1021,7 +1068,19 @@ Common::Error TwpEngine::run() {
 			}
 		}
 
-		_gfx.cameraPos(camPos);
+		const float mouseMoveSpeed = 4.f;
+		if(_cursor.holdLeft) {
+			_cursor.pos.setX(MAX(_cursor.pos.getX() - mouseMoveSpeed, 0.f));
+		}
+		if(_cursor.holdRight) {
+			_cursor.pos.setX(MIN(_cursor.pos.getX() + mouseMoveSpeed, (float)SCREEN_WIDTH));
+		}
+		if(_cursor.holdUp) {
+			_cursor.pos.setY(MAX(_cursor.pos.getY() - mouseMoveSpeed, 0.f));
+		}
+		if(_cursor.holdDown) {
+			_cursor.pos.setY(MIN(_cursor.pos.getY() + mouseMoveSpeed, (float)SCREEN_HEIGHT));
+		}
 
 		uint32 newTime = _system->getMillis();
 		uint32 delta = newTime - time;
@@ -1066,7 +1125,7 @@ Common::Error TwpEngine::loadGameStream(Common::SeekableReadStream *stream) {
 }
 
 bool TwpEngine::canSaveGameStateCurrently(Common::U32String *msg) {
-	return _saveGameManager->_allowSaveGame && !_cutscene;
+	return _saveGameManager->_allowSaveGame && !_cutscene.id;
 }
 
 Common::Error TwpEngine::saveGameState(int slot, const Common::String &desc, bool isAutosave) {
@@ -1079,15 +1138,13 @@ Common::Error TwpEngine::saveGameState(int slot, const Common::String &desc, boo
 		if (!saveFile)
 			return Common::kWritingFailed;
 
-		result = saveGameStream(saveFile, isAutosave);
-		if (result.getCode() == Common::kNoError) {
-			Common::OutSaveFile *thumbnail = _saveFileMan->openForSaving(Common::String::format("Savegame%d.png", slot), false);
-			Graphics::Surface surface;
-			g_twp->capture(surface, 320, 180);
-			Image::writePNG(*thumbnail, surface);
-			thumbnail->finalize();
-			delete thumbnail;
-		}
+		_saveGameManager->saveGame(saveFile);
+		Common::OutSaveFile *thumbnail = _saveFileMan->openForSaving(Common::String::format("Savegame%d.png", slot), false);
+		Graphics::Surface surface;
+		capture(surface, 320, 180);
+		Image::writePNG(*thumbnail, surface);
+		thumbnail->finalize();
+		delete thumbnail;
 
 		saveFile->finalize();
 		delete saveFile;
@@ -1146,7 +1203,7 @@ static void onGetPairs(const Common::String &k, HSQOBJECT &oTable, void *data) {
 				}
 			}
 
-			if(SQ_FAILED(sqgetf(params->room->_table, k, obj->_table)))
+			if (SQ_FAILED(sqgetf(params->room->_table, k, obj->_table)))
 				error("Failed to get room object");
 			const int id = g_twp->_resManager->newObjId();
 			setId(obj->_table, id);
@@ -1160,7 +1217,7 @@ static void onGetPairs(const Common::String &k, HSQOBJECT &oTable, void *data) {
 			if (sqrawexists(obj->_table, "initState")) {
 				// info fmt"initState {obj.key}"
 				SQInteger state;
-				if(SQ_FAILED(sqgetf(obj->_table, "initState", state)))
+				if (SQ_FAILED(sqgetf(obj->_table, "initState", state)))
 					error("Failed to get initState");
 				obj->setState(state, true);
 			} else {
@@ -1193,7 +1250,7 @@ Common::SharedPtr<Room> TwpEngine::defineRoom(const Common::String &name, HSQOBJ
 	} else {
 		result.reset(new Room(name, table));
 		Common::String background;
-		if(SQ_FAILED(sqgetf(table, "background", background)))
+		if (SQ_FAILED(sqgetf(table, "background", background)))
 			error("Failed to get room background");
 		GGPackEntryReader entry;
 		entry.open(*_pack, background + ".wimpy");
@@ -1234,7 +1291,7 @@ Common::SharedPtr<Room> TwpEngine::defineRoom(const Common::String &name, HSQOBJ
 				} else {
 					if (pseudo) {
 						// if it's a pseudo room we need to clone each object
-						if(SQ_FAILED(sqgetf(result->_table, obj->_key, obj->_table)))
+						if (SQ_FAILED(sqgetf(result->_table, obj->_key, obj->_table)))
 							error("Failed to get room object");
 						sq_pushobject(v, obj->_table);
 						sq_clone(v, -1);
@@ -1277,7 +1334,7 @@ Common::SharedPtr<Room> TwpEngine::defineRoom(const Common::String &name, HSQOBJ
 		error("Falied to define objects");
 
 	// declare the room in the root table
-	setId(result->_table, g_twp->_resManager->newRoomId());
+	setId(result->_table, _resManager->newRoomId());
 	sqsetf(sqrootTbl(v), name, result->_table);
 
 	return result;
@@ -1308,7 +1365,7 @@ void TwpEngine::enterRoom(Common::SharedPtr<Room> room, Common::SharedPtr<Object
 	_room->setOverlay(Color(0.f, 0.f, 0.f, 0.f));
 	_camera->setBounds(Rectf::fromMinMax(Math::Vector2d(), _room->_roomSize));
 	if (_actor && _hud->actorSlot(_actor))
-		_hud->_verb = _hud->actorSlot(_actor)->verbs[0];
+		_hud->selectVerb(_hud->actorSlot(_actor)->verbs[0]);
 
 	// move current actor to the new room
 	Math::Vector2d camPos;
@@ -1342,7 +1399,7 @@ void TwpEngine::enterRoom(Common::SharedPtr<Room> room, Common::SharedPtr<Object
 					_room->_scalingTriggers.push_back(ScalingTrigger(obj, scaling));
 				}
 			}
-			if (g_twp->_resManager->isActor(obj->getId())) {
+			if (_resManager->isActor(obj->getId())) {
 				actorEnter(obj);
 			} else if (sqrawexists(obj->_table, "enter"))
 				sqcall(obj->_table, "enter");
@@ -1370,8 +1427,8 @@ void TwpEngine::enterRoom(Common::SharedPtr<Room> room, Common::SharedPtr<Object
 void TwpEngine::actorEnter(Common::SharedPtr<Object> actor) {
 	if (!actor)
 		return;
-	if (sqrawexists(g_twp->_room->_table, "actorEnter")) {
-		sqcall(g_twp->_room->_table, "actorEnter", actor->_table);
+	if (sqrawexists(_room->_table, "actorEnter")) {
+		sqcall(_room->_table, "actorEnter", actor->_table);
 	} else {
 		sqcall("actorEnter", actor->_table);
 	}
@@ -1380,6 +1437,8 @@ void TwpEngine::actorEnter(Common::SharedPtr<Object> actor) {
 void TwpEngine::exitRoom(Common::SharedPtr<Room> nextRoom) {
 	HSQUIRRELVM v = getVm();
 	_mixer->stopAll();
+	_talking.reset();
+
 	if (_room) {
 		_room->_triggers.clear();
 		_room->_scalingTriggers.clear();
@@ -1389,7 +1448,7 @@ void TwpEngine::exitRoom(Common::SharedPtr<Room> nextRoom) {
 			for (size_t j = 0; j < layer->_objects.size(); j++) {
 				Common::SharedPtr<Object> obj = layer->_objects[j];
 				obj->stopObjectMotors();
-				if (g_twp->_resManager->isActor(obj->getId())) {
+				if (_resManager->isActor(obj->getId())) {
 					actorExit(obj);
 				}
 			}
@@ -1412,7 +1471,7 @@ void TwpEngine::exitRoom(Common::SharedPtr<Room> nextRoom) {
 					obj->_node->remove();
 					it = layer->_objects.erase(it);
 					continue;
-				} else if (g_twp->_resManager->isActor(obj->getId()) && _actor != obj) {
+				} else if (_resManager->isActor(obj->getId()) && _actor != obj) {
 					obj->stopObjectMotors();
 				}
 				it++;
@@ -1424,7 +1483,7 @@ void TwpEngine::exitRoom(Common::SharedPtr<Room> nextRoom) {
 
 		// stop all local threads
 		for (size_t i = 0; i < _threads.size(); i++) {
-			Common::SharedPtr<ThreadBase> thread = _threads[i];
+			Common::SharedPtr<Thread> thread = _threads[i];
 			if (!thread->isGlobal()) {
 				thread->stop();
 			}
@@ -1444,6 +1503,9 @@ void TwpEngine::actorExit(Common::SharedPtr<Object> actor) {
 	if (actor && _room) {
 		if (sqrawexists(_room->_table, "actorExit")) {
 			sqcall(_room->_table, "actorExit", actor->_table);
+		}
+		if (_followActor == actor) {
+			_followActor = _actor;
 		}
 	}
 }
@@ -1490,10 +1552,6 @@ void TwpEngine::cameraAt(const Math::Vector2d &at) {
 }
 
 Math::Vector2d TwpEngine::cameraPos() {
-	if (_room) {
-		Math::Vector2d screenSize = _room->getScreenSize();
-		return _camera->getAt() + screenSize / 2.0f;
-	}
 	return _camera->getAt();
 }
 
@@ -1581,6 +1639,8 @@ bool TwpEngine::selectable(Common::SharedPtr<Object> actor) {
 static void giveTo(Common::SharedPtr<Object> actor1, Common::SharedPtr<Object> actor2, Common::SharedPtr<Object> obj) {
 	obj->_owner = actor2;
 	actor2->_inventory.push_back(obj);
+	// force actors to be face to face
+	actor2->setFacing(flip(actor1->getFacing()));
 	int index = find(actor1->_inventory, obj);
 	if (index != -1)
 		actor1->_inventory.remove_at(index);
@@ -1595,7 +1655,9 @@ void TwpEngine::resetVerb() {
 }
 
 bool TwpEngine::callVerb(Common::SharedPtr<Object> actor, VerbId verbId, Common::SharedPtr<Object> noun1, Common::SharedPtr<Object> noun2) {
-	sqcall("onObjectClick", noun1->_table);
+	if (noun1) {
+		sqcall("onObjectClick", noun1->_table);
+	}
 
 	// Called after the actor has walked to the object.
 	Common::String name = !actor ? "currentActor" : actor->_key;
@@ -1607,13 +1669,13 @@ bool TwpEngine::callVerb(Common::SharedPtr<Object> actor, VerbId verbId, Common:
 	debugC(kDebugGame, "callVerb(%s,%s,%s,%s)", name.c_str(), verbFuncName.c_str(), noun1name.c_str(), noun2name.c_str());
 
 	// test if object became untouchable
-	if (!noun1->inInventory() && !noun1->isTouchable())
+	if (noun1 && !noun1->inInventory() && !noun1->isTouchable())
 		return false;
 	if (noun2 && !noun2->inInventory() && !noun2->isTouchable())
 		return false;
 
 	// check if verb is use and object can be used with or in or on
-	if ((verbId.id == VERB_USE) && !noun2) {
+	if (noun1 && (verbId.id == VERB_USE) && !noun2) {
 		_useFlag = noun1->useFlag();
 		if (_useFlag != UseFlag::ufNone) {
 			_noun1 = noun1;
@@ -1626,7 +1688,7 @@ bool TwpEngine::callVerb(Common::SharedPtr<Object> actor, VerbId verbId, Common:
 			debugC(kDebugGame, "set use flag to ufGiveTo");
 			_useFlag = UseFlag::ufGiveTo;
 			_noun1 = noun1;
-		} else {
+		} else if (noun1) {
 			bool handled = false;
 			if (sqrawexists(noun2->_table, verbFuncName)) {
 				debugC(kDebugGame, "call %s on %s", verbFuncName.c_str(), noun2->_key.c_str());
@@ -1648,7 +1710,12 @@ bool TwpEngine::callVerb(Common::SharedPtr<Object> actor, VerbId verbId, Common:
 		return false;
 	}
 
-	if (!noun2) {
+	if (!noun1) {
+		HSQOBJECT emptyTable;
+		sq_resetobject(&emptyTable);
+		debugC(kDebugGame, "call defaultObject.%s", verbFuncName.c_str());
+		sqcall(_defaultObj, verbFuncName.c_str(), emptyTable, emptyTable);
+	} else if (!noun2) {
 		if (sqrawexists(noun1->_table, verbFuncName)) {
 			int count = sqparamCount(getVm(), noun1->_table, verbFuncName);
 			debugC(kDebugGame, "call %s.%s", noun1->_key.c_str(), verbFuncName.c_str());
@@ -1708,10 +1775,10 @@ void TwpEngine::callTrigger(Common::SharedPtr<Object> obj, HSQOBJECT trigger) {
 			args.push_back(_actor->_table);
 		}
 
-		Common::SharedPtr<Thread> thread(new Thread("Trigger", false, threadObj, obj->_table, trigger, args));
+		Common::SharedPtr<Thread> thread(new Thread("Trigger", false, threadObj, obj->_table, trigger, Common::move(args)));
 
 		debugC(kDebugGame, "create triggerthread id: %d}", thread->getId());
-		g_twp->_threads.push_back(thread);
+		_threads.push_back(thread);
 
 		// call the closure in the thread
 		if (!thread->call()) {
@@ -1756,7 +1823,12 @@ void TwpEngine::updateTriggers() {
 	}
 }
 
+void TwpEngine::sayLineAt(const Math::Vector2d &pos, const Color &color, Common::SharedPtr<Object> actor, float duration, const Common::String &text) {
+	_talking = Common::ScopedPtr<SayLineAt>(new SayLineAt(pos, color, actor, duration, text));
+}
+
 void TwpEngine::stopTalking() {
+	_talking.reset();
 	if (!_room)
 		return;
 	for (auto it = _room->_layers.begin(); it != _room->_layers.end(); it++) {
@@ -1765,6 +1837,31 @@ void TwpEngine::stopTalking() {
 			(*it2)->stopTalking();
 		}
 	}
+}
+
+bool TwpEngine::isSomeoneTalking() const {
+	if (_talking && _talking->isEnabled())
+		return true;
+	if (!_room)
+		return false;
+	for (auto it = _actors.begin(); it != _actors.end(); it++) {
+		Common::SharedPtr<Object> obj = *it;
+		if (obj->_room != _room)
+			continue;
+		if (obj->getTalking() && obj->getTalking()->isEnabled())
+			return true;
+	}
+	for (auto it = _room->_layers.begin(); it != _room->_layers.end(); it++) {
+		Common::SharedPtr<Layer> layer = *it;
+		for (auto it2 = layer->_objects.begin(); it2 != layer->_objects.end(); it2++) {
+			Common::SharedPtr<Object> obj = *it2;
+			if (obj->_room != _room)
+				continue;
+			if (obj->getTalking() && obj->getTalking()->isEnabled())
+				return true;
+		}
+	}
+	return false;
 }
 
 float TwpEngine::getRandom() const {
@@ -1776,14 +1873,42 @@ float TwpEngine::getRandom(float min, float max) const {
 	return min + scale * (max - min);
 }
 
-void TwpEngine::skipCutscene() {
-	if (!_cutscene)
-		return;
-	if (_cutscene->hasOverride()) {
-		_cutscene->cutsceneOverride();
-		return;
+SQRESULT TwpEngine::skipCutscene() {
+	if (!_cutscene.id)
+		return 0;
+
+	if ((_dialog->getState() != DialogState::None) || _cutscene.inOverride || (_cutscene.closureOverride._type == OT_NULL)) {
+		_noOverride->reset();
+		return 0;
 	}
-	_noOverride->reset();
+
+	_cutscene.inOverride = true;
+	HSQUIRRELVM vm = getVm();
+	HSQUIRRELVM v = vm;
+
+	// stop cutscene
+	sq_addref(v, &_cutscene.envObj);
+	Common::SharedPtr<Thread> thread(sqthread(_cutscene.id));
+	thread->stop();
+
+	// create thread and store it on the stack
+	HSQOBJECT threadObj;
+	sq_resetobject(&threadObj);
+	sq_newthread(vm, 1024);
+	if (SQ_FAILED(sq_getstackobj(vm, -1, &threadObj)))
+		return sq_throwerror(v, "Couldn't get coroutine thread from stack");
+
+	Common::String name(Common::String::format("cutscene override: %s", thread->getName().c_str()));
+	Common::SharedPtr<Thread> t(new Thread(name, true, threadObj, _cutscene.envObj, _cutscene.closureOverride, {}));
+	_threads.push_back(t);
+	_cutscene.id = t->getId();
+
+	debugC(kDebugSysScript, "create cutscene override");
+
+	// call the closure in the thread
+	if (!t->call())
+		return sq_throwerror(v, "call failed");
+	return 0;
 }
 
 Scaling *TwpEngine::getScaling(const Common::String &name) {
