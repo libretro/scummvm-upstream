@@ -27,14 +27,6 @@
 #include "backends/platform/libretro/include/libretro-timer.h"
 #include "backends/platform/libretro/include/libretro-graphics.h"
 
-#include "gui/message.h"
-
-#ifdef USE_OPENGL
-#include "backends/graphics/opengl/opengl-graphics.h"
-#include "backends/graphics/opengl/framebuffer.h"
-#include "graphics/opengl/debug.h"
-#endif
-
 static INLINE void blit_uint8_uint16_fast(Graphics::Surface &aOut, const Graphics::Surface &aIn, const LibretroPalette &aColors) {
 	for (int i = 0; i < aIn.h; i++) {
 		if (i >= aOut.h)
@@ -457,6 +449,7 @@ void LibretroGraphics::displayMessageOnOSD(const Common::U32String &msg) {
 bool LibretroGraphics::getFeatureState(OSystem::Feature f) const {
 	return (f == OSystem::kFeatureCursorPalette) ? _mousePaletteEnabled : false;
 }
+<<<<<<< HEAD:backends/platform/libretro/src/libretro-graphics.cpp
 
 #ifdef USE_OPENGL
 LibretroOpenGLGraphics::LibretroOpenGLGraphics(OpenGL::ContextType contextType) {
