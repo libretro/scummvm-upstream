@@ -137,6 +137,12 @@ static const PlainGameDescriptor directorGames[] = {
 	{ "draculassecret",		"Dracula's Secret" },
 	{ "easternmind",		"Eastern Mind: The Lost Souls of Tong Nou" },
 	{ "eddieminx",			"Eddie & Minx: Waking Up the Magic" },
+	{ "egbingo",			"eGames Galaxy of Games: Bingo Master" },
+	{ "egjewel",			"eGames Galaxy of Games: Jewel Jam" },
+	{ "egpeggy",			"eGames Galaxy of Games: Peggy's Party" },
+	{ "egplayground",		"eGames Galaxy of Games: Playground" },
+	{ "egsnowboard",		"eGames Galaxy of Games: Snowboard Sheri" },
+	{ "egwendy",			"eGames Galaxy of Games: Wendi's Word Game" },
 	{ "elmopreschool",		"Elmo's Preschool" },
 	{ "elroybug",			"Elroy Goes Bugzerk" },
 	{ "elroycostume",		"Elroy's Costume Closet" },
@@ -339,6 +345,7 @@ static const PlainGameDescriptor directorGames[] = {
 	{ "nikolaispace",		"Nikolai in Outer Space" },
 	{ "nikolaispaceedu",	"Nikolai Space Education" },
 	{ "nikolaitoys",		"NN'nN Toy Makers" },
+	{ "nikolaitrains",		"Nikolai's Trains" },
 	{ "nikolaitreats",		"Nikolai's Treats" },
 	{ "nile",				"Nile: Passage to Egypt" },
 	{ "nine",				"9: The Last Resort" },
@@ -900,6 +907,7 @@ static const PlainGameDescriptor directorGames[] = {
 	{ "braingames",			"Brain Games" },
 	{ "chemicus2",			"Chemicus 2: Die versunkene Stadt" },
 	{ "cklasse",			"Mercedes-Benz C-Class Information Booth" },
+	{ "diehexenakademie",	"Die Hexenakademie" },
 	{ "dieveteranen",		"Die Veteranen: So nutzlos wie eine Fuge von Bach" },
 	{ "dudenmeyer",			"Duden/Meyer Multimedia sampler" },
 	{ "flaschenfahrrad",	"Das Verkehrs-Lernspiel: Fred und das Flaschenfahrrad" },
@@ -1139,6 +1147,7 @@ static const PlainGameDescriptor directorGames[] = {
 	{ "ukiukistamp",		"うきうきスタンプ" },
 	{ "ukyo1",				"うきょー1" },
 	{ "ursaminorblue",		"銀河の魚 URSA minor BLUE" },				// Galaxy Fish: Ursa Minor Blue
+	{ "uruuruexcellent",	"うるうる The Excellent Edition" }, // Uruuru: The Excellent Edition
 	{ "victorianpark",		"Victorian Park" },
 	{ "void",				"VOID" },
 	{ "vvs",				"Virtual Variety Show" },
@@ -2045,6 +2054,12 @@ static const DirectorGameDescription gameDescriptions[] = {
 	MACDEMO1_l("henachoco03", "Trial Version", "ITA Choco", "f5277c53bacd27936158dd3867e587e2", 1123538, Common::JA_JPN, 311),
 	// Original filename is ﾑｽﾞｶｼｲﾎﾝｦﾖﾑﾄﾈﾑｸﾅﾙ
 	MACGAME1_l("henachoco03", "", "xn--oj7cxalkre7cjz1d2agc0e8b1cm", "f5277c53bacd27936158dd3867e587e2", 1579812, Common::JA_JPN, 311),
+	// Itachoco Taizen 3 has two versions of every game, "old versions"
+	// that are the original floppy versions and a new release.
+	// In the case of Difficult Book Game, the "old" and "new" versions
+	// are actually the same version - and are distinct builds from
+	// the original floppy release.
+	MACGAME1t_l("henachoco03", "Itachoco Taizen 3 rerelease", "difficultbook", "4596143ccc08cd87af658f29d56b3caa", 1582095, Common::JA_JPN, 311),
 
 	MACGAME1_l("henachoco04", "", "bentoben", "f5277c53bacd27936158dd3867e587e2", 2413669, Common::JA_JPN, 311),
 
@@ -2200,8 +2215,11 @@ static const DirectorGameDescription gameDescriptions[] = {
 
 	// Same desktop behaviour as Rodem
 	MACGAME1f_l("henachoco05r", "", "Rodemutti", "e3d07b046864d6c22116ac2754aaf5cb", 290398, Common::JA_JPN, 402, GF_DESKTOP|GF_640x480),
+	// These "earlier" and "later" patched versions come from the developer
 	MACGAME1f_l("henachoco05r", "Patched version (earlier)", "rodemcchi", "307566cc2c1ed8b144187a098a2b1291", 4095826, Common::JA_JPN, 402, GF_DESKTOP|GF_640x480),
 	MACGAME1f_l("henachoco05r", "Patched version (later)", "rodem-tti", "e6165016b17961ac8616568301842c51", 4095754, Common::JA_JPN, 402, GF_DESKTOP|GF_640x480),
+	// From a 2000-dated game disc containing a prepatched game
+	MACGAME1f_l("henachoco05r", "Patched version (later)", "rodem-tti", "8aaf8baa98598362ab0accbbc8aae457", 292698, Common::JA_JPN, 402, GF_DESKTOP|GF_640x480),
 
 	// German release is D5
 	MACGAME1("majestic", "", "Majestic", "01be45e7241194dad07938e7059b88e3", 483518, 400),
@@ -2444,8 +2462,8 @@ static const DirectorGameDescription gameDescriptions[] = {
 
 	MACGAME1_l("delphinokioku", "", "DELPHOI", "957b631d36a03be6c4671981a0b81681", 309951, Common::JA_JPN, 310),
 
-	MACGAME1("digby", "", "Start Digby's Adventures!", "7f443f2e63fd497a9ad85b10dc880a91", 383758, 313),
-	WINGAME1("digby", "", "DIGBY.EXE", "65d06b5fef155a2473434571aff5bc29", 370972, 310),
+	MACGAME1("digby", "", "Start Digby's Adventures!", "tr:394cff701f7eb8d7025c460d8750c2bc", 383502, 313),
+	WINGAME1("digby", "", "IADLDATA/DIGBY.EXE", "t:b62409eab5a466748e5817a22c030460", 370972, 310),
 
 	// Original filename is 恐竜サファリアドベンチャー デモ
 	// Full version isn't Director
@@ -3861,6 +3879,9 @@ static const DirectorGameDescription gameDescriptions[] = {
 	MACGAME1_l("digby", "", "Start Digby's Adventures", "a8e65a2268226bd59f12ebdc58a221f3", 481482, Common::ZH_CHN, 404),
 	WINGAME1_l("digby", "", "DIGBY.EXE", "adc126fbc4387e5d8e84dcd5abd33653", 684269, Common::ZH_CHN, 400),
 
+	MACGAME1_l("diehexenakademie", "", "Hexen", "tr:5c56c32ab21e85b20845584c4a2c0965", 482610, Common::DE_DEU, 404),
+	WINGAME1_l("diehexenakademie", "", "HEXEN.EXE", "t:5f44d2c1e58d0044081134c0dd045139", 741106, Common::DE_DEU, 404),
+
 	MACGAME1_l("dieveteranen", "", "Die Veteranen", "a33b948ad52edc74a4439e176a3ba8bf", 1929826, Common::DE_DEU, 403),
 	WINGAME1_l("dieveteranen", "", "VETERANS.EXE", "t:a00b43e9262390ecf5028e057e6e0633", 692689, Common::DE_DEU, 400),
 
@@ -4282,8 +4303,11 @@ static const DirectorGameDescription gameDescriptions[] = {
 									"DemoMain.dxr", "d16606eadccdb21f654f4b4264fc996a", 2711628, 404),
 
 	MACGAME1_l("henachoco04r", "", "RamenSpecial", "3731a1d809be07929da1f5d691ee3c97", 290398, Common::JA_JPN, 402),
+	MACGAME1_l("henachoco04r", "Itachoco Taizen 3 rerelease", "RamenSP", "588adb5d26bb829b4daaddf88233ec0d", 294997, Common::JA_JPN, 402),
 
 	MACGAME1_l("henachoco06", "", "musimusichikin", "3731a1d809be07929da1f5d691ee3c97", 290398, Common::JA_JPN, 402),
+	MACGAME1_l("henachoco06", "Itachoco Taizen 3 - old version", "musichicken", "3731a1d809be07929da1f5d691ee3c97", 290398, Common::JA_JPN, 402),
+	MACGAME1_l("henachoco06", "Itachoco Taizen 3 rerelease", "musichicken", "fbca63b4ef07be87302bdf295328d31f", 295241, Common::JA_JPN, 402),
 
 	// Original filenames are '第１話' through '第５話'
 	MACGAME1_l("henachoco07", "Episode 1", "xn--jwzs62ach2g", "3731a1d809be07929da1f5d691ee3c97", 290398, Common::JA_JPN, 402),
@@ -4303,6 +4327,7 @@ static const DirectorGameDescription gameDescriptions[] = {
 	MACGAME1t_l("henachoco08", "Itachoco Taizen 2 rerelease", "yatai-desu-", "7790a354ddbcb7bc8b4e1b1e8433053b", 290434, Common::JA_JPN, 402),
 
 	MACGAME1_l("henachoco09", "", "nisemizi", "3731a1d809be07929da1f5d691ee3c97", 290398, Common::JA_JPN, 402),
+	MACGAME1_l("henachoco09", "Itachoco Taizen 3 rerelease", "nisemizi", "941bf4119a8d8caa4450c9dbbd5786b3", 294981, Common::JA_JPN, 402),
 
 	MACGAME1_l("henachoco11", "", "surowest", "3731a1d809be07929da1f5d691ee3c97", 290398, Common::JA_JPN, 402),
 	MACGAME1t_l("henachoco11", "Henachoco Taizen 2 rerelease", "suropuro", "096d73233cf4896a4bfc4c65651b35c3", 290434, Common::JA_JPN, 402),
@@ -5010,6 +5035,17 @@ static const DirectorGameDescription gameDescriptions[] = {
 
 	WINDEMO1("newslinks", "Demo", "NEWS.EXE", "22900fa6922d71b1f880aa3cc0bbad1a", 16526563, 404),
 
+	// Published by GTE Interactive
+	MACGAME1("nightlight", "",	   "Night Light",  "r:0c7bbb4b24823e5ab871cb4c1d6f3710", 484028, 404),
+	WINGAME1("nightlight", "",	   "NIGHTMPC.EXE", "t:b09110b0631277f73bca40c3fdeb752f", 8081957, 404),
+	WINGAME1("nightlight", "Test", "MPC_TEST.EXE", "t:3063f5c6c2fe13eb7d6aac42724e6150", 8087955, 404),
+
+	MACDEMO1("nightsky", "Sampler", "Night Sky Interactive Sampler", "cbce20666bfe47a9533331c6be1e6039", 285269, 400),
+	WINDEMO1("nightsky", "Sampler", "NIGHTSKY.EXE", "68f1fe67a5881fd47b08e905401d174c", 4300149, 404),
+
+	// Original filename is Visual日本地理DEMO
+	MACDEMO1_l("nihonchiri", "Demo", "Visual Nihon Chiri DEMO", "8b138db44d4421cc7294a9dc792ccf1b", 306940, Common::JA_JPN, 402),
+
 	// Published by Corel CD Home. Later released as Nikolai's Knights.
 	// Original Mac filename is In the Time of the Knights™
 	MACGAME2("nikolaiknights", "Corel", "xn--In the Time of the Knights-jf8p", "da0da5d543b237051975ad70bec129f4", 488222,
@@ -5022,16 +5058,8 @@ static const DirectorGameDescription gameDescriptions[] = {
 	MACGAME1("nikolaitoys", "", "NNNN/xn--NNnN Toy Makers-5w9hs4m", "2c7d0c0d55cbe3f622c7d68cedb671e0", 486770, 404),
 	WINGAME1("nikolaitoys", "", "NNNN/NNN_TOYS.EXE", "22147e4c6311f670f72d43f8b793169e", 3206640, 404),
 
-	// Published by GTE Interactive
-	MACGAME1("nightlight", "",	   "Night Light",  "r:0c7bbb4b24823e5ab871cb4c1d6f3710", 484028, 404),
-	WINGAME1("nightlight", "",	   "NIGHTMPC.EXE", "t:b09110b0631277f73bca40c3fdeb752f", 8081957, 404),
-	WINGAME1("nightlight", "Test", "MPC_TEST.EXE", "t:3063f5c6c2fe13eb7d6aac42724e6150", 8087955, 404),
-
-	MACDEMO1("nightsky", "Sampler", "Night Sky Interactive Sampler", "cbce20666bfe47a9533331c6be1e6039", 285269, 400),
-	WINDEMO1("nightsky", "Sampler", "NIGHTSKY.EXE", "68f1fe67a5881fd47b08e905401d174c", 4300149, 404),
-
-	// Original filename is Visual日本地理DEMO
-	MACDEMO1_l("nihonchiri", "Demo", "Visual Nihon Chiri DEMO", "8b138db44d4421cc7294a9dc792ccf1b", 306940, Common::JA_JPN, 402),
+	MACGAME1("nikolaitrains", "", "N_TRAINS/xn--Nikolais Trains-bx9hn4m", "tr:fb7bd24f704008c1aabe178f12d6b82d", 295270, 403),
+	WINGAME1("nikolaitrains", "", "N_TRAINS/N_TRAINS.EXE", "t:dd5e437851b7527c0f45a8a21ccd741a", 4598516, 404),
 
 	MACGAME1("nile", "", "Nile Passage to Egypt", "9765ad17bce6a2b40dd7f48377e82436", 512734, 404),
 	WINGAME2("nile", "", "NILE.EXE",	 "9b00cbba14f0a2e0445784ebacf62c78", 2846777,
@@ -5239,8 +5267,8 @@ static const DirectorGameDescription gameDescriptions[] = {
 	MACDEMO1("photos4us", "Demo", "Photos4us", "2c27791a84756be6201d281bad54f7bb", 351560, 404),
 
 	// From Star Trek: Borg (Disc 2)
-	MACGAME1("picarddossier", "", "Picard Dossier", "e1dc28c1dd8409c2d2e0d5d269df5ffc", 519813, 400),
-	WINGAME1t("picarddossier", "", "OMNIBORG.EXE", "59dbe112ee3a8d2a5c9cdf5f528dcfbd", 811363, 404),
+	MACGAME1("picarddossier", "", "Picard Dossier", "r:e1dc28c1dd8409c2d2e0d5d269df5ffc", 519813, 404),
+	WINGAME1("picarddossier", "", "OMNIBORG.EXE",	"t:59dbe112ee3a8d2a5c9cdf5f528dcfbd", 811363, 404),
 
 	WINGAME1("picklesbook", "", "PICKLE.EXE", "fb00695cb48e574f4acd75587b280756", 805141, 404),
 
@@ -5666,6 +5694,11 @@ static const DirectorGameDescription gameDescriptions[] = {
 	WINGAME2t("universe", "", "UNIVERSE/UNIVERSE.EXE", "2ae0654d19de7b366e9d6e9ac4588c50", 700157,
 							  "UNIVERSE/STARTUP.DIR",  "34d4084b17cea8982fd24f9561d77d65", 24958, 404),
 
+	// Original filename is "はじめる"
+	MACGAME1t_l("uruuruexcellent", "", "xn--78j2bxcxb", "bd4b12aa33ec2deae4e26b2f6f744ba7", 294107, Common::JA_JPN, 404),
+	// Decomposed variant of the above
+	MACGAME1t_l("uruuruexcellent", "", "xn--68j4bvcxb0d", "bd4b12aa33ec2deae4e26b2f6f744ba7", 294107, Common::JA_JPN, 404),
+
 	WINGAME1t("ushistory", "", "HISTORY.EXE", "5660e6a7b772b5bf8867627ab0d7a58b", 703629, 404),
 
 	// Animations published on https://www.vinceworld.com
@@ -5738,6 +5771,9 @@ static const DirectorGameDescription gameDescriptions[] = {
 	// Original Mac filename is VUSIC™ The Screen Raver™
 	MACDEMO1("vusic", "Demo", "VUSIC The Screen Raver", "5bbb193a8785c70abe2a4d86b99e1536", 283291, 403),
 	WINDEMO1("vusic", "Demo", "VUSIC.EXE", "ff2c0a776d5f0c9aa5bc115d3b36676b", 693375, 400),
+
+	MACGAME2_l("wallobee", "", "xn--u9j9exa4dyd1jh4lp602begzc", "0666ae690e459d3d0d91800ebd94de46", 290780,
+								   "001a", "85c99656df8d4f04eee2379c5c1e1020", 2469832, Common::JA_JPN, 402),
 
 	// Original filename 'ワロビージャックの大冒険<デモ>'
 	MACDEMO2_l("wallobee", "Demo", "xn--baa0pja0512dela6bueub9gshf1k1a1rt742c060a2x4u", "0666ae690e459d3d0d91800ebd94de46", 290780,
@@ -6242,6 +6278,10 @@ static const DirectorGameDescription gameDescriptions[] = {
 	WINGAME2("edmark", "", "DEMO.EXE",	  "2e62abdad839e42068afdcd0644d7dcf", 917547,
 						   "MAININT",	  "1e995592236894b843c3853906bbee1d", 2935876, 500),
 
+	WINGAME1("egjewel", "", "wcsup.dll", "t:b05f9720561eea331dc5f9916698e688", 1912675, 500),
+	WINGAME1("egpeggy", "", "wcsup.dll", "t:c49572b3e8ca3a565e2ccbb32110a4a0", 1850711, 500),
+	WINGAME1("egplayground", "", "wcsup.dll", "t:5109f6c5784eef5c9244dc11eacf4beb", 2163489, 500),
+
 	// Original Mac filename is 江口寿史
 	MACGAME1_l("eguchi", "", "xn--6or4a778bbur", "552992fb31c736ca67ffd403096596d6", 719653, Common::JA_JPN, 501),
 	WINGAME1_l("eguchi", "", "EGU32.EXE", "38b75ecdedf662326fe4931a68ae60cd", 1410078, Common::JA_JPN, 501),
@@ -6721,6 +6761,9 @@ static const DirectorGameDescription gameDescriptions[] = {
 	WINGAME1_l("perfectblue", "", "PERFECTB.EXE", "2535f11350bc1f2b7ca2dcc6c0cdddfd", 1420772, Common::JA_JPN, 501),
 
 	WINGAME1_l("pettson1", "", "PETT32.EXE", "1a7acbba10a7246ba58c1d53fc7203f5", 1430755, Common::SE_SWE, 501),
+
+	// From Japanese Star Trek: Borg DVD (2000)
+	WINGAME1_l("picarddossier", "DVD", "OMNIBORG.EXE",	"t:312801acbcbedcb6825414dad03538e8", 1501528, Common::JA_JPN, 501),
 
 	WINDEMO1("picasso", "Demo", "PICASS32.EXE", "3460ad87d2ba57104e2810a77b53c220", 1413437, 500),
 
@@ -7358,6 +7401,10 @@ static const DirectorGameDescription gameDescriptions[] = {
 	// https://web.archive.org/web/20000623024147/http://www.eddieandminx.com/demo.htm
 	// Map demo found on Disc Inferno from APC magazine (Australia), Dec 1999
 	WINDEMO1("eddieminx", "Map Demo", "mapgame.exe", "518a98696fe1122e08410b0f157f21bf", 5876875, 602),
+
+	WINGAME1("egbingo", "", "wcsup.dll", "t:66e3453072a8b17112e19e7ed80d7bcd", 4893667, 600),
+	WINGAME1("egsnowboard", "", "wcsup.dll", "t:9baa7e1c5151d66d4f287a01f4aba790", 2196349, 600),
+	WINGAME1("egwendy", "", "wcsup.dll", "t:cf595fd98c2fd789217acbf97f03a724", 2037619, 600),
 
 	MACGAME1("egypt", "", "Egypt", "0944b962ebb00f4b5d5149d220f8449b", 114142, 702),
 

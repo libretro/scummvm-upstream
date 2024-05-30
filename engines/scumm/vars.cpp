@@ -321,7 +321,8 @@ void ScummEngine_v80he::setupScummVars() {
 	VAR_SOUND_CALLBACK_SCRIPT = 87;
 	VAR_NUM_SOUND_CHANNELS = 88;
 	VAR_COLOR_DEPTH = 89;
-	VAR_REDRAW_ALL_ACTORS = 95;
+	VAR_COLOR_BLACK = 93;
+	VAR_ALWAYS_REDRAW_ACTORS = 95;
 }
 
 void ScummEngine_v90he::setupScummVars() {
@@ -337,7 +338,7 @@ void ScummEngine_v90he::setupScummVars() {
 		VAR_NUM_SPRITES = 106;
 		VAR_U32_VERSION = 107;
 		VAR_U32_ARRAY_UNK = 116;
-		VAR_WIZ_TCOLOR = 117;
+		VAR_WIZ_TRANSPARENT_COLOR = 117;
 		VAR_OPERATION_FAILURE = 119;
 		VAR_START_DYN_SOUND_CHANNELS = 120;
 	}
@@ -356,6 +357,7 @@ void ScummEngine_v90he::setupScummVars() {
 		VAR_MAIN_SCRIPT = 127;
 		VAR_NUM_PALETTES = 130;
 		VAR_NUM_UNK = 131;
+		VAR_SPRITE_IMAGE_CHANGE_DOES_NOT_RESET_SETTINGS = 139;
 	}
 }
 
@@ -728,7 +730,7 @@ void ScummEngine_v90he::resetScummVars() {
 	if (_game.heversion >= 95) {
 		VAR(VAR_NUM_SPRITE_GROUPS) = MAX(64, _numSprites / 4) - 1;
 		VAR(VAR_NUM_SPRITES) = _numSprites - 1;
-		VAR(VAR_WIZ_TCOLOR) = 5;
+		VAR(VAR_WIZ_TRANSPARENT_COLOR) = 5;
 		VAR(VAR_START_DYN_SOUND_CHANNELS) = 9;
 	}
 	if (_game.heversion >= 98) {

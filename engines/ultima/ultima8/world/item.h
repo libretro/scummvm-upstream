@@ -61,6 +61,9 @@ public:
 	//! Get the Container this Item is in, if any. (NULL if not in a Container)
 	Container *getParentAsContainer() const;
 
+	//! Get the top-most Container this Item is in, if any. (NULL if not in a Container)
+	Container *getRootContainer() const;
+
 	//! Get the top-most Container this Item is in, or the Item itself if not
 	//! in a container
 	const Item *getTopItem() const;
@@ -264,6 +267,12 @@ public:
 	ObjId openGump(uint32 gumpshape);
 	//! Close this Item's gump, if any
 	void closeGump();
+
+	ProcId bark(const Std::string &msg, ObjId id = 0);
+	//! Call this to notify the Item's open bark has closed.
+	void clearBark(); // set bark to 0
+	//! Close this Item's bark, if any
+	void closeBark();
 
 	//! Destroy self.
 	virtual void destroy(bool delnow = false);
@@ -635,7 +644,8 @@ protected:
 	Lerped  _lNext;         // Next (current) state (relative to camera)
 	int32   _ix, _iy, _iz;  // Interpolated position in camera space
 
-	ObjId _gump;             // Item's gump
+	ObjId _gump;             // Item's container gump
+	ObjId _bark;             // Item's bark gump
 	ProcId _gravityPid;      // Item's GravityTracker (or 0)
 
 	uint8 _damagePoints;	// Damage points, used for item damage in Crusader

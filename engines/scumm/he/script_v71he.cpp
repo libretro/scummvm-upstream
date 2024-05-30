@@ -168,15 +168,6 @@ void ScummEngine_v71he::appendSubstring(int dst, int src, int srcOffs, int len) 
 	writeArray(0, 0, dstOffs + i, 0);
 }
 
-void ScummEngine_v71he::adjustRect(Common::Rect &rect) {
-	// Scripts can set all rect positions to -1
-	if (rect.right != -1)
-		rect.right += 1;
-
-	if (rect.bottom != -1)
-		rect.bottom += 1;
-}
-
 void ScummEngine_v71he::o71_kernelSetFunctions() {
 	int args[29];
 	int num;
@@ -192,7 +183,7 @@ void ScummEngine_v71he::o71_kernelSetFunctions() {
 		break;
 	case 20: // HE72+
 		a = (ActorHE *)derefActor(args[1], "o71_kernelSetFunctions: 20");
-		queueAuxBlock(a);
+		heQueueEraseAuxActor(a);
 		break;
 	case 21:
 		_skipDrawObject = 1;
@@ -205,34 +196,33 @@ void ScummEngine_v71he::o71_kernelSetFunctions() {
 		_fullRedraw = true;
 		break;
 	case 24:
-		_skipProcessActors = 1;
+		_disableActorDrawingFlag = 1;
 		redrawAllActors();
 		break;
 	case 25:
-		_skipProcessActors = 0;
+		_disableActorDrawingFlag = 0;
 		redrawAllActors();
 		break;
 	case 26:
 		a = (ActorHE *)derefActor(args[1], "o71_kernelSetFunctions: 26");
-		a->_auxBlock.r.left = 0;
-		a->_auxBlock.r.right = -1;
-		a->_auxBlock.r.top = 0;
-		a->_auxBlock.r.bottom = -2;
+		a->_auxEraseX1 = 0;
+		a->_auxEraseY1 = -1;
+		a->_auxEraseX2 = 0;
+		a->_auxEraseY2 = -2;
 		break;
 	case 30:
 		a = (ActorHE *)derefActor(args[1], "o71_kernelSetFunctions: 30");
 		a->_clipOverride.bottom = args[2];
 		break;
 	case 42:
-		_wiz->_rectOverrideEnabled = true;
-		_wiz->_rectOverride.left = args[1];
-		_wiz->_rectOverride.top = args[2];
-		_wiz->_rectOverride.right = args[3];
-		_wiz->_rectOverride.bottom = args[4];
-		adjustRect(_wiz->_rectOverride);
+		_wiz->_useWizClipRect = true;
+		_wiz->_wizClipRect.left = args[1];
+		_wiz->_wizClipRect.top = args[2];
+		_wiz->_wizClipRect.right = args[3];
+		_wiz->_wizClipRect.bottom = args[4];
 		break;
 	case 43:
-		_wiz->_rectOverrideEnabled = false;
+		_wiz->_useWizClipRect = false;
 		break;
 	default:
 		error("o71_kernelSetFunctions: default case %d (param count %d)", args[0], num);
@@ -428,13 +418,13 @@ void ScummEngine_v71he::o71_polygonOps() {
 		vert1x = pop();
 		flag = (subOp == ScummEngine_v100he::SO_SET_POLYGON_LOCAL || subOp == SO_SET_POLYGON_LOCAL);
 		id = pop();
-		_wiz->polygonStore(id, flag, vert1x, vert1y, vert2x, vert2y, vert3x, vert3y, vert4x, vert4y);
+		_wiz->set4Polygon(id, flag, vert1x, vert1y, vert2x, vert2y, vert3x, vert3y, vert4x, vert4y);
 		break;
 	case ScummEngine_v100he::SO_DELETE_POLYGON: // HE 100
 	case SO_DELETE_POLYGON:
 		toId = pop();
 		fromId = pop();
-		_wiz->polygonErase(fromId, toId);
+		_wiz->deletePolygon(fromId, toId);
 		break;
 	default:
 		error("o71_polygonOps: default case %d", subOp);
@@ -444,7 +434,7 @@ void ScummEngine_v71he::o71_polygonOps() {
 void ScummEngine_v71he::o71_polygonHit() {
 	int y = pop();
 	int x = pop();
-	push(_wiz->polygonHit(0, x, y));
+	push(_wiz->findPolygon(x, y));
 }
 
 } // End of namespace Scumm

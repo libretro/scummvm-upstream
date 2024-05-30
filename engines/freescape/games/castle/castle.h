@@ -34,13 +34,25 @@ public:
 	void loadAssetsAmigaDemo() override;
 
 	void drawDOSUI(Graphics::Surface *surface) override;
+	void drawEnergyMeter(Graphics::Surface *surface);
+	void pressedKey(const int keycode) override;
+	void checkSensors() override;
+	void updateTimeVariables() override;
 
 	void executePrint(FCLInstruction &instruction) override;
 	void gotoArea(uint16 areaID, int entranceID) override;
 	Common::Error saveGameStreamExtended(Common::WriteStream *stream, bool isAutosave = false) override;
 	Common::Error loadGameStreamExtended(Common::SeekableReadStream *stream) override;
+
+	Common::StringArray _riddleList;
 private:
 	Common::SeekableReadStream *decryptFile(const Common::Path &filename);
+	void loadRiddles(Common::SeekableReadStream *file, int offset, int number);
+	void drawFullscreenRiddleAndWait(uint16 riddle);
+	void drawRiddle(uint16 riddle, uint32 front, uint32 back, Graphics::Surface *surface);
+	void addGhosts();
 };
+
+extern byte kFreescapeCastleFont[];
 
 }

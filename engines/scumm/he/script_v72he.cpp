@@ -417,8 +417,8 @@ int ScummEngine_v72he::findObject(int x, int y, int num, int *args) {
 			continue;
 
 		// Check polygon bounds
-		if (_wiz->polygonDefined(_objs[i].obj_nr)) {
-			if (_wiz->polygonHit(_objs[i].obj_nr, x, y))
+		if (_wiz->doesObjectHavePolygon(_objs[i].obj_nr)) {
+			if (_wiz->testForObjectPolygon(_objs[i].obj_nr, x, y))
 				result = _objs[i].obj_nr;
 			else if (VAR_POLYGONS_ONLY != 0xFF && VAR(VAR_POLYGONS_ONLY))
 				continue;
@@ -528,12 +528,17 @@ void ScummEngine_v72he::o72_getObjectImageY() {
 }
 
 void ScummEngine_v72he::o72_captureWizImage() {
-	Common::Rect grab;
-	grab.bottom = pop() + 1;
-	grab.right = pop() + 1;
-	grab.top = pop();
-	grab.left = pop();
-	_wiz->captureWizImage(pop(), grab, false, true);
+	int y2 = pop();
+	int x2 = pop();
+	int y1 = pop();
+	int x1 = pop();
+	int image = pop();
+
+	_wiz->takeAWiz(image, x1, y1, x2, y2, false, true);
+
+	if (_game.heversion >= 99) {
+		_res->setModified(rtImage, image);
+	}
 }
 
 void ScummEngine_v72he::o72_getTimer() {
@@ -636,12 +641,9 @@ void ScummEngine_v72he::o72_drawObject() {
 }
 
 void ScummEngine_v72he::o72_printWizImage() {
-	WizImage wi;
-	wi.resNum = pop();
-	wi.x1 = wi.y1 = 0;
-	wi.state = 0;
-	wi.flags = kWIFPrint;
-	_wiz->displayWizImage(&wi);
+	int image = pop();
+
+	_wiz->simpleDrawAWiz(image, 0, 0, 0, kWRFPrint);
 }
 
 void ScummEngine_v72he::o72_getArrayDimSize() {
@@ -832,27 +834,34 @@ void ScummEngine_v72he::o72_actorOps() {
 		a->_needRedraw = true;
 		break;
 	case SO_ACTOR_DEFAULT_CLIPPED:
-		_actorClipOverride.bottom = pop();
-		_actorClipOverride.right = pop();
-		_actorClipOverride.top = pop();
-		_actorClipOverride.left = pop();
-		adjustRect(_actorClipOverride);
+	{
+		int x1, y1, x2, y2;
+		y2 = pop();
+		x2 = pop();
+		y1 = pop();
+		x1 = pop();
+		setActorClippingRect(-1, x1, y1, x2, y2);
 		break;
+	}
 	case ScummEngine_v6::SubOpType::SO_AT:		// (HE 98+)
 		j = pop();
 		i = pop();
 		a->putActor(i, j);
 		break;
 	case SO_CLIPPED:		// (HE 99+)
-		a->_clipOverride.bottom = pop();
-		a->_clipOverride.right = pop();
-		a->_clipOverride.top = pop();
-		a->_clipOverride.left = pop();
-		adjustRect(a->_clipOverride);
+	{
+		int x1, y1, x2, y2;
+		y2 = pop();
+		x2 = pop();
+		y1 = pop();
+		x1 = pop();
+		if (_curActor) {
+			setActorClippingRect(_curActor, x1, y1, x2, y2);
+		}
 		break;
+	}
 	case SO_ERASE: // 	// (HE 90+)
-		k = pop();
-		a->setHEFlag(1, k);
+		a->setActorEraseType(pop());
 		break;
 	case SO_COSTUME:
 		a->setActorCostume(pop());
@@ -946,7 +955,7 @@ void ScummEngine_v72he::o72_actorOps() {
 		a->setAnimSpeed(pop());
 		break;
 	case SO_SHADOW:
-		a->_heXmapNum = pop();
+		a->_heShadow = pop();
 		a->_needRedraw = true;
 		break;
 	case SO_TEXT_OFFSET:
@@ -1329,7 +1338,7 @@ void ScummEngine_v72he::o72_systemOps() {
 		clearDrawObjectQueue();
 		break;
 	case SO_UPDATE_SCREEN: // HE80+
-		restoreBackgroundHE(Common::Rect(_screenWidth, _screenHeight));
+		backgroundToForegroundBlit(Common::Rect(_screenWidth, _screenHeight));
 		updatePalette();
 		break;
 	case SO_RESTART:
@@ -1478,13 +1487,13 @@ void ScummEngine_v72he::o72_kernelGetFunctions() {
 }
 
 void ScummEngine_v72he::o72_drawWizImage() {
-	WizImage wi;
+	WizBufferElement wi;
 	wi.flags = pop();
-	wi.y1 = pop();
-	wi.x1 = pop();
-	wi.resNum = pop();
+	wi.y = pop();
+	wi.x = pop();
+	wi.image = pop();
 	wi.state = 0;
-	_wiz->displayWizImage(&wi);
+	_wiz->simpleDrawAWiz(wi.image, wi.state, wi.x, wi.y, wi.flags);
 }
 
 void ScummEngine_v72he::debugInput(byte* string) {

@@ -65,7 +65,7 @@ void Moonbase::initFOW() {
 void Moonbase::releaseFOWResources() {
 	if (_fowImage) {
 		free(_fowImage);
-		_fowImage = 0;
+		_fowImage = nullptr;
 	}
 }
 
@@ -137,10 +137,20 @@ bool Moonbase::setFOWImage(int image) {
 	_fowAnimationFrames = (nStates + FOW_ANIM_FRAME_COUNT - 1) / FOW_ANIM_FRAME_COUNT;
 
 	_vm->_wiz->getWizImageDim(_fowImage, (nStates - 1), _fowTileW, _fowTileH);
-	_fowBlackMode = !_vm->_wiz->isWizPixelNonTransparent(_fowImage, nStates - 1, 0, 0, 0);
+
+	bool sizeIndicatorWasBlack = true;
+	int32 hitTestValue = 0;
+	int32 pixelValue = 0;
+
+	_vm->_wiz->moonbaseLayeredWizHitTest(
+		&hitTestValue, &pixelValue, _fowImage, (nStates - 1), 0, 0, 0, 0);
+
+	sizeIndicatorWasBlack = (pixelValue == 0);
 
 	if (ConfMan.hasKey("EnableFOWRects"))
 		_fowBlackMode = (ConfMan.getInt("EnableFOWRects") == 1);
+	else
+		_fowBlackMode = sizeIndicatorWasBlack;
 
 	return true;
 }
@@ -327,66 +337,71 @@ void Moonbase::setFOWInfo(int fowInfoArray, int downDim, int acrossDim, int view
 	_fowFrameBaseNumber = (_fowCurrentFOWFrame * FOW_ANIM_FRAME_COUNT);
 }
 
-void Moonbase::renderFOWState(uint8 *destSurface, int dstPitch, int dstType, int dstw, int dsth, int x, int y, int srcw, int srch, int state, int flags) {
+void Moonbase::renderFOWState(WizMultiTypeBitmap *destSurface,int x, int y, int state) {
 	int32 spotx, spoty;
 
 	_vm->_wiz->getWizImageSpot(_fowImage, state, spotx, spoty);
-	Common::Rect r(_fowClipX1, _fowClipY1, _fowClipX2, _fowClipY2);
 
-	_vm->_wiz->drawWizImageEx(destSurface, _fowImage, 0, dstPitch, dstType, dstw, dsth, x - spotx, y - spoty, srcw, srch, state, &r, flags, 0, 0, 16, 0, 0);
+	_vm->_wiz->drawMoonbaseLayeredWiz(
+		destSurface->data,
+		destSurface->width, destSurface->height,
+		destSurface->stride, destSurface->format, destSurface->bpp,
+		_fowImage, x - spotx, y - spoty, state,
+		_fowClipX1, _fowClipY1, _fowClipX2, _fowClipY2,
+		0, 0, nullptr, nullptr);
 }
 
-static void blackRect_16bpp(uint8 *destSurface, int dstPitch, int dstw, int dsth, int x1, int y1, int x2, int y2) {
-	byte *dst = destSurface + dstPitch * y1 + x1 * 2;
-	int h = y2 - y1;
-	int w = ((x2 - x1) + 1) * 2;
+static void blackRect_16bpp(WizMultiTypeBitmap *destSurface, int x1, int y1, int x2, int y2) {
+	byte *dst = destSurface->data + (destSurface->stride * y1) + (x1 * sizeof(WizRawPixel16));
+	int h = (y2 - y1) + 1;
+	int writeBytes = ((x2 - x1) + 1) * sizeof(WizRawPixel16);
 
 	while (--h >= 0) {
-		memset(dst, 0, w);
-		dst += dstPitch;
+		memset(dst, 0, writeBytes);
+		dst += destSurface->stride;
 	}
 }
 
-void Moonbase::renderFOW(uint8 *destSurface, int dstPitch, int dstType, int dstw, int dsth, int flags) {
+void Moonbase::renderFOW(WizMultiTypeBitmap *destSurface) {
 	if (!_fowImage)
 		return;
 
-	const int32 *pOutterRenderTable = _fowRenderTable;
+	const int32 *outerRenderTable = _fowRenderTable;
 	int ixPos = ((_fowVtx1 * _fowTileW) - _fowMvx) + _fowDrawX;
 	int yPos = ((_fowVty1 * _fowTileH) - _fowMvy) + _fowDrawY;
 	int dataOffset = _fowVw * 3;
 	int halfTileHeight = _fowTileH / 2;
-	int cx2 = MIN(_fowClipX2, (dstw - 1));
-	int cy2 = MIN(_fowClipY2, (dsth - 1));
+	int cx2 = MIN<int>(_fowClipX2, (int)(destSurface->width - 1));
+	int cy2 = MIN<int>(_fowClipY2, (int)(destSurface->height - 1));
 
 	for (int ry = 0; ry < _fowVh; ry++) {
-		int real_yPos = yPos;
+		int realYPos = yPos;
 
 		for (int i = 0; i < 2; i++) {
-			const int32 *pRenderTable = pOutterRenderTable;
-			pOutterRenderTable += dataOffset;
+			const int32 *renderTable = outerRenderTable;
+			outerRenderTable += dataOffset;
 
 			int xPos = ixPos;
 
 			for (int rx = 0; rx < _fowVw; rx++) {
-				int nState = *pRenderTable++;
-
-				if (nState != 0) {
-					if (nState == 2) {
+				int state = *renderTable++;
+	
+				if (state != 0) {
+					if (state == 2) {
 						int countLeft = (_fowVw - rx);
 						int count = 0;
-
+	
 						for (; count < countLeft; count++) {
-							if (*(pRenderTable + count) != 2)
+							if (*(renderTable + count) != 2)
 								break;
 
-							pRenderTable++;
+							renderTable++;
 							rx++;
 						}
 						count++;
 
 						int x1 = xPos;
-						int y1 = real_yPos;
+						int y1 = realYPos;
 
 						xPos += _fowTileW * count;
 						int x2 = (xPos - 1);
@@ -398,15 +413,15 @@ void Moonbase::renderFOW(uint8 *destSurface, int dstPitch, int dstType, int dstw
 						y2 = MIN(y2, cy2);
 
 						if ((x2 >= x1) && (y2 >= y1) && (x1 <= _fowClipX2) && (y1 <= _fowClipY2))
-							blackRect_16bpp(destSurface, dstPitch, dstw, dsth, x1, y1, x2, y2);
+							blackRect_16bpp(destSurface, x1, y1, x2, y2);
 					} else {
 						int subState;
 
-						if ((subState = *pRenderTable++) != 0)
-							renderFOWState(destSurface, dstPitch, dstType, dstw, dsth, xPos, yPos, _fowTileW, _fowTileH, (subState + _fowFrameBaseNumber), flags);
+						if ((subState = *renderTable++) != 0)
+							renderFOWState(destSurface, xPos, yPos, (subState + _fowFrameBaseNumber));
 
-						if ((subState = *pRenderTable++) != 0)
-							renderFOWState(destSurface, dstPitch, dstType, dstw, dsth, xPos, yPos, _fowTileW, _fowTileH, (subState + _fowFrameBaseNumber), flags);
+						if ((subState = *renderTable++) != 0)
+							renderFOWState(destSurface, xPos, yPos, (subState + _fowFrameBaseNumber));
 
 						xPos += _fowTileW;
 					}
@@ -414,8 +429,10 @@ void Moonbase::renderFOW(uint8 *destSurface, int dstPitch, int dstType, int dstw
 					xPos += _fowTileW;
 				}
 			}
-			real_yPos += halfTileHeight;
+
+			realYPos += halfTileHeight;
 		}
+
 		yPos += _fowTileH;
 	}
 }

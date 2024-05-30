@@ -85,6 +85,7 @@ enum {
 	kDebugConsole,
 	kDebugXObj,
 	kDebugLingoThe,
+	kDebugImGui,
 };
 
 enum {
@@ -228,9 +229,11 @@ public:
 	bool desktopEnabled();
 
 	// events.cpp
+	bool pollEvent(Common::Event &event);
 	bool processEvents(bool captureClick = false, bool skipWindowManager = false);
 	void processEventQUIT();
 	uint32 getMacTicks();
+	Common::Array<Common::Event> _injectedEvents;
 
 	// game-quirks.cpp
 	void gameQuirks(const char *target, Common::Platform platform);
@@ -314,6 +317,7 @@ public:
 	Common::Path _traceLogFile;
 
 	uint16 _framesRan = 0; // used by kDebugFewFramesOnly
+	bool _noFatalLingoError = false;
 };
 
 // An extension of MacPlotData for interfacing with inks and patterns without

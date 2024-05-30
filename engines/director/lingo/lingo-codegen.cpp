@@ -90,6 +90,14 @@ namespace Director {
 			return false; \
 	}
 
+void  Node::storeStart() {
+	startOffset = g_lingo->_compiler->_currentAssembly->size() - 1;
+}
+
+void Node::storeEnd() {
+	endOffset = g_lingo->_compiler->_currentAssembly->size() - 1;
+}
+
 LingoCompiler::LingoCompiler() {
 	_assemblyAST = nullptr;
 	_assemblyArchive = nullptr;
@@ -248,7 +256,12 @@ ScriptContext *LingoCompiler::compileLingo(const Common::U32String &code, LingoA
 	delete _methodVars;
 	_methodVars = nullptr;
 	_currentAssembly = nullptr;
-	delete _assemblyAST;
+
+	if (debugChannelSet(-1, kDebugImGui)) {
+		_assemblyContext->_assemblyAST = _assemblyAST;
+	} else {
+		delete _assemblyAST;
+	}
 	_assemblyAST = nullptr;
 	_assemblyContext = nullptr;
 	_assemblyArchive = nullptr;
@@ -389,8 +402,8 @@ void LingoCompiler::registerMethodVar(const Common::String &name, VarType type) 
 		}
 		(*_methodVars)[name] = type;
 		if (type == kVarProperty || type == kVarInstance) {
-			if (!_assemblyContext->_properties.contains(name))
-				_assemblyContext->_properties[name] = Datum();
+			if (!_assemblyContext->hasProp(name))
+				_assemblyContext->setProp(name, Datum(), true);
 		} else if (type == kVarGlobal) {
 			if (!g_lingo->_globalvars.contains(name))
 				g_lingo->_globalvars[name] = Datum();
@@ -473,8 +486,8 @@ bool LingoCompiler::visitHandlerNode(HandlerNode *node) {
 		if (i._value == kVarGlobal)
 			registerMethodVar(i._key, kVarGlobal);
 	}
-	for (auto &i : _assemblyContext->_properties) {
-		registerMethodVar(i._key, _inFactory ? kVarInstance : kVarProperty);
+	for (uint32 i = 1; i <= _assemblyContext->getPropCount(); i++) {
+		registerMethodVar(_assemblyContext->getPropAt(i), _inFactory ? kVarInstance : kVarProperty);
 	}
 
 	COMPILE_LIST(node->stmts);

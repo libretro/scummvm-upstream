@@ -337,6 +337,11 @@ Object *FreescapeEngine::load8bitObject(Common::SeekableReadStream *file) {
 		// read the appropriate number of colours
 		int numberOfColours = GeometricObject::numberOfColoursForObjectOfType(objectType);
 		Common::Array<uint8> *colours = new Common::Array<uint8>;
+		Common::Array<uint8> *ecolours = nullptr;
+
+		if (!isDriller() && (isAmiga() || isAtariST()))
+			ecolours = new Common::Array<uint8>;
+
 		debugC(1, kFreescapeDebugParser, "Number of colors: %d", numberOfColours / 2);
 		uint8 entry;
 		for (uint8 colour = 0; colour < numberOfColours / 2; colour++) {
@@ -353,14 +358,18 @@ Object *FreescapeEngine::load8bitObject(Common::SeekableReadStream *file) {
 
 			colours->push_back(entry);
 			debugC(1, kFreescapeDebugParser, "color[%d] = %x", 2 * colour, entry);
-			if (!isDriller() && (isAmiga() || isAtariST()))
+			if (!isDriller() && (isAmiga() || isAtariST())) {
+				ecolours->push_back(extraData & 0xf);
 				debugC(1, kFreescapeDebugParser, "ecolor[%d] = %x", 2 * colour, extraData & 0xf);
+			}
 
 			entry = data >> 4;
 			colours->push_back(entry);
 			debugC(1, kFreescapeDebugParser, "color[%d] = %x", 2 * colour + 1, entry);
-			if (!isDriller() && (isAmiga() || isAtariST()))
+			if (!isDriller() && (isAmiga() || isAtariST())) {
+				ecolours->push_back(extraData >> 4);
 				debugC(1, kFreescapeDebugParser, "ecolor[%d] = %x", 2 * colour + 1, extraData >> 4);
+			}
 
 			byteSizeOfObject--;
 		}
@@ -368,10 +377,10 @@ Object *FreescapeEngine::load8bitObject(Common::SeekableReadStream *file) {
 		// read extra vertices if required...
 		int numberOfOrdinates = GeometricObject::numberOfOrdinatesForType(objectType);
 		debugC(1, kFreescapeDebugParser, "number of ordinates %d", numberOfOrdinates);
-		Common::Array<uint16> *ordinates = nullptr;
+		Common::Array<float> *ordinates = nullptr;
 
 		if (numberOfOrdinates) {
-			ordinates = new Common::Array<uint16>;
+			ordinates = new Common::Array<float>;
 			uint16 ord = 0;
 			if (byteSizeOfObject < numberOfOrdinates) {
 				error("Not enough bytes to read all the ordinates");
@@ -397,17 +406,15 @@ Object *FreescapeEngine::load8bitObject(Common::SeekableReadStream *file) {
 		}
 		debugC(1, kFreescapeDebugParser, "End of object at %lx", long(file->pos()));
 
-		if (!GeometricObject::isPolygon(objectType))
-			position = 32 * position;
-
 		// create an object
 		return new GeometricObject(
 			objectType,
 			objectID,
 			rawFlagsAndType, // flags
-			position,
+			32 * position,
 			32 * v, // size
 			colours,
+			ecolours,
 			ordinates,
 			instructions,
 			conditionSource);
@@ -616,11 +623,13 @@ Area *FreescapeEngine::load8bitArea(Common::SeekableReadStream *file, uint16 nco
 	}
 
 	// Link all groups
-	for (ObjectMap::iterator it = objectsByID->begin(); it != objectsByID->end(); ++it) {
-		if (it->_value->getType() == ObjectType::kGroupType) {
-			Group *group = (Group *)it->_value;
-			for (ObjectMap::iterator itt = objectsByID->begin(); itt != objectsByID->end(); ++itt)
-				group->linkObject(itt->_value);
+	if (areaNumber != 255) { // Do not link objects in the room structure
+		for (ObjectMap::iterator it = objectsByID->begin(); it != objectsByID->end(); ++it) {
+			if (it->_value->getType() == ObjectType::kGroupType) {
+				Group *group = (Group *)it->_value;
+				for (ObjectMap::iterator itt = objectsByID->begin(); itt != objectsByID->end(); ++itt)
+					group->linkObject(itt->_value);
+			}
 		}
 	}
 
@@ -925,6 +934,8 @@ void FreescapeEngine::loadMessagesVariableSize(Common::SeekableReadStream *file,
 		Common::String message = "";
 		while (true) {
 			byte c = file->readByte();
+			if (c > 0xf0)
+				c = ' ';
 			if (c <= 1)
 				break;
 			message = message + c;
@@ -933,6 +944,7 @@ void FreescapeEngine::loadMessagesVariableSize(Common::SeekableReadStream *file,
 		_messagesList.push_back(message);
 		debugC(1, kFreescapeDebugParser, "'%s'", _messagesList[i].c_str());
 	}
+	debugC(1, kFreescapeDebugParser, "End of messages at %lx", file->pos());
 }
 
 void FreescapeEngine::loadGlobalObjects(Common::SeekableReadStream *file, int offset, int size) {

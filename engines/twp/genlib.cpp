@@ -312,7 +312,7 @@ static SQInteger findScreenPosition(HSQUIRRELVM v) {
 		if (!actorSlot)
 			return 0;
 		for (int i = 1; i < MAX_VERBS; i++) {
-			Verb vb = actorSlot->verbs[i];
+			const Verb &vb = actorSlot->verbSlots[i]._verb;
 			if (vb.id.id == verb) {
 				SpriteSheet *verbSheet = g_twp->_resManager->spriteSheet("VerbSheet");
 				const SpriteSheetFrame *verbFrame = &verbSheet->getFrame(Common::String::format("%s_en", vb.image.c_str()));
@@ -343,22 +343,98 @@ static SQInteger frameCounter(HSQUIRRELVM v) {
 	return sqpush(v, g_twp->_frameCounter);
 }
 
+static Common::String toPlatform(const Common::String &value) {
+	const char *platformsSrc[] = {"xbox", "switch", "playstation", "playstation2"};
+	const char *platformsDst[] = {"XBOX", "SWITCH", "PS4", "PS4"};
+	for (int i = 0; i < ARRAYSIZE(platformsSrc); i++) {
+		if (value == platformsSrc[i]) {
+			return platformsDst[i];
+		}
+	}
+	return "0";
+}
+
 static SQInteger getUserPref(HSQUIRRELVM v) {
 	Common::String key;
 	if (SQ_FAILED(sqget(v, 2, key))) {
-		return sq_throwerror(v, "failed to get key");
+		return sq_throwerror(v, _SC("failed to get key"));
 	}
-	// TODO: use ConfMan to search for key
 
-	// if configuration
-	int numArgs = sq_gettop(v);
-	if (numArgs == 3) {
-		HSQOBJECT obj;
-		sq_getstackobj(v, 3, &obj);
-		sqpush(v, obj);
+	if (key == "platform" && ConfMan.hasKey(key)) {
+		sqpush(v, toPlatform(ConfMan.get(key)));
 		return 1;
 	}
-	return 0;
+
+	SQInteger numArgs = sq_gettop(v) - 1;
+	// is there a fault value as argument ?
+	if (numArgs > 1) {
+		SQObjectType type = sq_gettype(v, 3);
+		if (type == SQObjectType::OT_STRING) {
+			Common::String str;
+			if (SQ_FAILED(sqget(v, 3, str))) {
+				return sq_throwerror(v, _SC("failed to get string"));
+			}
+			sqpush(v, ConfMan.hasKey(key) ? ConfMan.get(key) : str);
+			return 1;
+		}
+		if (type == SQObjectType::OT_INTEGER) {
+			SQInteger integer;
+			if (SQ_FAILED(sqget(v, 3, integer))) {
+				return sq_throwerror(v, _SC("failed to get integer"));
+			}
+			if (ConfMan.hasKey(key)) {
+				Common::String value = ConfMan.get(key);
+				bool bValue = false;
+				if (parseBool(value, bValue)) {
+					sqpush(v, bValue);
+					return 1;
+				}
+				sqpush(v, ConfMan.getInt(key));
+				return 1;
+			}
+
+			sqpush(v, integer);
+			return 1;
+		}
+		if (type == SQObjectType::OT_FLOAT) {
+			SQFloat fl;
+			if (SQ_FAILED(sqget(v, 3, fl))) {
+				return sq_throwerror(v, _SC("failed to get float"));
+			}
+			sqpush(v, ConfMan.hasKey(key) ? atof(ConfMan.get(key).c_str()) : fl);
+			return 1;
+		}
+		return sq_throwerror(v, _SC("failed to get user preferences"));
+	}
+
+	if (ConfMan.hasKey(key)) {
+		Common::String value = ConfMan.get(key);
+		bool isNumber = !value.empty();
+		bool isFloat = false;
+		for (size_t i = 0; i < value.size(); i++) {
+			if (!isFloat && value[i] == '.') {
+				isFloat = true;
+				continue;
+			}
+			if (!Common::isDigit(value[i])) {
+				isNumber = false;
+				break;
+			}
+		}
+		if (!isNumber) {
+			sqpush(v, value);
+			return 1;
+		}
+		if (isFloat) {
+			sqpush(v, atof(value.c_str()));
+			return 1;
+		}
+		sqpush(v, (SQInteger)atol(value.c_str()));
+		return 1;
+	}
+
+	sq_pushnull(v);
+	return 1;
 }
 
 static SQInteger getPrivatePref(HSQUIRRELVM v) {
@@ -725,7 +801,30 @@ static SQInteger setPrivatePref(HSQUIRRELVM v) {
 }
 
 static SQInteger setUserPref(HSQUIRRELVM v) {
-	// TODO: setUserPref
+	Common::String key;
+	if (SQ_FAILED(sqget(v, 2, key))) {
+		return sq_throwerror(v, _SC("failed to get key"));
+	}
+	SQObjectType type = sq_gettype(v, 3);
+	switch (type) {
+	case SQObjectType::OT_STRING: {
+		Common::String str;
+		if (SQ_FAILED(sqget(v, 3, str))) {
+			return sq_throwerror(v, _SC("failed to get str"));
+		}
+		ConfMan.set(key, str);
+		return 0;
+	}
+	case SQObjectType::OT_INTEGER:
+		SQInteger integer;
+		if (SQ_FAILED(sqget(v, 3, integer))) {
+			return sq_throwerror(v, _SC("failed to get integer"));
+		}
+		ConfMan.setInt(key, (int)integer);
+		return 0;
+	default:
+		break;
+	}
 	warning("setUserPref not implemented");
 	return 0;
 }
@@ -763,7 +862,7 @@ static SQInteger setVerb(HSQUIRRELVM v) {
 	debugC(kDebugGenScript, "setVerb %lld, %lld, %lld, %s", actorSlot, verbSlot, id, text.c_str());
 	VerbId verbId;
 	verbId.id = id;
-	g_twp->_hud->_actorSlots[actorSlot - 1].verbs[verbSlot] = Verb(verbId, image, fun, text, key, flags);
+	g_twp->_hud->_actorSlots[actorSlot - 1].verbSlots[verbSlot]._verb = Verb(verbId, image, fun, text, key, flags);
 	return 0;
 }
 

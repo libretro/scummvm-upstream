@@ -298,7 +298,7 @@ void OpenGLShaderRenderer::renderPlayerShootRay(byte color, const Common::Point 
 void OpenGLShaderRenderer::drawCelestialBody(Math::Vector3d position, float radius, byte color) {
 	uint8 r1, g1, b1, r2, g2, b2;
 	byte *stipple = nullptr;
-	getRGBAt(color, r1, g1, b1, r2, g2, b2, stipple);
+	getRGBAt(color, 0, r1, g1, b1, r2, g2, b2, stipple);
 
 	useColor(r1, g1, b1);
 
@@ -432,6 +432,14 @@ void OpenGLShaderRenderer::renderFace(const Common::Array<Math::Vector3d> &verti
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), nullptr);
 
 	glDrawArrays(GL_TRIANGLES, 0, vi + 3);
+}
+
+void OpenGLShaderRenderer::depthTesting(bool enabled) {
+	if (enabled) {
+		glEnable(GL_DEPTH_TEST);
+	} else {
+		glDisable(GL_DEPTH_TEST);
+	}
 }
 
 void OpenGLShaderRenderer::polygonOffset(bool enabled) {

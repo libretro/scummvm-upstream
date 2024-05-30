@@ -143,9 +143,14 @@ ifdef ENABLE_HE
 MODULE_OBJS += \
 	he/animation_he.o \
 	he/cup_player_he.o \
-	he/floodfill_he.o \
+	he/gfx_comp/aux_comp.o \
+	he/gfx_comp/mrle_comp.o \
+	he/gfx_comp/trle_comp.o \
+	he/gfx_primitives_he.o \
 	he/logic_he.o \
+	he/math_he.o \
 	he/palette_he.o \
+	he/polygon_he.o \
 	he/script_v71he.o \
 	he/script_v72he.o \
 	he/script_v80he.o \
@@ -153,6 +158,7 @@ MODULE_OBJS += \
 	he/script_v100he.o \
 	he/sprite_he.o \
 	he/wiz_he.o \
+	he/wizwarp_he.o \
 	he/localizer.o \
 	he/logic/baseball2001.o \
 	he/logic/basketball.o \
@@ -169,9 +175,14 @@ MODULE_OBJS += \
 	he/moonbase/ai_tree.o \
 	he/moonbase/ai_types.o \
 	he/moonbase/ai_weapon.o \
-	he/moonbase/distortion.o \
+	he/moonbase/dialog-mapgenerator.o \
+	he/moonbase/map_katton.o \
+	he/moonbase/map_main.o \
+	he/moonbase/map_mif.o \
+	he/moonbase/map_spiff.o \
 	he/moonbase/moonbase.o \
-	he/moonbase/moonbase_fow.o
+	he/moonbase/moonbase_fow.o \
+	he/moonbase/moonbase_gfx.o
 
 ifdef USE_ENET
 MODULE_OBJS += \

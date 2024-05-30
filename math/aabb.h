@@ -40,7 +40,8 @@ public:
 	Math::Vector3d getMax() const { return _max; }
 	Math::Vector3d getSize() const { return _max - _min; }
 	bool isValid() const { return _valid; }
-	bool collides(const AABB &aabb);
+	bool collides(const AABB &aabb) const;
+	Math::Vector3d distance(const Math::Vector3d &point) const;
 
 private:
 	Math::Vector3d _min, _max;

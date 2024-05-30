@@ -860,30 +860,75 @@ static bool testGame(const GameSettings *g, const DescMap &fileMD5Map, const Com
 }
 
 static Common::String customizeGuiOptions(const DetectorResult &res) {
-	Common::String guiOptions = res.game.guioptions + MidiDriver::musicType2GUIO(res.game.midi);
-	Common::String defaultRenderOption = "";
+	Common::String guiOptions = res.game.guioptions;
 
-	// Add default rendermode option for target. We don't put the default mode into the
-	// detection tables, due to the amount of targets we have. It it more convenient to
+	int midiflags = res.game.midi;
+	// These games often have no detection entries of their own and therefore come with all the DOS audio options.
+	// We clear them here to avoid confusion and add the appropriate default sound option below. The games from
+	// version 5 onwards seem to have correct sound options in the detection tables.
+	if (res.game.version < 5 && (res.game.platform == Common::kPlatformAmiga || (res.game.platform == Common::kPlatformMacintosh && strncmp(res.extra, "Steam", 6)) || res.game.platform == Common::kPlatformC64))
+		midiflags = MDT_NONE;
+
+	static const uint mtypes[] = {MT_PCSPK, MT_CMS, MT_PCJR, MT_ADLIB, MT_C64, MT_AMIGA, MT_APPLEIIGS, MT_TOWNS, MT_PC98, MT_SEGACD, 0, 0, 0, 0, MT_MACINTOSH};
+
+	for (int i = 0; i < ARRAYSIZE(mtypes); ++i) {
+		if (mtypes[i] && (midiflags & (1 << i)))
+			guiOptions += MidiDriver::musicType2GUIO(mtypes[i]);
+	}
+
+	if (midiflags & MDT_MIDI) {
+		guiOptions += MidiDriver::musicType2GUIO(MT_GM);
+		guiOptions += MidiDriver::musicType2GUIO(MT_MT32);
+	}
+
+	// Amiga versions often have no detection entries of their own and therefore come with all the DOS render modes.
+	// We remove them if we find any.
+	static const char *const rmodes[] = { GUIO_RENDERHERCGREEN, GUIO_RENDERHERCAMBER, GUIO_RENDERCGABW, GUIO_RENDERCGACOMP, GUIO_RENDERCGA };
+	if (res.game.platform == Common::kPlatformAmiga) {
+		for (int i = 0; i < ARRAYSIZE(rmodes); ++i) {
+			uint pos = guiOptions.findFirstOf(rmodes[i][0]);
+			if (pos != Common::String::npos)
+				guiOptions.erase(pos, 1);
+		}
+	}
+	
+	Common::String defaultRenderOption = "";
+	Common::String defaultSoundOption = "";
+
+	// Add default rendermode and sound option for target. We don't always put the default modes
+	// into the detection tables, due to the amount of targets we have. It it more convenient to
 	// add the option here.
 	switch (res.game.platform) {
+	case Common::kPlatformC64:
+		defaultRenderOption = GUIO_RENDERC64;
+		defaultSoundOption = GUIO_MIDIC64;
+		break;
 	case Common::kPlatformAmiga:
 		defaultRenderOption = GUIO_RENDERAMIGA;
+		defaultSoundOption = GUIO_MIDIAMIGA;
 		break;
 	case Common::kPlatformApple2GS:
 		defaultRenderOption = GUIO_RENDERAPPLE2GS;
+		// No default sound here, since we don't support it.
 		break;
 	case Common::kPlatformMacintosh:
-		defaultRenderOption = GUIO_RENDERMACINTOSH;
+		if (!strncmp(res.extra, "Steam", 6)) {
+			defaultRenderOption = GUIO_RENDERVGA;
+		} else {
+			defaultRenderOption = GUIO_RENDERMACINTOSH;
+			defaultSoundOption = GUIO_MIDIMAC;
+		}
 		break;
 	case Common::kPlatformFMTowns:
 		defaultRenderOption = GUIO_RENDERFMTOWNS;
+		// No default sound here, it is all in the detection tables.
 		break;
 	case Common::kPlatformAtariST:
 		defaultRenderOption = GUIO_RENDERATARIST;
+		// No default sound here, since we don't support it.
 		break;
 	case Common::kPlatformDOS:
-		defaultRenderOption = (!strcmp(res.extra, "EGA") || !strcmp(res.extra, "V1") || !strcmp(res.extra, "V2")) ? GUIO_RENDEREGA : GUIO_RENDERVGA;
+		defaultRenderOption = (!strncmp(res.extra, "EGA", 4) || !strncmp(res.extra, "V1", 3) || !strncmp(res.extra, "V2", 3)) ? GUIO_RENDEREGA : GUIO_RENDERVGA;
 		break;
 	case Common::kPlatformUnknown:
 		// For targets that don't specify the platform (often happens with SCUMM6+ games) we stick with default VGA.
@@ -899,6 +944,9 @@ static Common::String customizeGuiOptions(const DetectorResult &res) {
 	// detection tables) we don't add it again.
 	if (!guiOptions.contains(defaultRenderOption))
 		guiOptions += defaultRenderOption;
+	// Same for sound...
+	if (!defaultSoundOption.empty() && !guiOptions.contains(defaultSoundOption))
+		guiOptions += defaultSoundOption;
 
 	return guiOptions;
 }

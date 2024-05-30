@@ -22,9 +22,15 @@
 #if !defined(SCUMM_HE_LOGIC_HE_H) && defined(ENABLE_HE)
 #define SCUMM_HE_LOGIC_HE_H
 
+#include "scumm/resource.h"
+#include "scumm/scumm.h"
+#include "scumm/he/wiz_he.h"
+
 namespace Scumm {
 
 class ScummEngine_v90he;
+class ScummEngine_v100he;
+class ResourceManager;
 
 class LogicHE {
 public:
@@ -40,6 +46,15 @@ public:
 
 	virtual int versionID();
 	virtual int32 dispatch(int op, int numArgs, int32 *args);
+	virtual bool userCodeProcessWizImageCmd(const WizImageCommand *icmdPtr) { return false; }
+	virtual bool overrideImageHitTest(int *outValue, int globNum, int state, int x, int y, int32 flags) { return false; }
+	virtual bool overrideImagePixelHitTest(int *outValue, int globNum, int state, int x, int y, int32 flags) { return false; }
+	virtual bool getSpriteProperty(int sprite, int property, int *outValue) { return false; }
+	virtual bool setSpriteProperty(int sprite, int property, int value) { return false; }
+	virtual bool getGroupProperty(int group, int property, int *outValue) { return false; }
+	virtual void spriteNewHook(int sprite) {}
+	virtual void groupNewHook(int group) {}
+	
 
 protected:
 	// Only to be used from makeLogicHE()

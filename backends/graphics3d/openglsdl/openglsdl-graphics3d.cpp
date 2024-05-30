@@ -47,8 +47,8 @@
 #endif
 
 #ifdef USE_IMGUI
-#include "backends/imgui/backends/imgui_impl_sdl2_scummvm.h"
-#include "backends/imgui/backends/imgui_impl_opengl3_scummvm.h"
+#include "backends/imgui/backends/imgui_impl_sdl2.h"
+#include "backends/imgui/backends/imgui_impl_opengl3.h"
 #endif
 
 OpenGLSdlGraphics3dManager::OpenGLSdlGraphics3dManager(SdlEventSource *eventSource, SdlWindow *window, bool supportsFrameBuffer)
@@ -150,12 +150,6 @@ OpenGLSdlGraphics3dManager::OpenGLSdlGraphics3dManager(SdlEventSource *eventSour
 }
 
 OpenGLSdlGraphics3dManager::~OpenGLSdlGraphics3dManager() {
-#if defined(USE_IMGUI) && SDL_VERSION_ATLEAST(2, 0, 0)
-	ImGui_ImplOpenGL3_Shutdown();
-	ImGui_ImplSDL2_Shutdown();
-	ImGui::DestroyContext();
-#endif
-
 	closeOverlay();
 #if SDL_VERSION_ATLEAST(2, 0, 0)
 	deinitializeRenderer();
@@ -333,9 +327,7 @@ void OpenGLSdlGraphics3dManager::setupScreen() {
 		}
 	}
 
-	// Clear the GL context when going from / to the launcher
-	SDL_GL_DeleteContext(_glContext);
-	_glContext = nullptr;
+	deinitializeRenderer();
 
 	if (needsWindowReset) {
 		_window->destroyWindow();
@@ -473,19 +465,6 @@ void OpenGLSdlGraphics3dManager::initializeOpenGLContext() const {
 	if (SDL_GL_SetSwapInterval(_vsync ? 1 : 0)) {
 		warning("Unable to %s VSync: %s", _vsync ? "enable" : "disable", SDL_GetError());
 	}
-
-#ifdef USE_IMGUI
-	if (!_imguiInit) {
-		// Setup Dear ImGui
-		IMGUI_CHECKVERSION();
-		ImGui::CreateContext();
-		ImGui_ImplSDL2_InitForOpenGL(_window->getSDLWindow(), _glContext);
-		ImGui_ImplOpenGL3_Init("#version 110");
-		ImGui::StyleColorsDark();
-		ImGuiIO &io = ImGui::GetIO();
-		io.IniFilename = nullptr;
-	}
-#endif
 #endif
 }
 
@@ -577,6 +556,21 @@ bool OpenGLSdlGraphics3dManager::createOrUpdateGLContext(uint gameWidth, uint ga
 				_glContext = SDL_GL_CreateContext(_window->getSDLWindow());
 				if (_glContext) {
 					clear = true;
+
+#ifdef USE_IMGUI
+					// Setup Dear ImGui
+					IMGUI_CHECKVERSION();
+					ImGui::CreateContext();
+					ImGui_ImplSDL2_InitForOpenGL(_window->getSDLWindow(), _glContext);
+					ImGui_ImplOpenGL3_Init("#version 110");
+					ImGui::StyleColorsDark();
+					ImGuiIO &io = ImGui::GetIO();
+					io.IniFilename = nullptr;
+					if (_callbacks.init) {
+						_imguiInitCalled = true;
+						_callbacks.init();
+					}
+#endif
 				}
 			}
 
@@ -615,9 +609,6 @@ bool OpenGLSdlGraphics3dManager::createOrUpdateGLContext(uint gameWidth, uint ga
 		return false;
 
 	initializeOpenGLContext();
-#if defined(USE_IMGUI) && SDL_VERSION_ATLEAST(2, 0, 0)
-	_imguiInit = true;
-#endif
 
 	if (clear)
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
@@ -658,19 +649,6 @@ OpenGL::FrameBuffer *OpenGLSdlGraphics3dManager::createFramebuffer(uint width, u
 	}
 }
 
-#if defined(USE_IMGUI) && SDL_VERSION_ATLEAST(2, 0, 0)
-void OpenGLSdlGraphics3dManager::renderImGui(void(*render)()) {
-	ImGui_ImplOpenGL3_NewFrame();
-	ImGui_ImplSDL2_NewFrame(_window->getSDLWindow());
-
-	ImGui::NewFrame();
-	render();
-	ImGui::Render();
-
-	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-}
-#endif
-
 void OpenGLSdlGraphics3dManager::updateScreen() {
 
 	GLint prevStateViewport[4];
@@ -700,7 +678,27 @@ void OpenGLSdlGraphics3dManager::updateScreen() {
 		SdlGraphicsManager::saveScreenshot();
 		_queuedScreenshot = false;
 	}
-#endif 
+#endif
+
+#if defined(USE_IMGUI) && SDL_VERSION_ATLEAST(2, 0, 0)
+	if (_callbacks.render) {
+		if (!_imguiRenderCalled && _callbacks.init) {
+			_imguiRenderCalled = true;
+			if (!_imguiInitCalled) {
+				_imguiInitCalled = true;
+				_callbacks.init();
+			}
+		}
+		ImGui_ImplOpenGL3_NewFrame();
+		ImGui_ImplSDL2_NewFrame();
+
+		ImGui::NewFrame();
+		_callbacks.render();
+		ImGui::Render();
+
+		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+	}
+#endif
 
 #if SDL_VERSION_ATLEAST(2, 0, 0)
 	SDL_GL_SwapWindow(_window->getSDLWindow());
@@ -832,6 +830,17 @@ void OpenGLSdlGraphics3dManager::showSystemMouseCursor(bool visible) {
 
 #if SDL_VERSION_ATLEAST(2, 0, 0)
 void OpenGLSdlGraphics3dManager::deinitializeRenderer() {
+#ifdef USE_IMGUI
+	if (_glContext) {
+		if (_callbacks.cleanup) {
+			_callbacks.cleanup();
+		}
+		ImGui_ImplOpenGL3_Shutdown();
+		ImGui_ImplSDL2_Shutdown();
+		ImGui::DestroyContext();
+	}
+#endif
+
 	SDL_GL_DeleteContext(_glContext);
 	_glContext = nullptr;
 }
@@ -862,9 +871,9 @@ bool OpenGLSdlGraphics3dManager::saveScreenshot(const Common::Path &filename) co
 
 	Common::Array<uint8> pixels;
 	pixels.resize(lineSize * height);
-#ifdef EMSCRIPTEN	
+#ifdef EMSCRIPTEN
 	// WebGL doesn't support GL_RGB, see https://registry.khronos.org/webgl/specs/latest/1.0/#5.14.12:
-	// "Only two combinations of format and type are accepted. The first is format RGBA and type UNSIGNED_BYTE. 
+	// "Only two combinations of format and type are accepted. The first is format RGBA and type UNSIGNED_BYTE.
 	// The second is an implementation-chosen format. " and the implementation-chosen formats are buggy:
 	// https://github.com/KhronosGroup/WebGL/issues/2747
 	glReadPixels(0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, &pixels.front());

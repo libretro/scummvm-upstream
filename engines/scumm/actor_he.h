@@ -27,26 +27,31 @@
 
 namespace Scumm {
 
-struct AuxBlock {
-	bool visible;
-	Common::Rect r;
+#define ACTOR_GENERAL_FLAG_IGNORE_ERASE 0x00000001
 
-	void reset() {
-		visible = false;
-		r.left = r.top = 0;
-		r.right = r.bottom = -1;
-	}
-
-	void clear() {
-		reset();
-		r.right = 0;
-		r.bottom = 0;
-	}
+ struct HEEraseAuxEntry {
+	int actor;
+	int32 x1, y1, x2, y2;
 };
 
-struct AuxEntry {
-	int actorNum;
-	int subIndex;
+struct HEAnimAuxEntry {
+	int actor;
+	int auxIndex;
+};
+
+struct HEAnimAuxData {
+	byte *auxDefaultSearchBlock;
+	byte *externalDataPtr;
+	const byte *auxDataBlock;
+	int actor;
+};
+
+struct HEAuxFileRelInfo {
+	int globFileOffset;
+	Common::File fileHandle;
+	int globType;
+	int globNum;
+	int roomNum;
 };
 
 class ActorHE : public Actor {
@@ -59,7 +64,7 @@ public:
 
 	void drawActorToBackBuf(int x, int y);
 
-	void setHEFlag(int bit, int set);
+	void setActorEraseType(int eraseValue);
 
 	void setCondition(int slot, int set);
 	bool isConditionSet(int slot) const;
@@ -76,9 +81,10 @@ public:
 
 	bool _heNoTalkAnimation;
 	bool _heTalking;
-	byte _heFlags;
+	byte _generalFlags;
 
-	AuxBlock _auxBlock;
+	int _auxActor;
+	int32 _auxEraseX1, _auxEraseY1, _auxEraseX2, _auxEraseY2;
 
 	struct {
 		int16 posX;

@@ -77,13 +77,26 @@ void AABB::transform(const Math::Matrix4 &matrix) {
 	}
 }
 
-bool AABB::collides(const AABB &aabb) {
+bool AABB::collides(const AABB &aabb) const {
 	return (getMax().x() > aabb.getMin().x() &&
 			getMin().x() < aabb.getMax().x() &&
 			getMax().y() > aabb.getMin().y() &&
 			getMin().y() < aabb.getMax().y() &&
 			getMax().z() > aabb.getMin().z() &&
 			getMin().z() < aabb.getMax().z());
+}
+
+Math::Vector3d AABB::distance(const Math::Vector3d &point) const {
+	double dx = MAX(getMin().x() - point.x(), point.x() - getMax().x());
+	dx = MAX(dx, 0.0);
+
+	double dy = MAX(getMin().y() - point.y(), point.y() - getMax().y());
+	dy = MAX(dy, 0.0);
+
+	double dz = MAX(getMin().z() - point.z(), point.z() - getMax().z());
+	dz = MAX(dz, 0.0);
+
+	return Math::Vector3d(dx, dy, dz);
 }
 
 }

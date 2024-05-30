@@ -74,6 +74,7 @@ public:
 	 */
 	virtual void flipBuffer() {}
 	virtual void useColor(uint8 r, uint8 g, uint8 b) = 0;
+	virtual void depthTesting(bool enabled) {};
 	virtual void polygonOffset(bool enabled) = 0;
 
 	virtual Texture *createTexture(const Graphics::Surface *surface) = 0;
@@ -88,10 +89,10 @@ public:
 
 	virtual void renderCrossair(const Common::Point crossairPosition) = 0;
 
-	virtual void renderCube(const Math::Vector3d &position, const Math::Vector3d &size, Common::Array<uint8> *colours);
-	virtual void renderRectangle(const Math::Vector3d &position, const Math::Vector3d &size, Common::Array<uint8> *colours);
-	virtual void renderPolygon(const Math::Vector3d &origin, const Math::Vector3d &size, const Common::Array<uint16> *ordinates, Common::Array<uint8> *colours);
-	virtual void renderPyramid(const Math::Vector3d &origin, const Math::Vector3d &size, const Common::Array<uint16> *ordinates, Common::Array<uint8> *colours, int type);
+	virtual void renderCube(const Math::Vector3d &position, const Math::Vector3d &size, Common::Array<uint8> *colours, Common::Array<uint8> *ecolours, float offset = 0.0);
+	virtual void renderRectangle(const Math::Vector3d &position, const Math::Vector3d &size, Common::Array<uint8> *colours, Common::Array<uint8> *ecolours, float offset = 0.0);
+	virtual void renderPolygon(const Math::Vector3d &origin, const Math::Vector3d &size, const Common::Array<float> *ordinates, Common::Array<uint8> *colours, Common::Array<uint8> *ecolours, float offset = 0.0);
+	virtual void renderPyramid(const Math::Vector3d &origin, const Math::Vector3d &size, const Common::Array<float> *ordinates, Common::Array<uint8> *colours, Common::Array<uint8> *ecolours, int type);
 	virtual void renderFace(const Common::Array<Math::Vector3d> &vertices) = 0;
 
 	void setColorRemaps(ColorReMap *colorRemaps);
@@ -100,6 +101,7 @@ public:
 	virtual void drawBackground(uint8 color);
 
 	void drawEclipse(uint8 color1, uint8 color2, float difference);
+	virtual void drawSkybox(Texture *texture, Math::Vector3d camera) {};
 	virtual void drawCelestialBody(Math::Vector3d position, float radius, uint8 color) {};
 
 	Common::Rect viewport() const;
@@ -111,7 +113,7 @@ public:
 	uint8 indexFromColor(uint8 r, uint8 g, uint8 b);
 	uint8 mapEGAColor(uint8 index);
 
-	bool getRGBAt(uint8 index, uint8 &r1, uint8 &g1, uint8 &b1, uint8 &r2, uint8 &g2, uint8 &b2, byte *&stipple);
+	bool getRGBAt(uint8 index, uint8 ecolor, uint8 &r1, uint8 &g1, uint8 &b1, uint8 &r2, uint8 &g2, uint8 &b2, byte *&stipple);
 	bool getRGBAtC64(uint8 index, uint8 &r1, uint8 &g1, uint8 &b1, uint8 &r2, uint8 &g2, uint8 &b2);
 	bool getRGBAtCGA(uint8 index, uint8 &r1, uint8 &g1, uint8 &b1, uint8 &r2, uint8 &g2, uint8 &b2, byte *&stipple);
 	bool getRGBAtCPC(uint8 index, uint8 &r1, uint8 &g1, uint8 &b1, uint8 &r2, uint8 &g2, uint8 &b2, byte *&stipple);

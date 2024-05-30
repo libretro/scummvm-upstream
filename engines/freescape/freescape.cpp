@@ -127,8 +127,10 @@ FreescapeEngine::FreescapeEngine(OSystem *syst, const ADGameDescription *gd)
 
 	_border = nullptr;
 	_title = nullptr;
+	_background = nullptr;
 	_titleTexture = nullptr;
 	_borderTexture = nullptr;
+	_skyTexture = nullptr;
 	_uiTexture = nullptr;
 	_fontLoaded = false;
 	_dataBundle = nullptr;
@@ -200,10 +202,16 @@ FreescapeEngine::~FreescapeEngine() {
 		delete _border;
 	}
 
+	if (_background) {
+		_background->free();
+		delete _background;
+	}
+
 	if (_gfx->_isAccelerated) {
 		delete _borderTexture;
 		delete _uiTexture;
 		delete _titleTexture;
+		delete _skyTexture;
 	}
 
 	for (auto &it : _areaMap) {
@@ -320,6 +328,13 @@ void FreescapeEngine::clearBackground() {
 void FreescapeEngine::drawBackground() {
 	clearBackground();
 	_gfx->drawBackground(_currentArea->_skyColor);
+
+	if (isCastle()) {
+		assert(_background);
+		if (!_skyTexture)
+			_skyTexture = _gfx->createTexture(_background);
+		_gfx->drawSkybox(_skyTexture, _position);
+	}
 }
 
 void FreescapeEngine::drawFrame() {
@@ -347,9 +362,12 @@ void FreescapeEngine::drawFrame() {
 	}
 
 	drawBackground();
-	if (_avoidRenderingFrames == 0) // Avoid rendering inside objects
-		_currentArea->draw(_gfx, _ticks / 10);
-	else
+	if (_avoidRenderingFrames == 0) { // Avoid rendering inside objects
+		_currentArea->draw(_gfx, _ticks / 10, _position, _cameraFront);
+		if (_currentArea->hasActiveGroups() && _ticks % 50 == 0) {
+			executeMovementConditions();
+		}
+	} else
 		_avoidRenderingFrames--;
 
 	if (_underFireFrames > 0) {
@@ -472,27 +490,6 @@ void FreescapeEngine::processInput() {
 				break;
 			case Common::KEYCODE_u:
 				rotate(180, 0);
-				break;
-			case Common::KEYCODE_q:
-				rotate(-_angleRotations[_angleRotationIndex], 0);
-				break;
-			case Common::KEYCODE_w:
-				rotate(_angleRotations[_angleRotationIndex], 0);
-				break;
-			case Common::KEYCODE_s:
-				increaseStepSize();
-				break;
-			case Common::KEYCODE_x:
-				decreaseStepSize();
-				break;
-			case Common::KEYCODE_r:
-				if (isEclipse())
-					pressedKey(Common::KEYCODE_r);
-				else
-					rise();
-				break;
-			case Common::KEYCODE_f:
-				lower();
 				break;
 			case Common::KEYCODE_n:
 				_noClipMode = !_noClipMode;
@@ -902,9 +899,10 @@ void FreescapeEngine::drawStringInSurface(const Common::String &str, int x, int 
 	if (isDOS() || isSpectrum() || isCPC() || isC64()) {
 		for (uint32 c = 0; c < ustr.size(); c++) {
 			assert(ustr[c] >= 32);
+			int position = sizeX * sizeY * (offset + ustr[c] - 32);
 			for (int j = 0; j < sizeY; j++) {
 				for (int i = 0; i < sizeX; i++) {
-					if (_font.get(sizeX * sizeY * (offset + ustr[c] - 32) + additional + j * 8 + i))
+					if (_font.get(position + additional + j * 8 + i))
 						surface->setPixel(x + 8 - i + sep * c, y + j, fontColor);
 					else
 						surface->setPixel(x + 8 - i + sep * c, y + j, backColor);
@@ -912,12 +910,15 @@ void FreescapeEngine::drawStringInSurface(const Common::String &str, int x, int 
 			}
 		}
 	} else if (isAmiga() || isAtariST()) {
+		int multiplier1 = isDriller() ? 33 : 16;
+		int multiplier2 = isDriller() ? 32 : 16;
+
 		for (uint32 c = 0; c < ustr.size(); c++) {
 			assert(ustr[c] >= 32);
-			int position = 8 * (33*(offset + ustr[c] - 32) + 1);
+			int position = 8 * (multiplier1*(offset + ustr[c] - 32) + 1);
 			for (int j = 0; j < 8; j++) {
 				for (int i = 0; i < 8; i++) {
-					if (_font.get(position + j * 32 + i))
+					if (_font.get(position + j * multiplier2 + i))
 						surface->setPixel(x + 8 - i + 8 * c, y + j, fontColor);
 					else
 						surface->setPixel(x + 8 - i + 8 * c, y + j, backColor);

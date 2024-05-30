@@ -558,6 +558,7 @@ public:
 	bool _enableCOMISong = false;
 	bool _isAmigaPALSystem = false;
 	bool _quitFromScriptCmd = false;
+	bool _isHE995 = false;
 
 	Common::Keymap *_insaneKeymap;
 
@@ -1277,6 +1278,7 @@ public:
 
 	int _screenStartStrip = 0, _screenEndStrip = 0;
 	int _screenTop = 0;
+	bool _forceBannerVirtScreen = false;
 
 	// For Mac versions of 320x200 games:
 	// these versions rendered at 640x480 without any aspect ratio correction;
@@ -1507,6 +1509,7 @@ protected:
 	int _shadowPaletteSize = 0;
 	byte _currentPalette[3 * 256];
 	byte _darkenPalette[3 * 256];
+	int _paletteChangedCounter = 1;
 
 	int _palDirtyMin = 0, _palDirtyMax = 0;
 
@@ -1614,7 +1617,7 @@ protected:
 
 	virtual bool handleNextCharsetCode(Actor *a, int *c);
 	virtual void drawSentence() {}
-	virtual void CHARSET_1();
+	virtual void displayDialog();
 	bool newLine();
 	void drawString(int a, const byte *msg);
 	virtual void fakeBidiString(byte *ltext, bool ignoreVerb, int ltextSize) const;
@@ -1821,7 +1824,7 @@ public:
 	byte VAR_ACTIVE_OBJECT2 = 0xFF;
 
 	// HE specific variables
-	byte VAR_REDRAW_ALL_ACTORS = 0xFF;		// Used in setActorRedrawFlags()
+	byte VAR_ALWAYS_REDRAW_ACTORS = 0xFF;		// Used in setActorRedrawFlags()
 	byte VAR_SKIP_RESET_TALK_ACTOR = 0xFF;	// Used in setActorCostume()
 
 	byte VAR_SOUND_CHANNEL = 0xFF;				// Used in o_startSound()
@@ -1845,6 +1848,8 @@ public:
 	byte VAR_ERROR_FLAG = 0xFF; // HE70-90
 	byte VAR_OPERATION_FAILURE = 0xFF; // HE99+
 
+	byte VAR_COLOR_BLACK = 0xFF;
+
 	// Exists both in V7 and in V72HE:
 	byte VAR_NUM_GLOBAL_OBJS = 0xFF;
 
@@ -1862,6 +1867,8 @@ public:
 
 protected:
 	void towns_drawStripToScreen(VirtScreen *vs, int dstX, int dstY, int srcX, int srcY, int w, int h);
+	void towns_fillTopLayerRect(int x1, int y1, int x2, int y2, int col);
+	void towns_swapVirtScreenArea(VirtScreen *vs, int x, int y, int w, int h);
 	void towns_clearStrip(int strip);
 #ifdef USE_RGB_COLOR
 	void towns_setPaletteFromPtr(const byte *ptr, int numcolor = -1);
@@ -1888,6 +1895,7 @@ protected:
 	int _refreshArrayPos = 0;
 	bool _refreshNeedCatchUp = false;
 	bool _enableSmoothScrolling = false;
+	bool _forceFMTownsHiResMode = false;
 	uint32 _scrollTimer = 0;
 	uint32 _scrollDestOffset = 0;
 	uint16 _scrollFeedStrips[3];
@@ -1906,6 +1914,8 @@ protected:
 	void scrollRight() { redrawBGStrip(0, 1); }
 	void towns_updateGfx() {}
 	void towns_waitForScroll(int waitForDirection, int threshold = 0) {}
+	void towns_fillTopLayerRect(int x1, int y1, int x2, int y2, int col) {}
+	void towns_swapVirtScreenArea(VirtScreen *vs, int x, int y, int w, int h) {}
 #endif // DISABLE_TOWNS_DUAL_LAYER_MODE
 };
 

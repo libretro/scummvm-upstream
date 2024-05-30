@@ -162,7 +162,7 @@ enum VirtScreenNumber {
 	kMainVirtScreen = 0,	// The 'stage'
 	kTextVirtScreen = 1,	// In V0-V3 games: the area where text is printed
 	kVerbVirtScreen = 2,	// The verb area
-	kUnkVirtScreen = 3		// ?? Not sure what this one is good for...
+	kBannerVirtScreen = 3	// The centered pause/restart/message banner area
 };
 
 /**
@@ -178,12 +178,6 @@ enum VirtScreenNumber {
  * verb area.
  * Finally, in V5 games and some V6 games, it's almost the same as in the
  * original games, except that there is no separate conversation area.
- *
- * If you now wonder what the last screen is/was good for: I am not 100% sure,
- * but it appears that it was used by the original engine to display stuff
- * like the pause message, or questions ("Do you really want to restart?").
- * It seems that it is not used at all by ScummVM, so we probably could just
- * get rid of it and save a couple kilobytes of RAM.
  *
  * Each of these virtual screens has a fixed number or id (see also
  * \ref VirtScreenNumber).
@@ -569,7 +563,7 @@ public:
 class TownsScreen {
 public:
 	enum {
-		kDirtyRectsMax = 20,
+		kDirtyRectsMax = 50,
 		kFullRedraw = (kDirtyRectsMax + 1)
 	};
 public:
@@ -578,7 +572,8 @@ public:
 
 	void setupLayer(int layer, int width, int height, int scaleW, int scaleH, int numCol, void *srcPal = 0);
 	void clearLayer(int layer);
-	void fillLayerRect(int layer, int x, int y, int w, int h, int col);
+	void fillRect(int layer, int x, int y, int w, int h, int col);
+	void swapAreaWithBuffer(int layer, int x, int y, int w, int h, byte *buffer);
 	void addDirtyRect(int x, int y, int w, int h);
 	void toggleLayers(int flags);
 	void scrollLayer(int layer, int offset, int top, int bottom, bool fast);

@@ -971,6 +971,10 @@ void CharsetRendererV3::printChar(int chr, bool ignoreCharsetMask) {
 #endif
 		)
 		drawBits1(*vs, _left + vs->xstart, drawTop, charPtr, drawTop, origWidth, origHeight);
+#ifndef DISABLE_TOWNS_DUAL_LAYER_MODE
+	else if (_vm->_game.platform == Common::kPlatformFMTowns && vs->number == kBannerVirtScreen)
+		drawBits1(*vs, _left * _vm->_textSurfaceMultiplier, drawTop * _vm->_textSurfaceMultiplier, charPtr, drawTop, origWidth, origHeight);
+#endif
 	else
 		drawBits1(_vm->_textSurface, _left * _vm->_textSurfaceMultiplier, _top * _vm->_textSurfaceMultiplier, charPtr, drawTop, origWidth, origHeight);
 
@@ -1198,7 +1202,7 @@ void CharsetRendererClassic::printChar(int chr, bool ignoreCharsetMask) {
 }
 
 void CharsetRendererClassic::printCharIntern(bool is2byte, const byte *charPtr, int origWidth, int origHeight, int width, int height, VirtScreen *vs, bool ignoreCharsetMask) {
-	byte *dstPtr;
+	byte *dstPtr = nullptr;
 	byte *back = nullptr;
 	int drawTop = _top - vs->topline;
 
@@ -1214,19 +1218,36 @@ void CharsetRendererClassic::printCharIntern(bool is2byte, const byte *charPtr, 
 			dstPtr = vs->getBackPixels(0, 0);
 		}
 
-		Common::Rect rScreen(vs->w, vs->h);
-		if (_bitsPerPixel >= 8) {
-			byte imagePalette[256];
-			memset(imagePalette, 0, sizeof(imagePalette));
-			memcpy(imagePalette, _vm->_charsetColorMap, 4);
-			Wiz::copyWizImage(dstPtr, charPtr, vs->pitch, kDstScreen, vs->w, vs->h, _left, _top, origWidth, origHeight, &rScreen, 0, imagePalette, NULL, _vm->_bytesPerPixel);
+		byte *colorLookupTable;
+		byte generalColorLookupTable[256];
+		int black = _vm->VAR_COLOR_BLACK != 0xFF ? _vm->VAR(_vm->VAR_COLOR_BLACK) : 0;
+
+		memset(generalColorLookupTable, black, sizeof(generalColorLookupTable));
+		for (int i = 0; i < 4; i++) {
+			generalColorLookupTable[i] = _vm->_charsetColorMap[i];
+		}
+		generalColorLookupTable[1] = _color;
+
+		if (_bitsPerPixel || _vm->_game.heversion < 90) {
+			colorLookupTable = generalColorLookupTable;
 		} else {
-			Wiz::copyWizImage(dstPtr, charPtr, vs->pitch, kDstScreen, vs->w, vs->h, _left, _top, origWidth, origHeight, &rScreen, 0, NULL, NULL, _vm->_bytesPerPixel);
+			colorLookupTable = nullptr;
 		}
 
-		if (_blitAlso && vs->hasTwoBuffers) {
-			Common::Rect dst(_left, _top, _left + origWidth, _top + origHeight);
-			((ScummEngine_v71he *)_vm)->restoreBackgroundHE(dst);
+		if (ignoreCharsetMask && vs->hasTwoBuffers) {
+			((ScummEngine_v71he *)_vm)->_wiz->pgDrawWarpDrawLetter(
+				(WizRawPixel *)dstPtr,
+				vs->w, vs->h,
+				charPtr, _left, drawTop, origWidth, origHeight,
+				colorLookupTable);
+
+			Common::Rect blitRect(_left, drawTop, _left + origWidth - 1, drawTop + origHeight);
+			((ScummEngine_v71he *)_vm)->backgroundToForegroundBlit(blitRect);
+		} else {
+			((ScummEngine_v71he *)_vm)->_wiz->pgDrawWarpDrawLetter((WizRawPixel *)dstPtr,
+				vs->w, vs->h,
+				charPtr, _left, drawTop, origWidth, origHeight,
+				colorLookupTable);
 		}
 #endif
 	} else {
@@ -1464,7 +1485,7 @@ void CharsetRendererTownsV3::drawBits1(Graphics::Surface &dest, int x, int y, co
 		return;
 	}
 #endif
-	bool scale2x = ((&dest == &_vm->_textSurface) && (_vm->_textSurfaceMultiplier == 2) && !(_sjisCurChar >= 256 && _vm->_useCJKMode));
+	bool scale2x = (_vm->_textSurfaceMultiplier == 2 && !(_sjisCurChar >= 256 && _vm->_useCJKMode) && (&dest == &_vm->_textSurface || &dest == &_vm->_virtscr[kBannerVirtScreen]));
 #endif
 
 	byte bits = 0;

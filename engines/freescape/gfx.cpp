@@ -432,11 +432,11 @@ bool Renderer::getRGBAtEGA(uint8 index, uint8 &r1, uint8 &g1, uint8 &b1, uint8 &
 	return true;
 }
 
-bool Renderer::getRGBAt(uint8 index, uint8 &r1, uint8 &g1, uint8 &b1, uint8 &r2, uint8 &g2, uint8 &b2, byte *&stipple) {
-	if (index == _keyColor)
+bool Renderer::getRGBAt(uint8 index, uint8 ecolor, uint8 &r1, uint8 &g1, uint8 &b1, uint8 &r2, uint8 &g2, uint8 &b2, byte *&stipple) {
+	if (index == _keyColor && ecolor == 0)
 		return false;
 
-	if (index == 0) {
+	if (index == 0 && ecolor == 0) {
 		readFromPalette(0, r1, g1, b1);
 		r2 = r1;
 		g2 = g1;
@@ -451,9 +451,14 @@ bool Renderer::getRGBAt(uint8 index, uint8 &r1, uint8 &g1, uint8 &b1, uint8 &r2,
 		} else
 			readFromPalette(index, r1, g1, b1);
 
-		r2 = r1;
-		g2 = g1;
-		b2 = b1;
+		if (ecolor > 0)
+			readFromPalette(ecolor, r2, g2, b2);
+		else {
+			r2 = r1;
+			g2 = g1;
+			b2 = b1;
+		}
+
 		return true;
 	} else if (_renderMode == Common::kRenderEGA)
 		return getRGBAtEGA(index, r1, g1, b1, r2, g2, b2);
@@ -525,7 +530,7 @@ bool Renderer::computeScreenViewport() {
 	return true;
 }
 
-void Renderer::renderPyramid(const Math::Vector3d &origin, const Math::Vector3d &size, const Common::Array<uint16> *ordinates, Common::Array<uint8> *colours, int type) {
+void Renderer::renderPyramid(const Math::Vector3d &origin, const Math::Vector3d &size, const Common::Array<float> *ordinates, Common::Array<uint8> *colours, Common::Array<uint8> *ecolours, int type) {
 	Math::Vector3d vertices[8] = { origin, origin, origin, origin, origin, origin, origin, origin };
 	switch (type) {
 	default:
@@ -603,7 +608,10 @@ void Renderer::renderPyramid(const Math::Vector3d &origin, const Math::Vector3d 
 	Common::Array<Math::Vector3d> face;
 	byte *stipple = nullptr;
 	uint8 r1, g1, b1, r2, g2, b2;
-	if (getRGBAt((*colours)[0], r1, g1, b1, r2, g2, b2, stipple)) {
+	uint color = (*colours)[0];
+	uint ecolor = ecolours ? (*ecolours)[0] : 0;
+
+	if (getRGBAt(color, ecolor, r1, g1, b1, r2, g2, b2, stipple)) {
 		setStippleData(stipple);
 		useColor(r1, g1, b1);
 
@@ -624,7 +632,10 @@ void Renderer::renderPyramid(const Math::Vector3d &origin, const Math::Vector3d 
 		face.clear();
 	}
 
-	if (getRGBAt((*colours)[1], r1, g1, b1, r2, g2, b2, stipple)) {
+	color = (*colours)[1];
+	ecolor = ecolours ? (*ecolours)[1] : 0;
+
+	if (getRGBAt(color, ecolor, r1, g1, b1, r2, g2, b2, stipple)) {
 		setStippleData(stipple);
 		useColor(r1, g1, b1);
 
@@ -643,8 +654,10 @@ void Renderer::renderPyramid(const Math::Vector3d &origin, const Math::Vector3d 
 
 		face.clear();
 	}
+	color = (*colours)[2];
+	ecolor = ecolours ? (*ecolours)[2] : 0;
 
-	if (getRGBAt((*colours)[2], r1, g1, b1, r2, g2, b2, stipple)) {
+	if (getRGBAt(color, ecolor, r1, g1, b1, r2, g2, b2, stipple)) {
 		setStippleData(stipple);
 		useColor(r1, g1, b1);
 
@@ -663,7 +676,10 @@ void Renderer::renderPyramid(const Math::Vector3d &origin, const Math::Vector3d 
 		face.clear();
 	}
 
-	if (getRGBAt((*colours)[3], r1, g1, b1, r2, g2, b2, stipple)) {
+	color = (*colours)[3];
+	ecolor = ecolours ? (*ecolours)[3] : 0;
+
+	if (getRGBAt(color, ecolor, r1, g1, b1, r2, g2, b2, stipple)) {
 		setStippleData(stipple);
 		useColor(r1, g1, b1);
 
@@ -683,7 +699,10 @@ void Renderer::renderPyramid(const Math::Vector3d &origin, const Math::Vector3d 
 		face.clear();
 	}
 
-	if (getRGBAt((*colours)[4], r1, g1, b1, r2, g2, b2, stipple)) {
+	color = (*colours)[4];
+	ecolor = ecolours ? (*ecolours)[4] : 0;
+
+	if (getRGBAt(color, ecolor, r1, g1, b1, r2, g2, b2, stipple)) {
 		setStippleData(stipple);
 		useColor(r1, g1, b1);
 
@@ -702,7 +721,10 @@ void Renderer::renderPyramid(const Math::Vector3d &origin, const Math::Vector3d 
 		face.clear();
 	}
 
-	if (getRGBAt((*colours)[5], r1, g1, b1, r2, g2, b2, stipple)) {
+	color = (*colours)[5];
+	ecolor = ecolours ? (*ecolours)[5] : 0;
+
+	if (getRGBAt(color, ecolor, r1, g1, b1, r2, g2, b2, stipple)) {
 		setStippleData(stipple);
 		useColor(r1, g1, b1);
 
@@ -720,12 +742,25 @@ void Renderer::renderPyramid(const Math::Vector3d &origin, const Math::Vector3d 
 	}
 }
 
-void Renderer::renderCube(const Math::Vector3d &origin, const Math::Vector3d &size, Common::Array<uint8> *colours) {
+void Renderer::renderCube(const Math::Vector3d &originalOrigin, const Math::Vector3d &size, Common::Array<uint8> *colours, Common::Array<uint8> *ecolours, float offset) {
+	Math::Vector3d origin = originalOrigin;
+
 	byte *stipple = nullptr;
 	uint8 r1, g1, b1, r2, g2, b2;
 	Common::Array<Math::Vector3d> face;
 
-	if (getRGBAt((*colours)[0], r1, g1, b1, r2, g2, b2, stipple)) {
+	uint color = (*colours)[0];
+	uint ecolor = ecolours ? (*ecolours)[0] : 0;
+
+	if (size.x() <= 1) {
+		origin.x() += offset;
+	} else if (size.y() <= 1) {
+		origin.y() += offset;
+	} else if (size.z() <= 1) {
+		origin.z() += offset;
+	}
+
+	if (getRGBAt(color, ecolor, r1, g1, b1, r2, g2, b2, stipple)) {
 		setStippleData(stipple);
 		useColor(r1, g1, b1);
 		face.push_back(origin);
@@ -741,7 +776,10 @@ void Renderer::renderCube(const Math::Vector3d &origin, const Math::Vector3d &si
 		}
 	}
 
-	if (getRGBAt((*colours)[1], r1, g1, b1, r2, g2, b2, stipple)) {
+	color = (*colours)[1];
+	ecolor = ecolours ? (*ecolours)[1] : 0;
+
+	if (getRGBAt(color, ecolor, r1, g1, b1, r2, g2, b2, stipple)) {
 		setStippleData(stipple);
 		useColor(r1, g1, b1);
 		face.clear();
@@ -758,7 +796,10 @@ void Renderer::renderCube(const Math::Vector3d &origin, const Math::Vector3d &si
 		}
 	}
 
-	if (getRGBAt((*colours)[2], r1, g1, b1, r2, g2, b2, stipple)) {
+	color = (*colours)[2];
+	ecolor = ecolours ? (*ecolours)[2] : 0;
+
+	if (getRGBAt(color, ecolor, r1, g1, b1, r2, g2, b2, stipple)) {
 		setStippleData(stipple);
 		useColor(r1, g1, b1);
 		face.clear();
@@ -775,7 +816,10 @@ void Renderer::renderCube(const Math::Vector3d &origin, const Math::Vector3d &si
 		}
 	}
 
-	if (getRGBAt((*colours)[3], r1, g1, b1, r2, g2, b2, stipple)) {
+	color = (*colours)[3];
+	ecolor = ecolours ? (*ecolours)[3] : 0;
+
+	if (getRGBAt(color, ecolor, r1, g1, b1, r2, g2, b2, stipple)) {
 		setStippleData(stipple);
 		useColor(r1, g1, b1);
 		face.clear();
@@ -792,7 +836,10 @@ void Renderer::renderCube(const Math::Vector3d &origin, const Math::Vector3d &si
 		}
 	}
 
-	if (getRGBAt((*colours)[4], r1, g1, b1, r2, g2, b2, stipple)) {
+	color = (*colours)[4];
+	ecolor = ecolours ? (*ecolours)[4] : 0;
+
+	if (getRGBAt(color, ecolor, r1, g1, b1, r2, g2, b2, stipple)) {
 		setStippleData(stipple);
 		useColor(r1, g1, b1);
 		face.clear();
@@ -809,7 +856,10 @@ void Renderer::renderCube(const Math::Vector3d &origin, const Math::Vector3d &si
 		}
 	}
 
-	if (getRGBAt((*colours)[5], r1, g1, b1, r2, g2, b2, stipple)) {
+	color = (*colours)[5];
+	ecolor = ecolours ? (*ecolours)[5] : 0;
+
+	if (getRGBAt(color, ecolor, r1, g1, b1, r2, g2, b2, stipple)) {
 		setStippleData(stipple);
 		useColor(r1, g1, b1);
 		face.clear();
@@ -827,9 +877,11 @@ void Renderer::renderCube(const Math::Vector3d &origin, const Math::Vector3d &si
 	}
 }
 
-void Renderer::renderRectangle(const Math::Vector3d &origin, const Math::Vector3d &originalSize, Common::Array<uint8> *colours) {
+void Renderer::renderRectangle(const Math::Vector3d &originalOrigin, const Math::Vector3d &originalSize, Common::Array<uint8> *colours, Common::Array<uint8> *ecolours, float offset) {
 
 	Math::Vector3d size = originalSize;
+	Math::Vector3d origin = originalOrigin;
+
 	if (size.x() > 0 && size.y() > 0 && size.z() > 0) {
 		/* According to https://www.shdon.com/freescape/
 		If the bounding box is has all non-zero dimensions
@@ -855,16 +907,27 @@ void Renderer::renderRectangle(const Math::Vector3d &origin, const Math::Vector3
 			error("Invalid size!");
 	}
 
-	polygonOffset(true);
-
 	float dx, dy, dz;
 	uint8 r1, g1, b1, r2, g2, b2;
 	byte *stipple = nullptr;
 	Common::Array<Math::Vector3d> vertices;
+	uint color = 0;
+	uint ecolor = 0;
+
+	if (size.x() == 0) {
+		origin.x() += offset;
+	} else if (size.y() == 0) {
+		origin.y() += offset;
+	} else if (size.z() == 0) {
+		origin.z() += offset;
+	}
+
 	for (int i = 0; i < 2; i++) {
 
-		// debug("rec color: %d", (*colours)[i]);
-		if (getRGBAt((*colours)[i], r1, g1, b1, r2, g2, b2, stipple)) {
+		color = (*colours)[i];
+		ecolor = ecolours ? (*ecolours)[i] : 0;
+
+		if (getRGBAt(color, ecolor, r1, g1, b1, r2, g2, b2, stipple)) {
 			setStippleData(stipple);
 			useColor(r1, g1, b1);
 			vertices.clear();
@@ -906,17 +969,25 @@ void Renderer::renderRectangle(const Math::Vector3d &origin, const Math::Vector3
 	polygonOffset(false);
 }
 
-void Renderer::renderPolygon(const Math::Vector3d &origin, const Math::Vector3d &size, const Common::Array<uint16> *ordinates, Common::Array<uint8> *colours) {
+void Renderer::renderPolygon(const Math::Vector3d &origin, const Math::Vector3d &size, const Common::Array<float> *originalOrdinates, Common::Array<uint8> *colours, Common::Array<uint8> *ecolours, float offset) {
+	Common::Array<float> *ordinates = new Common::Array<float>(*originalOrdinates);
+
 	uint8 r1, g1, b1, r2, g2, b2;
 	byte *stipple = nullptr;
 	if (ordinates->size() % 3 > 0 && ordinates->size() > 0)
 		error("Invalid polygon with size %f %f %f and ordinates %d", size.x(), size.y(), size.z(), ordinates->size());
 
 	Common::Array<Math::Vector3d> vertices;
-	polygonOffset(true);
 
-	if (ordinates->size() == 6) {                 // Line
-		assert(getRGBAt((*colours)[0], r1, g1, b1, r2, g2, b2, stipple)); // It will never return false?
+	uint color = 0;
+	uint ecolor = 0;
+
+	if (ordinates->size() == 6) { // Line
+		polygonOffset(true);
+		color = (*colours)[0];
+		ecolor = ecolours ? (*ecolours)[0] : 0;
+
+		assert(getRGBAt(color, ecolor, r1, g1, b1, r2, g2, b2, stipple)); // It will never return false?
 		setStippleData(stipple);
 		useColor(r1, g1, b1);
 		for (uint i = 0; i < ordinates->size(); i = i + 3)
@@ -930,7 +1001,10 @@ void Renderer::renderPolygon(const Math::Vector3d &origin, const Math::Vector3d 
 		}
 
 		vertices.clear();
-		assert(getRGBAt((*colours)[1], r1, g1, b1, r2, g2, b2, stipple)); // It will never return false?
+		color = (*colours)[1];
+		ecolor = ecolours ? (*ecolours)[1] : 0;
+
+		assert(getRGBAt(color, ecolor, r1, g1, b1, r2, g2, b2, stipple)); // It will never return false?
 		setStippleData(stipple);
 		useColor(r1, g1, b1);
 		for (int i = ordinates->size(); i > 0; i = i - 3)
@@ -942,9 +1016,29 @@ void Renderer::renderPolygon(const Math::Vector3d &origin, const Math::Vector3d 
 			renderFace(vertices);
 			useStipple(false);
 		}
-
+		polygonOffset(false);
 	} else {
-		if (getRGBAt((*colours)[0], r1, g1, b1, r2, g2, b2, stipple)) {
+		if (size.x() == 0) {
+			for (int i = 0; i < int(ordinates->size()); i++) {
+				if (i % 3 == 0)
+					(*ordinates)[i] += (offset);
+			}
+		} else if (size.y() == 0) {
+			for (int i = 0; i < int(ordinates->size()); i++) {
+				if (i % 3 == 1)
+					(*ordinates)[i] += (offset);
+			}
+		} else if (size.z() == 0) {
+			for (int i = 0; i < int(ordinates->size()); i++) {
+				if (i % 3 == 2)
+					(*ordinates)[i] += (offset);
+			}
+		}
+
+		color = (*colours)[0];
+		ecolor = ecolours ? (*ecolours)[0] : 0;
+
+		if (getRGBAt(color, ecolor, r1, g1, b1, r2, g2, b2, stipple)) {
 			setStippleData(stipple);
 			useColor(r1, g1, b1);
 			for (uint i = 0; i < ordinates->size(); i = i + 3) {
@@ -959,7 +1053,10 @@ void Renderer::renderPolygon(const Math::Vector3d &origin, const Math::Vector3d 
 			}
 		}
 		vertices.clear();
-		if (getRGBAt((*colours)[1], r1, g1, b1, r2, g2, b2, stipple)) {
+		color = (*colours)[1];
+		ecolor = ecolours ? (*ecolours)[1] : 0;
+
+		if (getRGBAt(color, ecolor, r1, g1, b1, r2, g2, b2, stipple)) {
 			setStippleData(stipple);
 			useColor(r1, g1, b1);
 			for (int i = ordinates->size(); i > 0; i = i - 3) {
@@ -976,6 +1073,7 @@ void Renderer::renderPolygon(const Math::Vector3d &origin, const Math::Vector3d 
 	}
 
 	polygonOffset(false);
+	delete(ordinates);
 }
 
 void Renderer::drawBackground(uint8 color) {
@@ -996,7 +1094,7 @@ void Renderer::drawBackground(uint8 color) {
 
 	byte *stipple = nullptr;
 
-	getRGBAt(color, r1, g1, b1, r2, g2, b2, stipple);
+	getRGBAt(color, 0, r1, g1, b1, r2, g2, b2, stipple);
 	clear(r1, g1, b1);
 }
 

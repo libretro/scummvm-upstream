@@ -52,6 +52,7 @@
  * - Adibou 3
  * - Adibou présente Cuisine
  * - Adibou présente Dessin
+ * - Adibou présente Magie
  * - Adiboud'chou a la mer
  * - Adiboud'chou sur la banquise
  * - Adiboud'chou a la campagne
@@ -61,11 +62,20 @@
  * - Goblins 3
  * - Ween: The Prophecy
  * - Bargon Attack
+ * - Le pays des Pierres Magiques
  * - Lost in Time
  * - The Bizarre Adventures of Woodruff and the Schnibble
  * - Fascination
  * - Urban Runner
  * - Bambou le sauveur de la jungle
+ * - Playtoons 1 Uncle Archibald
+ * - Playtoons 2 The Case of the Counterfeit Collaborator (Spirou)
+ * - Playtoons 3 The Secret of the Castle
+ * - Playtoons 4 The Mandarin Prince
+ * - Playtoons 5 The Stone of Wakan
+ * - Playtoons Construction Kit 1 Monsters
+ * - Playtoons Construction Kit 2 Knights
+ * - Playtoons Construction Kit 3 The Far West
  * - Geisha
  * - Once Upon A Time: Little Red Riding Hood
  * - Croustibat

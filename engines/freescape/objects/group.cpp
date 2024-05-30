@@ -55,6 +55,15 @@ Group::~Group() {
 		delete _operations[i];
 }
 
+Object *Group::duplicate() {
+	return new Group(
+		_objectID,
+		_flags,
+		_objectIds,
+		_operations
+		);
+}
+
 void Group::linkObject(Object *obj) {
 	int objectIndex = -1;
 	for (int i = 0; i < int(_objectIds.size()) ; i++) {
@@ -79,12 +88,12 @@ void Group::assemble(int index) {
 	GeometricObject *gobj = (GeometricObject *)_objects[index];
 	//gobj->makeVisible();
 	Math::Vector3d position = _operations[_step]->position;
+	Math::Vector3d offset = _origins[index] - _origins[0];
+	position = 32 * position / _scale;
 
-	if (!GeometricObject::isPolygon(gobj->getType()))
-		position = 32 * position / _scale;
-	else
-		position = position / _scale;
-	gobj->offsetOrigin(position + _origins[index] - _origins[0]);
+	debugC(1, kFreescapeDebugCode, "Group %d: Assembling object %d originally at %f, %f, %f", _objectID, gobj->getObjectID(), gobj->getOrigin().x(), gobj->getOrigin().y(), gobj->getOrigin().z());
+	gobj->offsetOrigin(position + offset);
+	debugC(1, kFreescapeDebugCode, "Group %d: Assembling object %d originally at %f, %f, %f", _objectID, gobj->getObjectID(), gobj->getOrigin().x(), gobj->getOrigin().y(), gobj->getOrigin().z());
 }
 
 void Group::run() {
@@ -92,9 +101,11 @@ void Group::run() {
 		return;
 
 	int opcode = _operations[_step]->opcode;
+	debugC(1, kFreescapeDebugCode, "Executing opcode 0x%x at step %d", opcode, _step);
 	if (opcode == 0x80 || opcode == 0xff) {
 		reset();
 	} else if (opcode == 0x01) {
+		debugC(1, kFreescapeDebugCode, "Executing group condition %s", _operations[_step]->conditionSource.c_str());
 		g_freescape->executeCode(_operations[_step]->condition, false, true, false, false);
 	} else if (opcode == 0x6e) {
 		uint32 groupSize = _objects.size();
@@ -124,12 +135,12 @@ void Group::reset() {
 		if (GeometricObject::isPolygon(_objects[i]->getType())) {
 			gobj->setOrigin(_origins[i]);
 			gobj->restoreOrdinates();
-			gobj->makeInvisible();
+			//gobj->makeInvisible();
 		}
 	}
 }
 
-void Group::draw(Renderer *gfx) {
+void Group::draw(Renderer *gfx, float offset) {
 	uint32 groupSize = _objects.size();
 	for (uint32 i = 0; i < groupSize ; i++) {
 		if (!_objects[i]->isDestroyed() && !_objects[i]->isInvisible())
@@ -141,6 +152,7 @@ void Group::step() {
 	if (_finished)
 		return;
 
+	debugC(1, kFreescapeDebugCode, "Stepping group %d", _objectID);
 	if (_step < int(_operations.size() - 1))
 		_step++;
 	else {

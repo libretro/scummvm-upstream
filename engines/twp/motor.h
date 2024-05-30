@@ -258,6 +258,7 @@ protected:
 	int onTalkieId(int id);
 	int loadActorSpeech(const Common::String &name);
 	void setDuration(const Common::String &text);
+	float getTalkSpeed() const;
 
 protected:
 	Common::SharedPtr<Object> _actor;
@@ -316,6 +317,19 @@ private:
 	Node *_node = nullptr;
 	float _amount = 0.f;
 	float _jiggleTime = 0.f;
+};
+
+class MoveCursorTo : public Motor {
+public:
+	MoveCursorTo(const Math::Vector2d &pos, float time);
+	virtual ~MoveCursorTo() {}
+
+private:
+	virtual void onUpdate(float elapsed) override;
+
+private:
+	Tween<Math::Vector2d> _tween;
+	Math::Vector2d _pos;
 };
 
 } // namespace Twp

@@ -464,6 +464,23 @@ static const Nancy::NancyGameDescription gameDescriptions[] = {
 		},
 		Nancy::kGameTypeNancy6
 	},
+	{
+		{
+			"nancy6", nullptr,
+			{
+				{ "data1.hdr", 0, "9c8b51b33a652b2faeec0d952bd4675a", 298551 },
+				{ "data1.cab", 0, "f9aea73829703169a5200c7c9def06b0", 4470086 },
+				{ "data2.cab", 0, "6b25be9f6aab19d5f6f95d45b47ea73d", 206382676 },
+				{ "is:data1.cab:ciftree.dat", 0, "A:a97b848651fdcf38f5cad7092d98e4a1", 28888006 },
+				AD_LISTEND
+			},
+			Common::EN_ANY,
+			Common::kPlatformWindows,
+			ADGF_UNSTABLE | ADGF_DROPPLATFORM | Nancy::GF_COMPRESSED,
+			NANCY6_7_GUIOPTIONS
+		},
+		Nancy::kGameTypeNancy6
+	},
 	{ // MD5 by fracturehill
 		{
 			"nancy6", nullptr,
@@ -527,6 +544,23 @@ static const Nancy::NancyGameDescription gameDescriptions[] = {
 				{ "data1.hdr", 0, "f58175e4647e635e96d73dde49deb871", 335485 },
 				{ "data1.cab", 0, "6b48a626a8c6c12c9d7f68ee6c80212a", 4693602 },
 				{ "data2.cab", 0, "0aec46d4a59ea0279228ab25bfb3fcd5", 144613827 },
+				{ "is:data1.cab:ciftree.dat", 0, "A:e49e6f56a47c363e2651bd19a70ff557", 55835579 },
+				AD_LISTEND
+			},
+			Common::EN_ANY,
+			Common::kPlatformWindows,
+			ADGF_UNSTABLE | ADGF_DROPPLATFORM | Nancy::GF_COMPRESSED,
+			NANCY6_7_GUIOPTIONS
+		},
+		Nancy::kGameTypeNancy7
+	},
+	{
+		{
+			"nancy7", nullptr,
+			{
+				{ "data1.hdr", 0, "5a46f9e4ca159c86081b6c72020be14a", 335873 },
+				{ "data1.cab", 0, "09af417c0e8d8456596b6240a4fe7e64", 4693602 },
+				{ "data2.cab", 0, "8bc09053961e51f7d0a0b2cac9ccecee", 144617595 },
 				{ "is:data1.cab:ciftree.dat", 0, "A:e49e6f56a47c363e2651bd19a70ff557", 55835579 },
 				AD_LISTEND
 			},

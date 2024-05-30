@@ -53,9 +53,16 @@ MODULE_OBJS = \
 	lingo/lingo-preprocessor.o \
 	lingo/lingo-the.o \
 	lingo/lingo-utils.o \
+	lingo/lingodec/ast.o \
+	lingo/lingodec/context.o \
+	lingo/lingodec/codewritervisitor.o \
+	lingo/lingodec/handler.o \
+	lingo/lingodec/names.o \
+	lingo/lingodec/script.o \
 	lingo/xlibs/aiff.o \
 	lingo/xlibs/applecdxobj.o \
 	lingo/xlibs/askuser.o \
+	lingo/xlibs/backdrop.o \
 	lingo/xlibs/barakeobj.o \
 	lingo/xlibs/batqt.o \
 	lingo/xlibs/blitpict.o \
@@ -149,8 +156,14 @@ MODULE_OBJS = \
 	lingo/xlibs/yasix.o \
 	lingo/xtras/scrnutil.o
 
+ifdef USE_IMGUI
+MODULE_OBJS += \
+	debugtools.o \
+
+endif
+
 # HACK: Skip this when including the file for detection objects.
-ifeq "$(USE_RULES)" "1"
+ifeq "$(LOAD_RULES_MK)" "1"
 director-grammar:
 	`brew --prefix flex`/bin/flex engines/director/lingo/lingo-lex.l
 	`brew --prefix bison`/bin/bison -dv engines/director/lingo/lingo-gr.y

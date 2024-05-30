@@ -91,6 +91,8 @@ void EclipseEngine::loadAssets() {
 	//_noEnergyMessage = _messagesList[16];
 	_fallenMessage = _messagesList[3];
 	_crushedMessage = _messagesList[2];
+	_areaMap[1]->addFloor();
+	_areaMap[51]->addFloor();
 }
 
 bool EclipseEngine::checkIfGameEnded() {
@@ -346,7 +348,22 @@ void EclipseEngine::drawInfoMenu() {
 }
 
 void EclipseEngine::pressedKey(const int keycode) {
-	if (keycode == Common::KEYCODE_r) {
+	if (keycode == Common::KEYCODE_q) {
+		rotate(-_angleRotations[_angleRotationIndex], 0);
+	} else if (keycode == Common::KEYCODE_w) {
+		rotate(_angleRotations[_angleRotationIndex], 0);
+	} else if (keycode == Common::KEYCODE_s) {
+		increaseStepSize();
+	} else if (keycode ==  Common::KEYCODE_x) {
+		decreaseStepSize();
+	} else if (keycode == Common::KEYCODE_h) {
+		if (_playerHeightNumber == 0)
+			rise();
+		else if (_playerHeightNumber == 1)
+			lower();
+		else
+			error("Invalid player height index: %d", _playerHeightNumber);
+	} else if (keycode == Common::KEYCODE_r) {
 		if (_currentArea->getAreaID() == 1) {
 			playSoundFx(3, false);
 			if (_temporaryMessages.empty())
@@ -357,6 +374,9 @@ void EclipseEngine::pressedKey(const int keycode) {
 				insertTemporaryMessage(_messagesList[7], _countdown - 2);
 			_countdown = _countdown - 5;
 		}
+	} else if (keycode == Common::KEYCODE_f) {
+		_pitch = 0;
+		updateCamera();
 	}
 }
 

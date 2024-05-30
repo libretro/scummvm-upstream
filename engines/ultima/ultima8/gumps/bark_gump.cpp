@@ -26,6 +26,8 @@
 #include "ultima/ultima8/kernel/kernel.h"
 #include "ultima/ultima8/audio/audio_process.h"
 #include "ultima/ultima8/world/get_object.h"
+#include "ultima/ultima8/world/item.h"
+#include "ultima/ultima8/ultima8.h"
 
 namespace Ultima {
 namespace Ultima8 {
@@ -76,6 +78,11 @@ int BarkGump::dialogFontForActor(uint16 actor) {
 void BarkGump::InitGump(Gump *newparent, bool take_focus) {
 	int fontnum = dialogFontForActor(_owner);
 
+	//.Set a reasonable minimum speed for text speed when not in stasis
+	if (_talkSpeed < 10 && !Ultima8Engine::get_instance()->isAvatarInStasis()) {
+		_talkSpeed = 10;
+	}
+
 	// This is a hack. We init the gump twice...
 	ItemRelativeGump::InitGump(newparent, take_focus);
 
@@ -108,6 +115,15 @@ void BarkGump::InitGump(Gump *newparent, bool take_focus) {
 
 	// Wait with ItemRelativeGump initialization until we calculated our size.
 	ItemRelativeGump::InitGump(newparent, take_focus);
+}
+
+
+void BarkGump::Close(bool no_del) {
+	Item *item = getItem(_owner);
+	if (item)
+		item->clearBark();
+
+	ItemRelativeGump::Close(no_del);
 }
 
 bool BarkGump::NextText() {

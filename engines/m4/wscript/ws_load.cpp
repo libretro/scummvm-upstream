@@ -533,7 +533,7 @@ M4sprite *CreateSprite(MemHandle resourceHandle, int32 handleOffset, int32 index
 
 	// Set the stream boolean
 	if (streamSeries) {
-		if (myCelSource[CELS_STREAM])
+		if (FROM_LE_32(myCelSource[CELS_STREAM]))
 			*streamSeries = true;
 		else
 			*streamSeries = false;
@@ -546,7 +546,7 @@ M4sprite *CreateSprite(MemHandle resourceHandle, int32 handleOffset, int32 index
 	mySprite->yOffset = FROM_LE_32(myCelSource[CELS_Y]);
 	mySprite->w = FROM_LE_32(myCelSource[CELS_W]);
 	mySprite->h = FROM_LE_32(myCelSource[CELS_H]);
-	mySprite->encoding = (uint8)myCelSource[CELS_COMP];
+	mySprite->encoding = (uint8)FROM_LE_32(myCelSource[CELS_COMP]);
 	mySprite->data = (uint8 *)&myCelSource[CELS_DATA];
 
 	if ((mySprite->w > 0) && (mySprite->h > 0)) {
@@ -841,7 +841,6 @@ static int32 ProcessCELS(const char * /*assetName*/, char **parseAssetPtr, char 
 	byteSwap = false;
 	// If the chunk is PAL info - celsType == CELS_LAP_ indicates the chunk needs to be byte-swapped.
 	if ((*celsType == CELS__PAL) || (*celsType == CELS_LAP_)) {
-
 		// Read the chunk size, and the number of palette colors, and byte-swap if necessary
 		if (!GetNextint32(parseAssetPtr, endOfAssetBlock, celsSize)) {
 			ws_LogErrorMsg(FL, "Unable to read the SS PAL chunk size.");
@@ -892,10 +891,11 @@ static int32 ProcessCELS(const char * /*assetName*/, char **parseAssetPtr, char 
 		if (myPalette) {
 			tempPtr = (int32 *)(&palData[1]);
 			for (i = 0; i < *numColors; i++) {
-				j = (*tempPtr & 0xff000000) >> 24;
-				myPalette[j].r = (*tempPtr & 0x00ff0000) >> 14;
-				myPalette[j].g = (*tempPtr & 0x0000ff00) >> 6;
-				myPalette[j].b = (*tempPtr & 0x000000ff) << 2;
+				uint rgb = READ_LE_UINT32(tempPtr);
+				j = (rgb & 0xff000000) >> 24;
+				myPalette[j].r = (rgb & 0x00ff0000) >> 14;
+				myPalette[j].g = (rgb & 0x0000ff00) >> 6;
+				myPalette[j].b = (rgb & 0x000000ff) << 2;
 				tempPtr++;
 			}
 		}
@@ -944,7 +944,6 @@ static int32 ProcessCELS(const char * /*assetName*/, char **parseAssetPtr, char 
 
 	// Check to see if we need to byte-swap the header information.
 	if (byteSwap) {
-
 		// The chunk header begins at (*data)[2]
 		// byte-swap the entire chunk header
 		tempPtr = &(data[2]);
@@ -953,7 +952,7 @@ static int32 ProcessCELS(const char * /*assetName*/, char **parseAssetPtr, char 
 			tempPtr++;
 		}
 
-		if ((int32)(data[CELS_COUNT]) <= 0) {
+		if (FROM_LE_32(data[CELS_COUNT]) <= 0) {
 			ws_LogErrorMsg(FL, "SS info has been corrupted");
 			return -1;
 		}
@@ -962,7 +961,7 @@ static int32 ProcessCELS(const char * /*assetName*/, char **parseAssetPtr, char 
 		// offsets into the chunk, which indicate where each individual sprite can be found.
 		offsetPtr = &(data[CELS_OFFSETS]);
 		tempPtr = offsetPtr;
-		for (i = 0; i < data[CELS_COUNT]; i++) {
+		for (i = 0; i < (int32)FROM_LE_32(data[CELS_COUNT]); i++) {
 			*tempPtr = SWAP_INT32(*tempPtr);
 			tempPtr++;
 		}
@@ -970,8 +969,7 @@ static int32 ProcessCELS(const char * /*assetName*/, char **parseAssetPtr, char 
 		// dataPtr points to the beginning of the block which is a concatenation of
 		// all the sprites.  Loop through and byteswap each individual sprite header.
 		dataPtr = tempPtr;
-		for (i = 0; i < data[CELS_COUNT]; i++) {
-
+		for (i = 0; i < (int32)FROM_LE_32(data[CELS_COUNT]); i++) {
 			// The beginning of sprite i is the dataPtr + the number of bytes in the offset table
 			tempPtr = (int32 *)((intptr)dataPtr + offsetPtr[i]);
 
@@ -998,10 +996,11 @@ static void RestoreSSPaletteInfo(RGB8 *myPalette, int32 *palPtr) {
 	if (myPalette) {
 		tempPtr = (uint32 *)(&palPtr[1]);
 		for (i = 0; i < FROM_LE_32(palPtr[0]); i++) {
-			j = (*tempPtr & 0xff000000) >> 24;
-			myPalette[j].r = (FROM_LE_32(*tempPtr) & 0x00ff0000) >> 14;
-			myPalette[j].g = (FROM_LE_32(*tempPtr) & 0x0000ff00) >> 6;
-			myPalette[j].b = (FROM_LE_32(*tempPtr) & 0x000000ff) << 2;
+			uint32 rgb = READ_LE_UINT32(tempPtr);
+			j = (rgb & 0xff000000) >> 24;
+			myPalette[j].r = (rgb & 0x00ff0000) >> 14;
+			myPalette[j].g = (rgb & 0x0000ff00) >> 6;
+			myPalette[j].b = (rgb & 0x000000ff) << 2;
 			tempPtr++;
 		}
 	}
@@ -1218,7 +1217,7 @@ int32 GetWSAssetCELCount(uint32 hash) {
 
 	// Find and return the number of sprites in the SS
 	celsPtr = (uint32 *)((intptr)*(_GWS(globalCELSHandles)[hash]) + (uint32)(_GWS(globalCELSoffsets)[hash]));
-	return celsPtr[CELS_COUNT];
+	return FROM_LE_32(celsPtr[CELS_COUNT]);
 }
 
 
@@ -1245,7 +1244,7 @@ int32 GetWSAssetCELFrameRate(uint32 hash) {
 
 	// Find and return the frame rate for the SS
 	celsPtr = (uint32 *)((intptr)*(_GWS(globalCELSHandles)[hash]) + (uint32)(_GWS(globalCELSoffsets)[hash]));
-	return celsPtr[CELS_FRAME_RATE];
+	return FROM_LE_32(celsPtr[CELS_FRAME_RATE]);
 }
 
 
@@ -1272,7 +1271,7 @@ int32 GetWSAssetCELPixSpeed(uint32 hash) {
 
 	// Find and return the pix speed for the SS
 	celsPtr = (uint32 *)((intptr)*(_GWS(globalCELSHandles)[hash]) + (uint32)(_GWS(globalCELSoffsets)[hash]));
-	return celsPtr[CELS_PIX_SPEED];
+	return FROM_LE_32(celsPtr[CELS_PIX_SPEED]);
 }
 
 int32 ws_get_sprite_width(uint32 hash, int32 index) {
@@ -1301,7 +1300,7 @@ int32 ws_get_sprite_width(uint32 hash, int32 index) {
 	celsPtr = (uint32 *)((intptr)*(_GWS(globalCELSHandles)[hash]) + (uint32)(_GWS(globalCELSoffsets)[hash]));
 
 	// Check that the index into the series requested is within a valid range
-	numCels = celsPtr[CELS_COUNT];
+	numCels = FROM_LE_32(celsPtr[CELS_COUNT]);
 	if (index >= numCels) {
 		ws_LogErrorMsg(FL, "ws_get_sprite_width: Sprite index out of range - max index: %d, requested index: %d, hash: %d",
 			numCels - 1, index, hash);
@@ -1315,9 +1314,9 @@ int32 ws_get_sprite_width(uint32 hash, int32 index) {
 	data = &celsPtr[CELS_OFFSETS + numCels];
 
 	// Find the sprite data for the specific sprite in the series
-	myCelSource = (uint32 *)((intptr)data + offsets[index]);
+	myCelSource = (uint32 *)((intptr)data + FROM_LE_32(offsets[index]));
 
-	return myCelSource[CELS_W];
+	return FROM_LE_32(myCelSource[CELS_W]);
 }
 
 int32 ws_get_sprite_height(uint32 hash, int32 index) {
@@ -1346,7 +1345,7 @@ int32 ws_get_sprite_height(uint32 hash, int32 index) {
 	celsPtr = (uint32 *)((intptr)*(_GWS(globalCELSHandles)[hash]) + (uint32)(_GWS(globalCELSoffsets)[hash]));
 
 	// Check that the index into the series requested is within a valid range
-	numCels = celsPtr[CELS_COUNT];
+	numCels = FROM_LE_32(celsPtr[CELS_COUNT]);
 	if (index >= numCels) {
 		ws_LogErrorMsg(FL, "ws_get_sprite_height: Sprite index out of range - max index: %d, requested index: %d, hash: %d",
 			numCels - 1, index, hash);
@@ -1360,9 +1359,9 @@ int32 ws_get_sprite_height(uint32 hash, int32 index) {
 	data = &celsPtr[CELS_OFFSETS + numCels];
 
 	// Find the sprite data for the specific sprite in the series
-	myCelSource = (uint32 *)((intptr)data + offsets[index]);
+	myCelSource = (uint32 *)((intptr)data + FROM_LE_32(offsets[index]));
 
-	return myCelSource[CELS_H];
+	return FROM_LE_32(myCelSource[CELS_H]);
 }
 
 MemHandle ws_GetSEQU(uint32 hash, int32 *numLocalVars, int32 *offset) {
@@ -1507,7 +1506,6 @@ static int32 GetSSHeaderInfo(SysFile *sysFile, uint32 **data, RGB8 *myPalette) {
 	uint32 *tempPtr, i, j, header, format;
 	int32 numCels, dataOffset;
 	bool byteSwap;
-	void *handlebuffer;
 
 	if (!sysFile) {
 		ws_LogErrorMsg(FL, "nullptr FILE POINTER given.");
@@ -1515,16 +1513,8 @@ static int32 GetSSHeaderInfo(SysFile *sysFile, uint32 **data, RGB8 *myPalette) {
 	}
 
 	// Read in the series header and the format number
-	handlebuffer = &header;
-	if (!(*sysFile).read(&handlebuffer, 4)) {
-		ws_LogErrorMsg(FL, "Unable to read series header.");
-		return -1;
-	}
-	handlebuffer = &format;
-	if (!(*sysFile).read(&handlebuffer, 4)) {
-		ws_LogErrorMsg(FL, "Unable to read series format.");
-		return -1;
-	}
+	header = sysFile->readUint32LE();
+	format = sysFile->readUint32LE();
 
 	// Make sure the header is "M4SS", and that the format is not antique
 	if (header == HEAD_SS4M) {
@@ -1539,26 +1529,14 @@ static int32 GetSSHeaderInfo(SysFile *sysFile, uint32 **data, RGB8 *myPalette) {
 	}
 
 	// Read in the SS chunk type - either PAL or SS info
-	handlebuffer = &celsType;
-	if (!(*sysFile).read(&handlebuffer, 4)) {
-		ws_LogErrorMsg(FL, "Unable to read series chunk type.");
-		return -1;
-	}
+	celsType = sysFile->readUint32LE();
 
 	if ((celsType == CELS__PAL) || (celsType == CELS_LAP_)) {
 		// PAL info, read in the size of the PAL chunk
-		handlebuffer = &celsSize;
-		if (!(*sysFile).read(&handlebuffer, 4)) {
-			ws_LogErrorMsg(FL, "Unable to read series chunk size.");
-			return -1;
-		}
+		celsSize = sysFile->readUint32LE();
 
 		// Now read in the number of colors to be inserted into the PAL
-		handlebuffer = &numColors;
-		if (!(*sysFile).read(&handlebuffer, 4)) {
-			ws_LogErrorMsg(FL, "Unable to read number of colors in PAL chunk.");
-			return -1;
-		}
+		numColors = sysFile->readUint32LE();
 
 		// Make sure the info is in the correct format (swap between Motorola and Intel formats)
 		if (celsType == CELS_LAP_) {
@@ -1577,11 +1555,9 @@ static int32 GetSSHeaderInfo(SysFile *sysFile, uint32 **data, RGB8 *myPalette) {
 			}
 
 			// Read in the color info into a temp buffer
-			handlebuffer = myColors;
-			if (!(*sysFile).read(&handlebuffer, numColors << 2)) {
-				ws_LogErrorMsg(FL, "Failed to read in the PAL color info.");
-				return -1;
-			}
+			for (i = 0; i < numColors; ++i)
+				myColors[i] = sysFile->readUint32LE();
+
 
 			// If the chunk is in the wrong format, byte-swap the entire chunk
 			// note: we do this because we want the data stored in nrgb format
@@ -1612,11 +1588,7 @@ static int32 GetSSHeaderInfo(SysFile *sysFile, uint32 **data, RGB8 *myPalette) {
 		}
 
 		// Read in the next chunk type
-		handlebuffer = &celsType;
-		if (!(*sysFile).read(&handlebuffer, 4)) {
-			ws_LogErrorMsg(FL, "Failed to read in series chunk type.");
-			return -1;
-		}
+		celsType = sysFile->readUint32LE();
 	}
 
 	// Make sure the chunk type is Sprite Series info
@@ -1626,11 +1598,7 @@ static int32 GetSSHeaderInfo(SysFile *sysFile, uint32 **data, RGB8 *myPalette) {
 	}
 
 	// Read in the size of the entire chunk
-	handlebuffer = &celsSize;
-	if (!(*sysFile).read(&handlebuffer, 4)) {
-		ws_LogErrorMsg(FL, "Failed to read in series chunk size.");
-		return -1;
-	}
+	celsSize = sysFile->readUint32LE();
 
 	// If the chunk is the wrong format, byte-swap (between motorola and intel formats)
 	if (celsType == CELS_SS__) {
@@ -1645,11 +1613,7 @@ static int32 GetSSHeaderInfo(SysFile *sysFile, uint32 **data, RGB8 *myPalette) {
 	}
 
 	// Read how many sprites are in the series
-	handlebuffer = &numCels;
-	if (!(*sysFile).read(&handlebuffer, 4)) {
-		ws_LogErrorMsg(FL, "Failed to read the number of sprites in the series.");
-		return -1;
-	}
+	numCels = sysFile->readUint32LE();
 
 	// Again, byte-swap if the chunk is in the wrong format
 	if (celsType == CELS_SS__) {
@@ -1670,11 +1634,8 @@ static int32 GetSSHeaderInfo(SysFile *sysFile, uint32 **data, RGB8 *myPalette) {
 
 	// Read in the series header and the sprite offset table
 	// Since we already read in celsType and celsSize, SS_HEAD_SIZE-2
-	handlebuffer = &((*data)[2]);
-	if (!(*sysFile).read(&handlebuffer, (SS_HEAD_SIZE + numCels - 2) << 2)) {
-		ws_LogErrorMsg(FL, "Failed to read the series header and the sprite offset table.");
-		return -1;
-	}
+	for (i = 0; i < SS_HEAD_SIZE + (uint)numCels - 2; ++i)
+		(*data)[2 + i] = sysFile->readUint32LE();
 
 	// Set the celsType and the celsSize
 	(*data)[0] = celsType;
@@ -1733,6 +1694,7 @@ bool ws_OpenSSstream(SysFile *sysFile, Anim8 *anim8) {
 	// For all but the last frame, the frame size is the difference in offset values
 	for (i = 0; i < numSprites - 1; i++) {
 		offsets[i] = offsets[i + 1] - offsets[i];
+
 		if (offsets[i] > maxFrameSize) {
 			maxFrameSize = offsets[i];
 			obesest_frame = i;
@@ -1740,7 +1702,10 @@ bool ws_OpenSSstream(SysFile *sysFile, Anim8 *anim8) {
 	}
 
 	// For the last sprite we take the entire chunk size - the chunk header - the offset for that sprite
-	offsets[numSprites - 1] = celsPtr[CELS_SRC_SIZE] - ((SS_HEAD_SIZE + celsPtr[CELS_COUNT]) << 2) - offsets[numSprites - 1];
+	offsets[numSprites - 1] = celsPtr[CELS_SRC_SIZE] -
+		((SS_HEAD_SIZE + celsPtr[CELS_COUNT]) << 2) -
+		offsets[numSprites - 1];
+
 	if (offsets[numSprites - 1] > maxFrameSize) {
 		maxFrameSize = offsets[numSprites - 1];
 		obesest_frame = numSprites - 1;
@@ -1815,7 +1780,8 @@ bool ws_GetNextSSstreamCel(Anim8 *anim8) {
 	}
 
 	// Read the next sprite from the stream.  Note the offset table was converted to absolute size when the stream was opened.
-	if (f_stream_Read((strmRequest *)myCCB->myStream, (uint8 **)(&myCCB->streamSpriteSource), offsets[frameNum]) < (int)offsets[frameNum]) {
+	if (f_stream_Read((strmRequest *)myCCB->myStream, (uint8 **)(&myCCB->streamSpriteSource), offsets[frameNum])
+			< (int32)offsets[frameNum]) {
 		ws_LogErrorMsg(FL, "Unable to read the next stream frame");
 		return false;
 	}
@@ -1829,15 +1795,12 @@ bool ws_GetNextSSstreamCel(Anim8 *anim8) {
 	myCelSource = myCCB->streamSpriteSource;
 	mySprite = myCCB->source;
 
-	mySprite->xOffset = (int32)convert_intel32((uint32)myCelSource[CELS_X]);
-	mySprite->yOffset = (int32)convert_intel32((uint32)myCelSource[CELS_Y]);
-	mySprite->w = (int32)convert_intel32((uint32)myCelSource[CELS_W]);
-	mySprite->h = (int32)convert_intel32((uint32)myCelSource[CELS_H]);
+	mySprite->xOffset = FROM_LE_32(myCelSource[CELS_X]);
+	mySprite->yOffset = FROM_LE_32(myCelSource[CELS_Y]);
+	mySprite->w = FROM_LE_32(myCelSource[CELS_W]);
+	mySprite->h = FROM_LE_32(myCelSource[CELS_H]);
 
-	{
-		uint32 temp = (uint8)myCelSource[CELS_COMP];
-		mySprite->encoding = (uint8)convert_intel32(temp);
-	}
+	mySprite->encoding = (uint8)FROM_LE_32(myCelSource[CELS_COMP]);
 
 	mySprite->data = (uint8 *)&myCelSource[CELS_DATA];
 

@@ -205,6 +205,15 @@ protected:
 
 private:
 	void toggleFullScreen();
+
+#if defined(USE_IMGUI) && SDL_VERSION_ATLEAST(2, 0, 0)
+public:
+	void setImGuiCallbacks(const ImGuiCallbacks &callbacks) override { _callbacks = callbacks; }
+
+protected:
+	ImGuiCallbacks _callbacks;
+#endif
+
 };
 
 #endif

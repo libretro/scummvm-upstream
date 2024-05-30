@@ -60,6 +60,118 @@ namespace Twp {
 
 TwpEngine *g_twp;
 
+struct GetNoun {
+	GetNoun(int verbId, Common::SharedPtr<Object> &obj) : _verbId(verbId), _noun(obj) {
+		_noun = nullptr;
+	}
+
+	bool operator()(Common::SharedPtr<Object> obj) {
+		if (((_verbId == VERB_TALKTO) || (_verbId == VERB_WALKTO) || !g_twp->_resManager->isActor(obj->getId())) && (obj->_node->getZSort() <= _zOrder)) {
+			_noun = obj;
+			_zOrder = obj->_node->getZSort();
+		}
+		return false;
+	}
+
+public:
+	Common::SharedPtr<Object> &_noun;
+	int _zOrder = INT_MAX;
+	const int _verbId;
+};
+
+struct GetUseNoun2 {
+	explicit GetUseNoun2(Common::SharedPtr<Object> &obj) : _noun2(obj) {
+		_noun2 = nullptr;
+	}
+
+	bool operator()(Common::SharedPtr<Object> obj) {
+		if (obj->_node->getZSort() <= _zOrder) {
+			if ((obj != g_twp->_actor) && (g_twp->_noun2 != obj)) {
+				_noun2 = obj;
+				_zOrder = obj->_node->getZSort();
+			}
+		}
+		return false;
+	}
+
+public:
+	Common::SharedPtr<Object> &_noun2;
+	int _zOrder = INT_MAX;
+};
+
+struct GetGiveableNoun2 {
+	explicit GetGiveableNoun2(Common::SharedPtr<Object> &obj) : _noun2(obj) {
+		_noun2 = nullptr;
+	}
+
+	bool operator()(Common::SharedPtr<Object> obj) {
+		if ((obj != g_twp->_actor) && (obj->getFlags() & GIVEABLE) && (g_twp->_noun2 != obj)) {
+			_noun2 = obj;
+			return true;
+		}
+		return false;
+	}
+
+public:
+	Common::SharedPtr<Object> &_noun2;
+};
+
+struct InInventory {
+	explicit InInventory(Common::SharedPtr<Object> &obj) : _obj(obj) { _obj = nullptr; }
+	bool operator()(Common::SharedPtr<Object> obj) {
+		if (obj->inInventory()) {
+			_obj = obj;
+			return true;
+		}
+		return false;
+	}
+
+public:
+	Common::SharedPtr<Object> &_obj;
+};
+
+typedef struct ObjPos {
+	ObjPos(Common::SharedPtr<Object> obj, const Math::Vector2d &pos, float distance, int index) : _obj(obj), _pos(pos), _distance(distance), _index(index) {}
+	float _distance = 0.f;
+	Math::Vector2d _pos;
+	Common::SharedPtr<Object> _obj;
+	int _index;
+} ObjPos;
+
+struct ObjPosComparer {
+	bool operator()(const ObjPos &x, const ObjPos &y) const {
+		return x._distance < y._distance;
+	}
+};
+
+struct GetByZOrder {
+	explicit GetByZOrder(Common::SharedPtr<Object> &result) : _result(result) {
+		result = nullptr;
+	}
+
+	bool operator()(Common::SharedPtr<Object> obj) {
+		if (obj->_node->getZSort() <= _zOrder) {
+			if (!g_twp->_resManager->isActor(obj->getId()) || !obj->_key.empty()) {
+				_result = obj;
+				_zOrder = obj->_node->getZSort();
+			}
+		}
+		return false;
+	}
+
+public:
+	Common::SharedPtr<Object> &_result;
+
+private:
+	int _zOrder = INT_MAX;
+};
+
+struct DefineObjectParams {
+	HSQUIRRELVM v;
+	bool pseudo;
+	Common::SharedPtr<Room> room;
+};
+
 TwpEngine::TwpEngine(OSystem *syst, const TwpGameDescription *gameDesc)
 	: Engine(syst),
 	  _gameDescription(gameDesc),
@@ -98,23 +210,23 @@ TwpEngine::TwpEngine(OSystem *syst, const TwpGameDescription *gameDesc)
 }
 
 TwpEngine::~TwpEngine() {
-#ifdef USE_IMGUI
-	onImGuiCleanup();
-#endif
-
 	_mixer->stopAll();
 }
 
-Math::Vector2d TwpEngine::winToScreen(const Math::Vector2d &pos) {
+Math::Vector2d TwpEngine::winToScreen(const Math::Vector2d &pos) const {
 	return Math::Vector2d(pos.getX(), SCREEN_HEIGHT - pos.getY());
 }
 
-Math::Vector2d TwpEngine::roomToScreen(const Math::Vector2d &pos) {
+Math::Vector2d TwpEngine::screenToWin(const Math::Vector2d &pos) const {
+	return Math::Vector2d(pos.getX(), SCREEN_HEIGHT - pos.getY());
+}
+
+Math::Vector2d TwpEngine::roomToScreen(const Math::Vector2d &pos) const {
 	Math::Vector2d screenSize = _room->getScreenSize();
 	return Math::Vector2d(SCREEN_WIDTH, SCREEN_HEIGHT) * (pos - _gfx.cameraPos()) / screenSize;
 }
 
-Math::Vector2d TwpEngine::screenToRoom(const Math::Vector2d &pos) {
+Math::Vector2d TwpEngine::screenToRoom(const Math::Vector2d &pos) const {
 	Math::Vector2d screenSize = _room->getScreenSize();
 	return (pos * screenSize) / Math::Vector2d(SCREEN_WIDTH, SCREEN_HEIGHT) + _gfx.cameraPos();
 }
@@ -255,7 +367,7 @@ void TwpEngine::clickedAt(const Math::Vector2d &scrPos) {
 				cancelSentence(_actor);
 				if (_actor->_room == _room)
 					Object::walk(_actor, roomPos);
-				_hud->selectVerb(_hud->actorSlot(_actor)->verbs[0]);
+				_hud->selectVerb(_hud->actorSlot(_actor)->verbSlots[0]._verb);
 				_holdToMove = true;
 			}
 
@@ -326,20 +438,6 @@ void objsAt(Math::Vector2d pos, TFunc func) {
 	}
 }
 
-struct InInventory {
-	explicit InInventory(Common::SharedPtr<Object> &obj) : _obj(obj) { _obj = nullptr; }
-	bool operator()(Common::SharedPtr<Object> obj) {
-		if (obj->inInventory()) {
-			_obj = obj;
-			return true;
-		}
-		return false;
-	}
-
-public:
-	Common::SharedPtr<Object> &_obj;
-};
-
 Common::SharedPtr<Object> inventoryAt(Math::Vector2d pos) {
 	Common::SharedPtr<Object> result;
 	objsAt(Common::move(pos), InInventory(result));
@@ -390,62 +488,6 @@ Common::Array<ActorSwitcherSlot> TwpEngine::actorSwitcherSlots() {
 	return result;
 }
 
-struct GetNoun {
-	GetNoun(int verbId, Common::SharedPtr<Object> &obj) : _verbId(verbId), _noun(obj) {
-		_noun = nullptr;
-	}
-
-	bool operator()(Common::SharedPtr<Object> obj) {
-		if (((_verbId == VERB_TALKTO) || (_verbId == VERB_WALKTO) || !g_twp->_resManager->isActor(obj->getId())) && (obj->_node->getZSort() <= _zOrder)) {
-			_noun = obj;
-			_zOrder = obj->_node->getZSort();
-		}
-		return false;
-	}
-
-public:
-	Common::SharedPtr<Object> &_noun;
-	int _zOrder = INT_MAX;
-	const int _verbId;
-};
-
-struct GetUseNoun2 {
-	explicit GetUseNoun2(Common::SharedPtr<Object> &obj) : _noun2(obj) {
-		_noun2 = nullptr;
-	}
-
-	bool operator()(Common::SharedPtr<Object> obj) {
-		if (obj->_node->getZSort() <= _zOrder) {
-			if ((obj != g_twp->_actor) && (g_twp->_noun2 != obj)) {
-				_noun2 = obj;
-				_zOrder = obj->_node->getZSort();
-			}
-		}
-		return false;
-	}
-
-public:
-	Common::SharedPtr<Object> &_noun2;
-	int _zOrder = INT_MAX;
-};
-
-struct GetGiveableNoun2 {
-	explicit GetGiveableNoun2(Common::SharedPtr<Object> &obj) : _noun2(obj) {
-		_noun2 = nullptr;
-	}
-
-	bool operator()(Common::SharedPtr<Object> obj) {
-		if ((obj != g_twp->_actor) && (obj->getFlags() & GIVEABLE) && (g_twp->_noun2 != obj)) {
-			_noun2 = obj;
-			return true;
-		}
-		return false;
-	}
-
-public:
-	Common::SharedPtr<Object> &_noun2;
-};
-
 void TwpEngine::update(float elapsed) {
 	const uint32 startUpdateTime = _system->getMillis();
 	_time += elapsed;
@@ -455,6 +497,8 @@ void TwpEngine::update(float elapsed) {
 	_noOverride->update(elapsed);
 	if (_talking)
 		_talking->update(elapsed);
+	if (_moveCursorTo)
+		_moveCursorTo->update(elapsed);
 
 	// update mouse pos
 	Math::Vector2d scrPos = winToScreen(_cursor.pos);
@@ -569,7 +613,7 @@ void TwpEngine::update(float elapsed) {
 	bool isNotInDialog = _dialog->getState() == DialogState::None;
 	for (auto it = threads.begin(); it != threads.end(); it++) {
 		Common::SharedPtr<Thread> thread(*it);
-		if ((isNotInDialog || !thread->isGlobal()) && thread->update(elapsed)) {
+		if ((isNotInDialog || !thread->isGlobal() || !thread->_pauseable) && thread->update(elapsed)) {
 			threadsToRemove.push_back(thread);
 		}
 	}
@@ -774,14 +818,6 @@ void TwpEngine::draw(RenderTexture *outTexture) {
 
 	// imgui render
 	_gfx.use(nullptr);
-
-#ifdef USE_IMGUI
-	ModularGraphicsBackend *sdl_g_system = dynamic_cast<ModularGraphicsBackend *>(_system);
-	if (sdl_g_system) {
-		sdl_g_system->getGraphicsManager()->renderImGui(onImGuiRender);
-	}
-#endif
-
 	_system->updateScreen();
 }
 
@@ -800,7 +836,175 @@ static void setVerbAction(int verbSlot) {
 	ActorSlot *slot = g_twp->_hud->actorSlot(g_twp->_actor);
 	if (!slot)
 		return;
-	g_twp->_hud->selectVerb(slot->verbs[verbSlot]);
+	g_twp->_hud->selectVerb(slot->verbSlots[verbSlot]._verb);
+}
+
+static bool isOnScreen(Common::SharedPtr<Object> obj) {
+	Math::Vector2d pos = obj->_node->getPos() - g_twp->getGfx().cameraPos();
+	Math::Vector2d size = g_twp->getGfx().camera();
+	return Common::Rect(0.0f, 0.0f, size.getX(), size.getY()).contains(pos.getX(), pos.getY());
+}
+
+static void moveCursorTo(const Math::Vector2d &pos) {
+	g_twp->_moveCursorTo.reset(new MoveCursorTo(pos, 0.1f));
+}
+
+static void gotoObject(bool next) {
+	if (!g_twp->_room || !g_twp->_inputState._inputActive || !g_twp->_inputState._showCursor)
+		return;
+
+	// get all objects touchable and on screen and get their distance to the actor
+	Math::Vector2d actorPos(g_twp->_actor->_node->getAbsPos());
+	Common::Array<ObjPos> objPos;
+	for (size_t i = 0; i < g_twp->_room->_layers.size(); i++) {
+		Common::SharedPtr<Layer> layer = g_twp->_room->_layers[i];
+		for (size_t j = 0; j < layer->_objects.size(); j++) {
+			Common::SharedPtr<Object> obj(layer->_objects[j]);
+			if (g_twp->_resManager->isActor(obj->getId()) || !obj->isTouchable() || !isOnScreen(obj))
+				continue;
+
+			Math::Vector2d pos(obj->_node->getAbsPos());
+			if (pos == Math::Vector2d())
+				continue;
+
+			Common::Rect hotspot = obj->_hotspot;
+			Math::Vector2d center(hotspot.left + hotspot.width() / 2.f, hotspot.top + hotspot.height() / 2.f);
+			pos += center;
+			const float d = actorPos.getX() - pos.getX();
+			objPos.push_back(ObjPos(obj, pos, d, j));
+		}
+	}
+
+	if (objPos.empty())
+		return;
+
+	// sort these objects by distance
+	Common::sort(objPos.begin(), objPos.end(), ObjPosComparer());
+
+	// find between them if the cursor is currently on one object if so find the next object
+	int index = 0;
+	int zsort = INT_MAX;
+	int objIndex = INT_MAX;
+	Math::Vector2d mousePos(g_twp->screenToRoom(g_twp->winToScreen(g_twp->_cursor.pos)));
+	for (size_t i = 0; i < objPos.size(); i++) {
+		if (objPos[i]._obj->contains(mousePos)) {
+			const int objZ = objPos[i]._obj->_node->getZSort();
+			if (objZ > zsort)
+				continue;
+			if (objZ == zsort && objPos[i]._index >= objIndex)
+				continue;
+			objIndex = objPos[i]._index;
+			zsort = objZ;
+			if (next) {
+				index = (i + 1) % objPos.size();
+			} else {
+				index = i - 1;
+				if (index < 0) {
+					index = objPos.size() - 1;
+				}
+			}
+		}
+	}
+
+	// move the cursor to this object
+	Math::Vector2d pos(objPos[index]._pos);
+	pos = g_twp->roomToScreen(pos);
+	moveCursorTo(g_twp->screenToWin(pos));
+}
+
+static void selectVerbInventory(int direction) {
+	if (!g_twp->_room || !g_twp->_inputState._inputActive || !g_twp->_hud->isVisible())
+		return;
+
+	ActorSlot *slot = g_twp->_hud->actorSlot(g_twp->_actor);
+	if (!slot)
+		return;
+
+	if (g_twp->_uiInv.isOver()) {
+		int invIndex = g_twp->_uiInv.getOverIndex();
+		if (invIndex != -1) {
+			switch (direction) {
+			case 0: // Left
+			{
+				if (invIndex == 0) {
+					moveCursorTo(g_twp->_hud->getVerbPos(slot->verbSlots[7]));
+					return;
+				}
+				if (invIndex == 4) {
+					moveCursorTo(g_twp->_hud->getVerbPos(slot->verbSlots[8]));
+					return;
+				}
+				invIndex--;
+			} break;
+			case 1: // Right
+			{
+				if (invIndex == 3 || invIndex == 7)
+					return;
+				invIndex++;
+			} break;
+			case 2: // Up
+			{
+				if (invIndex < 4) {
+					g_twp->_actor->inventoryScrollUp();
+					return;
+				}
+				invIndex -= 4;
+			} break;
+			case 3: // Down
+				if (invIndex > 3) {
+					g_twp->_actor->inventoryScrollDown();
+					return;
+				}
+				invIndex += 4;
+				break;
+			}
+			moveCursorTo(g_twp->screenToWin(g_twp->_uiInv.getPos(invIndex)));
+			return;
+		}
+	}
+
+	// get the verb where the cursor is
+	int id = 0;
+	for (int i = 1; i < MAX_VERBS; i++) {
+		const VerbSlot &verbSlot = slot->verbSlots[i];
+		if (verbSlot._over) {
+			id = i;
+			break;
+		}
+	}
+
+	if (!id) {
+		const VerbSlot &verbSlot = slot->verbSlots[5];
+		Math::Vector2d pos(g_twp->_hud->getVerbPos(verbSlot));
+		moveCursorTo(pos);
+		return;
+	}
+
+	switch (direction) {
+	case 0: // Left
+		if (id >= 4)
+			id -= 3;
+		break;
+	case 1: // Right
+		if (id > 6) {
+			moveCursorTo(g_twp->screenToWin(g_twp->_uiInv.getPos(id == 7 ? 0 : 4)));
+			return;
+		}
+		id += 3;
+		break;
+	case 2: // Up
+		if ((id % 3) != 1)
+			id--;
+		break;
+	case 3: // Down
+		if ((id % 3) != 0)
+			id++;
+		break;
+	}
+
+	const VerbSlot &verbSlot = slot->verbSlots[id];
+	Math::Vector2d pos(g_twp->_hud->getVerbPos(verbSlot));
+	moveCursorTo(pos);
 }
 
 Common::Error TwpEngine::run() {
@@ -879,7 +1083,11 @@ Common::Error TwpEngine::run() {
 	updateSettingVars();
 
 #ifdef USE_IMGUI
-	onImGuiInit();
+	ImGuiCallbacks callbacks;
+	callbacks.init = onImGuiInit;
+	callbacks.render = onImGuiRender;
+	callbacks.cleanup = onImGuiCleanup;
+	_system->setImGuiCallbacks(callbacks);
 #endif
 
 	// Simple event handling loop
@@ -893,12 +1101,21 @@ Common::Error TwpEngine::run() {
 				case TwpAction::kSkipCutscene:
 					skipCutscene();
 					break;
+				case TwpAction::kGotoNextObject:
+				case TwpAction::kGotoPreviousObject:
+					gotoObject((TwpAction)e.customType == TwpAction::kGotoNextObject);
+					break;
+				case TwpAction::kSelectVerbInventoryLeft:
+				case TwpAction::kSelectVerbInventoryRight:
+				case TwpAction::kSelectVerbInventoryUp:
+				case TwpAction::kSelectVerbInventoryDown:
+					selectVerbInventory(e.customType - (int)TwpAction::kSelectVerbInventoryLeft);
+					break;
 				case TwpAction::kSelectActor1:
 				case TwpAction::kSelectActor2:
 				case TwpAction::kSelectActor3:
 				case TwpAction::kSelectActor4:
 				case TwpAction::kSelectActor5:
-				case TwpAction::kSelectActor6:
 					if (_actorSwitcher._mode == asOn) {
 						int index = (TwpAction)e.customType - kSelectActor1;
 						ActorSlot *slot = &_hud->_actorSlots[index];
@@ -966,26 +1183,34 @@ Common::Error TwpEngine::run() {
 					setVerbAction(1 + (int)e.customType - (int)TwpAction::kOpen);
 					break;
 				default:
-				break;
+					break;
 				}
 			} break;
 			case Common::EVENT_KEYDOWN:
 				switch (e.kbd.keycode) {
 				case Common::KEYCODE_LEFT:
-					if(_control)
+					if (_control)
 						_speed = MAX(_speed - 1, 1);
 					_cursor.holdLeft = true;
 					break;
 				case Common::KEYCODE_RIGHT:
-					if(_control)
+					if (_control)
 						_speed = MIN(_speed + 1, 8);
 					_cursor.holdRight = true;
 					break;
 				case Common::KEYCODE_UP:
-					_cursor.holdUp = true;
+					if (_dialog->getState() == WaitingForChoice) {
+						moveCursorTo(screenToWin(_dialog->getPreviousChoicePos(winToScreen(_cursor.pos))));
+					} else {
+						_cursor.holdUp = true;
+					}
 					break;
 				case Common::KEYCODE_DOWN:
-					_cursor.holdDown = true;
+					if (_dialog->getState() == WaitingForChoice) {
+						moveCursorTo(screenToWin(_dialog->getNextChoicePos(winToScreen(_cursor.pos))));
+					} else {
+						_cursor.holdDown = true;
+					}
 					break;
 				case Common::KEYCODE_LCTRL:
 					_control = true;
@@ -1069,16 +1294,16 @@ Common::Error TwpEngine::run() {
 		}
 
 		const float mouseMoveSpeed = 4.f;
-		if(_cursor.holdLeft) {
+		if (_cursor.holdLeft) {
 			_cursor.pos.setX(MAX(_cursor.pos.getX() - mouseMoveSpeed, 0.f));
 		}
-		if(_cursor.holdRight) {
+		if (_cursor.holdRight) {
 			_cursor.pos.setX(MIN(_cursor.pos.getX() + mouseMoveSpeed, (float)SCREEN_WIDTH));
 		}
-		if(_cursor.holdUp) {
+		if (_cursor.holdUp) {
 			_cursor.pos.setY(MAX(_cursor.pos.getY() - mouseMoveSpeed, 0.f));
 		}
-		if(_cursor.holdDown) {
+		if (_cursor.holdDown) {
 			_cursor.pos.setY(MIN(_cursor.pos.getY() + mouseMoveSpeed, (float)SCREEN_HEIGHT));
 		}
 
@@ -1158,12 +1383,6 @@ Common::Error TwpEngine::saveGameStream(Common::WriteStream *stream, bool isAuto
 	stream->writeUint16LE(TWP_SAVEGAME_VERSION);
 	return Common::kNoError;
 }
-
-struct DefineObjectParams {
-	HSQUIRRELVM v;
-	bool pseudo;
-	Common::SharedPtr<Room> room;
-};
 
 static void onGetPairs(const Common::String &k, HSQOBJECT &oTable, void *data) {
 	DefineObjectParams *params = static_cast<DefineObjectParams *>(data);
@@ -1365,7 +1584,7 @@ void TwpEngine::enterRoom(Common::SharedPtr<Room> room, Common::SharedPtr<Object
 	_room->setOverlay(Color(0.f, 0.f, 0.f, 0.f));
 	_camera->setBounds(Rectf::fromMinMax(Math::Vector2d(), _room->_roomSize));
 	if (_actor && _hud->actorSlot(_actor))
-		_hud->selectVerb(_hud->actorSlot(_actor)->verbs[0]);
+		_hud->selectVerb(_hud->actorSlot(_actor)->verbSlots[0]._verb);
 
 	// move current actor to the new room
 	Math::Vector2d camPos;
@@ -1576,28 +1795,6 @@ void TwpEngine::fadeTo(FadeEffect effect, float duration, bool fadeToSep) {
 	_fadeShader->_elapsed = 0.f;
 }
 
-struct GetByZOrder {
-	explicit GetByZOrder(Common::SharedPtr<Object> &result) : _result(result) {
-		result = nullptr;
-	}
-
-	bool operator()(Common::SharedPtr<Object> obj) {
-		if (obj->_node->getZSort() <= _zOrder) {
-			if (!g_twp->_resManager->isActor(obj->getId()) || !obj->_key.empty()) {
-				_result = obj;
-				_zOrder = obj->_node->getZSort();
-			}
-		}
-		return false;
-	}
-
-public:
-	Common::SharedPtr<Object> &_result;
-
-private:
-	int _zOrder = INT_MAX;
-};
-
 Common::SharedPtr<Object> TwpEngine::objAt(const Math::Vector2d &pos) {
 	Common::SharedPtr<Object> result;
 	objsAt(pos, GetByZOrder(result));
@@ -1651,7 +1848,7 @@ void TwpEngine::resetVerb() {
 	_noun1 = nullptr;
 	_noun2 = nullptr;
 	_useFlag = UseFlag::ufNone;
-	_hud->_verb = _hud->actorSlot(_actor)->verbs[0];
+	_hud->_verb = _hud->actorSlot(_actor)->verbSlots[0]._verb;
 }
 
 bool TwpEngine::callVerb(Common::SharedPtr<Object> actor, VerbId verbId, Common::SharedPtr<Object> noun1, Common::SharedPtr<Object> noun2) {
@@ -1665,7 +1862,7 @@ bool TwpEngine::callVerb(Common::SharedPtr<Object> actor, VerbId verbId, Common:
 	Common::String noun2name = !noun2 ? "null" : noun2->_key;
 	ActorSlot *slot = _hud->actorSlot(actor);
 	Verb *verb = slot->getVerb(verbId.id);
-	Common::String verbFuncName = verb ? verb->fun : slot->verbs[0].fun;
+	Common::String verbFuncName = verb ? verb->fun : slot->verbSlots[0]._verb.fun;
 	debugC(kDebugGame, "callVerb(%s,%s,%s,%s)", name.c_str(), verbFuncName.c_str(), noun1name.c_str(), noun2name.c_str());
 
 	// test if object became untouchable

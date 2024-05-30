@@ -134,6 +134,8 @@ void AGOSEngine::skipSpeech() {
 void AGOSEngine::loadMusic(uint16 music, bool forceSimon2GmData, bool useSimon2Remapping) {
 	stopMusic();
 
+	debug(1, "AGOSEngine::loadMusic(music=%d, forceSimon2GmData=%d, useSimon2Remapping=%d)", music, forceSimon2GmData, useSimon2Remapping);
+
 	uint16 indexBase = forceSimon2GmData ? MUSIC_INDEX_BASE_SIMON2_GM : _musicIndexBase;
 
 	_gameFile->seek(_gameOffsetsPtr[indexBase + music - 1], SEEK_SET);
@@ -233,6 +235,8 @@ void AGOSEngine::playModule(uint16 music) {
 }
 
 void AGOSEngine_Simon2::playMusic(uint16 music, uint16 track) {
+	debug(1, "AGOSEngine_Simon2::loadMusic(music=%d, track=%d)", music, track);
+
 	if (_lastMusicPlayed == 10 && getPlatform() == Common::kPlatformDOS && _midi->usesMT32Data()) {
 		// WORKAROUND Simon 2 track 10 (played during the first intro scene)
 		// consist of 3 subtracks. Subtracks 2 and 3 are missing from the MT-32
@@ -251,6 +255,23 @@ void AGOSEngine_Simon2::playMusic(uint16 music, uint16 track) {
 		loadMusic(10, !track10Fix && track > 0, track10Fix || track > 0);
 	}
 
+#ifdef USE_VORBIS
+		Common::String trackName;
+
+		if (track)
+			Common::String::format("OGG/track%02d-%d", _lastMusicPlayed, track);
+		else
+			Common::String::format("OGG/track%02d", _lastMusicPlayed);
+
+		_digitalMusicStream = Audio::SeekableAudioStream::openStreamFile(trackName.c_str());
+		if (_digitalMusicStream) {
+			_mixer->playStream(Audio::Mixer::kMusicSoundType, &_digitalMusicHandle, _digitalMusicStream);
+
+			debug(1, "AGOSEngine_Simon2::playMusic(): Playing %s", trackName.c_str());
+
+			return;
+		}
+#endif
 	_midi->play(track);
 }
 
@@ -313,7 +334,7 @@ void AGOSEngine_Simon1::playMusic(uint16 music, uint16 track) {
 		_midi->play();
 	} else if (getPlatform() == Common::kPlatformAcorn) {
 		// Acorn floppy version.
-		
+
 		// TODO: Add support for Desktop Tracker format in Acorn disk version
 	}
 }
@@ -393,6 +414,9 @@ void AGOSEngine::stopMusic() {
 		_midi->stop();
 	}
 	_mixer->stopHandle(_modHandle);
+	_mixer->stopHandle(_digitalMusicHandle);
+
+	debug(1, "AGOSEngine::stopMusic()");
 }
 
 static const byte elvira1_soundTable[100] = {

@@ -273,16 +273,8 @@ void ContainerGump::GetItemLocation(int32 lerp_factor) {
 	}
 
 	int32 gx, gy;
-	Item *topitem = it;
-
-	Container *p = it->getParentAsContainer();
-	if (p) {
-		while (p->getParentAsContainer()) {
-			p = p->getParentAsContainer();
-		}
-
-		topitem = p;
-	}
+	Container *root = it->getRootContainer();
+	Item *topitem = root ? root : it;
 
 	Gump *gump = GetRootGump()->FindGump<GameMapGump>();
 	assert(gump);
@@ -390,13 +382,19 @@ void ContainerGump::onMouseDouble(int button, int32 mx, int32 my) {
 		if (item) {
 			debugC(kDebugObject, "%s", item->dumpInfo().c_str());
 
+			if (objID == _owner) {
+				// call the 'use' event
+				item->use();
+				return;
+			}
+
 			if (Ultima8Engine::get_instance()->isAvatarInStasis()) {
 				debugC(kDebugObject, "Can't use: avatarInStasis");
 				return;
 			}
 
 			MainActor *avatar = getMainActor();
-			if (objID == _owner || avatar->canReach(item, 128)) { // CONSTANT!
+			if (avatar->canReach(item, 128)) { // CONSTANT!
 				// call the 'use' event
 				item->use();
 			} else {

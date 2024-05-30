@@ -36,6 +36,9 @@
 #include "scumm/scumm.h"
 #include "scumm/he/sound_he.h"
 
+#include "scumm/he/moonbase/moonbase.h"
+#include "scumm/he/moonbase/map_main.h"
+
 namespace Scumm {
 
 #define OPCODE(i, x)	_opcodes[i]._OPCODE(ScummEngine_v80he, x)
@@ -242,6 +245,12 @@ void ScummEngine_v80he::o80_writeConfigFile() {
 			memcpy(section, "BluesTreasureHunt-Disc1\0", 24);
 		else if (!strcmp((char *)section, "Blue'sTreasureHunt-Disc2"))
 			memcpy(section, "BluesTreasureHunt-Disc2\0", 24);
+	} else if (_game.id == GID_MOONBASE && !strcmp((char *)option, "5-10") &&
+		!strcmp((char *)string, "1") && _moonbase->_map->mapGenerated()) {
+		// If we're playing on a generated map, make sure that the SETUP-MAP
+		// value gets stored to 66 (higher than 65), or else the replay will
+		// load the incorrect map.
+		memcpy(string, "66\0", 3);
 	}
 
 	Common::INIFile iniFile;
@@ -266,14 +275,17 @@ void ScummEngine_v80he::o80_cursorCommand() {
 
 	switch (subOp) {
 	case SO_CURSOR_IMAGE:
+		a = pop();
+		_wiz->loadWizCursor(a, 0, false);
+		break;
 	case SO_CURSOR_COLOR_IMAGE:
 		a = pop();
-		_wiz->loadWizCursor(a, 0);
+		_wiz->loadWizCursor(a, 0, true);
 		break;
 	case SO_BUTTON:
 		b = pop();
 		a = pop();
-		_wiz->loadWizCursor(a, b);
+		_wiz->loadWizCursor(a, b, true);
 		break;
 	case SO_CURSOR_ON:		// Turn cursor on
 		_cursor.state = 1;
@@ -327,12 +339,10 @@ void ScummEngine_v80he::o80_setState() {
 }
 
 void ScummEngine_v80he::o80_drawWizPolygon() {
-	WizImage wi;
-	wi.x1 = wi.y1 = pop();
-	wi.resNum = pop();
-	wi.state = 0;
-	wi.flags = kWIFIsPolygon;
-	_wiz->displayWizImage(&wi);
+	int polygon = pop();
+	int image = pop();
+
+	_wiz->simpleDrawAWiz(image, 0, polygon, polygon, kWRFPolygon);
 }
 
 /**
@@ -345,12 +355,13 @@ void ScummEngine_v80he::o80_drawWizPolygon() {
  * @param step	the step size used to render the line, only ever 'step'th point is drawn
  * @param type	the line type -- points are rendered by drawing actors (type == 2),
  *              wiz images (type == 3), or pixels (any other type)
- * @param id	the id of an actor, wizimage or color (low bit) & flag (high bit)
+ * @param color	the id of an actor, wizimage or color (low bit) & flag (high bit)
  */
-void ScummEngine_v80he::drawLine(int x1, int y1, int x, int y, int step, int type, int id) {
+void ScummEngine_v80he::drawLine(int x1, int y1, int x, int y, int step, int type, int color) {
 	if (step < 0) {
 		step = -step;
 	}
+
 	if (step == 0) {
 		step = 1;
 	}
@@ -366,20 +377,13 @@ void ScummEngine_v80he::drawLine(int x1, int y1, int x, int y, int step, int typ
 	y = y1;
 	x = x1;
 
-
-	if (type == 2) {
-		ActorHE *a = (ActorHE *)derefActor(id, "drawLine");
+	if (type == kLTActor) {
+		ActorHE *a = (ActorHE *)derefActor(color, "drawLine");
 		a->drawActorToBackBuf(x, y);
-	} else if (type == 3) {
-		WizImage wi;
-		wi.flags = 0;
-		wi.y1 = y;
-		wi.x1 = x;
-		wi.resNum = id;
-		wi.state = 0;
-		_wiz->displayWizImage(&wi);
+	} else if (type == kLTImage) {
+		_wiz->drawAWiz(color, 0, x, y, 0, 0, 0, 0, nullptr, 0, nullptr);
 	} else {
-		drawPixel(x, y, id);
+		drawPixel(x, y, color);
 	}
 
 	int stepCount = 0;
@@ -418,24 +422,19 @@ void ScummEngine_v80he::drawLine(int x1, int y1, int x, int y, int step, int typ
 		if ((stepCount++ % step) != 0 && maxDist != i)
 			continue;
 
-		if (type == 2) {
-			ActorHE *a = (ActorHE *)derefActor(id, "drawLine");
+		if (type == kLTActor) {
+			ActorHE *a = (ActorHE *)derefActor(color, "drawLine");
 			a->drawActorToBackBuf(x, y);
-		} else if (type == 3) {
-			WizImage wi;
-			wi.flags = 0;
-			wi.y1 = y;
-			wi.x1 = x;
-			wi.resNum = id;
-			wi.state = 0;
-			_wiz->displayWizImage(&wi);
+		} else if (type == kLTImage) {
+			_wiz->drawAWiz(color, 0, x, y, 0, 0, 0, 0, nullptr, 0, nullptr);
 		} else {
-			drawPixel(x, y, id);
+			drawPixel(x, y, color);
 		}
 	}
 }
 
 void ScummEngine_v80he::drawPixel(int x, int y, int flags) {
+	// TODO: RECHECK
 	byte *src, *dst;
 	VirtScreen *vs;
 
@@ -445,7 +444,7 @@ void ScummEngine_v80he::drawPixel(int x, int y, int flags) {
 	if (y < 0)
 		return;
 
-	if ((vs = findVirtScreen(y)) == NULL)
+	if ((vs = findVirtScreen(y)) == nullptr)
 		return;
 
 	markRectAsDirty(vs->number, x, y, x, y + 1);
@@ -471,12 +470,13 @@ void ScummEngine_v80he::drawPixel(int x, int y, int flags) {
 }
 
 void ScummEngine_v80he::o80_drawLine() {
-	int id, step, x, y, x1, y1;
+	int id, step, x2, y2, x1, y1, type;
 
+	type = kLTColor;
 	step = pop();
 	id = pop();
-	y = pop();
-	x = pop();
+	y2 = pop();
+	x2 = pop();
 	y1 = pop();
 	x1 = pop();
 
@@ -484,18 +484,17 @@ void ScummEngine_v80he::o80_drawLine() {
 
 	switch (subOp) {
 	case SO_ACTOR:
-		drawLine(x1, y1, x, y, step, 2, id);
+		type = kLTActor;
 		break;
 	case SO_IMAGE:
-		drawLine(x1, y1, x, y, step, 3, id);
+		type = kLTImage;
 		break;
 	case SO_COLOR:
-		drawLine(x1, y1, x, y, step, 1, id);
+		type = kLTColor;
 		break;
-	default:
-		error("o80_drawLine: default case %d", subOp);
 	}
 
+	drawLine(x1, y1, x2, y2, step, type, id);
 }
 
 void ScummEngine_v80he::o80_pickVarRandom() {

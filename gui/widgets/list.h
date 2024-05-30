@@ -39,9 +39,11 @@ enum NumberingMode {
 
 /// Some special commands
 enum {
-	kListItemDoubleClickedCmd	= 'LIdb',	///< double click on item - 'data' will be item index
+	kListItemSingleClickedCmd	= 'LIsc',	///< single click on item (sent on mouse down) - 'data' will be item index
+	kListItemDoubleClickedCmd	= 'LIdc',	///< double click on item (sent on mouse up) - 'data' will be item index
 	kListItemActivatedCmd		= 'LIac',	///< item activated by return/enter - 'data' will be item index
 	kListItemRemovalRequestCmd	= 'LIrm',	///< request to remove the item with the delete/backspace keys - 'data' will be item index
+	kListItemEditModeStartedCmd = 'LIes',	///< edit mode started - 'data' will be item index
 	kListSelectionChangedCmd	= 'Lsch'	///< selection changed - 'data' will be item index
 };
 
@@ -96,9 +98,6 @@ protected:
 
 	FilterMatcher	_filterMatcher;
 	void			*_filterMatcherArg;
-
-	Common::Array<bool>	_listSelected;
-
 public:
 	ListWidget(Dialog *boss, const Common::String &name, const Common::U32String &tooltip = Common::U32String(), uint32 cmd = 0);
 	ListWidget(Dialog *boss, int x, int y, int w, int h, bool scale, const Common::U32String &tooltip = Common::U32String(), uint32 cmd = 0);
@@ -132,9 +131,6 @@ public:
 	void setEditable(bool editable)				{ _editable = editable; }
 	void setEditColor(ThemeEngine::FontColor color) { _editColor = color; }
 	void setFilterMatcher(FilterMatcher matcher, void *arg) { _filterMatcher = matcher; _filterMatcherArg = arg; }
-
-	void appendToSelectedList(bool selected) { _listSelected.push_back(selected); }
-	void clearSelectedList() { _listSelected.clear(); }
 
 	// Made startEditMode/endEditMode for SaveLoadChooser
 	void startEditMode() override;
@@ -180,6 +176,8 @@ protected:
 	void lostFocusWidget() override;
 	void checkBounds();
 	void scrollToCurrent();
+
+	virtual ThemeEngine::WidgetStateInfo getItemState(int item) const { return _state; }
 
 	void drawFormattedText(const Common::Rect &r, const Common::U32String &str, ThemeEngine::WidgetStateInfo state = ThemeEngine::kStateEnabled,
 					Graphics::TextAlign align = Graphics::kTextAlignCenter,

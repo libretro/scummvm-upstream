@@ -315,13 +315,13 @@ byte AkosRenderer::drawLimb(const Actor *a, int limb) {
 	uint i, extra;
 	byte result = 0;
 	int xMoveCur, yMoveCur;
-	uint32 heCondMaskIndex[32];
-	bool useCondMask;
+	uint32 sequenceLayerIndirection[32];
+	bool useConditionalTable = false;
 	int lastDx, lastDy;
 
 	lastDx = lastDy = 0;
 	for (i = 0; i < 32; ++i) {
-		heCondMaskIndex[i] = i;
+		sequenceLayerIndirection[i] = i;
 	}
 
 	if (_skipLimbs)
@@ -333,7 +333,6 @@ byte AkosRenderer::drawLimb(const Actor *a, int limb) {
 	if (cost.animType[limb] == AKAT_Empty || cost.stopped & (1 << limb))
 		return 0;
 
-	useCondMask = false;
 	p = _aksq + cost.curpos[limb];
 
 	code = p[0];
@@ -348,11 +347,11 @@ byte AkosRenderer::drawLimb(const Actor *a, int limb) {
 		uint j = 0;
 		extra = p[3];
 		uint8 n = extra;
-		assert(n <= ARRAYSIZE(heCondMaskIndex));
+		assert(n <= ARRAYSIZE(sequenceLayerIndirection));
 		while (n--) {
-			heCondMaskIndex[j++] = _aksq[s++];
+			sequenceLayerIndirection[j++] = _aksq[s++];
 		}
-		useCondMask = true;
+		useConditionalTable = true;
 		p += extra + 2;
 		code = (code == AKC_CondDrawMany) ? AKC_DrawMany : AKC_RelativeOffsetDrawMany;
 	}
@@ -398,7 +397,7 @@ byte AkosRenderer::drawLimb(const Actor *a, int limb) {
 
 		extra = p[2];
 		p += 3;
-		uint32 decFlag = heCondMaskIndex[0];
+		uint32 decFlag = sequenceLayerIndirection[0];
 
 		for (i = 0; i != extra; i++) {
 			code = p[4];
@@ -428,10 +427,10 @@ byte AkosRenderer::drawLimb(const Actor *a, int limb) {
 
 			uint16 shadowMask = 0;
 
-			if (!useCondMask || !_akct) {
+			if (!useConditionalTable || !_akct) {
 				decFlag = 1;
 			} else {
-				uint32 cond = READ_LE_UINT32(_akct + cost.heCondMaskTable[limb] + heCondMaskIndex[i] * 4);
+				uint32 cond = READ_LE_UINT32(_akct + cost.heCondMaskTable[limb] + sequenceLayerIndirection[i] * 4);
 				if (cond == 0) {
 					decFlag = 1;
 				} else {
@@ -476,7 +475,7 @@ byte AkosRenderer::drawLimb(const Actor *a, int limb) {
 				result |= paintCelMajMin(xMoveCur, yMoveCur);
 				break;
 			case AKOS_TRLE_CODEC:
-				result |= paintCelTRLE(xMoveCur, yMoveCur);
+				result |= paintCelTRLE(a->_number, a->_drawToBackBuf, xMoveCur, yMoveCur, _width, _height, _akpl[0], _xmap, 0);
 				break;
 			default:
 				error("akos_drawLimb: invalid _codec %d", _codec);
@@ -1153,57 +1152,147 @@ byte AkosRenderer::paintCelMajMin(int xMoveCur, int yMoveCur) {
 	return 0;
 }
 
-byte AkosRenderer::paintCelTRLE(int xMoveCur, int yMoveCur) {
 #ifdef ENABLE_HE
-	Common::Rect src, dst;
+byte AkosRenderer::hePaintCel(int actor, int drawToBack, int celX, int celY, int celWidth, int celHeight, byte tcolor, bool allowFlip, const byte *shadowTablePtr,
+							  void (*drawPtr)(ScummEngine *vm, Wiz *wiz, WizRawPixel *, int, int, Common::Rect *, const byte *, int, int, Common::Rect *, byte, const byte *shadowTablePtr, const WizRawPixel *conversionTable, int32 specialRenderFlags),
+							  const WizRawPixel *conversionTable, int32 specialRenderFlags) {
 
-	if (!_mirror) {
-		dst.left = (_actorX - xMoveCur - _width) + 1;
+	int plotX, plotY;
+	bool xFlipFlag;
+	Common::Rect destRect;
+	Common::Rect sourceRect;
+	Common::Rect clipRect;
+	int destBufferWidth, destBufferHeight;
+	WizRawPixel *destBuffer;
+	Wiz *wiz = ((ScummEngine_v71he *)_vm)->_wiz;
+	Actor *a = _vm->derefActor(actor, "hePaintCel");
+
+	if (allowFlip) {
+		xFlipFlag = _mirror;
 	} else {
-		dst.left = _actorX + xMoveCur;
+		xFlipFlag = false;
 	}
 
-	src.top = src.left = 0;
-	src.right = _width;
-	src.bottom = _height;
+	// Find cel's "plot" position with flipping etc...
+	plotY = (int32)_actorY + (int32)celY;
+	plotX = (xFlipFlag) ? (_actorX - celX - celWidth + 1) : (_actorX + celX);
 
-	dst.top = _actorY + yMoveCur;
-	dst.right = dst.left + _width;
-	dst.bottom = dst.top + _height;
+	// Find which buffer to plot into. back or forground (STAMP ACTOR)...
+	VirtScreen *pvs = &_vm->_virtscr[kMainVirtScreen];
+	destBufferWidth = pvs->w;
+	destBufferHeight = pvs->h;
 
-	int diff;
-	diff = dst.left - _clipOverride.left;
-	if (diff < 0) {
-		src.left -= diff;
-		dst.left -= diff;
-	}
-	diff = dst.right - _clipOverride.right;
-	if (diff > 0) {
-		src.right -= diff;
-		dst.right -= diff;
-	}
-	diff = dst.top - _clipOverride.top;
-	if (diff < 0) {
-		src.top -= diff;
-		dst.top -= diff;
-	}
-	diff = dst.bottom - _clipOverride.bottom;
-	if (diff > 0) {
-		src.bottom -= diff;
-		dst.bottom -= diff;
+	if (drawToBack) {
+		destBuffer = (WizRawPixel *)pvs->getBackPixels(0, 0);
+	} else {
+		destBuffer = (WizRawPixel *)pvs->getPixels(0, 0);
 	}
 
-	if (dst.isValidRect() == false)
-		return 0;
+	// Setup clipping rectangle(s)...
+	wiz->makeSizedRect(&sourceRect, celWidth, celHeight);
+	wiz->makeSizedRect(&clipRect, destBufferWidth, destBufferHeight);
+	wiz->makeSizedRectAt(&destRect, plotX, plotY, celWidth, celHeight);
 
-	markRectAsDirty(dst);
+	// Check to see if the actor has a clipping rect...
+	if ((((ActorHE *)a)->_clipOverride.left < ((ActorHE *)a)->_clipOverride.right) &&
+		(((ActorHE *)a)->_clipOverride.top < ((ActorHE *)a)->_clipOverride.bottom)) {
+		// The original evaluates this as '>', but for some reason we need actor clipping
+		// rectangles to max out at 640x480, instead of 639x479; this *should* not be an issue...
+		if (destBufferHeight >= ((ActorHE *)a)->_clipOverride.bottom) {
+			clipRect.left = ((ActorHE *)a)->_clipOverride.left;
+			clipRect.right = ((ActorHE *)a)->_clipOverride.right;
+			clipRect.top = ((ActorHE *)a)->_clipOverride.top;
+			clipRect.bottom = ((ActorHE *)a)->_clipOverride.bottom;
+		} else {
+			warning(
+				"AkosRenderer::hePaintCel(): Actor %d invalid clipping rect (%-3d,%3d,%-3d,%3d)", a->_number,
+				((ActorHE *)a)->_clipOverride.left, ((ActorHE *)a)->_clipOverride.top,
+				((ActorHE *)a)->_clipOverride.right, ((ActorHE *)a)->_clipOverride.bottom);
+		}
+	}
 
-	if (_drawTop > dst.top)
-		_drawTop = dst.top;
-	if (_drawBottom < dst.bottom)
-		_drawBottom = dst.bottom;
+	// Clip the coords...
+	wiz->clipRectCoords(&sourceRect, &destRect, &clipRect);
 
-	const uint8 *palPtr = NULL;
+	if (wiz->isRectValid(destRect)) {
+		// Mark the dest area as the changed section...
+		_vm->markRectAsDirty(kMainVirtScreen, destRect, actor);
+
+		if (destRect.top < a->_top)
+			a->_top = destRect.top;
+		if (destRect.bottom > a->_bottom)
+			a->_bottom = destRect.bottom + 1;
+
+		_drawTop = a->_top;
+		_drawBottom = a->_bottom;
+
+		//SetActorUpdateArea(actor, destRect.x1, destRect.y1, destRect.x2, destRect.y2);
+
+		// Get final plot point and flip source coords if necessary...
+		if (xFlipFlag) {
+			wiz->swapRectX(&sourceRect);
+			sourceRect.left = (celWidth - 1) - sourceRect.left;
+			sourceRect.right = (celWidth - 1) - sourceRect.right;
+		}
+
+		// Call the decompression routine...
+		if (drawPtr) {
+			(*drawPtr)(_vm, wiz,
+					   destBuffer, destBufferWidth, destBufferHeight, &destRect,
+					   _srcPtr, celWidth, celHeight, &sourceRect, tcolor,
+					   shadowTablePtr, conversionTable, specialRenderFlags);
+		}
+
+		return 2;
+	}
+
+	return 0;
+}
+
+static void heTRLEPaintPrim(ScummEngine *vm, Wiz *wiz, WizRawPixel *dstDataPtr, int dstWid, int dstHei, Common::Rect *dstRect, const byte *srcDataPtr, int srcWid, int srcHei, Common::Rect *srcRect, byte tColor, const byte *shadowTablePtr, const WizRawPixel *conversionTable, int32 specialRenderFlags) {
+	if (vm->_game.heversion > 99) {
+		int plotX, plotY;
+
+		// Convert incoming src rect to flags and adjust dest position for sub rect
+		int32 additionalRenderFlags = 0;
+
+		if (srcRect->left < srcRect->right) {
+			plotX = dstRect->left - srcRect->left;
+		} else {
+			plotX = dstRect->left - srcRect->right;
+			additionalRenderFlags |= kWRFHFlip;
+		}
+
+		if (srcRect->top < srcRect->bottom) {
+			plotY = dstRect->top - srcRect->top;
+		} else {
+			plotY = dstRect->top - srcRect->bottom;
+			additionalRenderFlags |= kWRFVFlip;
+		}
+
+		// Finally call the drawing primitive
+		wiz->trleFLIPDecompressImage(
+			dstDataPtr, srcDataPtr, dstWid, dstHei,
+			plotX, plotY, srcWid, srcHei, dstRect,
+			(specialRenderFlags & kWRFSpecialRenderBitMask) | additionalRenderFlags,
+			nullptr, conversionTable, nullptr);
+
+	} else {
+		wiz->auxDecompTRLEPrim(
+			dstDataPtr, dstWid, dstRect, srcDataPtr, srcRect, conversionTable);
+	}
+}
+
+static void heTRLEPaintPrimShadow(ScummEngine *vm, Wiz *wiz, WizRawPixel *dstDataPtr, int dstWid, int dstHei, Common::Rect *dstRect, const byte *srcDataPtr, int srcWid, int srcHei, Common::Rect *srcRect, byte tColor, const byte *shadowTablePtr, const WizRawPixel *conversionTable, int32 specialRenderFlags) {
+	wiz->auxDecompMixColorsTRLEPrim(
+		dstDataPtr, dstWid, dstRect, srcDataPtr, srcRect, shadowTablePtr,
+		conversionTable);
+}
+#endif
+
+byte AkosRenderer::paintCelTRLE(int actor, int drawToBack, int celX, int celY, int celWidth, int celHeight, byte tcolor, const byte *shadowTablePtr, int32 specialRenderFlags) {
+#ifdef ENABLE_HE
+	const uint8 *palPtr = nullptr;
 	if (_vm->_game.features & GF_16BIT_COLOR) {
 		palPtr = _vm->_hePalettes + _vm->_hePaletteSlot + 768;
 		if (_paletteNum) {
@@ -1217,15 +1306,18 @@ byte AkosRenderer::paintCelTRLE(int xMoveCur, int yMoveCur) {
 		palPtr = _vm->_hePalettes + _vm->_hePaletteSlot + 768;
 	}
 
-	byte *dstPtr = (byte *)_out.getBasePtr(dst.left, dst.top);
-	if (_shadowMode == 3) {
-		Wiz::decompressWizImage<kWizXMap>(dstPtr, _out.pitch, kDstScreen, _srcPtr, src, 0, palPtr, _xmap, _vm->_bytesPerPixel);
+	if (!shadowTablePtr) {
+		return hePaintCel(
+			actor, drawToBack, celX, celY, celWidth, celHeight, tcolor, false, nullptr,
+			heTRLEPaintPrim,
+			(const WizRawPixel *)palPtr,
+			specialRenderFlags);
 	} else {
-		if (palPtr != NULL) {
-			Wiz::decompressWizImage<kWizRMap>(dstPtr, _out.pitch, kDstScreen, _srcPtr, src, 0, palPtr, NULL, _vm->_bytesPerPixel);
-		} else {
-			Wiz::decompressWizImage<kWizCopy>(dstPtr, _out.pitch, kDstScreen, _srcPtr, src, 0, NULL, NULL, _vm->_bytesPerPixel);
-		}
+		return hePaintCel(
+			actor, drawToBack, celX, celY, celWidth, celHeight, tcolor, false, shadowTablePtr,
+			heTRLEPaintPrimShadow,
+			(const WizRawPixel *)palPtr,
+			specialRenderFlags);
 	}
 #endif
 	return 0;
@@ -1361,7 +1453,7 @@ bool ScummEngine_v6::akos_increaseAnim(Actor *a, int limb, const byte *aksq, con
 				curState += aksq[curState + 2];
 				break;
 			case AKC_DisplayAuxFrame:
-				akos_queCommand(7, a, GW(2), 0);
+				akos_queCommand(AKQC_DisplayAuxFrame, a, GW(2), 0);
 				curState += 4;
 				break;
 			default:
@@ -1677,7 +1769,7 @@ void ScummEngine_v6::akos_processQueue() {
 		case AKQC_DisplayAuxFrame:
 #ifdef ENABLE_HE
 			assert(_game.heversion >= 71);
-			((ScummEngine_v71he *)this)->queueAuxEntry(a->_number, param1);
+			((ScummEngine_v71he *)this)->heQueueAnimAuxFrame(a->_number, param1);
 #endif
 			break;
 		case AKQC_StartTalkie:

@@ -99,6 +99,8 @@
 #include "scumm/he/net/net_lobby.h"
 #endif
 #endif
+
+#include "scumm/he/moonbase/dialog-mapgenerator.h"
 #endif
 
 #include "backends/audiocd/audiocd.h"
@@ -367,6 +369,9 @@ ScummEngine::ScummEngine(OSystem *syst, const DetectorResult &dr)
 
 #ifndef DISABLE_TOWNS_DUAL_LAYER_MODE
 	if (_game.platform == Common::kPlatformFMTowns) {
+		ConfMan.registerDefault("force_fmtowns_hires_mode", false);
+		if (ConfMan.hasKey("force_fmtowns_hires_mode"))
+			_forceFMTownsHiResMode = ConfMan.getBool("force_fmtowns_hires_mode");
 		ConfMan.registerDefault("smooth_scroll", true);
 		if (ConfMan.hasKey("smooth_scroll"))
 			_enableSmoothScrolling = ConfMan.getBool("smooth_scroll");
@@ -644,13 +649,14 @@ ScummEngine_v6::ScummEngine_v6(OSystem *syst, const DetectorResult &dr)
 
 ScummEngine_v60he::ScummEngine_v60he(OSystem *syst, const DetectorResult &dr)
 	: ScummEngine_v6(syst, dr) {
+#ifdef ENABLE_HE
+	_moonbase = 0;
+#endif
+
 	memset(_hInFileTable, 0, sizeof(_hInFileTable));
 	memset(_hOutFileTable, 0, sizeof(_hOutFileTable));
 
-	_actorClipOverride.top = 0;
-	_actorClipOverride.bottom = 480;
-	_actorClipOverride.left = 0;
-	_actorClipOverride.right = 640;
+	setActorClippingRect(-1, 0, 0, 640, 480);
 
 	memset(_heTimers, 0, sizeof(_heTimers));
 
@@ -703,18 +709,16 @@ ScummEngine_v70he::~ScummEngine_v70he() {
 #ifdef ENABLE_HE
 ScummEngine_v71he::ScummEngine_v71he(OSystem *syst, const DetectorResult &dr)
 	: ScummEngine_v70he(syst, dr) {
-	_auxBlocksNum = 0;
-	for (uint i = 0; i < ARRAYSIZE(_auxBlocks); i++) {
-		_auxBlocks[i].clear();
-	}
-	_auxEntriesNum = 0;
-	memset(_auxEntries, 0, sizeof(_auxEntries));
+	_heAuxEraseActorIndex = 0;
+	memset(_heAuxEraseActorTable, 0, sizeof(_heAuxEraseActorTable));
+	_heAuxAnimTableIndex = 0;
+	memset(_heAuxAnimTable, 0, sizeof(_heAuxAnimTable));
 
 	_wiz = new Wiz(this);
 
-	_skipProcessActors = 0;
+	_disableActorDrawingFlag = 0;
 
-	VAR_WIZ_TCOLOR = 0xFF;
+	VAR_WIZ_TRANSPARENT_COLOR = 0xFF;
 }
 
 ScummEngine_v71he::~ScummEngine_v71he() {
@@ -773,6 +777,7 @@ ScummEngine_v90he::ScummEngine_v90he(OSystem *syst, const DetectorResult &dr)
 	VAR_NUM_SPRITES = 0xFF;
 	VAR_NUM_PALETTES = 0xFF;
 	VAR_NUM_UNK = 0xFF;
+	VAR_SPRITE_IMAGE_CHANGE_DOES_NOT_RESET_SETTINGS = 0xFF;
 
 	VAR_U32_VERSION = 0xFF;
 	VAR_U32_ARRAY_UNK = 0xFF;
@@ -799,8 +804,6 @@ ScummEngine_v90he::~ScummEngine_v90he() {
 
 ScummEngine_v100he::ScummEngine_v100he(OSystem *syst, const DetectorResult &dr) : ScummEngine_v99he(syst, dr) {
 	/* Moonbase stuff */
-	_moonbase = 0;
-
 	if (_game.id == GID_MOONBASE)
 		_moonbase = new Moonbase(this);
 
@@ -1153,6 +1156,11 @@ Common::Error ScummEngine::init() {
 	// Load it earlier so _useCJKMode variable could be set
 	loadCJKFont();
 
+#ifndef DISABLE_TOWNS_DUAL_LAYER_MODE
+	if (_game.platform == Common::kPlatformFMTowns && _forceFMTownsHiResMode)
+		_textSurfaceMultiplier = 2;
+#endif
+
 	Common::Path macResourceFile;
 
 	if (_game.platform == Common::kPlatformMacintosh) {
@@ -1260,14 +1268,9 @@ Common::Error ScummEngine::init() {
 	} else if (_renderMode == Common::kRenderCGA_BW || (_renderMode == Common::kRenderEGA && _supportsEGADithering)) {
 		initGraphics(_screenWidth * 2, _screenHeight * 2);
 	} else {
-		int screenWidth = _screenWidth;
-		int screenHeight = _screenHeight;
-		if (_useCJKMode || _macScreen) {
-			// CJK FT and DIG use usual NUT fonts, not FM-TOWNS ROM, so
-			// there is no text surface for them. This takes that into account
-			screenWidth *= _textSurfaceMultiplier;
-			screenHeight *= _textSurfaceMultiplier;
-		}
+		int screenWidth = _screenWidth * _textSurfaceMultiplier;
+		int screenHeight = _screenHeight * _textSurfaceMultiplier;
+
 		if (_game.features & GF_16BIT_COLOR
 #ifndef DISABLE_TOWNS_DUAL_LAYER_MODE
 			|| _game.platform == Common::kPlatformFMTowns
@@ -1981,8 +1984,8 @@ void ScummEngine_v90he::resetScumm() {
 	_heObjectNum = 0;
 	_hePaletteNum = 0;
 
-	_sprite->resetTables(0);
-	_wizParams.reset();
+	_sprite->resetSpriteSystem(false);
+	_wizImageCommand.reset();
 
 	if (_game.heversion >= 98)
 		_logicHE = LogicHE::makeLogicHE(this);
@@ -1998,6 +2001,7 @@ void ScummEngine_v99he::resetScumm() {
 	_hePaletteSlot = (_game.features & GF_16BIT_COLOR) ? 1280 : 1024;
 	_hePalettes = (uint8 *)malloc((_numPalettes + 1) * _hePaletteSlot);
 	memset(_hePalettes, 0, (_numPalettes + 1) * _hePaletteSlot);
+	_isHE995 = (_game.features & GF_HE_995);
 
 	// Array 129 is set to base name
 	len = strlen(_filenamePattern.pattern);
@@ -2648,10 +2652,10 @@ void ScummEngine::scummLoop(int delta) {
 	if (VAR_EGO != 0xFF)
 		oldEgo = VAR(VAR_EGO);
 
-	// In V1-V3 games, CHARSET_1 is called much earlier than in newer games.
+	// In V1-V3 games, displayDialog is called much earlier than in newer games.
 	// See also bug #987 for a case were this makes a difference.
 	if (_game.version <= 3)
-		CHARSET_1();
+		displayDialog();
 
 	processInput();
 
@@ -2759,14 +2763,14 @@ load_game:
 
 	if (_currentRoom == 0) {
 		if (_game.version > 3)
-			CHARSET_1();
+			displayDialog();
 		drawDirtyScreenParts();
 	} else {
 		walkActors();
 		moveCamera();
 		updateObjectStates();
 		if (_game.version > 3)
-			CHARSET_1();
+			displayDialog();
 
 		scummLoop_handleDrawing();
 
@@ -2815,7 +2819,7 @@ void ScummEngine_v90he::scummLoop(int delta) {
 
 	ScummEngine::scummLoop(delta);
 
-	_sprite->updateImages();
+	_sprite->runSpriteEngines();
 	if (_game.heversion >= 98) {
 		_logicHE->endOfFrame();
 	}
@@ -3106,7 +3110,7 @@ void ScummEngine_v3::terminateSaveMenuScript() {
 
 		// If local variable 0 and the override flag are set, chain script 119
 		if (readVar(0x4000)) {
-			if (VAR(VAR_OVERRIDE)) {
+			if (VAR(VAR_OVERRIDE) && _currentScript != 0xFF) {
 				int cur = _currentScript;
 
 				vm.slot[cur].number = 0;
@@ -3188,6 +3192,7 @@ void ScummEngine_v3::terminateSaveMenuScript() {
 		int cur = _currentScript;
 		int scriptToChain = _game.platform == Common::kPlatformFMTowns ? 6 : 5;
 
+		assert(cur != 0xFF);
 		chainedArgs[0] = 0;
 		vm.slot[cur].number = 0;
 		vm.slot[cur].status = ssDead;
@@ -3519,8 +3524,8 @@ void ScummEngine_v90he::scummLoop_handleDrawing() {
 		_fullRedraw = false;
 
 	if (_game.heversion >= 90) {
-		_sprite->resetBackground();
-		_sprite->sortActiveSprites();
+		_sprite->eraseSprites();
+		_sprite->buildActiveSpriteList();
 	}
 }
 #endif
@@ -3919,6 +3924,15 @@ int ScummEngine_v90he::networkSessionDialog() {
 	// Joining a session
 	SessionSelectorDialog sessionDialog(this);
 	return runDialog(sessionDialog);
+}
+#endif
+
+#ifdef ENABLE_HE
+bool ScummEngine_v100he::mapGeneratorDialog(bool demo) {
+	// Runs the map generator options dialog
+	// for Moonbase Commander.
+	MapGeneratorDialog dialog(demo);
+	return runDialog(dialog) == 1;
 }
 #endif
 

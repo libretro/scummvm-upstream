@@ -24,10 +24,9 @@
 
 #include "scumm/scumm_v6.h"
 #ifdef ENABLE_HE
-#include "scumm/he/floodfill_he.h"
 #include "scumm/he/wiz_he.h"
 #endif
-#include "scumm/actor_he.h"	// For AuxBlock & AuxEntry
+#include "scumm/actor_he.h"	// For HEEraseAuxEntry & HEAnimAuxEntry
 
 namespace Common {
 class SeekableReadStream;
@@ -43,9 +42,14 @@ class LogicHE;
 class MoviePlayer;
 class Sprite;
 class CUP_Player;
+
+class Moonbase;
 #endif
 
 class ScummEngine_v60he : public ScummEngine_v6 {
+#ifdef ENABLE_HE
+	friend class Moonbase;
+#endif
 protected:
 	enum SubOpType {
 		SO_ACTOR_DEFAULT_CLIPPED = 30,
@@ -66,7 +70,7 @@ public:
 	Common::SeekableReadStream *_hInFileTable[17];
 	Common::SeekableWriteStream *_hOutFileTable[17];
 
-	Common::Rect _actorClipOverride;	// HE specific
+	Common::Rect _defaultActorClipping;	// HE specific
 
 	int _heTimers[16];
 	uint32 _pauseStartTime = 0;
@@ -75,11 +79,17 @@ public:
 	void setHETimer(int timer);
 	void pauseHETimers(bool pause);
 
+#ifdef ENABLE_HE
+public:
+	Moonbase *_moonbase;
+#endif
+
 public:
 	ScummEngine_v60he(OSystem *syst, const DetectorResult &dr);
 	~ScummEngine_v60he() override;
 
 	Common::Path generateFilename(const int room) const override;
+	void setActorClippingRect(int actor, int x1, int y1, int x2, int y2);
 
 	void resetScumm() override;
 
@@ -210,7 +220,7 @@ public:
 
 	Common::Path generateFilename(const int room) const override;
 
-	void restoreBackgroundHE(Common::Rect rect, int dirtybit = 0);
+	void backgroundToForegroundBlit(Common::Rect rect, int dirtybit = 0);
 
 protected:
 	void allocateArrays() override;
@@ -263,11 +273,10 @@ class Net;
 class Lobby;
 #endif
 #endif
-class Moonbase;
 
 class ScummEngine_v71he : public ScummEngine_v70he {
 	friend class Wiz;
-	friend class Moonbase;
+	friend class Gdi;
 
 protected:
 	enum SubOpType {
@@ -276,7 +285,7 @@ protected:
 		SO_SET_POLYGON_LOCAL = 248,
 	};
 
-	bool _skipProcessActors;
+	bool _disableActorDrawingFlag;
 
 public:
 	ScummEngine_v71he(OSystem *syst, const DetectorResult &dr);
@@ -298,14 +307,13 @@ protected:
 	void redrawBGAreas() override;
 
 	void processActors() override;
-	void preProcessAuxQueue();
-	void postProcessAuxQueue();
+	void heFlushAuxEraseQueue();
+	virtual void heFlushAuxQueues();
 
 	void clearDrawQueues() override;
 
 	int getStringCharWidth(byte chr);
 	void appendSubstring(int dst, int src, int len2, int len);
-	void adjustRect(Common::Rect &rect);
 
 	/* HE version 71 script opcodes */
 	void o71_kernelSetFunctions();
@@ -320,21 +328,23 @@ protected:
 	void o71_polygonOps();
 	void o71_polygonHit();
 
-	byte VAR_WIZ_TCOLOR;
+	byte VAR_WIZ_TRANSPARENT_COLOR;
 public:
 	/* Actor AuxQueue stuff (HE) */
-	AuxBlock _auxBlocks[16];
-	uint16 _auxBlocksNum;
-	AuxEntry _auxEntries[16];
-	uint16 _auxEntriesNum;
+	HEEraseAuxEntry _heAuxEraseActorTable[16];
+	int _heAuxEraseActorIndex = 0;
+	HEAnimAuxEntry _heAuxAnimTable[16];
+	int _heAuxAnimTableIndex = 0;
 
-	void queueAuxBlock(ActorHE *a);
-	void queueAuxEntry(int actorNum, int subIndex);
+	void heQueueEraseAuxActor(ActorHE *a);
+	void heQueueAnimAuxFrame(int actorNum, int subIndex);
 
-	void remapHEPalette(const uint8 *src, uint8 *dst);
+	void buildRemapTable(byte *remapTablePtr, const byte *palDPtr, const byte *palSPtr);
 };
 
 class ScummEngine_v72he : public ScummEngine_v71he {
+	friend class Wiz;
+
 protected:
 	enum SubOpType {
 		SO_NONE = 1,
@@ -383,7 +393,8 @@ protected:
 	int _stringLength = 1;
 	byte _stringBuffer[4096];
 
-	WizParameters _wizParams;
+	WizImageCommand _wizImageCommand;
+	FloodFillCommand _floodFillCommand;
 
 public:
 	ScummEngine_v72he(OSystem *syst, const DetectorResult &dr);
@@ -507,6 +518,12 @@ protected:
 		SO_BUTTON = 60,
 	};
 
+	enum LineType {
+		kLTColor = 1,
+		kLTActor = 2,
+		kLTImage = 3
+	};
+
 public:
 	ScummEngine_v80he(OSystem *syst, const DetectorResult &dr);
 
@@ -559,9 +576,9 @@ class ScummEngine_v90he : public ScummEngine_v80he {
 	friend class Moonbase;
 	friend class MoviePlayer;
 	friend class Sprite;
+	friend class Wiz;
 
 protected:
-	FloodFillParameters _floodFillParams;
 	enum SubOpType {
 		SO_COORD_2D = 28,
 		SO_COORD_3D = 29,
@@ -576,6 +593,7 @@ protected:
 		SO_DRAW_XPOS = 38,
 		SO_DRAW_YPOS = 39,
 		SO_PROPERTY = 42,
+		SO_PRIORITY = 43,
 		SO_MOVE = 44,
 		SO_FIND = 45,
 		SO_GENERAL_CLIP_STATE = 46,
@@ -588,9 +606,17 @@ protected:
 		SO_ANGLE = 53,
 		SO_SET_FLAGS = 54,
 		SO_INIT = 57,
+		SO_AT_IMAGE = 62,
+		SO_IMAGE = 63,
+		SO_AT = 65,
+		SO_ERASE = 68,
+		SO_TO = 70,
 		SO_STEP_DIST = 77,
 		SO_ANIMATION = 82,
 		SO_PALETTE = 86,
+		SO_SCALE = 92,
+		SO_ANIMATION_SPEED = 97,
+		SO_SHADOW = 98,
 		SO_UPDATE = 124,
 		SO_CLASS = 125,
 		SO_SORT = 129,
@@ -609,7 +635,11 @@ protected:
 		SO_FONT_RENDER = 143,
 		SO_CLOSE = 165,
 		SO_RENDER_ELLIPSE = 189,
+		SO_REC = 195,
 		SO_FONT_END = 196,
+		SO_ACTOR_VARIABLE = 198,
+		SO_BAK = 199,
+		SO_BAKREC = 200
 	};
 
 	struct VideoParameters {
@@ -622,14 +652,15 @@ protected:
 
 	VideoParameters _videoParams;
 
-	int32 _heObject, _heObjectNum;
-	int32 _hePaletteNum;
+	int32 _heObject = 0;
+	int32 _heObjectNum = 0;
+	int32 _hePaletteNum = 0;
 
-	int32 _curMaxSpriteId;
-	int32 _curSpriteId;
-	int32 _curSpriteGroupId;
+	int32 _maxSpriteNum = 0;
+	int32 _minSpriteNum = 0;
+	int32 _curSpriteGroupId = 0;
 
-	LogicHE *_logicHE;
+	LogicHE *_logicHE = nullptr;
 	MoviePlayer *_moviePlay;
 	Sprite *_sprite;
 
@@ -667,8 +698,13 @@ protected:
 	void setResourceOffHeap(int typeId, int resId, int val);
 
 	void processActors() override;
+	void heFlushAuxQueues() override;
+	const byte *heAuxFindBlock(HEAnimAuxData *auxInfoPtr, int32 id);
+	void heAuxReleaseAuxDataInfo(HEAnimAuxData *auxInfoPtr);
+	void heAuxGetAuxDataInfo(HEAnimAuxData *auxInfoPtr, int whichActor, int auxIndex);
+	bool heAuxProcessFileRelativeBlock(HEAnimAuxData *auxInfoPtr, const byte *dataBlockPtr);
+	bool heAuxProcessDisplacedBlock(HEAnimAuxData *auxInfoPtr, const byte *displacedBlockPtr);
 
-	int computeWizHistogram(int resnum, int state, int x, int y, int w, int h);
 	void getArrayDim(int array, int *dim2start, int *dim2end, int *dim1start, int *dim1end);
 	void sortArray(int array, int dim2start, int dim2end, int dim1start, int dim1end, int sortOrder);
 
@@ -690,6 +726,20 @@ protected:
 	void copyHEPalette(int dstPalSlot, int srcPalSlot);
 	void copyHEPaletteColor(int palSlot, uint8 dstColor, uint16 srcColor);
 
+	/*
+	* Math functions
+	*
+	* Please do not attempt to revert these to our standard math functions!
+	* These are accurate for the games, ours aren't :-P
+	*/
+	int scummMathSin(int angle);
+	int scummMathCos(int angle);
+	int scummMathSqrt(int value);
+	int scummMathDist2D(int x1, int y1, int x2, int y2);
+	int scummMathAngleFromDelta(int dx, int dy);
+	int scummMathAngleOfLineSegment(int x1, int y1, int x2, int y2);
+
+
 protected:
 	/* HE version 90 script opcodes */
 	void o90_dup_n();
@@ -698,11 +748,11 @@ protected:
 	void o90_sin();
 	void o90_cos();
 	void o90_sqrt();
-	void o90_atan2();
-	void o90_getSegmentAngle();
+	void o90_getAngleFromDelta();
+	void o90_getAngleFromLine();
 	void o90_getActorData();
-	void o90_startScriptUnk();
-	void o90_jumpToScriptUnk();
+	void o90_priorityStartScript();
+	void o90_priorityChainScript();
 	void o90_videoOps();
 	void o90_getVideoData();
 	void o90_wizImageOps();
@@ -718,7 +768,7 @@ protected:
 	void o90_shr();
 	void o90_xor();
 	void o90_findAllObjectsWithClassOf();
-	void o90_getPolygonOverlap();
+	void o90_getOverlap();
 	void o90_cond();
 	void o90_dim2dim2Array();
 	void o90_redim2dimArray();
@@ -727,7 +777,7 @@ protected:
 	void o90_getObjectData();
 	void o90_getPaletteData();
 	void o90_paletteOps();
-	void o90_fontUnk();
+	void o90_fontEnum();
 	void o90_getActorAnimProgress();
 	void o90_kernelGetFunctions();
 	void o90_kernelSetFunctions();
@@ -736,14 +786,15 @@ protected:
 	byte VAR_NUM_SPRITES;
 	byte VAR_NUM_PALETTES;
 	byte VAR_NUM_UNK;
+	byte VAR_SPRITE_IMAGE_CHANGE_DOES_NOT_RESET_SETTINGS;
 
 	byte VAR_U32_VERSION;
 	byte VAR_U32_ARRAY_UNK;
 
 #ifdef USE_ENET
-	byte VAR_REMOTE_START_SCRIPT;
-	byte VAR_NETWORK_AVAILABLE;
-	byte VAR_NETWORK_RECEIVE_ARRAY_SCRIPT;
+	byte VAR_REMOTE_START_SCRIPT = 98;
+	byte VAR_NETWORK_AVAILABLE = 109;
+	byte VAR_NETWORK_RECEIVE_ARRAY_SCRIPT = 101;
 
 public:
 	int networkSessionDialog();
@@ -773,7 +824,6 @@ protected:
 class ScummEngine_v100he : public ScummEngine_v99he {
 friend class AI;
 friend class Moonbase;
-friend class Net;
 
 // The following engine versions use sub opcodes from this version
 friend class ScummEngine_v71he;
@@ -955,6 +1005,14 @@ protected:
 		SO_ROOM_SAVEGAME_BY_NAME = 137,
 		SO_ROOM_SCREEN = 138,
 		SO_ROOM_SCROLL = 139,
+		SO_ROOM_SHAKE_OFF = 140,
+		SO_ROOM_SHAKE_ON = 141,
+		SO_ROOM_TRANSFORM = 142,
+
+		// SCRIPT
+		SO_BAK = 128,
+		SO_BAKREC = 129,
+		SO_REC = 130,
 
 		// SYSTEM
 		SO_FLUSH_OBJECT_DRAW_QUEUE = 128,
@@ -982,9 +1040,6 @@ protected:
 		SO_WAIT_FOR_MESSAGE = 130,
 		SO_WAIT_FOR_SENTENCE = 131,
 	};
-
-public:
-	Moonbase *_moonbase;
 
 public:
 	ScummEngine_v100he(OSystem *syst, const DetectorResult &dr);
@@ -1018,8 +1073,8 @@ protected:
 	void o100_createSound();
 	void o100_dim2dim2Array();
 	void o100_paletteOps();
-	void o100_jumpToScriptUnk();
-	void o100_startScriptUnk();
+	void o100_priorityChainScript();
+	void o100_priorityStartScript();
 	void o100_redimArray();
 	void o100_roomOps();
 	void o100_setSystemMessage();
@@ -1052,6 +1107,9 @@ protected:
 	byte VAR_REMOTE_START_SCRIPT;
 	byte VAR_NETWORK_AVAILABLE;
 	byte VAR_NETWORK_RECEIVE_ARRAY_SCRIPT;
+
+public:
+	bool mapGeneratorDialog(bool demo);
 };
 
 class ScummEngine_vCUPhe : public Engine {

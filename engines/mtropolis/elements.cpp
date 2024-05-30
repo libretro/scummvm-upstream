@@ -642,11 +642,22 @@ void MovieElement::activate() {
 		_videoDecoder.reset(qtDecoder);
 		_damagedFrames = movieAsset->getDamagedFrames();
 
-		Common::SafeSeekableSubReadStream *movieDataStream;
+		Common::SeekableReadStream *movieDataStream;
 
 		if (movieAsset->getMovieDataSize() > 0) {
 			qtDecoder->setChunkBeginOffset(movieAsset->getMovieDataPos());
 			movieDataStream = new Common::SafeSeekableSubReadStream(stream, movieAsset->getMovieDataPos(), movieAsset->getMovieDataPos() + movieAsset->getMovieDataSize(), DisposeAfterUse::NO);
+		} else if (!movieAsset->getExtFileName().empty()) {
+			Common::File *file = new Common::File();
+
+			if (!file->open(Common::Path(Common::String("VIDEO/") + movieAsset->getExtFileName()))) {
+				warning("Movie asset could not be opened: %s", movieAsset->getExtFileName().c_str());
+				delete file;
+				_videoDecoder.reset();
+				return;
+			}
+
+			movieDataStream = file;
 		} else {
 			// If no data size, the movie data is all over the file and the MOOV atom may be after it.
 			movieDataStream = new Common::SafeSeekableSubReadStream(stream, 0, stream->size(), DisposeAfterUse::NO);

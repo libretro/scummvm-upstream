@@ -531,9 +531,23 @@ const Font *MacFontManager::getFont(MacFont *macFont) {
 			if (pFont != _uniFonts.end()) {
 				font = pFont->_value;
 			} else {
-				font = Graphics::loadTTFFontFromArchive("FreeSans.ttf", macFont->getSize(), Graphics::kTTFSizeModeCharacter, 0, 0, Graphics::kTTFRenderModeMonochrome);
-				_uniFonts[macFont->getSize()] = font;
+				int newId = macFont->getId();
+				int newSlant = macFont->getSlant();
+				int familyId = getFamilyId(newId, newSlant);
+				if (_fontInfo.contains(familyId)) {
+					font = Graphics::loadTTFFontFromArchive(_fontInfo[familyId]->name, macFont->getSize(), Graphics::kTTFSizeModeCharacter, 0, 0, Graphics::kTTFRenderModeMonochrome);
+					_uniFonts[macFont->getSize()] = font;
+				} else {
+					font = Graphics::loadTTFFontFromArchive("FreeSans.ttf", macFont->getSize(), Graphics::kTTFSizeModeCharacter, 0, 0, Graphics::kTTFRenderModeMonochrome);
+					_uniFonts[macFont->getSize()] = font;
+				}
 			}
+		} else {
+			int newId = macFont->getId();
+			int newSlant = macFont->getSlant();
+			int familyId = getFamilyId(newId, newSlant);
+			font = Graphics::loadTTFFontFromArchive(_fontInfo[familyId]->name, macFont->getSize(), Graphics::kTTFSizeModeCharacter, 0, 0, Graphics::kTTFRenderModeMonochrome);
+			_uniFonts[macFont->getSize()] = font;
 		}
 	}
 #endif
@@ -656,6 +670,59 @@ int MacFontManager::registerFontName(Common::String name, int preferredId) {
 	_fontInfo[id] = info;
 	_fontIds[name] = id;
 	return id;
+}
+
+int MacFontManager::registerTTFFont(const TTFMap ttfList[]) {
+	int defaultValue = 1;
+	int realId = 100;
+	auto checkId = [&](int id) {
+		for (const TTFMap *i = ttfList; i->ttfName; i++) {
+			if (_fontInfo.contains(id + i->slant)) {
+				return true;
+			}
+		}
+		return false;
+	};
+
+	while (checkId(realId))
+		realId++;
+
+	for (const TTFMap *i = ttfList; i->ttfName; i++) {
+		int id = realId;
+		Common::String name = i->ttfName;
+
+		if (name.empty()) {
+			if (defaultValue == 1)
+				defaultValue = id;
+			continue;
+		}
+
+		if (_fontIds.contains(name)) {
+			if (defaultValue == 1)
+				defaultValue = _fontIds[name];
+			continue;
+		}
+
+		int slant = 0;
+
+		id += slant | i->slant;
+
+		FontInfo *info = new FontInfo;
+		info->name = name;
+		_fontInfo[id] = info;
+		_fontIds[name] = id;
+		if (defaultValue == 1)
+			defaultValue = id;
+	}
+	return defaultValue;
+}
+
+int MacFontManager::getFamilyId(int newId, int newSlant) {
+	if (_fontInfo.contains(newId + newSlant)) {
+		return newId + newSlant;
+	}
+	warning("MacFontManager::getFamilyId(): No font with slant %d found, setting to kMacFontRegular", newSlant);
+	return newId;
 }
 
 void MacFont::setName(const char *name) {

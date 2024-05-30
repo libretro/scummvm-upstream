@@ -262,11 +262,15 @@ void ListWidget::handleMouseDown(int x, int y, int button, int clickCount) {
 		sendCommand(kListSelectionChangedCmd, _selectedItem);
 	}
 
+	// Notify clients if an item was clicked
+	if (newSelectedItem >= 0) {
+		sendCommand(kListItemSingleClickedCmd, _selectedItem);
+	}
+
 	// TODO: Determine where inside the string the user clicked and place the
 	// caret accordingly.
 	// See _editScrollOffset and EditTextWidget::handleMouseDown.
 	markAsDirty();
-
 }
 
 void ListWidget::handleMouseUp(int x, int y, int button, int clickCount) {
@@ -406,11 +410,7 @@ bool ListWidget::handleKeyDown(Common::KeyState state) {
 		case Common::KEYCODE_BACKSPACE:
 		case Common::KEYCODE_DELETE:
 			if (_selectedItem >= 0) {
-				if (_editable) {
-					// Ignore delete and backspace when the list item is editable
-				} else {
-					sendCommand(kListItemRemovalRequestCmd, _selectedItem);
-				}
+				sendCommand(kListItemRemovalRequestCmd, _selectedItem);
 			}
 			break;
 
@@ -559,11 +559,8 @@ void ListWidget::drawWidget() {
 		if (_selectedItem == pos)
 			inverted = _inversion;
 
-		// Display selected/unselected games in mass detection as enabled/disabled items.
-		if (pos < (signed int)_listSelected.size() && _listSelected[pos])
-			_state = ThemeEngine::kStateEnabled;
-		else
-			_state = ThemeEngine::kStateDisabled;
+		// Get state for drawing the item text
+		ThemeEngine::WidgetStateInfo itemState = getItemState(pos);
 
 		Common::Rect r(getEditRect());
 		int pad = _leftPadding;
@@ -573,7 +570,7 @@ void ListWidget::drawWidget() {
 		if (_numberingMode != kListNumberingOff && g_gui.useRTL() == false) {
 			buffer = Common::String::format("%2d. ", (pos + _numberingMode));
 			g_gui.theme()->drawText(Common::Rect(_x + _hlLeftPadding, y, _x + r.left + _leftPadding, y + fontHeight),
-									buffer, _state, _drawAlign, inverted, _leftPadding, true);
+									buffer, itemState, _drawAlign, inverted, _leftPadding, true);
 			pad = 0;
 		}
 
@@ -599,7 +596,7 @@ void ListWidget::drawWidget() {
 			buffer = _list[pos];
 		}
 
-		drawFormattedText(r1, buffer, _state, _drawAlign, inverted, pad, true, color);
+		drawFormattedText(r1, buffer, itemState, _drawAlign, inverted, pad, true, color);
 
 		// If in numbering mode & using RTL layout in GUI, we print a number suffix after drawing the text
 		if (_numberingMode != kListNumberingOff && g_gui.useRTL()) {
@@ -610,11 +607,13 @@ void ListWidget::drawWidget() {
 			r2.left = r1.right;
 			r2.right = r1.right + rtlPad;
 
-			g_gui.theme()->drawText(r2, buffer, _state, _drawAlign, inverted, _leftPadding, true);
+			g_gui.theme()->drawText(r2, buffer, itemState, _drawAlign, inverted, _leftPadding, true);
 		}
 	}
 
-	EditableWidget::drawWidget();
+	if (_editMode) {
+		EditableWidget::drawWidget();
+	}
 }
 
 Common::Rect ListWidget::getEditRect() const {
@@ -690,6 +689,7 @@ void ListWidget::startEditMode() {
 		_editColor = ThemeEngine::kFontColorNormal;
 		markAsDirty();
 		g_system->setFeatureState(OSystem::kFeatureVirtualKeyboard, true);
+		sendCommand(kListItemEditModeStartedCmd, _selectedItem);
 	}
 }
 
@@ -707,8 +707,6 @@ void ListWidget::abortEditMode() {
 	// undo any changes made
 	assert(_selectedItem >= 0);
 	_editMode = false;
-	//drawCaret(true);
-	//markAsDirty();
 	g_system->setFeatureState(OSystem::kFeatureVirtualKeyboard, false);
 }
 

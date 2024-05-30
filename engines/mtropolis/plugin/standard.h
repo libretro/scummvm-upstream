@@ -124,6 +124,7 @@ private:
 		kCueSourceIntegerRange,
 		kCueSourceVariableReference,
 		kCueSourceLabel,
+		kCueSourceString,
 
 		kCueSourceInvalid = -1,
 	};
@@ -137,13 +138,16 @@ private:
 		uint32 asVarRefGUID;
 		Label asLabel;
 		uint64 asUnset;
+		Common::String asString;
 
 		template<class T, T (CueSourceUnion::*TMember)>
 		void construct(const T &value);
 
-		template<class T, T (CueSourceUnion::*TMember)>
+		template<class T, T(CueSourceUnion::*TMember)>
 		void destruct();
 	};
+
+	MediaCueMessengerModifier(const MediaCueMessengerModifier &other);
 
 	Common::SharedPtr<Modifier> shallowClone() const override;
 	const char *getDefaultName() const override;

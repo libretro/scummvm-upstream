@@ -23,6 +23,7 @@
 #define DIRECTOR_MOVIE_H
 
 #define DEFAULT_CAST_LIB 1
+#define SHARED_CAST_LIB -1337
 #define CAST_LIB_OFFSET 1023
 
 namespace Common {
@@ -99,6 +100,7 @@ public:
 	Window *getWindow() const { return _window; }
 	DirectorEngine *getVM() const { return _vm; }
 	Cast *getCast() const { return _casts.getValOrDefault(DEFAULT_CAST_LIB, nullptr); }
+	Cast *getCast(CastMemberID memberID);
 	Cast *getSharedCast() const { return _sharedCast; }
 	const Common::HashMap<int, Cast *> *getCasts() const { return &_casts; }
 	Score *getScore() const { return _score; }
@@ -128,16 +130,15 @@ public:
 
 	// lingo/lingo-events.cpp
 	void setPrimaryEventHandler(LEvent event, const Common::String &code);
+	void resolveScriptEvent(LingoEvent &event);
 	void processEvent(LEvent event, int targetId = 0);
-	void queueUserEvent(LEvent event, int targetId = 0);
+	void queueInputEvent(LEvent event, int targetId = 0, Common::Point pos = Common::Point(-1, -1));
 
 private:
 	void loadFileInfo(Common::SeekableReadStreamEndian &stream);
 
-	void queueEvent(Common::Queue<LingoEvent> &queue, LEvent event, int targetId = 0);
+	void queueEvent(Common::Queue<LingoEvent> &queue, LEvent event, int targetId = 0, Common::Point pos = Common::Point(-1, -1));
 	void queueSpriteEvent(Common::Queue<LingoEvent> &queue, LEvent event, int eventId, int spriteId);
-	void queueFrameEvent(Common::Queue<LingoEvent> &queue, LEvent event, int eventId);
-	void queueMovieEvent(Common::Queue<LingoEvent> &queue, LEvent event, int eventId);
 
 public:
 	Archive *_movieArchive;
@@ -166,7 +167,7 @@ public:
 	bool _videoPlayback;
 
 	int _nextEventId;
-	Common::Queue<LingoEvent> _userEventQueue;
+	Common::Queue<LingoEvent> _inputEventQueue;
 
 	unsigned char _key;
 	int _keyCode;

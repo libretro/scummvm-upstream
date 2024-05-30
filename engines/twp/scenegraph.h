@@ -1,4 +1,3 @@
-
 /* ScummVM - Graphic Adventure Engine
  *
  * ScummVM is the legal property of its developers, whose names
@@ -35,6 +34,8 @@
 #define NUMOBJECTS 8
 
 namespace Twp {
+
+class Motor;
 
 // Represents a node in a scene graph.
 class Node {
@@ -299,6 +300,8 @@ public:
 	bool isOver() const { return _over; }
 	Common::SharedPtr<Object> getObject() const { return _obj; }
 	Math::Vector2d getPos(Common::SharedPtr<Object> inv) const;
+	Math::Vector2d getPos(int index) const;
+	int getOverIndex() const;
 
 	void setVisible(bool visible) override;
 
@@ -318,6 +321,10 @@ private:
 	bool _down = false;
 	Common::SharedPtr<Object> _obj;
 	Common::Rect _itemRects[NUMOBJECTS];
+	Common::ScopedPtr<Motor> _shake[NUMOBJECTS];
+	bool _inventoryOver[NUMOBJECTS];
+	Math::Vector2d _shakeOffset[NUMOBJECTS];
+	float _shakeTime[NUMOBJECTS];
 	Common::Rect _arrowUpRect;
 	Common::Rect _arrowDnRect;
 	float _jiggleTime = 0.f;

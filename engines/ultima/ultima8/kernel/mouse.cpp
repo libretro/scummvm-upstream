@@ -19,6 +19,7 @@
  *
  */
 
+#include "common/config-manager.h"
 #include "graphics/cursorman.h"
 #include "ultima/ultima.h"
 #include "ultima/ultima8/kernel/mouse.h"
@@ -28,6 +29,7 @@
 #include "ultima/ultima8/kernel/kernel.h"
 #include "ultima/ultima8/misc/direction_util.h"
 #include "ultima/ultima8/world/get_object.h"
+#include "ultima/ultima8/world/actors/avatar_mover_process.h"
 #include "ultima/ultima8/world/actors/main_actor.h"
 #include "ultima/ultima8/graphics/shape.h"
 #include "ultima/ultima8/graphics/shape_frame.h"
@@ -45,6 +47,22 @@ Mouse::Mouse() : _lastMouseFrame(-1), _flashingCursorTime(0), _mouseOverGump(0),
 
 	_cursors.push(MOUSE_NONE);
 	CursorMan.showMouse(false);
+
+	// The original game switches cursors from small -> medium -> large on
+	// rectangles - in x, ~30px and ~130px away from the avatar (center) on
+	// the 320px screen, and approximately the same proportions in y.
+	//
+	// These cursors correspond to the player movement of step -> walk -> run.
+	// 
+	// Modern players may be in a window so give them a little bit more
+	// space to make the large cursor without having to hit the edge.
+
+	// Walk & run threshold range of 0-255
+	ConfMan.registerDefault("walk_threshold", 50);
+	ConfMan.registerDefault("run_threshold", 160);
+
+	_walkThreshold = CLIP<int>(ConfMan.getInt("walk_threshold"), 0, 255);
+	_runThreshold = CLIP<int>(ConfMan.getInt("run_threshold"), 0, 255);
 }
 
 Mouse::~Mouse() {
@@ -130,32 +148,32 @@ bool Mouse::isMouseDownEvent(MouseButton button) const {
 }
 
 int Mouse::getMouseLength(int mx, int my) const {
-	Rect dims;
-	RenderSurface *screen = Ultima8Engine::get_instance()->getRenderScreen();
-	screen->GetSurfaceDims(dims);
+	Ultima8Engine *engine = Ultima8Engine::get_instance();
+	AvatarMoverProcess *proc = engine->getAvatarMoverProcess();
+	if (proc) {
+		if (proc->hasMovementFlags(AvatarMoverProcess::MOVE_STEP))
+			return 0;
+		if (proc->hasMovementFlags(AvatarMoverProcess::MOVE_RUN))
+			return 2;
+	}
 
-	//
-	// The original game switches cursors from small -> medium -> large on
-	// rectangles - in x, ~30px and ~130px away from the avatar (center) on
-	// the 320px screen, and approximately the same proportions in y.
-	//
-	// Modern players may be in a window so give them a little bit more
-	// space to make the large cursor without having to hit the edge.
-	//
+	Rect dims;
+	RenderSurface *screen = engine->getRenderScreen();
+	screen->GetSurfaceDims(dims);
 
 	// Reference point is the center of the screen
 	int dx = abs(mx - dims.width() / 2);
 	int dy = abs((dims.height() / 2) - my);
-	int xmed = dims.width() * 100 / 320;
-	int ymed = dims.height() * 100 / 320;
+	int xmed = dims.width() / 2 * _runThreshold / 255;
+	int ymed = dims.height() / 2 * _runThreshold / 255;
 
 	if (dx > xmed || dy > ymed)
 		return 2;
 
 	// For short cursor, reference point is near the avatar's feet
 	dy = abs((dims.height() / 2 + 14) - my); //! constant
-	int xshort = dims.width() * 30 / 320;
-	int yshort = dims.height() * 30 / 320;
+	int xshort = dims.width() / 2 * _walkThreshold / 255;
+	int yshort = dims.height() / 2 * _walkThreshold / 255;
 
 	if (dx > xshort || dy > yshort)
 		return 1;
@@ -194,6 +212,8 @@ int Mouse::getMouseFrame() {
 	// 38 = quill
 	// 39 = magnifying glass
 	// 40 = red cross
+	if (_cursors.empty())
+		return -1;
 
 	MouseCursor cursor = _cursors.top();
 

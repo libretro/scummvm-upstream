@@ -259,7 +259,7 @@ struct SET : public EngineData {
 struct LOAD : public EngineData {
 	LOAD(Common::SeekableReadStream *chunkStream);
 
-	Common::Path _imageName;
+	Common::Path _image1Name;
 
 	int16 _mainFontID;
 	int16 _highlightFontID;
@@ -295,15 +295,10 @@ struct LOAD : public EngineData {
 	Common::String _emptySaveText;
 	Common::String _defaultSaveNamePrefix;
 	// Common::Rect _gameSavedBounds
-};
 
-// Contains data for the new Save/Load screen. Used in nancy8 and up
-struct LOAD_v2 : public EngineData {
-	LOAD_v2(Common::SeekableReadStream *chunkStream);
-
-	Common::Path _firstPageimageName;
-	Common::Path _otherPageimageName;
-	Common::Path _buttonsImageName;
+	// v2 members
+	Common::Path _image2Name;
+	Common::Path _imageButtonsName;
 
 	Common::Array<Common::Rect> _unpressedButtonSrcs;
 	Common::Array<Common::Rect> _pressedButtonSrcs;
@@ -311,17 +306,6 @@ struct LOAD_v2 : public EngineData {
 	Common::Array<Common::Rect> _disabledButtonSrcs;
 
 	Common::Array<Common::Rect> _buttonDests;
-	Common::Array<Common::Rect> _textboxBounds;
-
-	int16 _mainFontID;
-	int16 _highlightFontID;
-	int16 _fontXOffset;
-	int16 _fontYOffset;
-
-	uint16 _blinkingTimeDelay;
-
-	Common::Path _gameSavedPopup;
-	Common::String _emptySaveText;
 };
 
 // Contains data for the prompt that appears when exiting the game
@@ -361,7 +345,7 @@ struct HINT : public EngineData {
 struct SPUZ : public EngineData {
 	SPUZ(Common::SeekableReadStream *chunkStream);
 
-	Common::Array<Common::Array<int16>> tileOrder;
+	Common::Array<Common::Array<Common::Array<int16>>> tileOrder;
 };
 
 // Contains data for the clock UI that appears at the bottom left of the screen (top left in TVD)

@@ -86,7 +86,7 @@ DrillerEngine::DrillerEngine(OSystem *syst, const ADGameDescription *gd) : Frees
 
 	Math::Vector3d drillBaseOrigin = Math::Vector3d(0, 0, 0);
 	Math::Vector3d drillBaseSize = Math::Vector3d(3, 2, 3);
-	_drillBase = new GeometricObject(kCubeType, 0, 0, drillBaseOrigin, drillBaseSize, nullptr, nullptr, FCLInstructionVector(), "");
+	_drillBase = new GeometricObject(kCubeType, 0, 0, drillBaseOrigin, drillBaseSize, nullptr, nullptr, nullptr, FCLInstructionVector(), "");
 	assert(!_drillBase->isDestroyed() && !_drillBase->isInvisible());
 
 	if (isDemo()) {
@@ -395,7 +395,19 @@ Math::Vector3d getProjectionToPlane(const Math::Vector3d &vect, const Math::Vect
 }
 
 void DrillerEngine::pressedKey(const int keycode) {
-	if (keycode == Common::KEYCODE_d) {
+	if (keycode == Common::KEYCODE_q) {
+		rotate(-_angleRotations[_angleRotationIndex], 0);
+	} else if (keycode == Common::KEYCODE_w) {
+		rotate(_angleRotations[_angleRotationIndex], 0);
+	} else if (keycode == Common::KEYCODE_s) {
+		increaseStepSize();
+	} else if (keycode ==  Common::KEYCODE_x) {
+		decreaseStepSize();
+	} else if (keycode == Common::KEYCODE_r) {
+		rise();
+	} else if (keycode == Common::KEYCODE_f) {
+		lower();
+	} else if (keycode == Common::KEYCODE_d) {
 		if (isDOS() && isDemo()) // No support for drilling here yet
 			return;
 		clearTemporalMessages();

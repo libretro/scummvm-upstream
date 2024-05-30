@@ -466,6 +466,9 @@ void ScummEngine_v7::drawBlastTexts() {
 
 		_charset->setCurID(_blastTextQueue[i].charset);
 
+		if (_game.version == 7)
+			memcpy(_charsetColorMap, _charsetData[_charset->getCurID()], _game.id == GID_DIG ? sizeof(_charsetColorMap) : 4);
+
 		if (bt.flags & kStyleWordWrap) {
 			bt.rect = _wrappedTextClipRect;
 
@@ -600,7 +603,7 @@ void ScummEngine_v7::clearSubtitleQueue() {
 	_subtitleQueuePos = 0;
 }
 
-void ScummEngine_v7::CHARSET_1() {
+void ScummEngine_v7::displayDialog() {
 	processSubtitleQueue();
 
 	bool usingOldSystem = (_game.id == GID_FT) || (_game.id == GID_DIG && _game.features & GF_DEMO);
@@ -614,7 +617,7 @@ void ScummEngine_v7::CHARSET_1() {
 
 	Actor *a = NULL;
 	if (getTalkingActor() != 0xFF)
-		a = derefActorSafe(getTalkingActor(), "CHARSET_1");
+		a = derefActorSafe(getTalkingActor(), "displayDialog");
 
 	StringTab saveStr = _string[0];
 	if (a && _string[0].overhead) {
@@ -648,8 +651,10 @@ void ScummEngine_v7::CHARSET_1() {
 		_charset->_startLeft = _charset->_left = _string[0].xpos;
 		_charset->_right = _string[0].right;
 		_charset->_center = _string[0].center;
-		memcpy(_charsetColorMap, _charsetData[_charset->getCurID()], 4);
 	}
+
+	if (_game.version == 7)
+		memcpy(_charsetColorMap, _charsetData[_charset->getCurID()], _game.id == GID_DIG ? sizeof(_charsetColorMap) : 4);
 
 	if (usingOldSystem && a && a->_charset) {
 		_charset->setCurID(a->_charset);

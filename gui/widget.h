@@ -467,6 +467,7 @@ public:
 		StaticTextWidget(boss, x, y, w, h, scale,
 				path.empty() ? placeholder : Common::U32String(path.toString(Common::Path::kNativeSeparator)),
 				align, tooltip, font, Common::UNK_LANG, useEllipsis),
+		_path(path),
 		_placeholder(placeholder) { }
 	PathWidget(GuiObject *boss, int x, int y, int w, int h,
 			const Common::Path &path, Graphics::TextAlign align,
@@ -477,6 +478,7 @@ public:
 		StaticTextWidget(boss, x, y, w, h,
 				path.empty() ? placeholder : Common::U32String(path.toString(Common::Path::kNativeSeparator)),
 				align, tooltip, font, Common::UNK_LANG, useEllipsis),
+		_path(path),
 		_placeholder(placeholder) {}
 	PathWidget(GuiObject *boss, const Common::String &name,
 			const Common::Path &path,
@@ -487,6 +489,7 @@ public:
 		StaticTextWidget(boss, name,
 				path.empty() ? placeholder : Common::U32String(path.toString(Common::Path::kNativeSeparator)),
 				tooltip, font, Common::UNK_LANG, useEllipsis),
+		_path(path),
 		_placeholder(placeholder) {}
 	void setLabel(const Common::Path &path) {
 		_path = path;
@@ -527,7 +530,7 @@ public:
 	/**
 	 * @param widgetsBoss  parent widget for the container widget
 	 * @param name         name of the container widget in the layout system
-	 * @param dialogLayout name of the layout used by the contained widgets, empty string for manually layed out widgets
+	 * @param dialogLayout name of the layout used by the contained widgets, empty string for manually laid out widgets
 	 * @param scrollable   whether the container is made scrollable through a ScrollContainerWidget
 	 * @param domain       the configuration manager domain this widget is meant to edit
 	 */

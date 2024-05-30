@@ -19,6 +19,9 @@
  *
  */
 
+#include "backends/modular-backend.h"
+#include "backends/graphics/graphics.h"
+
 #include "common/config-manager.h"
 #include "common/debug-channels.h"
 #include "common/tokenizer.h"
@@ -28,6 +31,7 @@
 
 #include "director/director.h"
 #include "director/debugger.h"
+#include "director/debugtools.h"
 #include "director/archive.h"
 #include "director/cast.h"
 #include "director/movie.h"
@@ -171,7 +175,7 @@ Common::String DirectorEngine::getCurrentPath() const { return _currentWindow->g
 Common::String DirectorEngine::getCurrentAbsolutePath() {
 	Common::String currentPath = getCurrentPath();
 	Common::String result;
-	result += (getPlatform() == Common::kPlatformWindows) ? "C:\\" : "";
+	result += (getPlatform() == Common::kPlatformWindows && _version >= 400) ? "C:\\" : "";
 	result += convertPath(currentPath);
 	return result;
 }
@@ -284,6 +288,14 @@ Common::Error DirectorEngine::run() {
 		g_debugger->attach();
 		g_system->updateScreen();
 	}
+
+#ifdef USE_IMGUI
+	ImGuiCallbacks callbacks;
+	callbacks.init = onImGuiInit;
+	callbacks.render = onImGuiRender;
+	callbacks.cleanup = onImGuiCleanup;
+	_system->setImGuiCallbacks(callbacks);
+#endif
 
 	bool loop = true;
 

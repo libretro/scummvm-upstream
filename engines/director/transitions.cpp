@@ -132,9 +132,9 @@ struct {
 	TRANS(kTransDissolveBits,			kTransAlgoDissolve,	kTransDirDissolve)
 };
 
-void Window::exitTransition(TransParams &t, int step, Graphics::ManagedSurface *nextFrame, Common::Rect clipRect) {
+void Window::exitTransition(TransParams &t, Graphics::ManagedSurface *nextFrame, Common::Rect clipRect) {
 	_composeSurface->blitFrom(*nextFrame, clipRect, Common::Point(clipRect.left, clipRect.top));
-	stepTransition(t, step);
+	stepTransition(t, t.steps);
 }
 
 void Window::stepTransition(TransParams &t, int step) {
@@ -196,7 +196,7 @@ void Window::playTransition(uint frame, RenderMode mode, uint16 transDuration, u
 	Score *score = g_director->getCurrentMovie()->getScore();
 	if (t.area) {
 		// Changed area transition
-		score->renderSprites(mode);
+		score->updateSprites(mode);
 
 		if (_dirtyRects.size() == 0)
 			return;
@@ -222,7 +222,7 @@ void Window::playTransition(uint frame, RenderMode mode, uint16 transDuration, u
 		render(false, &nextFrame);
 	} else {
 		// Full stage transition
-		score->renderSprites(mode);
+		score->updateSprites(mode);
 		render(true, &nextFrame);
 
 		clipRect = _innerDims;
@@ -560,7 +560,7 @@ void Window::playTransition(uint frame, RenderMode mode, uint16 transDuration, u
 		_composeSurface->blitFrom(*blitFrom, rfrom, Common::Point(rto.left, rto.top));
 
 		if (_vm->processEvents(true)) {
-			exitTransition(t, i, &nextFrame, clipRect);
+			exitTransition(t, &nextFrame, clipRect);
 			break;
 		}
 
@@ -765,7 +765,7 @@ void Window::dissolveTrans(TransParams &t, Common::Rect &clipRect, Graphics::Man
 		g_lingo->executePerFrameHook(t.frame, i + 1);
 
 		if (_vm->processEvents(true)) {
-			exitTransition(t, i, nextFrame, clipRect);
+			exitTransition(t, nextFrame, clipRect);
 			break;
 		}
 
@@ -871,7 +871,7 @@ void Window::dissolvePatternsTrans(TransParams &t, Common::Rect &clipRect, Graph
 		g_lingo->executePerFrameHook(t.frame, i + 1);
 
 		if (_vm->processEvents(true)) {
-			exitTransition(t, i, nextFrame, clipRect);
+			exitTransition(t, nextFrame, clipRect);
 			break;
 		}
 
@@ -1053,7 +1053,7 @@ void Window::transMultiPass(TransParams &t, Common::Rect &clipRect, Graphics::Ma
 		g_director->delayMillis(MAX(0, diff));
 
 		if (_vm->processEvents(true)) {
-			exitTransition(t, i, nextFrame, clipRect);
+			exitTransition(t, nextFrame, clipRect);
 			break;
 		}
 
@@ -1104,7 +1104,7 @@ void Window::transZoom(TransParams &t, Common::Rect &clipRect, Graphics::Managed
 		r.moveTo(w / 2 - t.xStepSize * i, h / 2 - t.yStepSize * i);
 
 		if (_vm->processEvents(true)) {
-			exitTransition(t, i, nextFrame, clipRect);
+			exitTransition(t, nextFrame, clipRect);
 			break;
 		}
 

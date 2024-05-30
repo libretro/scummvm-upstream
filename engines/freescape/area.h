@@ -52,7 +52,7 @@ public:
 	uint8 getScale();
 	void remapColor(int index, int color);
 	void unremapColor(int index);
-	void draw(Renderer *gfx, uint32 animationTicks);
+	void draw(Renderer *gfx, uint32 animationTicks, Math::Vector3d camera, Math::Vector3d direction);
 	void drawGroup(Renderer *gfx, Group *group, bool runAnimation);
 	void show();
 
@@ -61,12 +61,14 @@ public:
 	ObjectArray checkCollisions(const Math::AABB &boundingBox);
 	Math::Vector3d resolveCollisions(Math::Vector3d const &lastPosition, Math::Vector3d const &newPosition, int playerHeight);
 	void addObjectFromArea(int16 id, Area *global);
+	void addGroupFromArea(int16 id, Area *global);
 	void addObject(Object *obj);
 	void addFloor();
 	void addStructure(Area *global);
 	void removeObject(int16 id);
 	void resetArea();
 	bool isOutside();
+	bool hasActiveGroups();
 
 	Common::Array<Common::String> _conditionSources;
 	Common::Array<FCLInstructionVector> _conditions;

@@ -43,15 +43,18 @@ public:
 	int startOfFrame() override;
 
 	int32 dispatch(int op, int numArgs, int32 *args) override;
+	bool userCodeProcessWizImageCmd(const WizImageCommand *icmdPtr) override;
+	bool overrideImageHitTest(int *outValue, int globNum, int state, int x, int y, int32 flags) override;
+	bool overrideImagePixelHitTest(int *outValue, int globNum, int state, int x, int y, int32 flags) override;
 
 private:
-	void op_create_multi_state_wiz(int op, int numArgs, int32 *args);
-	void op_load_multi_channel_wiz(int op, int numArgs, int32 *args);
-	void op_wiz_from_multi_channel_wiz(int op, int numArgs, int32 *args);
+	int  op_create_multi_state_wiz(int op, int numArgs, int32 *args);
+	int  op_load_multi_channel_wiz(int op, int numArgs, int32 *args);
+	int  op_wiz_from_multi_channel_wiz(int op, int numArgs, int32 *args);
 	void op_dos_command(int op, int numArgs, int32 *args);
 	void op_set_fow_sentinel(int32 *args);
 	void op_set_fow_information(int op, int numArgs, int32 *args);
-	int op_set_fow_image(int op, int numArgs, int32 *args);
+	int  op_set_fow_image(int op, int numArgs, int32 *args);
 
 	void op_ai_test_kludge(int op, int numArgs, int32 *args);
 	int op_ai_master_control_program(int op, int numArgs, int32 *args);
@@ -173,18 +176,19 @@ int LogicHEmoonbase::startOfFrame() {
 
 int32 LogicHEmoonbase::dispatch(int op, int numArgs, int32 *args) {
 	switch (op) {
+	// Development kludge commands which are called within a room
+	// which is not compiled into the final game files
 	case OP_CREATE_MULTI_STATE_WIZ:
-		op_create_multi_state_wiz(op, numArgs, args);
-		break;
+		return op_create_multi_state_wiz(op, numArgs, args);
 	case OP_LOAD_MULTI_CHANNEL_WIZ:
-		op_load_multi_channel_wiz(op, numArgs, args);
-		break;
+		return op_load_multi_channel_wiz(op, numArgs, args);
 	case OP_WIZ_FROM_MULTI_CHANNEL_WIZ:
-		op_wiz_from_multi_channel_wiz(op, numArgs, args);
-		break;
+		return op_wiz_from_multi_channel_wiz(op, numArgs, args);
 	case OP_DOS_COMMAND:
 		op_dos_command(op, numArgs, args);
 		break;
+
+	// "Fog of war" commands
 	case OP_SET_FOW_SENTINEL:
 		op_set_fow_sentinel(args);
 		break;
@@ -194,6 +198,7 @@ int32 LogicHEmoonbase::dispatch(int op, int numArgs, int32 *args) {
 	case OP_SET_FOW_IMAGE:
 		return op_set_fow_image(op, numArgs, args);
 
+	// AI commands
 	case OP_AI_TEST_KLUDGE:
 		op_ai_test_kludge(op, numArgs, args);
 		break;
@@ -210,6 +215,7 @@ int32 LogicHEmoonbase::dispatch(int op, int numArgs, int32 *args) {
 		break;
 
 #ifdef USE_ENET
+	// Network commands
 	case OP_NET_REMOTE_START_SCRIPT:
 		op_net_remote_start_script(op, numArgs, args);
 		break;
@@ -248,12 +254,10 @@ int32 LogicHEmoonbase::dispatch(int op, int numArgs, int32 *args) {
 		return op_net_get_session_player_count(op, numArgs, args);
 	case OP_NET_DESTROY_PLAYER:
 		return op_net_destroy_player(op, numArgs, args);
-#if 1 // 12/2/99 BPT
 	case OP_NET_GET_PLAYER_LONG_NAME:
 		return op_net_get_player_long_name(op, numArgs, args);
 	case OP_NET_GET_PLAYER_SHORT_NAME:
 		return op_net_get_player_short_name(op, numArgs, args);
-#endif
 	case OP_NET_CREATE_SESSION:
 		return op_net_create_session(op, numArgs, args);
 	case OP_NET_JOIN_SESSION:
@@ -296,24 +300,230 @@ int32 LogicHEmoonbase::dispatch(int op, int numArgs, int32 *args) {
 	return 0;
 }
 
-void LogicHEmoonbase::op_create_multi_state_wiz(int op, int numArgs, int32 *args) {
-	warning("STUB: op_create_multi_state_wiz()");
-	LogicHE::dispatch(op, numArgs, args);
+bool LogicHEmoonbase::userCodeProcessWizImageCmd(const WizImageCommand *params) {
+	// Make sure there is a imgcmd struct and it's a render operation
+	if (!params) {
+		return false;
+	}
+
+	if (params->actionType != kWADraw) {
+		return false;
+	}
+
+	// If there are special rendering bits bail
+	if (params->flags & kWRFSpecialRenderBitMask) {
+		return false;
+	}
+
+	// Check to see if the caller wants to use a source buffer
+	int sourceBufferImage = 0;
+
+	if (params->actionFlags & kWAFSourceImage) {
+		sourceBufferImage = params->sourceImage;
+	}
+
+	// Check to see if the caller wants to render into another image.
+	int destImage = 0;
+
+	if (params->actionFlags & kWAFDestImage) {
+		destImage = params->destImageNumber;
+	}
+
+	// Get the glob address and state number
+	byte *globPtr = _vm->getResourceAddress(rtImage, params->image);
+
+	if (!globPtr) {
+		error("LogicHEmoonbase::userCodeProcessWizImageCmd(): Image %d not on heap?", params->image);
+		return false;
+	}
+
+	int state = (params->actionFlags & kWAFState) ? params->state : 0;
+
+	// Make sure the dest buffer is one we can handle (Background or foreground)
+	WizMultiTypeBitmap mappedMultiBM;
+
+	bool drawIntoBackground = ((params->flags & kWRFBackground) == kWRFBackground);
+
+	if (destImage) {
+		if (!_vm->_wiz->dwGetMultiTypeBitmapFromImageState(destImage, 0, &mappedMultiBM)) {
+			return false;
+		}
+	} else {
+		if (!_vm->_wiz->pgGetMultiTypeBitmapFromDrawBuffer(&mappedMultiBM, drawIntoBackground)) {
+			return false;
+		}
+	}
+
+	Common::Rect clipRect, bitmapLimitsRect;
+
+	bitmapLimitsRect.left = 0;
+	bitmapLimitsRect.top = 0;
+	bitmapLimitsRect.right = (mappedMultiBM.width - 1);
+	bitmapLimitsRect.bottom = (mappedMultiBM.height - 1);
+
+	if (params->actionFlags & kWAFRect) {
+		clipRect.left = params->box.left;
+		clipRect.top = params->box.top;
+		clipRect.right = params->box.right;
+		clipRect.bottom = params->box.bottom;
+
+		if (!_vm->_wiz->findRectOverlap(&clipRect, &bitmapLimitsRect)) {
+			return true;
+		}
+	} else {
+		clipRect = bitmapLimitsRect;
+	}
+
+	// Validate source image if requested
+	byte *altSourceData = nullptr;
+
+	if (sourceBufferImage) {
+		WizMultiTypeBitmap sourceMultiBM;
+		
+		if (!_vm->_wiz->dwGetMultiTypeBitmapFromImageState(sourceBufferImage, 0, &sourceMultiBM)) {
+			return false;
+		}
+
+		if ((sourceMultiBM.width != mappedMultiBM.width) ||
+			(sourceMultiBM.height != mappedMultiBM.height) ||
+			(sourceMultiBM.stride != mappedMultiBM.stride) ||
+			(sourceMultiBM.format != mappedMultiBM.format) ||
+			(sourceMultiBM.bpp != mappedMultiBM.bpp)) {
+			return false;
+		}
+
+		altSourceData = sourceMultiBM.data;
+	}
+
+	// Convert the icmd struct to useful info for the renderer
+	int32 locationX, locationY;
+
+	if (params->actionFlags & kWAFSpot) {
+		locationX = params->xPos;
+		locationY = params->yPos;
+	} else {
+		locationX = 0;
+		locationY = 0;
+	}
+
+	int32 wizDrawFlags;
+
+	if (params->actionFlags & kWAFFlags) {
+		wizDrawFlags = params->flags;
+	} else {
+		wizDrawFlags = 0;
+	}
+
+	// Get any palette specified
+	byte *paletteData;
+
+	if (params->actionFlags & kWAFPalette) {
+		paletteData = _vm->getHEPaletteSlot(params->palette);
+	} else {
+		paletteData = _vm->getHEPaletteSlot(1);
+	}
+
+	// Finally call the renderer (returns false if not handled or error)
+	if ((_vm1->_moonbase->_fowSentinelImage != params->image) ||
+		(_vm1->_moonbase->_fowSentinelState != state) ||
+		(_vm1->_moonbase->_fowSentinelConditionBits != (uint32)params->extendedRenderInfo.conditionBits)) {
+
+		if (!_vm->_wiz->drawMoonbaseLayeredWiz(
+			mappedMultiBM.data,
+			mappedMultiBM.width, mappedMultiBM.height,
+			mappedMultiBM.stride, mappedMultiBM.format, mappedMultiBM.bpp,
+			globPtr, locationX, locationY, state,
+			clipRect.left, clipRect.top, clipRect.right, clipRect.bottom,
+			wizDrawFlags, params->extendedRenderInfo.conditionBits,
+			paletteData, altSourceData)) {
+		
+			return false;
+		}
+	} else {
+		_vm1->_moonbase->renderFOW(&mappedMultiBM);
+	}
+
+	if (destImage) {
+		_vm->_res->setModified(rtImage, destImage);
+	} else {
+		Common::Rect updateRectangle = clipRect; 
+
+		if (drawIntoBackground) {
+			_vm->backgroundToForegroundBlit(updateRectangle);
+		} else {
+			_vm->markRectAsDirty(kMainVirtScreen, updateRectangle);
+		}
+	}
+
+	return true;
 }
 
-void LogicHEmoonbase::op_load_multi_channel_wiz(int op, int numArgs, int32 *args) {
-	warning("STUB: op_load_multi_channel_wiz()");
-	LogicHE::dispatch(op, numArgs, args);
+bool LogicHEmoonbase::overrideImageHitTest(int *outValue, int globNum, int state, int x, int y, int32 flags) {
+	// Make sure this is a hit-test operation is a type we can handle
+	byte *globPtr = _vm->getResourceAddress(rtImage, globNum);
+
+	if (!globPtr) {
+		warning("LogicHEmoonbase::overrideImageHitTest(): Image %d not on heap", globNum);
+		return false;
+	}
+
+	int32 actualValue = 0;
+	int32 eatValue = 0;
+
+	if (!_vm->_wiz->moonbaseLayeredWizHitTest(&eatValue, &actualValue, globPtr, state, x, y, flags, (uint32)0)) {
+		return false;
+	}
+
+	*outValue = (int)eatValue;
+
+	return true;
 }
 
-void LogicHEmoonbase::op_wiz_from_multi_channel_wiz(int op, int numArgs, int32 *args) {
-	warning("STUB: op_wiz_from_multi_channel_wiz()");
-	LogicHE::dispatch(op, numArgs, args);
+bool LogicHEmoonbase::overrideImagePixelHitTest(int *outValue, int globNum, int state, int x, int y, int32 flags) {
+	// Make sure this is a hit-test operation is a type we can handle
+	byte *globPtr = _vm->getResourceAddress(rtImage, globNum);
+
+	if (!globPtr) {
+		warning("LogicHEmoonbase::overrideImagePixelHitTest(): Image %d not on heap", globNum);
+		return false;
+	}
+
+	int32 actualValue = ~0;
+	int32 eatValue = 0;
+
+	if (!_vm->_wiz->moonbaseLayeredWizHitTest(&eatValue, &actualValue, globPtr, state, x, y, flags, (uint32)0)) {
+		return false;
+	}
+
+	*outValue = (int)actualValue;
+
+	return true;
 }
 
-void LogicHEmoonbase::op_dos_command(int op, int numArgs, int32 *args) {
-	warning("STUB: op_dos_command()");
-	LogicHE::dispatch(op, numArgs, args);
+int LogicHEmoonbase::op_create_multi_state_wiz(int op, int numArgs, int32 *params) {
+	debug("LogicHEmoonbase::op_create_multi_state_wiz(): Unused development command called by a script non compiled in the final game files, ignoring");
+	LogicHE::dispatch(op, numArgs, params);
+
+	return 1;
+}
+
+int LogicHEmoonbase::op_load_multi_channel_wiz(int op, int numArgs, int32 *params) {
+	debug("LogicHEmoonbase::op_load_multi_channel_wiz(): Unused development command called by a script non compiled in the final game files, ignoring");
+	LogicHE::dispatch(op, numArgs, params);
+
+	return 1;
+}
+
+int LogicHEmoonbase::op_wiz_from_multi_channel_wiz(int op, int numArgs, int32 *params) {
+	debug("LogicHEmoonbase::op_wiz_from_multi_channel_wiz(): Unused development command called by a script non compiled in the final game files, ignoring");
+	LogicHE::dispatch(op, numArgs, params);
+
+	return 1;
+}
+
+void LogicHEmoonbase::op_dos_command(int op, int numArgs, int32 *params) {
+	debug("LogicHEmoonbase::op_dos_command(): Unused development command called by a script non compiled in the final game files, ignoring");
+	LogicHE::dispatch(op, numArgs, params);
 }
 
 void LogicHEmoonbase::op_set_fow_sentinel(int32 *args) {
@@ -336,17 +546,17 @@ void LogicHEmoonbase::op_set_fow_information(int op, int numArgs, int32 *args) {
 	debug(2, "%s", str.c_str());
 
 	_vm1->_moonbase->setFOWInfo(
-		args[0],		// array
-		args[1],		// array down dimension
-		args[2],		// array across dimension
-		args[3],		// logical view X coordinate
-		args[4],		// logical view Y coordinate
-		args[5],		// screen draw clip rect x1
-		args[6],		// screen draw clip rect y1
-		args[7],		// screen draw clip rect x2
-		args[8],		// screen draw clip rect y2
-		args[9],		// techinque
-		args[10]		// frame
+		args[0], // array
+		args[1], // array down dimension
+		args[2], // array across dimension
+		args[3], // logical view X coordinate
+		args[4], // logical view Y coordinate
+		args[5], // screen draw clip rect x1
+		args[6], // screen draw clip rect y1
+		args[7], // screen draw clip rect x2
+		args[8], // screen draw clip rect y2
+		args[9], // techinque
+		args[10] // frame
 	);
 }
 

@@ -335,6 +335,10 @@ int main(int argc, char *argv[]) {
 		setup.useStaticDetection = false;
 	}
 
+	if (!getFeatureBuildState("detection-static", setup.features)) {
+		setup.useStaticDetection = false;
+	}
+
 	// HACK: Vorbis and Tremor can not be enabled simultaneously
 	if (getFeatureBuildState("tremor", setup.features)) {
 		setFeatureBuildState("vorbis", setup.features, false);
@@ -1728,16 +1732,19 @@ void ProjectProvider::createProject(BuildSetup &setup) {
 			// Various text files
 			in.push_back(setup.srcDir + "/AUTHORS");
 			in.push_back(setup.srcDir + "/COPYING");
+			in.push_back(setup.srcDir + "/LICENSES/COPYING.Apache");
 			in.push_back(setup.srcDir + "/LICENSES/COPYING.BSD");
-			in.push_back(setup.srcDir + "/LICENSES/COPYING.LGPL");
+			in.push_back(setup.srcDir + "/LICENSES/COPYING.BSL");
 			in.push_back(setup.srcDir + "/LICENSES/COPYING.FREEFONT");
-			in.push_back(setup.srcDir + "/LICENSES/COPYING.OFL");
+			in.push_back(setup.srcDir + "/LICENSES/COPYING.GLAD");
 			in.push_back(setup.srcDir + "/LICENSES/COPYING.ISC");
+			in.push_back(setup.srcDir + "/LICENSES/COPYING.LGPL");
 			in.push_back(setup.srcDir + "/LICENSES/COPYING.LUA");
 			in.push_back(setup.srcDir + "/LICENSES/COPYING.MIT");
 			in.push_back(setup.srcDir + "/LICENSES/COPYING.MKV");
+			in.push_back(setup.srcDir + "/LICENSES/COPYING.MPL");
+			in.push_back(setup.srcDir + "/LICENSES/COPYING.OFL");
 			in.push_back(setup.srcDir + "/LICENSES/COPYING.TINYGL");
-			in.push_back(setup.srcDir + "/LICENSES/COPYING.GLAD");
 			in.push_back(setup.srcDir + "/LICENSES/CatharonLicense.txt");
 			in.push_back(setup.srcDir + "/COPYRIGHT");
 			in.push_back(setup.srcDir + "/NEWS.md");

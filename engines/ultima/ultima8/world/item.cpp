@@ -77,7 +77,7 @@ Item::Item()
 	  _flags(0), _quality(0), _npcNum(0), _mapNum(0),
 	  _extendedFlags(0), _parent(0),
 	  _cachedShape(nullptr), _cachedShapeInfo(nullptr),
-	  _gump(0), _gravityPid(0), _lastSetup(0),
+	  _gump(0), _bark(0), _gravityPid(0), _lastSetup(0),
 	  _ix(0), _iy(0), _iz(0), _damagePoints(1) {
 }
 
@@ -130,16 +130,19 @@ Container *Item::getParentAsContainer() const {
 	return p;
 }
 
-const Item *Item::getTopItem() const {
-	const Container *parentItem = getParentAsContainer();
-
-	if (!parentItem) return this;
-
-	while (parentItem->getParentAsContainer()) {
-		parentItem = parentItem->getParentAsContainer();
+Container* Item::getRootContainer() const {
+	Container *root = nullptr;
+	Container *parent = getParentAsContainer();
+	while (parent) {
+		root = parent;
+		parent = parent->getParentAsContainer();
 	}
+	return root;
+}
 
-	return parentItem;
+const Item *Item::getTopItem() const {
+	Container *root = getRootContainer();
+	return root ? root : this;
 }
 
 void Item::setLocation(int32 X, int32 Y, int32 Z) {
@@ -324,11 +327,8 @@ bool Item::moveToContainer(Container *container, bool checkwghtvol) {
 	_flags |= FLG_CONTAINED;
 
 	// If moving to avatar, mark as OWNED
-	Item *p = this;
-	while (p->getParentAsContainer())
-		p = p->getParentAsContainer();
-	// In Avatar's inventory?
-	if (p->getObjId() == 1)
+	Container *root = getRootContainer();
+	if (root && root->getObjId() == 1)
 		setFlagRecursively(FLG_OWNED);
 
 	// No lerping when moving to a container
@@ -1874,13 +1874,19 @@ uint32 Item::enterFastArea() {
 		if (actor && actor->isDead() && !call_even_if_dead) {
 			// dead actor, don't call the usecode
 		} else {
-			if (actor && _objId != 1 && GAME_IS_CRUSADER) {
-				uint16 lastactivity = actor->getLastActivityNo();
-				actor->clearLastActivityNo();
-				actor->clearInCombat();
-				actor->setToStartOfAnim(Animation::stand);
-				actor->clearActorFlag(Actor::ACT_WEAPONREADY);
-				actor->setActivity(lastactivity);
+			if (actor && _objId != 1) {
+				if (GAME_IS_CRUSADER) {
+					uint16 lastactivity = actor->getLastActivityNo();
+					actor->clearLastActivityNo();
+					actor->clearInCombat();
+					actor->setToStartOfAnim(Animation::stand);
+					actor->clearActorFlag(Actor::ACT_WEAPONREADY);
+					actor->setActivity(lastactivity);
+				} else {
+					actor->clearInCombat();
+					actor->setToStartOfAnim(Animation::stand);
+					actor->clearActorFlag(Actor::ACT_WEAPONREADY);
+				}
 			}
 
 			// TODO: For eggs, Crusader also resets the NPC info if a
@@ -1942,9 +1948,9 @@ void Item::leaveFastArea() {
 		callUsecodeEvent_leaveFastArea();
 
 	// If we have a gump open, close it (unless we're in a container)
-	if (!_parent && (_flags & FLG_GUMP_OPEN)) {
-		Gump *g = Ultima8Engine::get_instance()->getGump(_gump);
-		if (g) g->Close();
+	if (!_parent) {
+		closeGump();
+		closeBark();
 	}
 
 	// Unset the flag
@@ -2025,6 +2031,42 @@ void Item::closeGump() {
 void Item::clearGump() {
 	_gump = 0;
 	_flags &= ~FLG_GUMP_OPEN;
+}
+
+ProcId Item::bark(const Std::string &msg, ObjId id) {
+	closeBark();
+
+	uint32 shapenum = getShape();
+	if (id == 666)
+		shapenum = 666; // Hack for guardian barks
+
+	Gump *gump = new BarkGump(getObjId(), msg, shapenum);
+	_bark = gump->getObjId();
+
+	// Adds talk animations when bark is active.
+	// FIXME: This also affects bark after look unlike original game
+	if (getObjId() < 256) { // CONSTANT!
+		GumpNotifyProcess *notifyproc;
+		notifyproc = new ActorBarkNotifyProcess(getObjId());
+		Kernel::get_instance()->addProcess(notifyproc);
+		gump->SetNotifyProcess(notifyproc);
+	}
+
+	gump->InitGump(0);
+
+	return gump->GetNotifyProcess()->getPid();
+}
+
+void Item::closeBark() {
+	Gump *gump = Ultima8Engine::get_instance()->getGump(_bark);
+	if (gump)
+		gump->Close();
+
+	clearBark();
+}
+
+void Item::clearBark() {
+	_bark = 0;
 }
 
 int32 Item::ascend(int delta) {
@@ -2613,6 +2655,9 @@ void Item::saveData(Common::WriteStream *ws) {
 	}
 	if ((_flags & FLG_ETHEREAL) && (_flags & (FLG_CONTAINED | FLG_EQUIPPED)))
 		ws->writeUint16LE(_parent);
+
+	// TODO: Consider saving this
+	// ws->writeUint16LE(_bark);
 }
 
 bool Item::loadData(Common::ReadStream *rs, uint32 version) {
@@ -2640,6 +2685,8 @@ bool Item::loadData(Common::ReadStream *rs, uint32 version) {
 		_parent = rs->readUint16LE();
 	else
 		_parent = 0;
+
+	_bark = 0;
 
 	//!! hackish...
 	if (_extendedFlags & EXT_INCURMAP) {
@@ -2841,20 +2888,17 @@ uint32 Item::I_getContainer(const uint8 *args, unsigned int /*argsize*/) {
 
 uint32 Item::I_getRootContainer(const uint8 *args, unsigned int /*argsize*/) {
 	ARG_ITEM_FROM_PTR(item);
-	if (!item) return 0;
+	if (!item)
+		return 0;
 
-	Container *_parent = item->getParentAsContainer();
+	Container *root = item->getRootContainer();
 
 	//! What do we do if item has no _parent?
 	//! What do we do with equipped items?
+	if (!root)
+		return 0;
 
-	if (!_parent) return 0;
-
-	while (_parent->getParentAsContainer()) {
-		_parent = _parent->getParentAsContainer();
-	}
-
-	return _parent->getObjId();
+	return root->getObjId();
 }
 
 uint32 Item::I_getQ(const uint8 *args, unsigned int /*argsize*/) {
@@ -3033,21 +3077,7 @@ uint32 Item::I_bark(const uint8 *args, unsigned int /*argsize*/) {
 		return 0;
 	}
 
-	uint32 shapenum = item->getShape();
-	if (id_item == 666)
-		shapenum = 666; // Hack for guardian barks
-	Gump *gump = new BarkGump(item->getObjId(), str, shapenum);
-
-	if (item->getObjId() < 256) { // CONSTANT!
-		GumpNotifyProcess *notifyproc;
-		notifyproc = new ActorBarkNotifyProcess(item->getObjId());
-		Kernel::get_instance()->addProcess(notifyproc);
-		gump->SetNotifyProcess(notifyproc);
-	}
-
-	gump->InitGump(0);
-
-	return gump->GetNotifyProcess()->getPid();
+	return item->bark(str, id_item);
 }
 
 uint32 Item::I_look(const uint8 *args, unsigned int /*argsize*/) {
@@ -3130,6 +3160,10 @@ uint32 Item::I_ask(const uint8 *args, unsigned int /*argsize*/) {
 
 	if (!answers) return 0;
 
+	Actor *actor = getMainActor();
+	if (actor)
+		actor->closeBark();
+
 	// Use AskGump
 	Gump *_gump = new AskGump(1, answers);
 	_gump->InitGump(0);
@@ -3148,8 +3182,14 @@ uint32 Item::I_legalCreateAtPoint(const uint8 *args, unsigned int /*argsize*/) {
 
 	World_FromUsecodeXY(x, y);
 
-	// check if item can exist
+	const ShapeInfo *si = GameData::get_instance()->getMainShapes()->getShapeInfo(shape);
+	int32 xd, yd, zd;
+	si->getFootpadWorld(xd, yd, zd, 0);
+
 	CurrentMap *cm = World::get_instance()->getCurrentMap();
+	cm->updateFastArea(x, y, z, x - xd, y - yd, z + zd);
+
+	// check if item can exist
 	PositionInfo info = cm->getPositionInfo(x, y, z, shape, 0);
 	if (!info.valid)
 		return 0;
@@ -3180,8 +3220,14 @@ uint32 Item::I_legalCreateAtCoords(const uint8 *args, unsigned int /*argsize*/) 
 
 	World_FromUsecodeXY(x, y);
 
-	// check if item can exist
+	const ShapeInfo *si = GameData::get_instance()->getMainShapes()->getShapeInfo(shape);
+	int32 xd, yd, zd;
+	si->getFootpadWorld(xd, yd, zd, 0);
+
 	CurrentMap *cm = World::get_instance()->getCurrentMap();
+	cm->updateFastArea(x, y, z, x - xd, y - yd, z + zd);
+
+	// check if item can exist
 	PositionInfo info = cm->getPositionInfo(x, y, z, shape, 0);
 	if (!info.valid)
 		return 0;
@@ -3775,7 +3821,7 @@ uint32 Item::I_shoot(const uint8 *args, unsigned int /*argsize*/) {
 	ARG_UINT16(gravity); // either 2 (fish) or 1 (death disk, dart)
 	if (!item) return 0;
 
-	MissileTracker tracker(item, point.getX(), point.getY(), point.getZ(),
+	MissileTracker tracker(item, 0, point.getX(), point.getY(), point.getZ(),
 	                       speed, gravity);
 	tracker.launchItem();
 

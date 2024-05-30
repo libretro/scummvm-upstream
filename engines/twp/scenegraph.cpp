@@ -43,6 +43,24 @@ namespace Twp {
 #define BACKWIDTH 137.f
 #define BACKHEIGHT 75.f
 
+class ShakeInventory : public Motor {
+public:
+	ShakeInventory(Math::Vector2d &shakeOffset, float amount) : _shakeOffset(shakeOffset), _amount(amount) {}
+
+protected:
+	void onUpdate(float elapsed) override {
+		_shakeTime += 40.f * elapsed;
+		_elapsed += elapsed;
+		_shakeOffset = Math::Vector2d(_amount * cos(_shakeTime + 0.3f), _amount * sin(_shakeTime));
+	}
+
+private:
+	Math::Vector2d &_shakeOffset;
+	const float _amount;
+	float _shakeTime = 0.f;
+	float _elapsed = 0.f;
+};
+
 static float _getFps(float fps, float animFps) {
 	if (fps != 0.f)
 		return fps;
@@ -579,6 +597,10 @@ Inventory::Inventory() : Node("Inventory") {
 	}
 	_arrowUpRect = Common::Rect(SCREEN_WIDTH / 2.f, ARROWHEIGHT + MARGINBOTTOM + BACKOFFSET, SCREEN_WIDTH / 2.f + ARROWWIDTH, ARROWHEIGHT + MARGINBOTTOM + BACKOFFSET + ARROWHEIGHT);
 	_arrowDnRect = Common::Rect(SCREEN_WIDTH / 2.f, MARGINBOTTOM, SCREEN_WIDTH / 2.f + ARROWWIDTH, MARGINBOTTOM + ARROWHEIGHT);
+	for (int i = 0; i < NUMOBJECTS; i++) {
+		_shakeTime[i] = 0.f;
+		_inventoryOver[i] = false;
+	}
 }
 
 Math::Vector2d Inventory::getPos(Common::SharedPtr<Object> inv) const {
@@ -587,6 +609,19 @@ Math::Vector2d Inventory::getPos(Common::SharedPtr<Object> inv) const {
 		return Math::Vector2d(_itemRects[i].left + _itemRects[i].width() / 2.f, _itemRects[i].bottom + _itemRects[i].height() / 2.f);
 	}
 	return {};
+}
+
+Math::Vector2d Inventory::getPos(int i) const {
+	assert((i >= 0) && (i < 8));
+	return Math::Vector2d(_itemRects[i].left + _itemRects[i].width() / 2.f, _itemRects[i].top + _itemRects[i].height() / 2.f);
+}
+
+int Inventory::getOverIndex() const {
+	for (int i = 0; i < NUMOBJECTS; i++) {
+		if (_inventoryOver[i])
+			return i;
+	}
+	return -1;
 }
 
 void Inventory::drawSprite(const SpriteSheetFrame &sf, Texture *texture, const Color &color, const Math::Matrix4 &t) {
@@ -661,6 +696,8 @@ void Inventory::drawItems(const Math::Matrix4 &trsf) {
 			}
 			float s = obj->getScale();
 			Twp::scale(t, Math::Vector2d(s, s));
+			Math::Vector2d shakeOffset = _shakeOffset[i];
+			t.translate(Math::Vector3d(shakeOffset.getX(), shakeOffset.getY(), 0.f));
 			drawSprite(*itemFrame, texture, Color::withAlpha(Color(), getAlpha()), t);
 		}
 	}
@@ -714,9 +751,28 @@ void Inventory::update(float elapsed, Common::SharedPtr<Object> actor, const Col
 			const Common::Rect &item = _itemRects[i];
 			if (item.contains(scrPos.getX(), scrPos.getY())) {
 				size_t index = _actor->_inventoryOffset * NUMOBJECTSBYROW + i;
-				if (index < _actor->_inventory.size())
+				if (index < _actor->_inventory.size()) {
 					_obj = _actor->_inventory[index];
-				break;
+
+					if (!_inventoryOver[i] && (_shakeTime[i] < 0.1f)) {
+						_shakeTime[i] = 0.25f;
+						_shake[i] = Common::ScopedPtr<Motor>(new ShakeInventory(_shakeOffset[i], 0.4f));
+						_inventoryOver[i] = true;
+					}
+				} else {
+					_inventoryOver[i] = true;
+				}
+			} else {
+				_inventoryOver[i] = false;
+			}
+
+			// shake choice when cursor is over
+			if ((_shakeTime[i] > 0.0f) && _shake[i]) {
+				_shake[i]->update(elapsed);
+				_shakeTime[i] -= elapsed;
+				if (_shakeTime[i] < 0.f) {
+					_shakeTime[i] = 0.f;
+				}
 			}
 		}
 
