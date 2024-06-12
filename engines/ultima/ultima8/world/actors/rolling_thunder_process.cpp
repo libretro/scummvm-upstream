@@ -28,8 +28,8 @@
 #include "ultima/ultima8/world/actors/pathfinder.h"
 #include "ultima/ultima8/world/actors/anim_action.h"
 #include "ultima/ultima8/games/game_data.h"
-#include "ultima/ultima8/graphics/main_shape_archive.h"
-#include "ultima/ultima8/graphics/anim_dat.h"
+#include "ultima/ultima8/gfx/main_shape_archive.h"
+#include "ultima/ultima8/gfx/anim_dat.h"
 #include "ultima/ultima8/kernel/kernel.h"
 #include "ultima/ultima8/kernel/delay_process.h"
 #include "ultima/ultima8/usecode/uc_list.h"
@@ -110,10 +110,9 @@ void RollingThunderProcess::run() {
 	}
 
 	if (!canroll) {
-		int32 x, y, z, tx, ty, tz;
-		actor->getLocation(x, y, z);
-		target->getLocation(tx, ty, tz);
-		Direction dirtotarget = Direction_GetWorldDir(ty - y, tx - x, dirmode_16dirs);
+		Point3 pta = actor->getLocation();
+		Point3 ptt = target->getLocation();
+		Direction dirtotarget = Direction_GetWorldDir(ptt.y - pta.y, ptt.x - pta.x, dirmode_16dirs);
 
 		if (dirtotarget == actordir) {
 			uint32 now = Kernel::get_instance()->getTickNum();
@@ -169,9 +168,8 @@ bool RollingThunderProcess::checkDir(Animation::Sequence anim, Direction &outdir
 		return false;
 
 	// check if the dir to the target is within 2 direction steps of the current dir
-	int32 tx, ty, tz;
-	target->getLocation(tx, ty, tz);
-	Direction dirtotarget = Direction_GetWorldDir(ty - state._y, tx - state._x, dirmode_16dirs);
+	Point3 pt = target->getLocation();
+	Direction dirtotarget = Direction_GetWorldDir(pt.y - state._point.y, pt.x - state._point.x, dirmode_16dirs);
 
 	static const int DIROFFSETS[] = {0, -1, 1, -2, 2};
 
@@ -192,7 +190,7 @@ bool RollingThunderProcess::checkDir(Animation::Sequence anim, Direction &outdir
 	// Check whether we can fire in that direction and hit the target
 	for (int i = 0; i < ARRAYSIZE(DIROFFSETS); i++) {
 		Direction dir = Direction_TurnByDelta(dirtotarget, DIROFFSETS[i], dirmode_16dirs);
-		if (fireDistance(dir, state._x, state._y, state._z))
+		if (fireDistance(dir, state._point.x, state._point.y, state._point.z))
 			return true;
 	}
 
@@ -221,8 +219,7 @@ bool RollingThunderProcess::fireDistance(Direction dir, int32 x, int32 y, int32 
 	if (!actor || !target)
 		return 0;
 
-	int32 tx, ty, tz;
-	target->getLocation(tx, ty, tz);
+	Point3 pt = target->getLocation();
 
 	uint16 shapeno = actor->getShape();
 	uint32 actionno = AnimDat::getActionNumberForSequence(Animation::attack, actor);
@@ -263,13 +260,12 @@ bool RollingThunderProcess::fireDistance(Direction dir, int32 x, int32 y, int32 
 		PositionInfo info = cm->getPositionInfo(cx, cy, cz, BULLET_SPLASH_SHAPE, _itemNum);
 		if (!info.valid && info.blocker) {
 			if (info.blocker->getObjId() == target->getObjId())
-				dist = MAX(abs(x - tx), abs(y - ty));
+				dist = MAX(abs(x - pt.x), abs(y - pt.y));
 		} else {
-			int32 ocx, ocy, ocz;
-			target->getCentre(ocx, ocy, ocz);
-			ocz = target->getTargetZRelativeToAttackerZ(z);
-			const int32 start[3] = {cx, cy, cz};
-			const int32 end[3] = {ocx, ocy, ocz};
+			Point3 oc = target->getCentre();
+			oc.z = target->getTargetZRelativeToAttackerZ(z);
+			const Point3 start(cx, cy, cz);
+			const Point3 end = oc;
 			const int32 dims[3] = {2, 2, 2};
 
 			Std::list<CurrentMap::SweepItem> collisions;
@@ -281,9 +277,8 @@ bool RollingThunderProcess::fireDistance(Direction dir, int32 x, int32 y, int32 
 					continue;
 				if (it->_item != target->getObjId())
 					break;
-				int32 out[3];
-				it->GetInterpolatedCoords(out, start, end);
-				dist = MAX(abs(x - out[0]), abs(y - out[1]));
+				Point3 out = it->GetInterpolatedCoords(start, end);
+				dist = MAX(abs(x - out.x), abs(y - out.y));
 				break;
 			}
 		}
@@ -306,13 +301,12 @@ bool RollingThunderProcess::checkForSpiderBomb() {
 	currentmap->areaSearch(&spiderlist, script, sizeof(script), actor, 800, false);
 
 	for (unsigned int i = 0; i < spiderlist.getSize(); ++i) {
-		int32 x, y, z, sx, sy, sz;
 		const Item *spider = getItem(spiderlist.getuint16(i));
 		if (!spider)
 			continue;
-		actor->getLocation(x, y, z);
-		spider->getLocation(sx, sy, sz);
-		Direction dirtospider = Direction_GetWorldDir(sy - y, sx - x, dirmode_16dirs);
+		Point3 pta = actor->getLocation();
+		Point3 pts = spider->getLocation();
+		Direction dirtospider = Direction_GetWorldDir(pts.y - pta.y, pts.x - pta.x, dirmode_16dirs);
 		uint16 dist = actor->fireDistance(spider, dirtospider, 0, 0, 0);
 		if (dist > 0) {
 			_target = spider->getObjId();

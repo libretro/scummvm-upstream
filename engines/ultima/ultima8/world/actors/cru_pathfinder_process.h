@@ -24,6 +24,7 @@
 
 #include "ultima/ultima8/kernel/process.h"
 #include "ultima/ultima8/misc/direction.h"
+#include "ultima/ultima8/misc/point3.h"
 
 namespace Ultima {
 namespace Ultima8 {
@@ -41,7 +42,7 @@ class CruPathfinderProcess : public Process {
 public:
 	CruPathfinderProcess();
 	CruPathfinderProcess(Actor *actor, Item *item, int maxsteps, int stopdistance, bool turnatend);
-	CruPathfinderProcess(Actor *actor, int32 x, int32 y, int32 z, int maxsteps, int stopdistance, bool turnatend);
+	CruPathfinderProcess(Actor *actor, const Point3 &target, int maxsteps, int stopdistance, bool turnatend);
 	~CruPathfinderProcess() override;
 
 	ENABLE_RUNTIME_CLASSTYPE()
@@ -56,7 +57,7 @@ private:
 
 	Direction nextDirFromPoint(struct Point3 &npcpt);
 
-	int32 _targetX, _targetY, _targetZ;
+	Point3 _target;
 	ObjId _targetItem;
 	int _currentDistance;
 	bool _randomFlag;

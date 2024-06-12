@@ -32,7 +32,7 @@
 #include "ultima/ultima8/kernel/kernel.h"
 #include "ultima/ultima8/gumps/menu_gump.h"
 #include "ultima/ultima8/world/get_object.h"
-#include "ultima/ultima8/graphics/palette_fader_process.h"
+#include "ultima/ultima8/gfx/palette_fader_process.h"
 
 namespace Ultima {
 namespace Ultima8 {
@@ -84,10 +84,9 @@ void StartU8Process::run() {
 
 		uint16 objid = uclist.getuint16(0);
 		Egg *egg = dynamic_cast<Egg *>(getObject(objid));
-		int32 ix, iy, iz;
-		egg->getLocation(ix, iy, iz);
+		Point3 pt = egg->getLocation();
 		// Center on egg
-		CameraProcess::SetCameraProcess(new CameraProcess(ix, iy, iz));
+		CameraProcess::SetCameraProcess(new CameraProcess(pt));
 		egg->hatch();
 	}
 

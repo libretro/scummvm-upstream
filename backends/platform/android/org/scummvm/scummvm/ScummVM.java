@@ -1,15 +1,15 @@
 package org.scummvm.scummvm;
 
-import androidx.annotation.NonNull;
 import android.content.res.AssetManager;
 import android.graphics.Bitmap;
 import android.graphics.PixelFormat;
 import android.media.AudioFormat;
 import android.media.AudioManager;
 import android.media.AudioTrack;
-import android.os.Build;
 import android.util.Log;
 import android.view.SurfaceHolder;
+
+import androidx.annotation.NonNull;
 
 import java.util.LinkedHashMap;
 import java.util.Locale;
@@ -86,6 +86,7 @@ public abstract class ScummVM implements SurfaceHolder.Callback, Runnable {
 	abstract protected String getScummVMBasePath();
 	abstract protected String getScummVMConfigPath();
 	abstract protected String getScummVMLogPath();
+	abstract protected void setCurrentGame(String target);
 	abstract protected String[] getSysArchives();
 	abstract protected String[] getAllStorageLocations();
 	abstract protected String[] getAllStorageLocationsNoPermissionRequest();

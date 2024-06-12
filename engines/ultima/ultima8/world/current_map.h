@@ -26,6 +26,7 @@
 #include "ultima/ultima8/usecode/intrinsics.h"
 #include "ultima/ultima8/world/position_info.h"
 #include "ultima/ultima8/misc/direction.h"
+#include "ultima/ultima8/misc/point3.h"
 
 namespace Ultima {
 namespace Ultima8 {
@@ -80,7 +81,7 @@ public:
 	Item *findBestTargetItem(int32 x, int32 y, int32 z, Direction dir, DirectionMode dirmode);
 
 	//! Update the fast area for the cameras position
-	void updateFastArea(int32 from_x, int32 from_y, int32 from_z, int32 to_x, int32 to_y, int32 to_z);
+	void updateFastArea(const Point3 &from, const Point3 &to);
 
 	//! search an area for items matching a loopscript
 	//! \param itemlist the list to return objids in
@@ -143,9 +144,12 @@ public:
 		// Bitmask. Bit 0 is x, 1 is y, 2 is z.
 
 		// Use this func to get the interpolated location of the hit
-		void GetInterpolatedCoords(int32 out[3], const int32 start[3], const int32 end[3]) const {
-			for (int i = 0; i < 3; i++)
-				out[i] = start[i] + ((end[i] - start[i]) * (_hitTime >= 0 ? _hitTime : 0) + (end[i] > start[i] ? 0x2000 : -0x2000)) / 0x4000;
+		Point3 GetInterpolatedCoords(const Point3 &start, const Point3 &end) const {
+			Point3 pt;
+			pt.x = start.x + ((end.x - start.x) * (_hitTime >= 0 ? _hitTime : 0) + (end.x > start.x ? 0x2000 : -0x2000)) / 0x4000;
+			pt.y = start.y + ((end.y - start.y) * (_hitTime >= 0 ? _hitTime : 0) + (end.y > start.y ? 0x2000 : -0x2000)) / 0x4000;
+			pt.z = start.z + ((end.z - start.z) * (_hitTime >= 0 ? _hitTime : 0) + (end.z > start.z ? 0x2000 : -0x2000)) / 0x4000;
+			return pt;
 		}
 	};
 
@@ -161,7 +165,7 @@ public:
 	//!            by SweepItem::hit_time
 	//! \return false if no items were hit.
 	//!         true if any items were hit.
-	bool sweepTest(const int32 start[3], const int32 end[3],
+	bool sweepTest(const Point3 &start, const Point3 &end,
 	               const int32 dims[3], uint32 shapeflags,
 	               ObjId item, bool solid_only, Std::list<SweepItem> *hit) const;
 
@@ -176,6 +180,8 @@ public:
 			return false;
 		return (_fast[cy][cx / 32] & (1 << (cx & 31))) != 0;
 	}
+
+	void setFastAtPoint(const Point3 &pt);
 
 	// Set the entire map as being 'fast'
 	void setWholeMapFast();

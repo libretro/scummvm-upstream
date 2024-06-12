@@ -37,6 +37,12 @@ struct ECD {
 	int _id;
 };
 
+enum DarkFontSize {
+	kDarkFontSmall,
+	kDarkFontMedium,
+	kDarkFontBig,
+};
+
 class DarkEngine : public FreescapeEngine {
 public:
 	DarkEngine(OSystem *syst, const ADGameDescription *gd);
@@ -66,7 +72,6 @@ public:
 	void loadAssetsDOSDemo() override;
 	void loadAssetsAmigaFullGame() override;
 	void loadAssetsAtariFullGame() override;
-	void parseAmigaAtariHeader(Common::SeekableReadStream *file);
 
 	void loadAssetsCPCFullGame() override;
 
@@ -87,7 +92,11 @@ public:
 	void drawCPCUI(Graphics::Surface *surface) override;
 	void drawAmigaAtariSTUI(Graphics::Surface *surface) override;
 
+	Common::BitArray _fontBig;
+	Common::BitArray _fontMedium;
+	Common::BitArray _fontSmall;
 
+	void drawString(const DarkFontSize size, const Common::String &str, int x, int y, uint32 primaryColor, uint32 secondaryColor, uint32 backColor, Graphics::Surface *surface);
 	void drawInfoMenu() override;
 
 	Common::Error saveGameStreamExtended(Common::WriteStream *stream, bool isAutosave = false) override;
@@ -101,7 +110,6 @@ private:
 	bool tryDestroyECD(int index);
 	bool tryDestroyECDFullGame(int index);
 	void addWalls(Area *area);
-	Common::SeekableReadStream *decryptFile(const Common::Path &packed, const Common::Path &unpacker, uint32 unpackArrayOffset);
 	Common::HashMap<uint16, bool> _exploredAreas;
 };
 

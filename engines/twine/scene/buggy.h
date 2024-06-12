@@ -26,18 +26,52 @@
 #include "twine/input.h"
 #include "twine/scene/actor.h"
 
+#define BUGGY_PRESENT 0x80
+#define NUM_BUGGY ((uint8)(NumBuggy & ~(BUGGY_PRESENT)))
+#define IsBuggyPresent() (NumBuggy & BUGGY_PRESENT)
+
 namespace TwinE {
 
 class Buggy {
 private:
 	TwinEEngine *_engine;
+	int32 Gear = 0;
+	int32 TimerGear;
 
 public:
+#define MAX_BUGGYS 2
+	struct S_ONE_WHEEL {
+		int32 Angle;
+		int32 X;
+		int32 Y;
+		int32 Z;
+	};
+
+	typedef struct {
+		int32 X;
+		int32 Y;
+		int32 Z;
+		int32 Cube;
+		int32 Beta;
+		int32 Alpha;
+		int32 Gamma;
+		S_ONE_WHEEL Wheel[4];
+		int32 BetaWheel;
+		int32 SpeedInc;
+		int32 SpeedRot;
+		int32 Speed;
+		int32 LastTimer;
+	} S_BUGGY;
+
+	// TODO: rename and hide
+	S_BUGGY ListBuggy[MAX_BUGGYS];
+	uint8 NumBuggy;
+
 	Buggy(TwinEEngine *engine) : _engine(engine) {}
 	void initBuggy(uint8 numobj, uint32 flaginit);
 	void resetBuggy();
 	void takeBuggy();
-	void leaveBuggy(uint8 newcomportement);
+	void leaveBuggy(HeroBehaviourType behaviour);
 	void doAnimBuggy(ActorStruct *ptrobj);
 	void moveBuggy(ActorStruct *ptrobj);
 };

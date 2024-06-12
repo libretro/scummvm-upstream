@@ -44,8 +44,8 @@
 namespace DLC {
 namespace ScummVMCloud {
 
-void ScummVMCloud::jsonCallbackGetAllDLCs(Networking::JsonResponse response) {
-	Common::JSONValue *json = (Common::JSONValue *)response.value;
+void ScummVMCloud::jsonCallbackGetAllDLCs(const Networking::JsonResponse &response) {
+	const Common::JSONValue *json = response.value;
 	if (json == nullptr || !json->isObject()) {
 		return;
 	}
@@ -81,21 +81,21 @@ void ScummVMCloud::jsonCallbackGetAllDLCs(Networking::JsonResponse response) {
 	DLCMan.refreshDLCList();
 }
 
-void ScummVMCloud::errorCallbackGetAllDLCs(Networking::ErrorResponse error) {
+void ScummVMCloud::errorCallbackGetAllDLCs(const Networking::ErrorResponse &error) {
 	warning("JsonRequest Error - getAllDLCs");
 }
 
 void ScummVMCloud::getAllDLCs() {
 	Common::String url("https://scummvm-dlcs-default-rtdb.firebaseio.com/dlcs.json"); // temporary mock api
+	Networking::JsonCallback callback = new Common::Callback<ScummVMCloud, const Networking::JsonResponse &>(this, &ScummVMCloud::jsonCallbackGetAllDLCs);
+	Networking::ErrorCallback failureCallback = new Common::Callback<ScummVMCloud, const Networking::ErrorResponse &>(this, &ScummVMCloud::errorCallbackGetAllDLCs);
 	Networking::CurlJsonRequest *request = new Networking::CurlJsonRequest(
-		new Common::Callback<ScummVMCloud, Networking::JsonResponse>(this, &ScummVMCloud::jsonCallbackGetAllDLCs), 
-		new Common::Callback<ScummVMCloud, Networking::ErrorResponse>(this, &ScummVMCloud::errorCallbackGetAllDLCs), 
-		url);
+		callback, failureCallback, url);
 
 	request->execute();
 }
 
-void ScummVMCloud::downloadFileCallback(Networking::DataResponse r) {
+void ScummVMCloud::downloadFileCallback(const Networking::DataResponse &r) {
 	Networking::SessionFileResponse *response = static_cast<Networking::SessionFileResponse *>(r.value);
 	DLCMan._currentDownloadedSize += response->len;
 	if (DLCMan._interruptCurrentDownload) {
@@ -123,7 +123,7 @@ void ScummVMCloud::downloadFileCallback(Networking::DataResponse r) {
 
 		// extract the downloaded zip
 		Common::String gameDir = Common::punycode_encodefilename(dlc->name);
-		Common::Path destPath = Common::Path(ConfMan.get("dlcspath")).appendComponent(gameDir);
+		Common::Path destPath(ConfMan.getPath("dlcspath").appendComponent(gameDir));
 		Common::Error error = extractZip(relativeFilePath, destPath);
 
 		// remove cache (the downloaded .zip)
@@ -149,7 +149,7 @@ void ScummVMCloud::downloadFileCallback(Networking::DataResponse r) {
 	}
 }
 
-void ScummVMCloud::errorCallback(Networking::ErrorResponse error) {
+void ScummVMCloud::errorCallback(const Networking::ErrorResponse &error) {
 	// error downloading - start next download in queue
 	DLCMan._queuedDownloadTasks.front()->state = DLCDesc::kErrorDownloading;
 	DLCMan._queuedDownloadTasks.pop();
@@ -158,25 +158,25 @@ void ScummVMCloud::errorCallback(Networking::ErrorResponse error) {
 }
 
 void ScummVMCloud::startDownloadAsync(const Common::String &id, const Common::String &url) {
-	Common::String localFile = normalizePath(ConfMan.get("dlcspath") + "/" + id, '/');
+	Common::Path localFile(ConfMan.getPath("dlcspath").appendComponent(id));
 
-	_rq = new Networking::SessionRequest(url, localFile,
-		new Common::Callback<ScummVMCloud, Networking::DataResponse>(this, &ScummVMCloud::downloadFileCallback),
-		new Common::Callback<ScummVMCloud, Networking::ErrorResponse>(this, &ScummVMCloud::errorCallback));
+	Networking::DataCallback callback = new Common::Callback<ScummVMCloud, const Networking::DataResponse &>(this, &ScummVMCloud::downloadFileCallback);
+	Networking::ErrorCallback failureCallback = new Common::Callback<ScummVMCloud, const Networking::ErrorResponse &>(this, &ScummVMCloud::errorCallback);
+	_rq = new Networking::SessionRequest(url, localFile, callback, failureCallback);
 
 	_rq->start();
 }
 
 Common::Error ScummVMCloud::extractZip(const Common::Path &file, const Common::Path &destPath) {
 	Common::Archive *dataArchive = nullptr;
-	Common::Path dlcPath = Common::Path(ConfMan.get("dlcspath"));
+	Common::Path dlcPath(ConfMan.getPath("dlcspath"));
 	Common::FSNode *fs = new Common::FSNode(dlcPath.join(file));
 	Common::Error error = Common::kNoError;
 	if (fs->exists()) {
 		dataArchive = Common::makeZipArchive(*fs);
 		// dataArchive is nullptr if zip file is incomplete
 		if (dataArchive != nullptr) {
-			error = dataArchive->dumpArchive(destPath.toString());
+			error = dataArchive->dumpArchive(destPath);
 		} else {
 			error = Common::Error(Common::kCreatingFileFailed, DLCMan._queuedDownloadTasks.front()->name + "Archive is broken, please re-download");
 		}
@@ -188,12 +188,12 @@ Common::Error ScummVMCloud::extractZip(const Common::Path &file, const Common::P
 }
 
 void ScummVMCloud::removeCacheFile(const Common::Path &file) {
-	Common::Path dlcPath = Common::Path(ConfMan.get("dlcspath"));
+	Common::Path dlcPath(ConfMan.getPath("dlcspath"));
 	Common::Path fileToDelete = dlcPath.join(file);
 #if defined(POSIX)
-	unlink(fileToDelete.toString().c_str());
+	unlink(fileToDelete.toString(Common::Path::kNativeSeparator).c_str());
 #elif defined(WIN32)
-	_unlink(fileToDelete.toString().c_str());
+	_unlink(fileToDelete.toString(Common::Path::kNativeSeparator).c_str());
 #else
 	warning("ScummVMCloud::removeCacheFile(): Removing is unimplemented");
 #endif

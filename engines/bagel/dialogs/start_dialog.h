@@ -26,7 +26,6 @@
 #include "bagel/boflib/gui/list_box.h"
 #include "bagel/boflib/gui/button.h"
 #include "bagel/boflib/gui/text_box.h"
-#include "bagel/boflib/string.h"
 #include "bagel/dialogs/save_dialog.h"
 
 namespace Bagel {
@@ -41,9 +40,9 @@ private:
 protected:
 	void onPaint(CBofRect *pRect) override;
 	void onClose() override;
-	void onBofButton(CBofObject *pObject, int nState) override;
+	void onBofButton(CBofObject *pObject, int nFlags) override;
 
-	void onKeyHit(uint32 lKey, uint32 lRepCount) override;
+	void onKeyHit(uint32 lKey, uint32 nRepCount) override;
 
 public:
 	CBagStartDialog(const char *pszFileName, CBofWindow *pWin);

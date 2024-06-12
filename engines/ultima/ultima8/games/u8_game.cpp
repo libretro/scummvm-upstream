@@ -26,10 +26,10 @@
 
 #include "ultima/ultima8/games/u8_game.h"
 
-#include "ultima/ultima8/graphics/palette_manager.h"
-#include "ultima/ultima8/graphics/fade_to_modal_process.h"
+#include "ultima/ultima8/gfx/palette_manager.h"
+#include "ultima/ultima8/gfx/fade_to_modal_process.h"
 #include "ultima/ultima8/games/game_data.h"
-#include "ultima/ultima8/graphics/xform_blend.h"
+#include "ultima/ultima8/gfx/xform_blend.h"
 #include "ultima/ultima8/filesys/u8_save_file.h"
 #include "ultima/ultima8/world/world.h"
 #include "ultima/ultima8/world/actors/main_actor.h"
@@ -69,7 +69,7 @@ U8Game::~U8Game() {
 
 bool U8Game::loadFiles() {
 	// Load palette
-	debug(MM_INFO, "Load Palette");
+	debug(1, "Load Palette");
 	Common::File pf;
 	if (!pf.open("static/u8pal.pal")) {
 		warning("Unable to load static/u8pal.pal.");
@@ -80,7 +80,7 @@ bool U8Game::loadFiles() {
 	Common::MemoryReadStream xfds(U8XFormPal, 1024);
 	PaletteManager::get_instance()->load(PaletteManager::Pal_Game, pf, xfds);
 
-	debug(MM_INFO, "Load GameData");
+	debug(1, "Load GameData");
 	GameData::get_instance()->loadU8Data();
 
 	return true;
@@ -88,7 +88,7 @@ bool U8Game::loadFiles() {
 
 bool U8Game::startGame() {
 	// NOTE: assumes the entire engine has been reset!
-	debug(MM_INFO, "Starting new Ultima 8 game.");
+	debug(1, "Starting new Ultima 8 game.");
 
 	ObjectManager *objman = ObjectManager::get_instance();
 
@@ -96,8 +96,8 @@ bool U8Game::startGame() {
 	for (uint16 i = 384; i < 512; ++i)
 		objman->reserveObjId(i);
 
-	// reserve ObjId 666 for the Guardian Bark hack
-	objman->reserveObjId(666);
+	// Reserved for the Guardian Bark hack
+	objman->reserveObjId(kGuardianId);
 
 	auto *savers = new Common::File();
 	if (!savers->open("savegame/u8save.000")) {
@@ -167,7 +167,7 @@ ProcId U8Game::playIntroMovie(bool fade) {
 
 	auto *skf = new Common::File();
 	if (!skf->open(filename.c_str())) {
-		debug(MM_INFO, "U8Game::playIntro: movie not found.");
+		debug(1, "U8Game::playIntro: movie not found.");
 		delete skf;
 		return 0;
 	}
@@ -179,7 +179,7 @@ ProcId U8Game::playEndgameMovie(bool fade) {
 	static const Common::Path filename = "static/endgame.skf";
 	auto *skf = new Common::File();
 	if (!skf->open(filename)) {
-		debug(MM_INFO, "U8Game::playEndgame: movie not found.");
+		debug(1, "U8Game::playEndgame: movie not found.");
 		delete skf;
 		return 0;
 	}
@@ -240,7 +240,6 @@ void U8Game::playQuotes() {
 
 void U8Game::writeSaveInfo(Common::WriteStream *ws) {
 	MainActor *av = getMainActor();
-	int32 x, y, z;
 
 	const Std::string &avname = av->getName();
 	const uint8 namelength = static_cast<uint8>(avname.size());
@@ -248,11 +247,11 @@ void U8Game::writeSaveInfo(Common::WriteStream *ws) {
 	for (unsigned int i = 0; i < namelength; ++i)
 		ws->writeByte(static_cast<uint8>(avname[i]));
 
-	av->getLocation(x, y, z);
+	Point3 pt = av->getLocation();
 	ws->writeUint16LE(av->getMapNum());
-	ws->writeUint32LE(static_cast<uint32>(x));
-	ws->writeUint32LE(static_cast<uint32>(y));
-	ws->writeUint32LE(static_cast<uint32>(z));
+	ws->writeUint32LE(static_cast<uint32>(pt.x));
+	ws->writeUint32LE(static_cast<uint32>(pt.y));
+	ws->writeUint32LE(static_cast<uint32>(pt.z));
 
 	ws->writeUint16LE(av->getStr());
 	ws->writeUint16LE(av->getInt());

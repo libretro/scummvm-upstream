@@ -357,6 +357,9 @@ void Window::ensureMovieIsLoaded() {
 	}
 
 	loadNextMovie();
+
+	if (_currentMovie->getScore()->_playState == kPlayNotStarted)
+		step(); // we will load it here and move to kPlayLoaded state
 }
 
 bool Window::setNextMovie(Common::String &movieFilenameRaw) {
@@ -417,6 +420,8 @@ void Window::loadNewSharedCast(Cast *previousSharedCast) {
 		g_director->_allOpenResFiles.remove(previousSharedCastPath);
 		delete previousSharedCast->_castArchive;
 		delete previousSharedCast;
+	} else {
+		debug(0, "@@   No previous shared cast");
 	}
 
 	// Load the new sharedCast
@@ -482,7 +487,9 @@ bool Window::loadNextMovie() {
 	debug(0, "@@@@   Switching to movie '%s' in '%s'", utf8ToPrintable(_currentMovie->getMacName()).c_str(), _currentPath.c_str());
 	debug(0, "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
 
+	g_director->setCurrentWindow(this);
 	loadNewSharedCast(previousSharedCast);
+
 	return true;
 }
 
@@ -535,18 +542,35 @@ bool Window::step() {
 					_nextMovie.frameI = -1;
 				}
 
+				if (debugChannelSet(-1, kDebugPauseOnLoad) ||
+						(g_director->_firstMovie && debugChannelSet(-1, kDebugPaused))) {
+					_currentMovie->getScore()->_playState = kPlayPausedAfterLoading;
+					debug(0, "Window::step(): Putting score in paused state as requested");
+					g_system->displayMessageOnOSD(Common::U32String("Paused"));
 
-				if (!debugChannelSet(-1, kDebugCompileOnly) && goodMovie) {
-					debugC(1, kDebugEvents, "Starting playback of movie '%s'", _currentMovie->getMacName().c_str());
-					_currentMovie->getScore()->startPlay();
-					if (_startFrame != -1) {
-						_currentMovie->getScore()->setCurrentFrame(_startFrame);
-						_startFrame = -1;
-					}
-					g_debugger->movieHook();
-				} else {
-					return false;
+					g_director->_firstMovie = false;
+					return true;
 				}
+
+				if (!goodMovie)
+					return false;
+
+				_currentMovie->getScore()->_playState = kPlayLoaded;
+
+				return true;
+			}
+
+		case kPlayLoaded:
+			if (!debugChannelSet(-1, kDebugCompileOnly)) {
+				debugC(1, kDebugEvents, "Starting playback of movie '%s'", _currentMovie->getMacName().c_str());
+				_currentMovie->getScore()->startPlay();
+				if (_startFrame != -1) {
+					_currentMovie->getScore()->setCurrentFrame(_startFrame);
+					_startFrame = -1;
+				}
+				g_debugger->movieHook();
+			} else {
+				return false;
 			}
 			// fall through
 		case kPlayStarted:
@@ -555,6 +579,7 @@ bool Window::step() {
 			debugC(5, kDebugEvents, "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
 			_currentMovie->getScore()->step();
 			return true;
+		case kPlayPausedAfterLoading:
 		case kPlayPaused:
 			return true;
 		default:

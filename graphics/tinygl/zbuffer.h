@@ -355,7 +355,7 @@ private:
 		}
 	}
 
-	template <bool kDepthWrite, bool kSmoothMode, bool kFogMode, bool kEnableAlphaTest, bool kEnableScissor, bool kEnableBlending, bool kStencilEnabled, bool kDepthTestEnabled>
+	template <bool kDepthWrite, bool kSmoothMode, bool kFogMode, bool kEnableAlphaTest, bool kEnableScissor, bool kEnableBlending, bool kStencilEnabled, bool kStippleEnabled, bool kDepthTestEnabled>
 	void putPixelNoTexture(int fbOffset, uint *pz, byte *ps, int _a,
 	                       int x, int y, uint &z, uint &r, uint &g, uint &b, uint &a,
 	                       int &dzdx, int &drdx, int &dgdx, int &dbdx, uint dadx,
@@ -369,7 +369,7 @@ private:
 	                     int &dzdx, int &dsdx, int &dtdx, int &drdx, int &dgdx, int &dbdx, uint dadx,
 	                     uint &fog, int fog_r, int fog_g, int fog_b, int &dfdx);
 
-	template <bool kDepthWrite, bool kEnableScissor, bool kStencilEnabled, bool kDepthTestEnabled>
+	template <bool kDepthWrite, bool kEnableScissor, bool kStencilEnabled, bool StippleEnabled, bool kDepthTestEnabled>
 	void putPixelDepth(uint *pz, byte *ps, int _a, int x, int y, uint &z, int &dzdx);
 
 
@@ -615,6 +615,14 @@ public:
 		_stencilWriteMask = stencilWriteMask;
 	}
 
+	void enablePolygonStipple(bool enable) {
+		_polygonStippleEnabled = enable;
+	}
+
+	void setPolygonStipplePattern(const byte *stipple) {
+		_polygonStipplePattern = stipple;
+	}
+
 	void setStencilTestFunc(int stencilFunc, int stencilValue, uint stencilMask) {
 		_stencilTestFunc = stencilFunc;
 		_stencilRefVal = stencilValue;
@@ -675,7 +683,12 @@ private:
 
 	template <bool kInterpRGB, bool kInterpZ, bool kInterpST, bool kInterpSTZ, bool kSmoothMode,
 	          bool kDepthWrite, bool kFogMode, bool kAlphaTestEnabled, bool kEnableScissor,
-	          bool kBlendingEnabled, bool kStencilEnabled, bool kDepthTestEnabled>
+	          bool kBlendingEnabled, bool kStencilEnabled, bool kStippleEnabled, bool kDepthTestEnabled>
+	void fillTriangle(ZBufferPoint *p0, ZBufferPoint *p1, ZBufferPoint *p2);
+
+	template <bool kInterpRGB, bool kInterpZ, bool kInterpST, bool kInterpSTZ, bool kSmoothMode,
+	          bool kDepthWrite, bool kFogMode, bool kAlphaTestEnabled, bool kEnableScissor,
+	          bool kBlendingEnabled, bool kStencilEnabled, bool kStippleEnabled>
 	void fillTriangle(ZBufferPoint *p0, ZBufferPoint *p1, ZBufferPoint *p2);
 
 	template <bool kInterpRGB, bool kInterpZ, bool kInterpST, bool kInterpSTZ, bool kSmoothMode,
@@ -776,6 +789,9 @@ private:
 	int _stencilSfail;
 	int _stencilDpfail;
 	int _stencilDppass;
+
+	bool _polygonStippleEnabled;
+	const byte *_polygonStipplePattern;
 	int _depthFunc;
 	int _offsetStates;
 	float _offsetFactor;

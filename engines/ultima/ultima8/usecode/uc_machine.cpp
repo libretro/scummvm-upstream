@@ -82,7 +82,7 @@ enum UCSegments {
 UCMachine *UCMachine::_ucMachine = nullptr;
 
 UCMachine::UCMachine(Intrinsic *iset, unsigned int icount) {
-	debug(MM_INFO, "Creating UCMachine...");
+	debug(1, "Creating UCMachine...");
 
 	_ucMachine = this;
 
@@ -114,7 +114,7 @@ UCMachine::UCMachine(Intrinsic *iset, unsigned int icount) {
 
 
 UCMachine::~UCMachine() {
-	debug(MM_INFO, "Destroying UCMachine...");
+	debug(1, "Destroying UCMachine...");
 	_ucMachine = nullptr;
 
 	delete _globals;
@@ -124,7 +124,7 @@ UCMachine::~UCMachine() {
 }
 
 void UCMachine::reset() {
-	debug(MM_INFO, "Resetting UCMachine");
+	debug(1, "Resetting UCMachine");
 
 	// clear _globals
 	_globals->setSize(0x1000);
@@ -1731,11 +1731,10 @@ void UCMachine::execProcess(UCProcess *p) {
 				const uint16 range = GAME_IS_CRUSADER ? ui16b * 2 : ui16b;
 
 				if (item) {
-					int32 ix, iy, iz;
-					item->getLocationAbsolute(ix, iy, iz);
+					Point3 pt = item->getLocationAbsolute();
 					world->getCurrentMap()->areaSearch(itemlist, script,
 					                                   scriptsize, nullptr,
-					                                   range, recurse, ix, iy);
+					                                   range, recurse, pt.x, pt.y);
 				} else {
 					// return error or return empty list?
 					warning("Invalid item %u passed to area search", ui16a);

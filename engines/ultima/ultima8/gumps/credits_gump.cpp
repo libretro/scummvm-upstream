@@ -26,11 +26,11 @@
 
 #include "ultima/ultima8/ultima8.h"
 #include "ultima/ultima8/kernel/mouse.h"
-#include "ultima/ultima8/graphics/render_surface.h"
-#include "ultima/ultima8/graphics/texture.h"
-#include "ultima/ultima8/graphics/fonts/rendered_text.h"
-#include "ultima/ultima8/graphics/fonts/font.h"
-#include "ultima/ultima8/graphics/fonts/font_manager.h"
+#include "ultima/ultima8/gfx/render_surface.h"
+#include "ultima/ultima8/gfx/texture.h"
+#include "ultima/ultima8/gfx/fonts/rendered_text.h"
+#include "ultima/ultima8/gfx/fonts/font.h"
+#include "ultima/ultima8/gfx/fonts/font_manager.h"
 #include "ultima/ultima8/audio/music_process.h"
 
 namespace Ultima {
@@ -147,7 +147,6 @@ void CreditsGump::run() {
 	}
 
 	if (_state == CS_CLOSING) {
-		//debug(MM_INFO, "CreditsGump: closing");
 		Close();
 		return;
 	}
@@ -164,7 +163,7 @@ void CreditsGump::run() {
 	if (available == 0) nextblock = 0;
 
 	if (_state == CS_FINISHING && available <= 156) {
-		//debug(MM_INFO, "CreditsGump: waiting before closing");
+		debug(6, "CreditsGump: waiting before closing");
 		_timer = 120;
 		_state = CS_CLOSING;
 
@@ -207,7 +206,7 @@ void CreditsGump::run() {
 				continue;
 			}
 
-			//debug(MM_INFO, "Rendering paragraph: %s", line.c_str());
+			debug(6, "Rendering paragraph: %s", line.c_str());
 
 			if (line[0] == '+') {
 				// set _title
@@ -249,7 +248,7 @@ void CreditsGump::run() {
 					unsigned int remaining;
 					extractLine(line, modifier, outline);
 
-					//debug(MM_INFO, "Rendering line: %s", outline.c.str());
+					debug(6, "Rendering line: %s", outline.c_str());
 
 					switch (modifier) {
 					case '&':
@@ -266,7 +265,7 @@ void CreditsGump::run() {
 						indent = 32;
 						break;
 					case '@':
-						//debug(MM_INFO, "CreditsGump: done, finishing");
+						debug(6, "CreditsGump: done, finishing");
 						_state = CS_FINISHING;
 						break;
 					default:

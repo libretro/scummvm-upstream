@@ -31,11 +31,40 @@ struct Point3 {
 	Point3() : x(0), y(0), z(0) {}
 	Point3(int32 nx, int32 ny, int32 nz) : x(nx), y(ny), z(nz) {}
 
+	bool operator==(const Point3 &rhs) const { return equals(rhs); }
+	bool operator!=(const Point3 &rhs) const { return !equals(rhs); }
+
+	bool equals(const Point3 &p) const {
+		return (x == p.x && y == p.y && z == p.z);
+	}
+
+	Point3 operator+(const Point3 &delta) const { return Point3(x + delta.x, y + delta.y, z + delta.z); }
+	Point3 operator-(const Point3 &delta) const { return Point3(x - delta.x, y - delta.y, z - delta.z); }
+
+	void operator+=(const Point3 &delta) {
+		x += delta.x;
+		y += delta.y;
+		z += delta.z;
+	}
+
+	void operator-=(const Point3 &delta) {
+		x -= delta.x;
+		y -= delta.y;
+		z -= delta.z;
+	}
+
 	int maxDistXYZ(const Point3 &other) const {
 		int xdiff = abs(x - other.x);
 		int ydiff = abs(y - other.y);
 		int zdiff = abs(z - other.z);
 		return MAX(xdiff, MAX(ydiff, zdiff));
+	}
+
+	uint32 sqrDist(const Point3 &other) const {
+		int xdiff = abs(x - other.x);
+		int ydiff = abs(y - other.y);
+		int zdiff = abs(z - other.z);
+		return uint32(xdiff * xdiff + ydiff * ydiff + zdiff * zdiff);
 	}
 
 	void set(int32 nx, int32 ny, int32 nz) {
@@ -44,7 +73,7 @@ struct Point3 {
 		z = nz;
 	}
 
-	void move(int32 dx, int32 dy, int32 dz) {
+	void translate(int32 dx, int32 dy, int32 dz) {
 		x += dx;
 		y += dy;
 		z += dz;

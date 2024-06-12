@@ -41,11 +41,11 @@ static const GLfloat bitmapVertices[] = {
 	1.0, 1.0,
 };
 
-Renderer *CreateGfxOpenGLShader(int screenW, int screenH, Common::RenderMode renderMode) {
-	return new OpenGLShaderRenderer(screenW, screenH, renderMode);
+Renderer *CreateGfxOpenGLShader(int screenW, int screenH, Common::RenderMode renderMode, bool authenticGraphics) {
+	return new OpenGLShaderRenderer(screenW, screenH, renderMode, authenticGraphics);
 }
 
-OpenGLShaderRenderer::OpenGLShaderRenderer(int screenW, int screenH, Common::RenderMode renderMode) : Renderer(screenW, screenH, renderMode) {
+OpenGLShaderRenderer::OpenGLShaderRenderer(int screenW, int screenH, Common::RenderMode renderMode, bool authenticGraphics) : Renderer(screenW, screenH, renderMode, authenticGraphics) {
 	_verts = nullptr;
 	_triangleShader = nullptr;
 	_triangleVBO = 0;
@@ -457,15 +457,13 @@ void OpenGLShaderRenderer::setStippleData(byte *data) {
 	if (!data)
 		return;
 
-	for (int i = 0; i < 8; i++) {
-		byte b = data[i];
-		for (int j = 0; j < 8; j++) {
-			//debug("%d", 8*i + j);
-			_variableStippleArray[i + 8*j] = b & 0x1;
-			b = b >> 1;
-		}
+	int stippleData[128];
+
+	for (int i = 0; i < 128; i++) {
+		stippleData[i] = 0;
+		stippleData[i] = data[i];
 	}
-	_triangleShader->setUniform("stipple", 64, (const int*)&_variableStippleArray);
+	_triangleShader->setUniform("stipple", 128, (const int*)&stippleData);
 }
 
 void OpenGLShaderRenderer::useStipple(bool enabled) {

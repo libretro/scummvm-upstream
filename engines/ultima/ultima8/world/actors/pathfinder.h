@@ -24,6 +24,7 @@
 
 #include "ultima/shared/std/containers.h"
 #include "ultima/ultima8/misc/direction.h"
+#include "ultima/ultima8/misc/point3.h"
 #include "ultima/ultima8/world/actors/animation.h"
 
 //#define DEBUG_PATHFINDER
@@ -35,10 +36,10 @@ class Actor;
 class Item;
 
 struct PathfindingState {
-	PathfindingState() : _x(0), _y(0), _z(0),  _direction(dir_north),
+	PathfindingState() : _point(), _direction(dir_north),
 		_lastAnim(Animation::walk), _flipped(false),
 		_firstStep(true), _combat(false) {};
-	int32 _x, _y, _z;
+	Point3 _point;
 	Animation::Sequence _lastAnim;
 	Direction _direction;
 	bool _flipped;
@@ -46,7 +47,7 @@ struct PathfindingState {
 	bool _combat;
 
 	void load(const Actor *actor);
-	bool checkPoint(int32 x, int32 y, int32 z, int range) const;
+	bool checkPoint(const Point3 &pt, int range) const;
 	bool checkItem(const Item *item, int xyRange, int zRange) const;
 	bool checkHit(const Actor *actor, const Item *target) const;
 };
@@ -70,7 +71,7 @@ public:
 	~Pathfinder();
 
 	void init(Actor *actor, PathfindingState *state = 0);
-	void setTarget(int32 x, int32 y, int32 z);
+	void setTarget(const Point3 &pt);
 	void setTarget(Item *item, bool hit = false);
 
 	//! try to reach the target by pathfinding
@@ -87,7 +88,7 @@ public:
 protected:
 	PathfindingState _start;
 	Actor *_actor;
-	int32 _targetX, _targetY, _targetZ;
+	Point3 _target;
 	Item *_targetItem;
 	bool _hitMode;
 	int32 _expandTime;
@@ -100,7 +101,7 @@ protected:
 	/** List of nodes for garbage collection later and order is not important */
 	Std::vector<PathNode *> _cleanupNodes;
 
-	bool alreadyVisited(int32 x, int32 y, int32 z) const;
+	bool alreadyVisited(const Point3 &pt) const;
 	void newNode(PathNode *oldnode, PathfindingState &state,
 				 unsigned int steps);
 	void expandNode(PathNode *node);

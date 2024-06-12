@@ -181,7 +181,7 @@ void U8AvatarMoverProcess::handleCombatMode() {
 		Gump *desktopgump = Ultima8Engine::get_instance()->getDesktopGump();
 		int32 mx, my;
 		mouse->getMouseCoords(mx, my);
-		if (desktopgump->TraceObjId(mx, my) == 1) {
+		if (desktopgump->TraceObjId(mx, my) == kMainActorId) {
 			// double right click on avatar = toggle combat mode
 			avatar->toggleInCombat();
 			waitFor(avatar->doAnim(Animation::unreadyWeapon, direction));
@@ -449,7 +449,7 @@ void U8AvatarMoverProcess::handleNormalMode() {
 		Gump *desktopgump = Ultima8Engine::get_instance()->getDesktopGump();
 		int32 mx, my;
 		mouse->getMouseCoords(mx, my);
-		if (desktopgump->TraceObjId(mx, my) == 1) {
+		if (desktopgump->TraceObjId(mx, my) == kMainActorId) {
 			// double right click on avatar = toggle combat mode
 			_mouseButton[1].setState(MBS_HANDLED);
 			_mouseButton[1]._lastDown = 0;
@@ -697,9 +697,8 @@ void U8AvatarMoverProcess::step(Animation::Sequence action, Direction direction,
 
 	if (action == Animation::step && res == Animation::END_OFF_LAND &&
 	        lastanim != Animation::keepBalance && !adjusted) {
-		int32 ax, ay, az;
-		avatar->getLocation(ax, ay, az);
-		if (az > 0) {
+		Point3 pt = avatar->getLocation();
+		if (pt.z > 0) {
 			if (checkTurn(stepdir, false))
 				return;
 			debug(6, "Step: end off land both altdirs failed, keep balance.");
@@ -749,7 +748,7 @@ void U8AvatarMoverProcess::jump(Animation::Sequence action, Direction direction)
 	bool targeting = ConfMan.getBool("targetedjump");
 	if (targeting) {
 		Mouse *mouse = Mouse::get_instance();
-		int32 coords[3];
+		Point3 coords;
 		int32 mx, my;
 		mouse->getMouseCoords(mx, my);
 		GameMapGump *gameMap = Ultima8Engine::get_instance()->getGameMapGump();
@@ -758,11 +757,10 @@ void U8AvatarMoverProcess::jump(Animation::Sequence action, Direction direction)
 		ObjId targetId = gameMap->TraceCoordinates(mx, my, coords);
 		Item *target = getItem(targetId);
 
-		int32 ax, ay, az;
-		avatar->getCentre(ax, ay, az);
+		Point3 a = avatar->getCentre();
 
-		int32 xrange = abs(ax - coords[0]);
-		int32 yrange = abs(ay - coords[1]);
+		int32 xrange = abs(a.x - coords.x);
+		int32 yrange = abs(a.y - coords.y);
 		int maxrange = avatar->getStr() * 32;
 
 		if (target && target->getShapeInfo()->is_land() &&

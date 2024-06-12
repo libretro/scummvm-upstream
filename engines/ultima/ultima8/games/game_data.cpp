@@ -26,17 +26,17 @@
 #include "ultima/ultima8/misc/util.h"
 #include "ultima/ultima8/games/game_data.h"
 #include "ultima/ultima8/usecode/usecode_flex.h"
-#include "ultima/ultima8/graphics/main_shape_archive.h"
-#include "ultima/ultima8/graphics/fonts/font_shape_archive.h"
-#include "ultima/ultima8/graphics/gump_shape_archive.h"
+#include "ultima/ultima8/gfx/main_shape_archive.h"
+#include "ultima/ultima8/gfx/fonts/font_shape_archive.h"
+#include "ultima/ultima8/gfx/gump_shape_archive.h"
 #include "ultima/ultima8/world/map_glob.h"
 #include "ultima/ultima8/world/fire_type_table.h"
 #include "ultima/ultima8/world/actors/npc_dat.h"
 #include "ultima/ultima8/world/actors/combat_dat.h"
-#include "ultima/ultima8/graphics/palette_manager.h"
-#include "ultima/ultima8/graphics/shape.h"
-#include "ultima/ultima8/graphics/wpn_ovlay_dat.h"
-#include "ultima/ultima8/graphics/fonts/font_manager.h"
+#include "ultima/ultima8/gfx/palette_manager.h"
+#include "ultima/ultima8/gfx/shape.h"
+#include "ultima/ultima8/gfx/wpn_ovlay_dat.h"
+#include "ultima/ultima8/gfx/fonts/font_manager.h"
 #include "ultima/ultima8/games/game_info.h"
 #include "ultima/ultima8/gumps/weasel_dat.h"
 #include "ultima/ultima8/conf/config_file_manager.h"
@@ -53,14 +53,14 @@ GameData::GameData(GameInfo *gameInfo)
 	: _fixed(nullptr), _mainShapes(nullptr), _mainUsecode(nullptr), _globs(),
 	  _fonts(nullptr), _gumps(nullptr), _mouse(nullptr), _music(nullptr),
 	  _weaponOverlay(nullptr), _soundFlex(nullptr), _gameInfo(gameInfo) {
-	debugN(MM_INFO, "Creating GameData...\n");
+	debug(1, "Creating GameData...");
 
 	_gameData = this;
 	_speech.resize(1024);
 }
 
 GameData::~GameData() {
-	debugN(MM_INFO, "Destroying GameData...\n");
+	debug(1, "Destroying GameData...");
 
 	delete _fixed;
 	_fixed = nullptr;
@@ -171,7 +171,7 @@ void GameData::loadTranslation() {
 	}
 
 	if (!translationfile.empty()) {
-		debug(MM_INFO, "Loading translation: %s", translationfile.toString().c_str());
+		debug(1, "Loading translation: %s", translationfile.toString().c_str());
 
 		config->readConfigFile(translationfile, "language");
 	}
@@ -247,7 +247,7 @@ void GameData::loadU8Data() {
 	_mainUsecode = new UsecodeFlex(uds);
 
 	// Load main shapes
-	debug(MM_INFO, "Load Shapes");
+	debug(1, "Load Shapes");
 	auto *sf = new Common::File();
 	if (!(sf->open("static/u8shapes.flx") || sf->open("static/u8shapes.cmp")))
 		error("Unable to load static/u8shapes.flx or static/u8shapes.cmp");
@@ -514,7 +514,7 @@ void GameData::loadRemorseData() {
 	_mainUsecode = new UsecodeFlex(uds);
 
 	// Load main shapes
-	debug(MM_INFO, "Load Shapes");
+	debug(1, "Load Shapes");
 	auto *sf = new Common::File();
 	if (!sf->open("static/shapes.flx"))
 		error("Unable to load static/shapes.flx");

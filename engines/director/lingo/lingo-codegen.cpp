@@ -90,13 +90,16 @@ namespace Director {
 			return false; \
 	}
 
-void  Node::storeStart() {
-	startOffset = g_lingo->_compiler->_currentAssembly->size() - 1;
-}
+class NodeStore {
+public:
+	explicit NodeStore(Node *node) : _node(node) {
+		_node->startOffset = g_lingo->_compiler->_currentAssembly->size() - 1;
+	}
+	~NodeStore() { _node->endOffset = g_lingo->_compiler->_currentAssembly->size() - 1; }
 
-void Node::storeEnd() {
-	endOffset = g_lingo->_compiler->_currentAssembly->size() - 1;
-}
+private:
+	Node *_node = nullptr;
+};
 
 LingoCompiler::LingoCompiler() {
 	_assemblyAST = nullptr;
@@ -178,7 +181,6 @@ ScriptContext *LingoCompiler::compileLingo(const Common::U32String &code, LingoA
 		delete _assemblyContext;
 		delete _currentAssembly;
 		delete _methodVars;
-		delete _assemblyAST;
 		_assemblyId = -1;
 		return nullptr;
 	}
@@ -260,7 +262,7 @@ ScriptContext *LingoCompiler::compileLingo(const Common::U32String &code, LingoA
 	if (debugChannelSet(-1, kDebugImGui)) {
 		_assemblyContext->_assemblyAST = _assemblyAST;
 	} else {
-		delete _assemblyAST;
+		_assemblyAST.reset();
 	}
 	_assemblyAST = nullptr;
 	_assemblyContext = nullptr;
@@ -448,6 +450,7 @@ void LingoCompiler::updateLoopJumps(uint nextTargetPos, uint exitTargetPos) {
 /* ScriptNode */
 
 bool LingoCompiler::visitScriptNode(ScriptNode *node) {
+	NodeStore store(node);
 	COMPILE_LIST(node->children);
 	return true;
 }
@@ -455,6 +458,7 @@ bool LingoCompiler::visitScriptNode(ScriptNode *node) {
 /* FactoryNode */
 
 bool LingoCompiler::visitFactoryNode(FactoryNode *node) {
+	NodeStore store(node);
 	_inFactory = true;
 	ScriptContext *mainContext = _assemblyContext;
 	_assemblyContext = new ScriptContext(*node->name, mainContext->_scriptType, mainContext->_id);
@@ -470,6 +474,7 @@ bool LingoCompiler::visitFactoryNode(FactoryNode *node) {
 /* HandlerNode */
 
 bool LingoCompiler::visitHandlerNode(HandlerNode *node) {
+	NodeStore store(node);
 	_indef = true;
 	ScriptData *mainAssembly = _currentAssembly;
 	_currentAssembly = new ScriptData;
@@ -535,6 +540,7 @@ bool LingoCompiler::visitHandlerNode(HandlerNode *node) {
 /* CmdNode */
 
 bool LingoCompiler::visitCmdNode(CmdNode *node) {
+	NodeStore store(node);
 	uint numargs = node->args->size();
 
 	if (node->name->equalsIgnoreCase("go") && numargs == 1 && (*node->args)[0]->type == kVarNode){
@@ -611,6 +617,7 @@ bool LingoCompiler::visitCmdNode(CmdNode *node) {
 /* PutIntoNode */
 
 bool LingoCompiler::visitPutIntoNode(PutIntoNode *node) {
+	NodeStore store(node);
 	if (node->var->type == kVarNode) {
 		registerMethodVar(*static_cast<VarNode *>(node->var)->name);
 	}
@@ -623,6 +630,7 @@ bool LingoCompiler::visitPutIntoNode(PutIntoNode *node) {
 /* PutAfterNode */
 
 bool LingoCompiler::visitPutAfterNode(PutAfterNode *node) {
+	NodeStore store(node);
 	if (node->var->type == kVarNode) {
 		registerMethodVar(*static_cast<VarNode *>(node->var)->name);
 	}
@@ -635,6 +643,7 @@ bool LingoCompiler::visitPutAfterNode(PutAfterNode *node) {
 /* PutBeforeNode */
 
 bool LingoCompiler::visitPutBeforeNode(PutBeforeNode *node) {
+	NodeStore store(node);
 	if (node->var->type == kVarNode) {
 		registerMethodVar(*static_cast<VarNode *>(node->var)->name);
 	}
@@ -657,6 +666,7 @@ int LingoCompiler::getTheFieldID(int entity, const Common::String &field, bool s
 }
 
 bool LingoCompiler::visitSetNode(SetNode *node) {
+	NodeStore store(node);
 	if (node->var->type == kTheNode) {
 		TheNode *the = static_cast<TheNode *>(node->var);
 		if (g_lingo->_theEntities.contains(*the->prop) && !g_lingo->_theEntities[*the->prop]->hasId) {
@@ -820,6 +830,7 @@ bool LingoCompiler::visitSetNode(SetNode *node) {
 /* GlobalNode */
 
 bool LingoCompiler::visitGlobalNode(GlobalNode *node) {
+	NodeStore store(node);
 	for (uint i = 0; i < node->names->size(); i++) {
 		registerMethodVar(*(*node->names)[i], kVarGlobal);
 	}
@@ -836,6 +847,7 @@ bool LingoCompiler::visitGlobalNode(GlobalNode *node) {
 /* PropertyNode */
 
 bool LingoCompiler::visitPropertyNode(PropertyNode *node) {
+	NodeStore store(node);
 	for (uint i = 0; i < node->names->size(); i++) {
 		registerMethodVar(*(*node->names)[i], kVarProperty);
 	}
@@ -845,6 +857,7 @@ bool LingoCompiler::visitPropertyNode(PropertyNode *node) {
 /* InstanceNode */
 
 bool LingoCompiler::visitInstanceNode(InstanceNode *node) {
+	NodeStore store(node);
 	for (uint i = 0; i < node->names->size(); i++) {
 		registerMethodVar(*(*node->names)[i], kVarInstance);
 	}
@@ -854,6 +867,7 @@ bool LingoCompiler::visitInstanceNode(InstanceNode *node) {
 /* IfStmtNode */
 
 bool LingoCompiler::visitIfStmtNode(IfStmtNode *node) {
+	NodeStore store(node);
 	COMPILE(node->cond);
 	uint jzPos = _currentAssembly->size();
 	code2(LC::c_jumpifz, nullptr);
@@ -870,6 +884,7 @@ bool LingoCompiler::visitIfStmtNode(IfStmtNode *node) {
 /* IfElseStmtNode */
 
 bool LingoCompiler::visitIfElseStmtNode(IfElseStmtNode *node) {
+	NodeStore store(node);
 	COMPILE(node->cond);
 	uint jzPos = _currentAssembly->size();
 	code2(LC::c_jumpifz, nullptr);
@@ -895,6 +910,7 @@ bool LingoCompiler::visitIfElseStmtNode(IfElseStmtNode *node) {
 /* RepeatWhileNode */
 
 bool LingoCompiler::visitRepeatWhileNode(RepeatWhileNode *node) {
+	NodeStore store(node);
 	LoopNode *prevLoop = _currentLoop;
 	_currentLoop = node;
 
@@ -924,6 +940,7 @@ bool LingoCompiler::visitRepeatWhileNode(RepeatWhileNode *node) {
 /* RepeatWithToNode */
 
 bool LingoCompiler::visitRepeatWithToNode(RepeatWithToNode *node) {
+	NodeStore store(node);
 	LoopNode *prevLoop = _currentLoop;
 	_currentLoop = node;
 
@@ -975,6 +992,7 @@ bool LingoCompiler::visitRepeatWithToNode(RepeatWithToNode *node) {
 /* RepeatWithInNode */
 
 bool LingoCompiler::visitRepeatWithInNode(RepeatWithInNode *node) {
+	NodeStore store(node);
 	LoopNode *prevLoop = _currentLoop;
 	_currentLoop = node;
 
@@ -1030,6 +1048,7 @@ bool LingoCompiler::visitRepeatWithInNode(RepeatWithInNode *node) {
 /* NextRepeatNode */
 
 bool LingoCompiler::visitNextRepeatNode(NextRepeatNode *node) {
+	NodeStore store(node);
 	if (!_currentLoop) {
 		warning("BUILDBOT: LingoCompiler::visitNextRepeatNode: next repeat not inside repeat loop");
 		return false;
@@ -1042,6 +1061,7 @@ bool LingoCompiler::visitNextRepeatNode(NextRepeatNode *node) {
 /* ExitRepeatNode */
 
 bool LingoCompiler::visitExitRepeatNode(ExitRepeatNode *node) {
+	NodeStore store(node);
 	if (!_currentLoop) {
 		warning("BUILDBOT: LingoCompiler::visitExitRepeatLoop: exit repeat not inside repeat loop");
 		return false;
@@ -1054,6 +1074,7 @@ bool LingoCompiler::visitExitRepeatNode(ExitRepeatNode *node) {
 /* ExitNode */
 
 bool LingoCompiler::visitExitNode(ExitNode *node) {
+	NodeStore store(node);
 	code1(LC::c_procret);
 	return true;
 }
@@ -1061,6 +1082,7 @@ bool LingoCompiler::visitExitNode(ExitNode *node) {
 /* ReturnNode */
 
 bool LingoCompiler::visitReturnNode(ReturnNode *node) {
+	NodeStore store(node);
 	if (node->expr) {
 		COMPILE_REF(node->expr);
 		codeCmd("return", 1);
@@ -1074,6 +1096,7 @@ bool LingoCompiler::visitReturnNode(ReturnNode *node) {
 /* TellNode */
 
 bool LingoCompiler::visitTellNode(TellNode *node) {
+	NodeStore store(node);
 	COMPILE(node->target);
 	code1(LC::c_tell);
 	COMPILE_LIST(node->stmts);
@@ -1084,6 +1107,7 @@ bool LingoCompiler::visitTellNode(TellNode *node) {
 /* WhenNode */
 
 bool LingoCompiler::visitWhenNode(WhenNode *node) {
+	NodeStore store(node);
 	code1(LC::c_stringpush);
 	codeString(node->code->c_str());
 	code1(LC::c_whencode);
@@ -1094,6 +1118,7 @@ bool LingoCompiler::visitWhenNode(WhenNode *node) {
 /* DeleteNode */
 
 bool LingoCompiler::visitDeleteNode(DeleteNode *node) {
+	NodeStore store(node);
 	COMPILE_REF(node->chunk);
 	code1(LC::c_delete);
 	return true;
@@ -1102,6 +1127,7 @@ bool LingoCompiler::visitDeleteNode(DeleteNode *node) {
 /* HiliteNode */
 
 bool LingoCompiler::visitHiliteNode(HiliteNode *node) {
+	NodeStore store(node);
 	COMPILE_REF(node->chunk);
 	code1(LC::c_hilite);
 	return true;
@@ -1110,6 +1136,7 @@ bool LingoCompiler::visitHiliteNode(HiliteNode *node) {
 /* AssertErrorNode */
 
 bool LingoCompiler::visitAssertErrorNode(AssertErrorNode *node) {
+	NodeStore store(node);
 	code1(LC::c_asserterror);
 	COMPILE(node->stmt);
 	code1(LC::c_asserterrordone);
@@ -1119,6 +1146,7 @@ bool LingoCompiler::visitAssertErrorNode(AssertErrorNode *node) {
 /* IntNode */
 
 bool LingoCompiler::visitIntNode(IntNode *node) {
+	NodeStore store(node);
 	code1(LC::c_intpush);
 	codeInt(node->val);
 	return true;
@@ -1127,6 +1155,7 @@ bool LingoCompiler::visitIntNode(IntNode *node) {
 /* FloatNode */
 
 bool LingoCompiler::visitFloatNode(FloatNode *node) {
+	NodeStore store(node);
 	code1(LC::c_floatpush);
 	codeFloat(node->val);
 	return true;
@@ -1135,6 +1164,7 @@ bool LingoCompiler::visitFloatNode(FloatNode *node) {
 /* SymbolNode */
 
 bool LingoCompiler::visitSymbolNode(SymbolNode *node) {
+	NodeStore store(node);
 	code1(LC::c_symbolpush);
 	codeString(node->val->c_str());
 	return true;
@@ -1143,6 +1173,7 @@ bool LingoCompiler::visitSymbolNode(SymbolNode *node) {
 /* StringNode */
 
 bool LingoCompiler::visitStringNode(StringNode *node) {
+	NodeStore store(node);
 	code1(LC::c_stringpush);
 	codeString(node->val->c_str());
 	return true;
@@ -1151,6 +1182,7 @@ bool LingoCompiler::visitStringNode(StringNode *node) {
 /* ListNode */
 
 bool LingoCompiler::visitListNode(ListNode *node) {
+	NodeStore store(node);
 	COMPILE_LIST(node->items);
 	code1(LC::c_arraypush);
 	codeInt(node->items->size());
@@ -1160,6 +1192,7 @@ bool LingoCompiler::visitListNode(ListNode *node) {
 /* PropListNode */
 
 bool LingoCompiler::visitPropListNode(PropListNode *node) {
+	NodeStore store(node);
 	bool refModeStore = _refMode;
 	_refMode = false;
 	bool success = true;
@@ -1187,6 +1220,7 @@ bool LingoCompiler::visitPropListNode(PropListNode *node) {
 /* PropPairNode */
 
 bool LingoCompiler::visitPropPairNode(PropPairNode *node) {
+	NodeStore store(node);
 	COMPILE(node->key);
 	COMPILE(node->val);
 	return true;
@@ -1195,6 +1229,7 @@ bool LingoCompiler::visitPropPairNode(PropPairNode *node) {
 /* FuncNode */
 
 bool LingoCompiler::visitFuncNode(FuncNode *node) {
+	NodeStore store(node);
 	if (node->name->equalsIgnoreCase("field") && node->args->size() >= 1) {
 		COMPILE((*node->args)[0]);
 		if (_refMode) {
@@ -1221,6 +1256,7 @@ bool LingoCompiler::visitFuncNode(FuncNode *node) {
 /* VarNode */
 
 bool LingoCompiler::visitVarNode(VarNode *node) {
+	NodeStore store(node);
 	if (g_director->getVersion() < 400 || (g_director->getCurrentMovie() && g_director->getCurrentMovie()->_allowOutdatedLingo)) {
 		int val = castNumToNum(node->name->c_str());
 		if (val != -1) {
@@ -1245,6 +1281,7 @@ bool LingoCompiler::visitVarNode(VarNode *node) {
 /* ParensNode */
 
 bool LingoCompiler::visitParensNode(ParensNode *node) {
+	NodeStore store(node);
 	COMPILE(node->expr);
 	return true;
 }
@@ -1252,6 +1289,7 @@ bool LingoCompiler::visitParensNode(ParensNode *node) {
 /* UnaryOpNode */
 
 bool LingoCompiler::visitUnaryOpNode(UnaryOpNode *node) {
+	NodeStore store(node);
 	COMPILE(node->arg);
 	code1(node->op);
 	return true;
@@ -1260,6 +1298,7 @@ bool LingoCompiler::visitUnaryOpNode(UnaryOpNode *node) {
 /* BinaryOpNode */
 
 bool LingoCompiler::visitBinaryOpNode(BinaryOpNode *node) {
+	NodeStore store(node);
 	COMPILE(node->a);
 	COMPILE(node->b);
 	code1(node->op);
@@ -1269,6 +1308,7 @@ bool LingoCompiler::visitBinaryOpNode(BinaryOpNode *node) {
 /* FrameNode */
 
 bool LingoCompiler::visitFrameNode(FrameNode *node) {
+	NodeStore store(node);
 	COMPILE(node->arg);
 	return true;
 }
@@ -1276,6 +1316,7 @@ bool LingoCompiler::visitFrameNode(FrameNode *node) {
 /* MovieNode */
 
 bool LingoCompiler::visitMovieNode(MovieNode *node) {
+	NodeStore store(node);
 	COMPILE(node->arg);
 	return true;
 }
@@ -1283,6 +1324,7 @@ bool LingoCompiler::visitMovieNode(MovieNode *node) {
 /* IntersectsNode */
 
 bool LingoCompiler::visitIntersectsNode(IntersectsNode *node) {
+	NodeStore store(node);
 	COMPILE(node->sprite1);
 	COMPILE(node->sprite2);
 	code1(LC::c_intersects);
@@ -1292,6 +1334,7 @@ bool LingoCompiler::visitIntersectsNode(IntersectsNode *node) {
 /* WithinNode */
 
 bool LingoCompiler::visitWithinNode(WithinNode *node) {
+	NodeStore store(node);
 	COMPILE(node->sprite1);
 	COMPILE(node->sprite2);
 	code1(LC::c_within);
@@ -1301,6 +1344,7 @@ bool LingoCompiler::visitWithinNode(WithinNode *node) {
 /* TheNode */
 
 bool LingoCompiler::visitTheNode(TheNode *node) {
+	NodeStore store(node);
 	if (g_lingo->_theEntities.contains(*node->prop) && !g_lingo->_theEntities[*node->prop]->hasId) {
 		code1(LC::c_intpush);
 		codeInt(0); // Put dummy id
@@ -1317,6 +1361,7 @@ bool LingoCompiler::visitTheNode(TheNode *node) {
 /* TheOfNode */
 
 bool LingoCompiler::visitTheOfNode(TheOfNode *node) {
+	NodeStore store(node);
 	switch (node->obj->type) {
 	case kChunkExprNode:
 		{
@@ -1451,6 +1496,7 @@ bool LingoCompiler::visitTheOfNode(TheOfNode *node) {
 /* TheNumberOfNode */
 
 bool LingoCompiler::visitTheNumberOfNode(TheNumberOfNode *node) {
+	NodeStore store(node);
 	switch (node->type) {
 	case kNumberOfCastlibs:
 		codeInt(0); // Put dummy id
@@ -1506,6 +1552,7 @@ bool LingoCompiler::visitTheNumberOfNode(TheNumberOfNode *node) {
 /* TheLastNode */
 
 bool LingoCompiler::visitTheLastNode(TheLastNode *node) {
+	NodeStore store(node);
 	code1(LC::c_intpush);
 	codeInt(-30000);
 	code1(LC::c_intpush);
@@ -1551,6 +1598,7 @@ bool LingoCompiler::visitTheLastNode(TheLastNode *node) {
 /* TheDateTimeNode */
 
 bool LingoCompiler::visitTheDateTimeNode(TheDateTimeNode *node) {
+	NodeStore store(node);
 	code1(LC::c_intpush);
 	codeInt(0); // Put dummy id
 	code1(LC::c_theentitypush);
@@ -1562,30 +1610,35 @@ bool LingoCompiler::visitTheDateTimeNode(TheDateTimeNode *node) {
 /* MenuNode */
 
 bool LingoCompiler::visitMenuNode(MenuNode *node) {
+	NodeStore store(node);
 	return true;
 }
 
 /* MenuItemNode */
 
 bool LingoCompiler::visitMenuItemNode(MenuItemNode *node) {
+	NodeStore store(node);
 	return true;
 }
 
 /* SoundItem */
 
 bool LingoCompiler::visitSoundNode(SoundNode *node) {
+	NodeStore store(node);
 	return true;
 }
 
 /* SpriteNode */
 
 bool LingoCompiler::visitSpriteNode(SpriteNode *node) {
+	NodeStore store(node);
 	return true;
 }
 
 /* ChunkExprNode */
 
 bool LingoCompiler::visitChunkExprNode(ChunkExprNode *node) {
+	NodeStore store(node);
 	COMPILE(node->start);
 	if (node->end) {
 		COMPILE(node->end);

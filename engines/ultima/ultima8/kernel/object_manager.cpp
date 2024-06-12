@@ -62,7 +62,7 @@ struct ObjectLoader {
 };
 
 ObjectManager::ObjectManager() {
-	debugN(MM_INFO, "Creating ObjectManager...\n");
+	debug(1, "Creating ObjectManager...");
 
 	_objectManager = this;
 
@@ -77,7 +77,7 @@ ObjectManager::ObjectManager() {
 
 ObjectManager::~ObjectManager() {
 	reset();
-	debugN(MM_INFO, "Destroying ObjectManager...\n");
+	debug(1, "Destroying ObjectManager...");
 
 	_objectManager = nullptr;
 
@@ -86,7 +86,7 @@ ObjectManager::~ObjectManager() {
 }
 
 void ObjectManager::reset() {
-	debugN(MM_INFO, "Resetting ObjectManager...\n");
+	debug(1, "Resetting ObjectManager...");
 
 	unsigned int i;
 
@@ -110,7 +110,7 @@ void ObjectManager::reset() {
 	_objects.clear();
 	_objects.resize(65536);
 	_objIDs->clearAll(32766);
-	_objIDs->reserveID(666);     // 666 is reserved for the Guardian Bark hack
+	_objIDs->reserveID(kGuardianId);     // Reserved for the Guardian Bark hack
 	_actorIDs->clearAll();
 }
 
@@ -276,7 +276,7 @@ bool ObjectManager::load(Common::ReadStream *rs, uint32 version) {
 			count++;
 		}
 	}
-	debug(MM_INFO, "Reclaimed %u _objIDs on load.", count);
+	debug(1, "Reclaimed %u _objIDs on load.", count);
 
 	// Integrity check items - their ids should match, and if they have
 	// parents, those should be valid.

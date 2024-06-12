@@ -25,11 +25,11 @@
 #include "ultima/ultima8/world/current_map.h"
 #include "ultima/ultima8/world/item.h"
 #include "ultima/ultima8/world/get_object.h"
-#include "ultima/ultima8/graphics/render_surface.h"
-#include "ultima/ultima8/graphics/shape.h"
-#include "ultima/ultima8/graphics/shape_frame.h"
-#include "ultima/ultima8/graphics/palette.h"
-#include "ultima/ultima8/graphics/palette_manager.h"
+#include "ultima/ultima8/gfx/render_surface.h"
+#include "ultima/ultima8/gfx/shape.h"
+#include "ultima/ultima8/gfx/shape_frame.h"
+#include "ultima/ultima8/gfx/palette.h"
+#include "ultima/ultima8/gfx/palette_manager.h"
 
 namespace Ultima {
 namespace Ultima8 {
@@ -75,17 +75,16 @@ void MiniMap::update(const CurrentMap &map) {
 }
 
 Common::Point MiniMap::getItemLocation(const Item &item, unsigned int chunkSize) {
-	int32 x, y, z;
-	item.getLocation(x, y, z);
+	Point3 pt = item.getLocation();
 
-	x = x / (chunkSize / MINMAPGUMP_SCALE);
-	y = y / (chunkSize / MINMAPGUMP_SCALE);
-	return Common::Point(x, y);
+	pt.x = pt.x / (chunkSize / MINMAPGUMP_SCALE);
+	pt.y = pt.y / (chunkSize / MINMAPGUMP_SCALE);
+	return Common::Point(pt.x, pt.y);
 }
 
 uint32 MiniMap::sampleAtPoint(const CurrentMap &map, int x, int y) {
-	int32 start[3] = {x, y, 1 << 15};
-	int32 end[3] = {x, y, -1};
+	Point3 start(x, y, 1 << 15);
+	Point3 end(x, y, -1);
 	int32 dims[3] = {0, 0, 0};
 	uint32 shflags = ShapeInfo::SI_ROOF | ShapeInfo::SI_OCCL | ShapeInfo::SI_LAND | ShapeInfo::SI_SEA;
 	Std::list<CurrentMap::SweepItem> collisions;
@@ -110,12 +109,12 @@ uint32 MiniMap::sampleAtPoint(const CurrentMap &map, int x, int y) {
 }
 
 uint32 MiniMap::sampleAtPoint(const Item &item, int x, int y) {
-	int32 ix, iy, iz, idx, idy, idz;
-	item.getLocation(ix, iy, iz);
+	int32 idx, idy, idz;
+	Point3 pt = item.getLocation();
 	item.getFootpadWorld(idx, idy, idz);
 
-	ix -= x;
-	iy -= y;
+	pt.x -= x;
+	pt.y -= y;
 
 	const Shape *sh = item.getShapeObject();
 	if (!sh)
@@ -133,9 +132,9 @@ uint32 MiniMap::sampleAtPoint(const Item &item, int x, int y) {
 		return KEY_COLOR;
 
 	// Screenspace bounding box bottom x_ coord (RNB x_ coord)
-	int sx = (ix - iy) / 4;
+	int sx = (pt.x - pt.y) / 4;
 	// Screenspace bounding box bottom extent  (RNB y_ coord)
-	int sy = (ix + iy) / 8 + idz;
+	int sy = (pt.x + pt.y) / 8 + idz;
 
 	int w = 3;
 	int h = 3;

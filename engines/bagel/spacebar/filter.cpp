@@ -21,7 +21,6 @@
 
 #include "bagel/spacebar/filter.h"
 #include "bagel/spacebar/main_window.h"
-#include "bagel/spacebar/master_win.h"
 #include "bagel/spacebar/spacebar.h"
 #include "bagel/boflib/gfx/palette.h"
 #include "bagel/boflib/string.h"
@@ -349,8 +348,7 @@ static bool VildroidFilter(CBofBitmap *pBmp, CBofRect *pRect) {
 				break;
 			}
 			case 1: {
-				if (pChipBmp != nullptr)
-					delete pChipBmp;
+				delete pChipBmp;
 
 				char szCString[256];
 				CBofString cString(szCString, 256);
@@ -392,8 +390,7 @@ static bool VildroidFilter(CBofBitmap *pBmp, CBofRect *pRect) {
 				break;
 			}
 			case 2: {
-				if (pChipBmp != nullptr)
-					delete pChipBmp;
+				delete pChipBmp;
 
 				char szCString[256];
 				CBofString cString(szCString, 256);

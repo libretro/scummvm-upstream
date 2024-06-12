@@ -1,16 +1,14 @@
 package org.scummvm.scummvm;
 
 import android.Manifest;
-import android.annotation.TargetApi;
 import android.app.Activity;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.content.res.Configuration;
 import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
-import android.view.View;
 import android.widget.Toast;
-import android.content.res.Configuration;
 
 import androidx.annotation.NonNull;
 
@@ -42,7 +40,9 @@ public class SplashActivity extends Activity {
 			// and they are automatically denied -- onRequestPermissionsResult() will be called without user's input
 			requestPermissions(MY_PERMISSIONS_STR_LIST, MY_PERMISSION_ALL);
 		} else {
-			startActivity(new Intent(this, ScummVMActivity.class));
+			Intent next = new Intent(this, ScummVMActivity.class);
+			next.fillIn(getIntent(), Intent.FILL_IN_ACTION | Intent.FILL_IN_DATA);
+			startActivity(next);
 			finish();
 		}
 	}

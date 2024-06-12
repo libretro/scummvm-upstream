@@ -1,15 +1,5 @@
 package org.scummvm.scummvm;
 
-import java.io.FileNotFoundException;
-
-import java.lang.ref.SoftReference;
-
-import java.util.ArrayDeque;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashMap;
-
-import android.annotation.SuppressLint;
 import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
@@ -22,6 +12,12 @@ import android.provider.DocumentsContract;
 import android.util.Log;
 
 import androidx.annotation.RequiresApi;
+
+import java.io.FileNotFoundException;
+import java.lang.ref.SoftReference;
+import java.util.ArrayDeque;
+import java.util.Collection;
+import java.util.HashMap;
 
 /**
  * SAF primitives for C++ FSNode
@@ -78,7 +74,7 @@ public class SAFFSTree {
 		}
 	}
 
-	public static class SAFFSNode {
+	public static class SAFFSNode implements Comparable<SAFFSNode> {
 		public static final int DIRECTORY = 0x01;
 		public static final int WRITABLE  = 0x02;
 		public static final int READABLE  = 0x04;
@@ -124,6 +120,14 @@ public class SAFFSTree {
 				ourFlags |= SAFFSNode.REMOVABLE;
 			}
 			return ourFlags;
+		}
+
+		@Override
+		public int compareTo(SAFFSNode o) {
+			if (o == null) {
+				throw new NullPointerException();
+			}
+			return _path.compareTo(o._path);
 		}
 	}
 
@@ -435,7 +439,7 @@ public class SAFFSTree {
 		return newnode;
 	}
 
-	private int createStream(SAFFSNode node, String mode) {
+	public ParcelFileDescriptor createFileDescriptor(SAFFSNode node, String mode) {
 		final ContentResolver resolver = _context.getContentResolver();
 		final Uri uri = DocumentsContract.buildDocumentUriUsingTree(_treeUri, node._documentId);
 
@@ -443,12 +447,17 @@ public class SAFFSTree {
 		try {
 			pfd = resolver.openFileDescriptor(uri, mode);
 		} catch(FileNotFoundException e) {
-			return -1;
+			return null;
 		}
+
+		return pfd;
+	}
+
+	private int createStream(SAFFSNode node, String mode) {
+		ParcelFileDescriptor pfd = createFileDescriptor(node, mode);
 		if (pfd == null) {
 			return -1;
 		}
-
 		return pfd.detachFd();
 	}
 

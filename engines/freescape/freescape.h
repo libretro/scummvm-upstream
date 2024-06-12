@@ -245,6 +245,9 @@ public:
 	int execute8bitBinImageSingleCommand(Common::SeekableReadStream *file, Graphics::ManagedSurface *surface, int row, int pixels, int bit, int count);
 	int execute8bitBinImageMultiCommand(Common::SeekableReadStream *file, Graphics::ManagedSurface *surface, int row, int pixels, int bit, int count);
 
+	void parseAmigaAtariHeader(Common::SeekableReadStream *file);
+	Common::SeekableReadStream *decryptFileAmigaAtari(const Common::Path &packed, const Common::Path &unpacker, uint32 unpackArrayOffset);
+
 	// Areas
 	uint16 _startArea;
 	uint16 _endArea;
@@ -305,7 +308,7 @@ public:
 	int _angleRotationIndex;
 	Common::Array<float> _angleRotations;
 
-	Math::Vector3d directionToVector(float pitch, float heading);
+	Math::Vector3d directionToVector(float pitch, float heading, bool useTable);
 	void updateCamera();
 
 	// Camera options
@@ -433,13 +436,15 @@ public:
 	void drawFullscreenMessageAndWait(Common::String message);
 	void drawFullscreenMessage(Common::String message, uint32 front, Graphics::Surface *surface);
 
-	void loadFonts(Common::SeekableReadStream *file, int offset);
+	// Font loading and rendering
+	void loadFonts(Common::SeekableReadStream *file, int offset, Common::BitArray &font);
 	void loadFonts(byte *font, int charNumber);
 	Common::StringArray _currentAreaMessages;
 	Common::StringArray _currentEphymeralMessages;
 	Common::BitArray _font;
 	bool _fontLoaded;
 	void drawStringInSurface(const Common::String &str, int x, int y, uint32 fontColor, uint32 backColor, Graphics::Surface *surface, int offset = 0);
+	void drawStringInSurface(const Common::String &str, int x, int y, uint32 primaryFontColor, uint32 secondaryFontColor, uint32 backColor, Graphics::Surface *surface, int offset = 0);
 	Graphics::Surface *drawStringsInSurface(const Common::Array<Common::String> &lines);
 
 	// Game state

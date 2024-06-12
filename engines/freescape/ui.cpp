@@ -171,6 +171,11 @@ void FreescapeEngine::drawFullscreenMessage(Common::String message, uint32 front
 		y = 40;
 		letterPerLine = 24;
 		numberOfLines = 12;
+	} else if (isAtariST()) {
+		x = 33;
+		y = 40;
+		letterPerLine = 32;
+		numberOfLines = 10;
 	}
 
 	for (int i = 0; i < numberOfLines; i++) {
@@ -265,6 +270,10 @@ void FreescapeEngine::drawBorderScreenAndWait(Graphics::Surface *surface) {
 			case Common::EVENT_KEYDOWN:
 				switch (event.kbd.keycode) {
 				case Common::KEYCODE_SPACE:
+					i = maxWait;
+					break;
+				case Common::KEYCODE_d:
+					_demoMode = true;
 					i = maxWait;
 					break;
 				default:

@@ -597,6 +597,19 @@ static const ADGameDescription gameDescriptions[] = {
 		ADGF_UNSUPPORTED,
 		GUIO1(GUIO_NOMIDI)
 	},
+	{
+		"totaleclipse",
+		"",
+		{
+			{"0.TEC", 0, "01a2a7b2ce34b121e7ee4dab3bdac114", 45860},
+			{"1.TEC", 0, "fb65655f60b11040285aa947d4ed1193", 263453},
+			AD_LISTEND
+		},
+		Common::EN_ANY,
+		Common::kPlatformAtariST,
+		ADGF_UNSTABLE,
+		GUIO1(GUIO_NOMIDI)
+	},
 	{ // Stampede Atari, Issue 7
 		"totaleclipse",
 		"",
@@ -954,7 +967,7 @@ static const DebugChannelDef debugFlagList[] = {
 class FreescapeMetaEngineDetection : public AdvancedMetaEngineDetection {
 public:
 	FreescapeMetaEngineDetection() : AdvancedMetaEngineDetection(Freescape::gameDescriptions, sizeof(ADGameDescription), Freescape::freescapeGames) {
-		_guiOptions = GUIO7(GUIO_NOMIDI, GAMEOPTION_PRERECORDED_SOUNDS, GAMEOPTION_EXTENDED_TIMER, GAMEOPTION_DISABLE_DEMO_MODE, GAMEOPTION_DISABLE_SENSORS, GAMEOPTION_DISABLE_FALLING, GAMEOPTION_INVERT_Y);
+		_guiOptions = GUIO8(GUIO_NOMIDI, GAMEOPTION_PRERECORDED_SOUNDS, GAMEOPTION_EXTENDED_TIMER, GAMEOPTION_DISABLE_DEMO_MODE, GAMEOPTION_DISABLE_SENSORS, GAMEOPTION_DISABLE_FALLING, GAMEOPTION_INVERT_Y, GAMEOPTION_AUTHENTIC_GRAPHICS);
 	}
 
 	const char *getName() const override {

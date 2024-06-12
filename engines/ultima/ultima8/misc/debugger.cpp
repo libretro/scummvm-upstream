@@ -28,10 +28,10 @@
 #include "ultima/ultima8/audio/audio_process.h"
 #include "ultima/ultima8/audio/music_process.h"
 #include "ultima/ultima8/games/game_data.h"
-#include "ultima/ultima8/graphics/inverter_process.h"
-#include "ultima/ultima8/graphics/main_shape_archive.h"
-#include "ultima/ultima8/graphics/render_surface.h"
-#include "ultima/ultima8/graphics/texture.h"
+#include "ultima/ultima8/gfx/inverter_process.h"
+#include "ultima/ultima8/gfx/main_shape_archive.h"
+#include "ultima/ultima8/gfx/render_surface.h"
+#include "ultima/ultima8/gfx/texture.h"
 #include "ultima/ultima8/gumps/fast_area_vis_gump.h"
 #include "ultima/ultima8/gumps/game_map_gump.h"
 #include "ultima/ultima8/gumps/minimap_gump.h"
@@ -758,7 +758,8 @@ void Debugger::dumpCurrentMap() {
 	// Now render the map
 	s->BeginPainting();
 	s->SetOrigin(0, 0);
-	CameraProcess::SetCameraProcess(new CameraProcess(cx + camheight * 4, cy + camheight * 4, camheight));
+	Point3 pt(cx + camheight * 4, cy + camheight * 4, camheight);
+	CameraProcess::SetCameraProcess(new CameraProcess(pt));
 	g->Paint(s, 256, false);
 	s->EndPainting();
 
@@ -978,11 +979,10 @@ bool Debugger::cmdMark(int argc, const char **argv) {
 
 	MainActor *mainActor = getMainActor();
 	int curmap = mainActor->getMapNum();
-	int32 x, y, z;
-	mainActor->getLocation(x, y, z);
+	Point3 pt = mainActor->getLocation();
 
 	Common::String key = Common::String::format("mark_%s", argv[1]);
-	Common::String value = Common::String::format("%d %d %d %d", curmap, x, y, z);
+	Common::String value = Common::String::format("%d %d %d %d", curmap, pt.x, pt.y, pt.z);
 	ConfMan.set(key, value);
 
 	debugPrintf("Set mark \"%s\" to %s\n", argv[1], value.c_str());
@@ -1223,10 +1223,9 @@ bool Debugger::cmdCameraOnAvatar(int argc, const char **argv) {
 	}
 	Actor *actor = getControlledActor();
 	if (actor) {
-		int32 x, y, z;
-		actor->getCentre(x, y, z);
-		if (x > 0 || y > 0)
-			CameraProcess::SetCameraProcess(new CameraProcess(x, y, z));
+		Point3 pt = actor->getCentre();
+		if (pt.x > 0 || pt.y > 0)
+			CameraProcess::SetCameraProcess(new CameraProcess(pt));
 	}
 	return false;
 }
@@ -1698,8 +1697,8 @@ bool Debugger::cmdU8ShapeViewer(int argc, const char **argv) {
 bool Debugger::cmdShowMenu(int argc, const char **argv) {
 	World *world = World::get_instance();
 	// In Crusader escape is also used to stop controlling another NPC
-	if (world && world->getControlledNPCNum() != 1) {
-		world->setControlledNPCNum(1);
+	if (world && world->getControlledNPCNum() != kMainActorId) {
+		world->setControlledNPCNum(kMainActorId);
 		return false;
 	}
 	if (Ultima8Engine::get_instance()->isCruStasis()) {

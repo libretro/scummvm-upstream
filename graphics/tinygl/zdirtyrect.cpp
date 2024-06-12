@@ -453,6 +453,7 @@ RasterizationDrawCall::RasterizationState RasterizationDrawCall::captureState() 
 	state.stencilSfail = c->stencil_sfail;
 	state.stencilDpfail = c->stencil_dpfail;
 	state.stencilDppass = c->stencil_dppass;
+	state.polygonStippleEnabled = c->polygon_stipple_enabled;
 	state.offsetStates = c->offset_states;
 	state.offsetFactor = c->offset_factor;
 	state.offsetUnits = c->offset_units;
@@ -480,6 +481,7 @@ RasterizationDrawCall::RasterizationState RasterizationDrawCall::captureState() 
 
 	memcpy(state.viewportScaling, c->viewport.scale._v, sizeof(c->viewport.scale._v));
 	memcpy(state.viewportTranslation, c->viewport.trans._v, sizeof(c->viewport.trans._v));
+	memcpy(state.polygonStipplePattern, c->polygon_stipple_pattern, sizeof(c->polygon_stipple_pattern));
 
 	return state;
 }
@@ -502,6 +504,8 @@ void RasterizationDrawCall::applyState(const RasterizationDrawCall::Rasterizatio
 	c->fb->setOffsetUnits(state.offsetUnits);
 	c->fb->setFogEnabled(state.fogEnabled);
 	c->fb->setFogColor(state.fogColorR, state.fogColorG, state.fogColorB);
+	c->fb->setPolygonStipplePattern(state.polygonStipplePattern);
+	c->fb->enablePolygonStipple(state.polygonStippleEnabled);
 
 	c->blending_enabled = state.enableBlending;
 	c->source_blending_factor = state.sfactor;

@@ -54,26 +54,26 @@ namespace SpaceBar {
 #define kDrivingTime        5
 
 // Constants not linked to any one screen
-#define kCheckmark 'x'
+#define kCheckMark 'x'
 
 #define kStandardIndentation        4
 #define kStandardDoubleIndentation  8
 
 // Buyer bids summary
-#define kFirstMineralColumn 12
+#define kFirstMineralColumn     12
 
 #define kBuyerBidsPointSize     14
 #define kOtherPointSize         13
 #define kMineralColWidth        4
 
-#define kBuyerBidsPointWidth                6
-#define kLineItemHeight kBuyerBidsPointSize + 4
+#define kBuyerBidsPointWidth    6
+#define kLineItemHeight         (kBuyerBidsPointSize + 4)
 
 // Add instructions to the main screen
 
-#define kactivateFooterStr1  "NOTE: On any subsequent screens where the information displayed does"
-#define kactivateFooterStr2  "not fit on the screen, scroll up or down one line using up-arrow and"
-#define kactivateFooterStr3  "down-arrow.  Scroll up or down a page using page-up or page-down."
+#define kActivateFooterStr1  "NOTE: On any subsequent screens where the information displayed does"
+#define kActivateFooterStr2  "not fit on the screen, scroll up or down one line using up-arrow and"
+#define kActivateFooterStr3  "down-arrow.  Scroll up or down a page using page-up or page-down."
 
 #define kBuyerBidsHeaderStr  "BUYER      Zn  Ba  Rg  Ut  Pn  Sz   0  H20 LH  CH  ME  TE  AS  PD   ACCEPT"
 #define kBuyerBidsMessage1   "Click on any buyer to see their biography.  Click in the 'ACCEPT' column "
@@ -667,15 +667,10 @@ bool SrafComputer::verifyDispatchTeam() {
 	}
 
 	// Make sure at least one staff member is sent on this mission
-	int nMaleMembers = 0, nFemaleMembers = 0;
 	if (bValidTeam) {
 		for (int i = 0; i < NUM_STAFFERS; i++) {
 			if (g_staffers[i]._bOnCurrentTeam) {
 				nTeam |= (1 << (i + 3));
-				if (g_staffers[i]._nFlags & mStafferMale)
-					nMaleMembers++;
-				else
-					nFemaleMembers++;
 			}
 		}
 
@@ -742,15 +737,6 @@ bool SrafComputer::verifyDispatchTeam() {
 
 		pTeamItem->_nDispatchTime = pVar->getNumValue();
 		pTeamItem->_nMeetingTime = calculateMeetingTime(pTeamItem->_nFlags);
-
-		// The spokesperson will be the majority of the sexes
-		// If same number of each, then randomize it.
-
-		if (nMaleMembers == nFemaleMembers) {
-			// Get a random number to decide the spokesperson of even team
-			int nRand = pTeamItem->_nDispatchTime;
-			nMaleMembers += (nRand & 1 ? 1 : -1);
-		}
 
 		// Pick a team captain, must be same sex as the announcer.
 		pTeamItem->_nTeamCaptain = getTeamCaptain(pTeamItem->_nFlags);
@@ -1721,7 +1707,7 @@ void SrafComputer::recalcDispatchList(int mExpansionFlag) {
 						sStr += "[ ] ";
 						sStr += g_stSellerNames[i - 1]._pszName;
 						if (g_stSellerNames[i - 1]._bMeetWith) {
-							sStr.replaceCharAt(kStandardIndentation + 1, kCheckmark);
+							sStr.replaceCharAt(kStandardIndentation + 1, kCheckMark);
 						}
 					} else {
 						baddToTail = false;
@@ -1750,7 +1736,7 @@ void SrafComputer::recalcDispatchList(int mExpansionFlag) {
 						sStr += "[ ] ";
 						sStr += g_stBuyerBids[i - 2]._pszName;
 						if (g_stBuyerBids[i - 2]._bMeetWith) {
-							sStr.replaceCharAt(kStandardIndentation + 1, kCheckmark);
+							sStr.replaceCharAt(kStandardIndentation + 1, kCheckMark);
 						}
 					}
 				} else {
@@ -1773,7 +1759,7 @@ void SrafComputer::recalcDispatchList(int mExpansionFlag) {
 						sStr += "[ ] ";
 						sStr += g_stOtherPartys[i - 3]._pszName;
 						if (g_stOtherPartys[i - 3]._bMeetWith) {
-							sStr.replaceCharAt(kStandardIndentation + 1, kCheckmark);
+							sStr.replaceCharAt(kStandardIndentation + 1, kCheckMark);
 						}
 					} else {
 						baddToTail = false;
@@ -2800,17 +2786,16 @@ void SrafComputer::onListDispatchTeam() {
 			break;
 
 		case mSellersExpanded:
-			nListToCheck = kSellersList;            // List to check
-			nPreceedingHeaders = 0;                 // No headers above this guy
+			nListToCheck = kSellersList;
+			// No headers above this guy
+			nPreceedingHeaders = 0;
 
-			switch (nElementIndex) {
-			case -1:
+			if (nElementIndex == -1) {
 				bDeleteAll = true;
-				nrecalcVal = 0;         // Collapse list
-				break;
-
-			default:
-				nElementIndex -= nPreceedingHeaders;    // Account for headers
+				// Collapse list
+				nrecalcVal = 0;
+			} else {
+				nElementIndex -= nPreceedingHeaders; // Account for headers
 
 				// Account for those guys out on meetings that we have not displayed
 				// recalc first...
@@ -2819,21 +2804,21 @@ void SrafComputer::onListDispatchTeam() {
 				if (nElementIndex >= NUM_SELLERS) {
 					if (nElementIndex == (NUM_SELLERS - nPreceedingHeaders)) {
 						bDeleteAll = true;
-						nrecalcVal = mBuyersExpanded;       // collapse list, expand buyers
+						// collapse list, expand buyers
+						nrecalcVal = mBuyersExpanded;
 					}
 
 					if (nElementIndex == (NUM_SELLERS + 1 - nPreceedingHeaders)) {
 						bDeleteAll = true;
-						nrecalcVal = mOthersExpanded;       // collapse list, expand others
+						// collapse list, expand others
+						nrecalcVal = mOthersExpanded;
 					}
-					break;
-				}
-
-				if (cMeetBio.ptInRect(cPoint)) {        // If so, bring up biography.
+				} else if (cMeetBio.ptInRect(cPoint)) {
+					// If so, bring up biography.
 					sStr = buildSrafDir(g_stSellerNames[nElementIndex]._pszSellerBio);
 					displayTextScreen(sStr);
 				} else if (cMeetMember.ptInRect(cPoint)) {
-					// If so, put a checkmark in that column.
+					// If so, put a check mark in that column.
 
 					// Uncheck any member we already have checked, this is a singular operation
 					nMeetMember = getMeetMember(nListToCheck);
@@ -2915,7 +2900,7 @@ void SrafComputer::onListDispatchTeam() {
 		// If we have a new column to check, do that here.
 		if (bInMeetMemberColumn) {
 			sStr = _pLBox->getText(_nSelection);
-			sStr.replaceCharAt(kStandardIndentation + 1, kCheckmark);       // ??? works fine on mac, not sure what check mark is for pc
+			sStr.replaceCharAt(kStandardIndentation + 1, kCheckMark);       // ??? works fine on mac, not sure what check mark is for pc
 			_pLBox->setText(_nSelection, sStr);
 			_pLBox->repaintItem(_nSelection);
 		}
@@ -2953,7 +2938,7 @@ void SrafComputer::onListDispatchTeam() {
 					if (g_staffers[nElementIndex]._bAvailable) {
 						char cNewChar = ' ';
 						if (g_staffers[nElementIndex]._bOnCurrentTeam == false) {
-							cNewChar = kCheckmark;
+							cNewChar = kCheckMark;
 						}
 
 						// Negate
@@ -3661,13 +3646,13 @@ void SrafComputer::activateMainScreen() {
 	sStr = "";
 	_pLBox->addToTail(sStr, false);
 
-	sStr = kactivateFooterStr1;
+	sStr = kActivateFooterStr1;
 	_pLBox->addToTail(sStr, false);
 
-	sStr = kactivateFooterStr2;
+	sStr = kActivateFooterStr2;
 	_pLBox->addToTail(sStr, false);
 
-	sStr = kactivateFooterStr3;
+	sStr = kActivateFooterStr3;
 	_pLBox->addToTail(sStr, false);
 
 	// Display the current time...
@@ -4275,7 +4260,7 @@ void SrafComputer::onButtonCodeWords(CBofButton *pButton, int nState) {
 }
 
 void SrafComputer::onButtonFinished(bool bVictorious) {
-	CBagVar *pVar = nullptr;
+	CBagVar *pVar;
 
 	// Make sure the user selected two code words.
 	if (bVictorious == true) {

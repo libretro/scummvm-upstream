@@ -33,7 +33,7 @@
 #include "ultima/ultima8/world/egg_hatcher_process.h"
 #include "ultima/ultima8/kernel/kernel.h"
 #include "ultima/ultima8/games/game_data.h"
-#include "ultima/ultima8/graphics/main_shape_archive.h"
+#include "ultima/ultima8/gfx/main_shape_archive.h"
 #include "ultima/ultima8/gumps/game_map_gump.h"
 #include "ultima/ultima8/misc/box.h"
 #include "ultima/ultima8/misc/direction_util.h"
@@ -231,18 +231,16 @@ void CurrentMap::loadMap(Map *map) {
 }
 
 void CurrentMap::addItem(Item *item) {
-	int32 ix, iy, iz;
+	Point3 pt = item->getLocation();
 
-	item->getLocation(ix, iy, iz);
-
-	if (ix < 0 || ix >= _mapChunkSize * MAP_NUM_CHUNKS ||
-	        iy < 0 || iy >= _mapChunkSize * MAP_NUM_CHUNKS) {
-		//warning("Skipping item %u: out of range (%d, %d)", item->getObjId(), ix, iy);
+	if (pt.x < 0 || pt.x >= _mapChunkSize * MAP_NUM_CHUNKS ||
+	        pt.y < 0 || pt.y >= _mapChunkSize * MAP_NUM_CHUNKS) {
+		//warning("Skipping item %u: out of range (%d, %d)", item->getObjId(), pt.x, pt.y);
 		return;
 	}
 
-	int32 cx = ix / _mapChunkSize;
-	int32 cy = iy / _mapChunkSize;
+	int32 cx = pt.x / _mapChunkSize;
+	int32 cy = pt.y / _mapChunkSize;
 
 #ifdef VALIDATE_CHUNKS
 	for (int32 ccy = 0; ccy < MAP_NUM_CHUNKS; ccy++) {
@@ -270,18 +268,16 @@ void CurrentMap::addItem(Item *item) {
 }
 
 void CurrentMap::addItemToEnd(Item *item) {
-	int32 ix, iy, iz;
+	Point3 pt = item->getLocation();
 
-	item->getLocation(ix, iy, iz);
-
-	if (ix < 0 || ix >= _mapChunkSize * MAP_NUM_CHUNKS ||
-	        iy < 0 || iy >= _mapChunkSize * MAP_NUM_CHUNKS) {
-		//warning("Skipping item %u: out of range (%d, %d)", item->getObjId(), ix, iy);
+	if (pt.x < 0 || pt.x >= _mapChunkSize * MAP_NUM_CHUNKS ||
+	        pt.y < 0 || pt.y >= _mapChunkSize * MAP_NUM_CHUNKS) {
+		//warning("Skipping item %u: out of range (%d, %d)", item->getObjId(), pt.x, pt.y);
 		return;
 	}
 
-	int32 cx = ix / _mapChunkSize;
-	int32 cy = iy / _mapChunkSize;
+	int32 cx = pt.x / _mapChunkSize;
+	int32 cy = pt.y / _mapChunkSize;
 
 #ifdef VALIDATE_CHUNKS
 	for (int32 ccy = 0; ccy < MAP_NUM_CHUNKS; ccy++) {
@@ -309,11 +305,9 @@ void CurrentMap::addItemToEnd(Item *item) {
 }
 
 void CurrentMap::removeItem(Item *item) {
-	int32 ix, iy, iz;
+	Point3 pt = item->getLocation();
 
-	item->getLocation(ix, iy, iz);
-
-	removeItemFromList(item, ix, iy);
+	removeItemFromList(item, pt.x, pt.y);
 }
 
 void CurrentMap::addTargetItem(const Item *item) {
@@ -371,9 +365,8 @@ Item *CurrentMap::findBestTargetItem(int32 x, int32 y, int32 z, Direction dir, D
 		const ShapeInfo *si = item->getShapeInfo();
 		bool isoccl = si->_flags & ShapeInfo::SI_OCCL;
 
-		int32 ix, iy, iz;
-		item->getLocation(ix, iy, iz);
-		Direction itemdir = Direction_GetWorldDir(iy - y, ix - x, dirmode);
+		Point3 pt = item->getLocation();
+		Direction itemdir = Direction_GetWorldDir(pt.y - y, pt.x - x, dirmode);
 		if (itemdir != dir)
 			continue;
 
@@ -381,9 +374,9 @@ Item *CurrentMap::findBestTargetItem(int32 x, int32 y, int32 z, Direction dir, D
 		if ((bestisoccl && !isoccl) || (bestisnpc && !actor) || !item->isPartlyOnScreen())
 			continue;
 
-		int xdiff = abs(x - ix);
-		int ydiff = abs(y - iy);
-		int zdiff = abs(z - iz);
+		int xdiff = abs(x - pt.x);
+		int ydiff = abs(y - pt.y);
+		int zdiff = abs(z - pt.z);
 		int dist = MAX(MAX(xdiff, ydiff), zdiff);
 
 		if (dist < bestdist) {
@@ -456,15 +449,15 @@ static inline void CalcFastAreaLimits(int32 &sx_limit,
 	xy_limit = (sy_limit + sx_limit) / 2;
 }
 
-void CurrentMap::updateFastArea(int32 from_x, int32 from_y, int32 from_z, int32 to_x, int32 to_y, int32 to_z) {
-	int x_min = MIN(from_x, to_x);
-	int x_max = MAX(from_x, to_x);
+void CurrentMap::updateFastArea(const Point3 &from, const Point3 &to) {
+	int x_min = MIN(from.x, to.x);
+	int x_max = MAX(from.x, to.x);
 
-	int y_min = MIN(from_y, to_y);
-	int y_max = MAX(from_y, to_y);
+	int y_min = MIN(from.y, to.y);
+	int y_max = MAX(from.y, to.y);
 
-	int z_min = MIN(from_z, to_z);
-	int z_max = MAX(from_z, to_z);
+	int z_min = MIN(from.z, to.z);
+	int z_max = MAX(from.z, to.z);
 
 	// Work out Fine (screenspace) Limits of chunks with half chunk border
 	Rect dims;
@@ -565,8 +558,10 @@ void CurrentMap::areaSearch(UCList *itemlist, const uint8 *loopscript,
 	// if item != 0, search an area around item. Otherwise, search an area
 	// around (x,y)
 	if (check) {
-		int32 z, zd;
-		check->getLocationAbsolute(x, y, z);
+		int32 zd;
+		Point3 pt = check->getLocationAbsolute();
+		x = pt.x;
+		y = pt.y;
 		check->getFootpadWorld(xd, yd, zd);
 	}
 
@@ -607,9 +602,8 @@ void CurrentMap::areaSearch(UCList *itemlist, const uint8 *loopscript,
 					continue;
 
 				// check if item is in range
-				int32 ix, iy, iz;
-				item->getLocation(ix, iy, iz);
-				if (searchrange.containsXY(ix, iy)) {
+				Point3 pt = item->getLocation();
+				if (searchrange.containsXY(pt.x, pt.y)) {
 					// check item against loopscript
 					if (item->checkLoopScript(loopscript, scriptsize)) {
 						assert(itemlist->getElementSize() == 2);
@@ -632,16 +626,15 @@ void CurrentMap::areaSearch(UCList *itemlist, const uint8 *loopscript,
 void CurrentMap::surfaceSearch(UCList *itemlist, const uint8 *loopscript,
 							   uint32 scriptsize, const Item *check,
 							   bool above, bool below, bool recurse) const {
-	int32 x, y, z;
 	int32 xd, yd, zd;
-	check->getLocationAbsolute(x, y, z);
+	Point3 pt = check->getLocationAbsolute();
 	check->getFootpadWorld(xd, yd, zd);
-	const Box searchrange(x, y, z, xd, yd, zd);
+	const Box searchrange(pt.x, pt.y, pt.z, xd, yd, zd);
 
-	int minx = ((x - xd) / _mapChunkSize) - 1;
-	int maxx = (x / _mapChunkSize) + 1;
-	int miny = ((y - yd) / _mapChunkSize) - 1;
-	int maxy = (y / _mapChunkSize) + 1;
+	int minx = ((pt.x - xd) / _mapChunkSize) - 1;
+	int maxx = (pt.x / _mapChunkSize) + 1;
+	int miny = ((pt.y - yd) / _mapChunkSize) - 1;
+	int maxy = (pt.y / _mapChunkSize) + 1;
 	clipMapChunks(minx, maxx, miny, maxy);
 
 	for (int cy = miny; cy <= maxy; cy++) {
@@ -872,19 +865,19 @@ bool CurrentMap::scanForValidPosition(int32 x, int32 y, int32 z, const Item *ite
 				if (!(si->_flags & blockflagmask))
 					continue; // not an interesting item
 
-				int32 ix, iy, iz, ixd, iyd, izd;
-				citem->getLocation(ix, iy, iz);
+				int32 ixd, iyd, izd;
+				Point3 pt = citem->getLocation();
 				citem->getFootpadWorld(ixd, iyd, izd);
 
-				int minv = iz - z - zd + 1;
-				int maxv = iz + izd - z - 1;
+				int minv = pt.z - z - zd + 1;
+				int maxv = pt.z + izd - z - 1;
 				if (minv < -scansize) minv = -scansize;
 				if (maxv > scansize) maxv = scansize;
 
-				int sminx = ix - ixd + 1 - x;
-				int smaxx = ix + xd - 1  - x;
-				int sminy = iy - iyd + 1 - y;
-				int smaxy = iy + yd - 1  - y;
+				int sminx = pt.x - ixd + 1 - x;
+				int smaxx = pt.x + xd - 1  - x;
+				int sminy = pt.y - iyd + 1 - y;
+				int smaxy = pt.y + yd - 1  - y;
 
 				int minh = -100;
 				int maxh = 100;
@@ -914,9 +907,9 @@ bool CurrentMap::scanForValidPosition(int32 x, int32 y, int32 z, const Item *ite
 						validmask[j + scansize] &= ~(1 << (i + scansize));
 
 				if (wantsupport && si->is_solid() &&
-				        iz + izd >= z - scansize && iz + izd <= z + scansize) {
+				        pt.z + izd >= z - scansize && pt.z + izd <= z + scansize) {
 					for (int i = minh; i <= maxh; ++i)
-						supportmask[iz + izd - z + scansize] |= (1 << (i + scansize));
+						supportmask[pt.z + izd - z + scansize] |= (1 << (i + scansize));
 
 				}
 			}
@@ -987,22 +980,22 @@ bool CurrentMap::scanForValidPosition(int32 x, int32 y, int32 z, const Item *ite
 // blocking_only forces us to check against blocking items only.
 // Returns item hit or 0 if no hit.
 // end is set to the colision point
-bool CurrentMap::sweepTest(const int32 start[3], const int32 end[3],
+bool CurrentMap::sweepTest(const Point3 &start, const Point3 &end,
 						   const int32 dims[3], uint32 shapeflags,
 						   ObjId item, bool blocking_only,
 						   Std::list<SweepItem> *hit) const {
 	const uint32 blockflagmask = (ShapeInfo::SI_SOLID | ShapeInfo::SI_DAMAGING | ShapeInfo::SI_LAND);
 
-	int minx = ((start[0] - dims[0]) / _mapChunkSize) - 1;
-	int maxx = (start[0] / _mapChunkSize) + 1;
-	int miny = ((start[1] - dims[1]) / _mapChunkSize) - 1;
-	int maxy = (start[1] / _mapChunkSize) + 1;
+	int minx = ((start.x - dims[0]) / _mapChunkSize) - 1;
+	int maxx = (start.x / _mapChunkSize) + 1;
+	int miny = ((start.y - dims[1]) / _mapChunkSize) - 1;
+	int maxy = (start.y / _mapChunkSize) + 1;
 
 	{
-		int dminx = ((end[0] - dims[0]) / _mapChunkSize) - 1;
-		int dmaxx = (end[0] / _mapChunkSize) + 1;
-		int dminy = ((end[1] - dims[1]) / _mapChunkSize) - 1;
-		int dmaxy = (end[1] / _mapChunkSize) + 1;
+		int dminx = ((end.x - dims[0]) / _mapChunkSize) - 1;
+		int dmaxx = (end.x / _mapChunkSize) + 1;
+		int dminy = ((end.y - dims[1]) / _mapChunkSize) - 1;
+		int dmaxy = (end.y / _mapChunkSize) + 1;
 		if (dminx < minx)
 			minx = dminx;
 		if (dmaxx > maxx)
@@ -1018,14 +1011,19 @@ bool CurrentMap::sweepTest(const int32 start[3], const int32 end[3],
 	// Get velocity, extents, and centre of item
 	int32 vel[3];
 	int32 ext[3];
-	int32 centre[3];
-	for (int i = 0; i < 3; i++) {
-		vel[i] = end[i] - start[i];
-		ext[i] = dims[i] / 2;
-		centre[i] = start[i] - ext[i];
-	}
+	Point3 centre;
+	vel[0] = end.x - start.x;
+	vel[1] = end.y - start.y;
+	vel[2] = end.z - start.z;
+
+	ext[0] = dims[0] / 2;
+	ext[1] = dims[1] / 2;
+	ext[2] = dims[2] / 2;
+
+	centre.x = start.x - ext[0];
+	centre.y = start.y - ext[1];
 	// Z is opposite direction to x and y..
-	centre[2] = start[2] + ext[2];
+	centre.z = start.z + ext[2];
 
 	debugC(kDebugCollision, "Sweeping from (%d, %d, %d) - (%d, %d, %d) to (%d, %d, %d) - (%d, %d, %d)",
 		   -ext[0], -ext[1], -ext[2],
@@ -1057,7 +1055,10 @@ bool CurrentMap::sweepTest(const int32 start[3], const int32 end[3],
 					continue;
 
 				int32 other[3], oext[3];
-				other_item->getLocation(other[0], other[1], other[2]);
+				Point3 opt = other_item->getLocation();
+				other[0] = opt.x;
+				other[1] = opt.y;
+				other[2] = opt.z;
 				other_item->getFootpadWorld(oext[0], oext[1], oext[2]);
 
 				// If the objects overlapped at the start, ignore collision.
@@ -1067,12 +1068,12 @@ bool CurrentMap::sweepTest(const int32 start[3], const int32 end[3],
 				// off-by-one error (hypothetically, but they do happen so
 				// protect against it).
 				if ( /* not non-overlapping start position */
-				    !(start[0] <= other[0] - (oext[0] - 1) ||
-				      start[0] - dims[0] >= other[0] - 1 ||
-				      start[1] <= other[1] - (oext[1] - 1) ||
-				      start[1] - dims[1] >= other[1] - 1 ||
-				      start[2] + dims[2] <= other[2] + 1 ||
-				      start[2] >= other[2] + (oext[2] - 1))) {
+				    !(start.x <= other[0] - (oext[0] - 1) ||
+				      start.x - dims[0] >= other[0] - 1 ||
+				      start.y <= other[1] - (oext[1] - 1) ||
+				      start.y - dims[1] >= other[1] - 1 ||
+				      start.z + dims[2] <= other[2] + 1 ||
+				      start.z >= other[2] + (oext[2] - 1))) {
 					// Overlapped at the start, and not just touching so
 					// ignore collision
 					continue;
@@ -1084,9 +1085,9 @@ bool CurrentMap::sweepTest(const int32 start[3], const int32 end[3],
 				oext[2] /= 2;
 
 				// Put other into our coord frame
-				other[0] -= oext[0] + centre[0];
-				other[1] -= oext[1] + centre[1];
-				other[2] += oext[2] - centre[2];
+				other[0] -= oext[0] + centre.x;
+				other[1] -= oext[1] + centre.y;
+				other[2] += oext[2] - centre.z;
 
 				//first times of overlap along each axis
 				int32 u_1[3] = {0, 0, 0};
@@ -1212,6 +1213,14 @@ bool CurrentMap::sweepTest(const int32 start[3], const int32 end[3],
 	}
 
 	return hit && hit->size();
+}
+
+void CurrentMap::setFastAtPoint(const Point3 &pt) {
+	int32 cx = pt.x / _mapChunkSize;
+	int32 cy = pt.y / _mapChunkSize;
+
+	if (!isChunkFast(cx, cy))
+		setChunkFast(cx, cy);
 }
 
 void CurrentMap::setWholeMapFast() {

@@ -28,9 +28,12 @@
 #include "common/translation.h" // For catching the file during POTFILES reviews
 
 static Common::U32String app_name = _("ScummVM");
+static Common::U32String app_name_debug = _("ScummVM (debug)");
 static Common::U32String app_desc = _("Graphic adventure game engine");
 static Common::U32String ok = _("OK");
 static Common::U32String quit = _("Quit");
+static Common::U32String no_log_file_title = _("Log File Error");
+static Common::U32String no_log_file = _("Unable to read ScummVM log file or create a new one!");
 static Common::U32String no_config_file_title = _("Config File Error");
 static Common::U32String no_config_file = _("Unable to read ScummVM config file or create a new one!");
 static Common::U32String no_save_path_title = _("Save Path Error");
@@ -49,3 +52,10 @@ static Common::U32String customkeyboardview_keycode_enter = _("Enter");
 static Common::U32String customkeyboardview_popup_close = _("Close popup");
 static Common::U32String saf_request_prompt = _("Please select the *root* of your external (physical) SD card. This is required for ScummVM to access this path: ");
 static Common::U32String saf_revoke_done = _("Storage Access Framework Permissions for ScummVM were revoked!");
+static Common::U32String ini_parsing_error = _("Configuration file could not be parsed");
+static Common::U32String shortcut_creator_title = _("Run a game");
+static Common::U32String shortcut_creator_search_game = _("Search a game");
+static Common::U32String shortcut_creator_no_games = _("No games (yet)\nOpen ScummVM and add your games here.");
+static Common::U32String shortcut_creator_game_item_icon = _("Game icon");
+static Common::U32String shortcut_creator_customize_game_name_hint = _("Shortcut label");
+static Common::U32String shortcut_creator_customize_game_icon_description = _("Shortcut icon");

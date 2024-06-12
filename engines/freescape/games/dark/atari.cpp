@@ -19,7 +19,6 @@
  *
  */
 #include "common/file.h"
-#include "common/memstream.h"
 
 #include "freescape/freescape.h"
 #include "freescape/games/dark/dark.h"
@@ -27,12 +26,37 @@
 
 namespace Freescape {
 
+Common::String centerAndPadString(const Common::String &str, int size) {
+	Common::String result;
+
+	if (int(str.size()) >= size)
+		return str;
+
+	int padding = (size - str.size()) / 2;
+	for (int i = 0; i < padding; i++)
+		result += " ";
+
+	result += str;
+
+	if (int(result.size()) >= size)
+		return result;
+
+	padding = size - result.size();
+
+	for (int i = 0; i < padding; i++)
+		result += " ";
+	return result;
+}
+
 void DarkEngine::loadAssetsAtariFullGame() {
-	Common::SeekableReadStream *stream = decryptFile("1.drk", "0.drk", 840);
+	Common::SeekableReadStream *stream = decryptFileAmigaAtari("1.drk", "0.drk", 840);
 	parseAmigaAtariHeader(stream);
 
 	_border = loadAndConvertNeoImage(stream, 0xd710);
-	loadFonts(stream, 0xd06a); //0x7f0);
+	loadFonts(stream, 0xd06b, _fontBig);
+	loadFonts(stream, 0xd49a, _fontMedium);
+	loadFonts(stream, 0xd49b, _fontSmall);
+
 	load8bitBinary(stream, 0x20918, 16);
 	loadMessagesVariableSize(stream, 0x3f6f, 66);
 	loadPalettes(stream, 0x204d6);
@@ -48,6 +72,21 @@ void DarkEngine::loadAssetsAtariFullGame() {
 	assert(obj);
 	obj->_cyclingColors = true;
 
+	for (int i = 0; i < 3; i++) {
+		int16 id = 227 + i * 6 - 2;
+		for (int j = 0; j < 2; j++) {
+			//debugC(1, kFreescapeDebugParser, "Restoring object %d to from ECD %d", id, index);
+			obj = (GeometricObject *)_areaMap[255]->objectWithID(id);
+			assert(obj);
+			obj->_cyclingColors = true;
+			id--;
+		}
+	}
+
+	for (auto &area : _areaMap) {
+		// Center and pad each area name so we do not have to do it at each frame
+		area._value->_name = centerAndPadString(area._value->_name, 26);
+	}
 }
 
 } // End of namespace Freescape

@@ -489,15 +489,10 @@ void CruAvatarMoverProcess::step(Animation::Sequence action, Direction direction
 
 		Direction dir_right = Direction_TurnByDelta(direction, 4, dirmode_16dirs);
 		Direction dir_left = Direction_TurnByDelta(direction, -4, dirmode_16dirs);
-		Point3 origpt;
-		avatar->getLocation(origpt);
+		Point3 origpt = avatar->getLocation();
 
 		int32 dims[3];
 		avatar->getFootpadWorld(dims[0], dims[1], dims[2]);
-		int32 start[3];
-		start[0] = origpt.x;
-		start[1] = origpt.y;
-		start[2] = origpt.z;
 
 		// Double the values in original to match our coordinate space
 		static const int ADJUSTMENTS[] = {0x20, 0x20, 0x40, 0x40, 0x60, 0x60,
@@ -517,12 +512,9 @@ void CruAvatarMoverProcess::step(Animation::Sequence action, Direction direction
 			//
 			bool startvalid = true;
 			Std::list<CurrentMap::SweepItem> collisions;
-			int32 end[3];
-			end[0] = x;
-			end[1] = y;
-			end[2] = z;
-			avatar->setLocation(origpt.x, origpt.y, origpt.z);
-			currentmap->sweepTest(start, end, dims, avatar->getShapeInfo()->_flags,
+			Point3 end(x, y, z);
+			avatar->setLocation(origpt);
+			currentmap->sweepTest(origpt, end, dims, avatar->getShapeInfo()->_flags,
 								  avatar->getObjId(), true, &collisions);
 			for (Std::list<CurrentMap::SweepItem>::iterator it = collisions.begin();
 				 it != collisions.end(); it++) {
@@ -537,7 +529,7 @@ void CruAvatarMoverProcess::step(Animation::Sequence action, Direction direction
 				res = avatar->tryAnim(testaction, direction);
 				if (res == Animation::SUCCESS) {
 					// move to starting point for real (trigger fast area updates etc)
-					avatar->setLocation(origpt.x, origpt.y, origpt.z);
+					avatar->setLocation(origpt);
 					avatar->move(x, y, z);
 					break;
 				}
@@ -547,7 +539,7 @@ void CruAvatarMoverProcess::step(Animation::Sequence action, Direction direction
 		if (res != Animation::SUCCESS) {
 			// reset location and result (in case it's END_OFF_LAND now)
 			// couldn't find a better move.
-			avatar->setLocation(origpt.x, origpt.y, origpt.z);
+			avatar->setLocation(origpt);
 			res = initialres;
 		}
 	}
@@ -597,7 +589,7 @@ void CruAvatarMoverProcess::tryAttack() {
 	AudioProcess *audio = AudioProcess::get_instance();
 	const WeaponInfo *wpninfo = wpn->getShapeInfo()->_weaponInfo;
 
-	if (avatar->getObjId() != 1) {
+	if (avatar->getObjId() != kMainActorId) {
 		// Non-avatar NPCs never need to reload or run out of energy.
 		Animation::Sequence fireanim = (avatar->isKneeling() ?
 										Animation::kneelAndFire : Animation::attack);
@@ -630,7 +622,7 @@ void CruAvatarMoverProcess::tryAttack() {
 			if (wpninfo->_reloadSound) {
 				audio->playSFX(0x2a, 0x80, avatar->getObjId(), 1);
 			}
-			if (avatar->getObjId() == 1 && !avatar->isKneeling()) {
+			if (avatar->getObjId() == kMainActorId && !avatar->isKneeling()) {
 				avatar->doAnim(Animation::reloadSmallWeapon, dir_current);
 			}
 
@@ -646,7 +638,7 @@ void CruAvatarMoverProcess::tryAttack() {
 			if (wpninfo->_reloadSound) {
 				audio->playSFX(0x2a, 0x80, avatar->getObjId(), 1);
 			}
-			if (avatar->getObjId() == 1) {
+			if (avatar->getObjId() == kMainActorId) {
 				avatar->doAnim(Animation::reloadSmallWeapon, dir_current);
 			}
 			_SGA1Loaded = true;

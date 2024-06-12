@@ -193,7 +193,7 @@ static bool g_bBibbleHack = false;
 
 
 CBetArea::CBetArea(const CBetAreaDef &def) :
-	_cRect(def._left, def._top, def._right, def._bottom), _bWon(false),
+	_cRect(def._left, def._top, def._right, def._bottom),
 	_nBet(def._nBet), _nPayOff1(def._nPayOff1), _nPayOff2(def._nPayOff2),
 	_cAudioFile(def._cAudioFile), _cPayFile(def._cPayFile) {
 }
@@ -727,6 +727,9 @@ ErrorCode CBibbleWindow::playGame() {
 					case 2:
 						BofPlaySoundEx(BuildDir(BIBBLE_AUDIO_PAYS4), SOUND_MIX | SOUND_QUEUE, 7, true);
 						break;
+
+					default:
+						break;
 					}
 				}
 
@@ -982,6 +985,9 @@ void CBibbleWindow::calcOutcome() {
 			if (_nNumShout4 >= ((i - 15) / 4) + 1) {
 				g_engine->g_cBetAreas[i]._bWon = true;
 			}
+			break;
+
+		default:
 			break;
 		}
 	}

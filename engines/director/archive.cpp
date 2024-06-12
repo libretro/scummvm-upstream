@@ -437,31 +437,36 @@ bool RIFFArchive::openStream(Common::SeekableReadStream *stream, uint32 startOff
 
 	_stream = stream;
 
-	if (convertTagToUppercase(stream->readUint32BE()) != MKTAG('R', 'I', 'F', 'F')) {
-		debugC(5, kDebugLoading, "RIFFArchive::openStream(): RIFF expected but not found");
+	uint32 tag = stream->readUint32BE();
+
+	if (convertTagToUppercase(tag) != MKTAG('R', 'I', 'F', 'F')) {
+		debugC(5, kDebugLoading, "RIFFArchive::openStream(): RIFF expected but got '%s'", tag2str(tag));
 		return false;
 	}
 
 	stream->readUint32LE(); // size
 
-	if (convertTagToUppercase(stream->readUint32BE()) != MKTAG('R', 'M', 'M', 'P')) {
-		debugC(5, kDebugLoading, "RIFFArchive::openStream(): RMMP expected but not found");
+	tag = stream->readUint32BE();
+
+	if (convertTagToUppercase(tag) != MKTAG('R', 'M', 'M', 'P')) {
+		debugC(5, kDebugLoading, "RIFFArchive::openStream(): RMMP expected but  got '%s'", tag2str(tag));
 		return false;
 	}
 
-	if (convertTagToUppercase(stream->readUint32BE()) != MKTAG('C', 'F', 'T', 'C')) {
-		debugC(5, kDebugLoading, "RIFFArchive::openStream(): CFTC expected but not found");
+	tag = stream->readUint32BE();
+	if (convertTagToUppercase(tag) != MKTAG('C', 'F', 'T', 'C')) {
+		debugC(5, kDebugLoading, "RIFFArchive::openStream(): CFTC expected but  got '%s'", tag2str(tag));
 		return false;
 	}
 
 	uint32 cftcSize = stream->readUint32LE();
 	uint32 startPos = stream->pos();
-	stream->readUint32LE(); // unknown (always 0?)
+	stream->readUint32LE(); // Chunk number, alsways 0
 
 	Common::DumpFile out;
 
 	while ((uint32)stream->pos() < startPos + cftcSize) {
-		uint32 tag = convertTagToUppercase(stream->readUint32BE());
+		tag = convertTagToUppercase(stream->readUint32BE());
 
 		uint32 size = stream->readUint32LE();
 		uint32 id = stream->readUint32LE();
@@ -773,7 +778,7 @@ bool RIFXArchive::readMemoryMap(Common::SeekableReadStreamEndian &stream, uint32
 	_types[MKTAG('i', 'm', 'a', 'p')][0].accessed = true; // Mark it as accessed
 
 	stream.readUint32(); // imap length
-	stream.readUint32(); // unknown
+	uint32 mapversion = stream.readUint32(); // version, seen 0 or 1
 	uint32 mmapOffsetPos = stream.pos();
 	uint32 mmapOffset = stream.readUint32() + moreOffset;
 	if (dumpStream) {
@@ -785,7 +790,7 @@ bool RIFXArchive::readMemoryMap(Common::SeekableReadStreamEndian &stream, uint32
 			dumpStream->writeUint32LE(mmapOffset - movieStartOffset);
 	}
 	uint32 version = stream.readUint32(); // 0 for 4.0, 0x4c1 for 5.0, 0x4c7 for 6.0, 0x708 for 8.5, 0x742 for 10.0
-	warning("mmap: version: %x offset: 0x%x (%d)", version, mmapOffset, mmapOffset);
+	warning("mmap: mapversion: %d version: %x offset: 0x%x (%d)", mapversion, version, mmapOffset, mmapOffset);
 
 	stream.seek(mmapOffset);
 
@@ -797,8 +802,8 @@ bool RIFXArchive::readMemoryMap(Common::SeekableReadStreamEndian &stream, uint32
 	_types[MKTAG('m', 'm', 'a', 'p')][0].accessed = true; // Mark it as accessed
 
 	stream.readUint32(); // mmap length
-	stream.readUint16(); // unknown
-	stream.readUint16(); // unknown
+	stream.readUint16(); // header size
+	stream.readUint16(); // size of map entry
 	stream.readUint32(); // resCount + empty entries
 	uint32 resCount = stream.readUint32();
 	stream.skip(8); // all 0xFF

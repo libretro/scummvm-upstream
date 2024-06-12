@@ -452,6 +452,10 @@ struct GLContext {
 
 	bool _enableDirtyRectangles;
 
+	// stipple
+	bool polygon_stipple_enabled;
+	byte polygon_stipple_pattern[128];
+
 	// blit test
 	Common::List<BlitImage *> _blitImages;
 

@@ -10,8 +10,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: ScummVM 1.3.0svn\n"
 "Report-Msgid-Bugs-To: scummvm-devel@lists.scummvm.org\n"
-"POT-Creation-Date: 2024-05-30 18:11+0000\n"
-"PO-Revision-Date: 2024-05-28 19:12+0000\n"
+"POT-Creation-Date: 2024-06-11 12:49+0000\n"
+"PO-Revision-Date: 2024-06-03 09:44+0000\n"
 "Last-Translator: Walter Agazzi <walter.agazzi@protonmail.com>\n"
 "Language-Team: Italian <https://translations.scummvm.org/projects/scummvm/"
 "scummvm/it/>\n"
@@ -87,7 +87,7 @@ msgstr "Su"
 #: gui/saveload-dialog.cpp:540 gui/saveload-dialog.cpp:824
 #: gui/saveload-dialog.cpp:1220 gui/shaderbrowser-dialog.cpp:80
 #: gui/themebrowser.cpp:54 gui/unknown-game-dialog.cpp:53 base/main.cpp:604
-#: dists/android.strings.xml.cpp:43 engines/engine.cpp:764
+#: dists/android.strings.xml.cpp:46 engines/engine.cpp:764
 #: backends/dialogs/gtk/gtk-dialogs.cpp:65
 #: backends/events/default/default-events.cpp:193
 #: backends/events/default/default-events.cpp:217
@@ -333,7 +333,7 @@ msgstr "Il codice JSON non è valido."
 #: gui/editgamedialog.cpp:363 gui/editrecorddialog.cpp:67
 #: gui/fluidsynth-dialog.cpp:153 gui/launcher.cpp:557 gui/launcher.cpp:561
 #: gui/massadd.cpp:90 gui/options.cpp:2354 gui/predictivedialog.cpp:69
-#: gui/saveload-dialog.cpp:1221 dists/android.strings.xml.cpp:32
+#: gui/saveload-dialog.cpp:1221 dists/android.strings.xml.cpp:33
 #: engines/engine.cpp:567 engines/engine.cpp:590
 #: backends/platform/wii/options.cpp:46 engines/agos/animation.cpp:577
 #: engines/agos/midi.cpp:320 engines/agos/midi.cpp:378
@@ -948,7 +948,7 @@ msgstr "Interazione"
 #: engines/dragons/metaengine.cpp:160 engines/freescape/movement.cpp:35
 #: engines/griffon/metaengine.cpp:121 engines/grim/grim.cpp:473
 #: engines/grim/grim.cpp:554 engines/icb/icb.cpp:68 engines/icb/icb.cpp:152
-#: engines/scumm/metaengine.cpp:860 engines/twine/metaengine.cpp:465
+#: engines/scumm/metaengine.cpp:862 engines/twine/metaengine.cpp:465
 #: engines/twine/metaengine.cpp:532 engines/twp/metaengine.cpp:154
 #: engines/wintermute/keymapper_tables.h:1290
 #: engines/wintermute/keymapper_tables.h:1373
@@ -963,7 +963,7 @@ msgstr "Su"
 #: engines/dragons/metaengine.cpp:166 engines/freescape/movement.cpp:41
 #: engines/griffon/metaengine.cpp:127 engines/grim/grim.cpp:478
 #: engines/grim/grim.cpp:559 engines/icb/icb.cpp:73 engines/icb/icb.cpp:157
-#: engines/scumm/metaengine.cpp:827 engines/twine/metaengine.cpp:472
+#: engines/scumm/metaengine.cpp:829 engines/twine/metaengine.cpp:472
 #: engines/twine/metaengine.cpp:540 engines/twp/metaengine.cpp:155
 #: engines/wintermute/keymapper_tables.h:1296
 #: engines/wintermute/keymapper_tables.h:1379
@@ -977,7 +977,7 @@ msgstr "Giù"
 #: engines/crab/input/input.cpp:107 engines/crab/input/input.cpp:157
 #: engines/dragons/metaengine.cpp:172 engines/griffon/metaengine.cpp:133
 #: engines/grim/grim.cpp:483 engines/grim/grim.cpp:564 engines/icb/icb.cpp:78
-#: engines/icb/icb.cpp:162 engines/scumm/metaengine.cpp:840
+#: engines/icb/icb.cpp:162 engines/scumm/metaengine.cpp:842
 #: engines/twine/metaengine.cpp:487 engines/twine/metaengine.cpp:555
 #: engines/twp/metaengine.cpp:152 engines/wintermute/keymapper_tables.h:320
 #: engines/wintermute/keymapper_tables.h:1302
@@ -992,7 +992,7 @@ msgstr "Sinistra"
 #: engines/crab/input/input.cpp:113 engines/crab/input/input.cpp:163
 #: engines/dragons/metaengine.cpp:178 engines/griffon/metaengine.cpp:139
 #: engines/grim/grim.cpp:488 engines/grim/grim.cpp:569 engines/icb/icb.cpp:83
-#: engines/icb/icb.cpp:167 engines/scumm/metaengine.cpp:847
+#: engines/icb/icb.cpp:167 engines/scumm/metaengine.cpp:849
 #: engines/twine/metaengine.cpp:479 engines/twine/metaengine.cpp:548
 #: engines/twp/metaengine.cpp:153 engines/wintermute/keymapper_tables.h:326
 #: engines/wintermute/keymapper_tables.h:1308
@@ -2671,7 +2671,7 @@ msgstr "Registra/riproduci Gameplay"
 
 #: gui/recorderdialog.cpp:72 gui/recorderdialog.cpp:212
 #: gui/saveload-dialog.cpp:460 gui/saveload-dialog.cpp:540
-#: dists/android.strings.xml.cpp:44 engines/engine.cpp:613
+#: dists/android.strings.xml.cpp:47 engines/engine.cpp:613
 msgid "Delete"
 msgstr "Elimina"
 
@@ -3177,11 +3177,15 @@ msgid "ScummVM"
 msgstr "ScummVM"
 
 #: dists/android.strings.xml.cpp:31
+msgid "ScummVM (debug)"
+msgstr "ScummVM (debug)"
+
+#: dists/android.strings.xml.cpp:32
 msgid "Graphic adventure game engine"
 msgstr "Motore per avventure grafiche"
 
 #. I18N: This directly quits the game.
-#: dists/android.strings.xml.cpp:33
+#: dists/android.strings.xml.cpp:34
 #: backends/events/default/default-events.cpp:217
 #: backends/events/default/default-events.cpp:358
 #: engines/adl/metaengine.cpp:328 engines/cge2/metaengine.cpp:239
@@ -3192,36 +3196,44 @@ msgstr "Motore per avventure grafiche"
 msgid "Quit"
 msgstr "Esci"
 
-#: dists/android.strings.xml.cpp:34
+#: dists/android.strings.xml.cpp:35
+msgid "Log File Error"
+msgstr "Errore nel file di log"
+
+#: dists/android.strings.xml.cpp:36
+msgid "Unable to read ScummVM log file or create a new one!"
+msgstr "Non è stato possibile leggere o creare il file di log di ScummVM!"
+
+#: dists/android.strings.xml.cpp:37
 msgid "Config File Error"
 msgstr "Errore nel file di configurazione"
 
-#: dists/android.strings.xml.cpp:35
+#: dists/android.strings.xml.cpp:38
 msgid "Unable to read ScummVM config file or create a new one!"
 msgstr ""
 "Non è stato possibile leggere o creare il file di configurazione di ScummVM!"
 
-#: dists/android.strings.xml.cpp:36
+#: dists/android.strings.xml.cpp:39
 msgid "Save Path Error"
 msgstr "Errore percorso salvataggi"
 
-#: dists/android.strings.xml.cpp:37
+#: dists/android.strings.xml.cpp:40
 msgid "Unable to create or access default save path!"
 msgstr ""
 "Non è stato possibile creare o accedere al percorso dei salvataggi "
 "predefinito!"
 
-#: dists/android.strings.xml.cpp:38
+#: dists/android.strings.xml.cpp:41
 msgid "Icons Path Error"
 msgstr "Errore percorso icone"
 
-#: dists/android.strings.xml.cpp:39
+#: dists/android.strings.xml.cpp:42
 msgid "Unable to create or access default icons and shaders path!"
 msgstr ""
 "Non è stato possibile creare o accedere al percorso predefinito per icone e "
 "shader!"
 
-#: dists/android.strings.xml.cpp:40
+#: dists/android.strings.xml.cpp:43
 msgid ""
 "Unable to access the globally set save path! Please revert to default from "
 "ScummVM Options"
@@ -3229,40 +3241,40 @@ msgstr ""
 "Non è stato possibile accedere al percorso salvataggi globale! Ripristina il "
 "percorso predefinito nelle Opzioni di ScummVM"
 
-#: dists/android.strings.xml.cpp:41
+#: dists/android.strings.xml.cpp:44
 msgid "Toggle virtual keyboard"
 msgstr "Mostra/nascondi tastiera virtuale"
 
-#: dists/android.strings.xml.cpp:42 engines/scumm/help.cpp:82
+#: dists/android.strings.xml.cpp:45 engines/scumm/help.cpp:82
 #: engines/scumm/help.cpp:86 engines/scumm/help.cpp:88
 #: engines/scumm/help.cpp:102 engines/scumm/help.cpp:103
 #: engines/scumm/help.cpp:104
 msgid "Alt"
 msgstr "Alt"
 
-#: dists/android.strings.xml.cpp:45
+#: dists/android.strings.xml.cpp:48
 #: backends/platform/libretro/src/libretro-options-widget.cpp:222
 msgid "Done"
 msgstr "Fatto"
 
-#: dists/android.strings.xml.cpp:46
+#: dists/android.strings.xml.cpp:49
 msgid "Mode change"
 msgstr "Cambia modalità"
 
-#: dists/android.strings.xml.cpp:47
+#: dists/android.strings.xml.cpp:50
 msgid "Shift"
 msgstr "Tasto Maiusc"
 
-#: dists/android.strings.xml.cpp:48 engines/dragons/metaengine.cpp:154
+#: dists/android.strings.xml.cpp:51 engines/dragons/metaengine.cpp:154
 #: engines/scumm/help.cpp:88 engines/scumm/help.cpp:91
 msgid "Enter"
 msgstr "Invio"
 
-#: dists/android.strings.xml.cpp:49
+#: dists/android.strings.xml.cpp:52
 msgid "Close popup"
 msgstr "Chiudi popup"
 
-#: dists/android.strings.xml.cpp:50
+#: dists/android.strings.xml.cpp:53
 msgid ""
 "Please select the *root* of your external (physical) SD card. This is "
 "required for ScummVM to access this path: "
@@ -3270,9 +3282,41 @@ msgstr ""
 "Per favore, seleziona la *root* della tua scheda esterna SD (fisica). È "
 "necessario affinchè ScummVM possa accedere al percorso: "
 
-#: dists/android.strings.xml.cpp:51
+#: dists/android.strings.xml.cpp:54
 msgid "Storage Access Framework Permissions for ScummVM were revoked!"
 msgstr "Permessi Storage Access Framework per ScummVM revocati!"
+
+#: dists/android.strings.xml.cpp:55
+msgid "Configuration file could not be parsed"
+msgstr "Non è stato possibile interpretare il file di configurazione"
+
+#: dists/android.strings.xml.cpp:56
+msgid "Run a game"
+msgstr "Avvia un gioco"
+
+#: dists/android.strings.xml.cpp:57
+msgid "Search a game"
+msgstr "Cerca un gioco"
+
+#: dists/android.strings.xml.cpp:58
+msgid ""
+"No games (yet)\n"
+"Open ScummVM and add your games here."
+msgstr ""
+"Nessun gioco (attualmente)\n"
+"Apri ScummVM e aggiungi qui i tuoi giochi."
+
+#: dists/android.strings.xml.cpp:59
+msgid "Game icon"
+msgstr "Icona gioco"
+
+#: dists/android.strings.xml.cpp:60
+msgid "Shortcut label"
+msgstr "Etichetta scorciatoia"
+
+#: dists/android.strings.xml.cpp:61
+msgid "Shortcut icon"
+msgstr "Icona scorciatoia"
 
 #. I18N: One line summary as shown in *nix distributions
 #: dists/org.scummvm.scummvm.metainfo.xml.cpp:32
@@ -4678,12 +4722,12 @@ msgstr ""
 msgid "Magnify Mode Off"
 msgstr "Vista Ingrandita disattivata"
 
-#: backends/platform/android/android.cpp:1048
+#: backends/platform/android/android.cpp:1050
 #: backends/platform/ios7/ios7_osys_misc.mm:249
 msgid "Getting help"
 msgstr "Ottenere aiuto"
 
-#: backends/platform/android/android.cpp:1051
+#: backends/platform/android/android.cpp:1053
 msgid ""
 "## Help, I'm lost!\n"
 "\n"
@@ -4725,13 +4769,13 @@ msgstr ""
 "complicati, talvolta a livelli impensabili. Se rimani bloccato, prova a "
 "cercare qualche guida online. Buona fortuna!\n"
 
-#: backends/platform/android/android.cpp:1060
+#: backends/platform/android/android.cpp:1062
 #: backends/platform/ios7/ios7_osys_misc.mm:261
 #: backends/platform/ios7/ios7_osys_misc.mm:357
 msgid "Touch Controls"
 msgstr "Controlli Touch"
 
-#: backends/platform/android/android.cpp:1063
+#: backends/platform/android/android.cpp:1065
 msgid ""
 "## Touch control modes\n"
 "The touch control mode can be changed by tapping or clicking on the "
@@ -4871,13 +4915,13 @@ msgstr ""
 "  ![Icona tastiera](keyboard.png \"Icona tastiera\"){w=10em}\n"
 "\n"
 
-#: backends/platform/android/android.cpp:1119
+#: backends/platform/android/android.cpp:1121
 #: backends/platform/ios7/ios7_osys_misc.mm:336
 #: backends/platform/ios7/ios7_osys_misc.mm:380
 msgid "Adding Games"
 msgstr "Aggiungere Giochi"
 
-#: backends/platform/android/android.cpp:1122
+#: backends/platform/android/android.cpp:1124
 msgid ""
 "## Adding Games \n"
 "\n"
@@ -5495,6 +5539,39 @@ msgstr "Errore, non è stato possibile creare i files hook"
 #: backends/platform/libretro/src/libretro-options-widget.cpp:236
 msgid "Select Playlist directory"
 msgstr "Seleziona cartella Playlists"
+
+#: backends/platform/libretro/src/libretro-os-utils.cpp:172
+msgid "Libretro playlist"
+msgstr "Playlist libretro"
+
+#: backends/platform/libretro/src/libretro-os-utils.cpp:175
+msgid ""
+"## Libretro playlists for ScummVM core\n"
+"Playlists used in Libretro frontends (e.g. Retroarch) are plain text lists "
+"used to directly launch a game with a specific core from the user interface. "
+"Those lists are structured to pass to the core the path of a specific "
+"content file to be loaded (e.g. ROM).\n"
+"\n"
+"ScummVM core can accept as content the path to any of the files inside a "
+"valid game folder, the detection system will try to autodetect the game from "
+"the content file parent folder and run the game with default ScummVM "
+"options.\n"
+"\n"
+"The core also supports dedicated per game **hook** plain text files with **."
+msgstr ""
+"## Playlist libretro per il core ScummVM\n"
+"Le playlist utilizzate nei frontend di Libretro (come Retroarch) sono file "
+"di solo testo, utilizzati per avviare un gioco con un core specifico "
+"direttamente dall'interfaccia utente. Queste liste sono predisposte per "
+"passare al core il percorso del contenuto da caricare (es. una ROM).\n"
+"\n"
+"Il core ScummVM può accettare, come contenuto, il percorso a un file "
+"qualsiasi presente in una cartella gioco valida. Il sistema proverà a "
+"rilevare automaticamente il gioco utilizzando la cartella superiore e lo "
+"avvierà utilizzando le impostazioni di default di ScummVM.\n"
+"\n"
+"Il core supporta inoltre gli **hook** dedicati per-gioco, file di testo con "
+"**."
 
 #: backends/platform/maemo/maemo.cpp:157
 msgid "Click Mode"
@@ -6609,7 +6686,7 @@ msgstr "Attiva / Disattiva modalità combattimento"
 
 #. I18N: This keymap allows skipping video cutscenes
 #: engines/bladerunner/metaengine.cpp:229 engines/scumm/help.cpp:79
-#: engines/scumm/metaengine.cpp:886 engines/twp/metaengine.cpp:162
+#: engines/scumm/metaengine.cpp:888 engines/twp/metaengine.cpp:162
 #: engines/zvision/metaengine.cpp:284
 msgid "Skip cutscene"
 msgstr "Salta scena di intermezzo"
@@ -6916,7 +6993,7 @@ msgstr "Parlare/Interazione"
 
 #. I18N: Combat command in Might & Magic 1
 #: engines/crab/input/input.cpp:125 engines/griffon/metaengine.cpp:145
-#: engines/mm/mm1/metaengine.cpp:65 engines/scumm/metaengine.cpp:873
+#: engines/mm/mm1/metaengine.cpp:65 engines/scumm/metaengine.cpp:875
 msgid "Attack"
 msgstr "Attacco"
 
@@ -7141,6 +7218,16 @@ msgstr "Inverti asse Y del mouse"
 #: engines/freescape/metaengine.cpp:107
 msgid "Use alternative camera controls"
 msgstr "Usa metodo di controllo alternativo per la camera"
+
+#: engines/freescape/metaengine.cpp:117
+#, fuzzy
+#| msgid "Filter graphics"
+msgid "Authentic graphics"
+msgstr "Applica filtro grafico"
+
+#: engines/freescape/metaengine.cpp:118
+msgid "Keep graphics as close as possible to the original"
+msgstr ""
 
 #: engines/freescape/movement.cpp:47 engines/hpl1/metaengine.cpp:78
 #: engines/mm/mm1/metaengine.cpp:99
@@ -9552,7 +9639,7 @@ msgstr ""
 "schermata di caricamento dei suoni in Sam&Max e velocizza le schermate di "
 "salvataggio dei giochi più datati."
 
-#: engines/scumm/dialogs.cpp:1181 engines/scumm/metaengine.cpp:713
+#: engines/scumm/dialogs.cpp:1181 engines/scumm/metaengine.cpp:715
 msgid "Enable the original GUI and Menu"
 msgstr "Abilita interfaccia e menu originali"
 
@@ -9678,11 +9765,11 @@ msgstr ""
 "anticiparla o ritardarla. Regola questo valore se la musica viene tagliata o "
 "è in ritardo rispetto al brano precedente."
 
-#: engines/scumm/dialogs.cpp:1677 engines/scumm/metaengine.cpp:704
+#: engines/scumm/dialogs.cpp:1677 engines/scumm/metaengine.cpp:706
 msgid "Load modded audio"
 msgstr "Carica risorse audio modificate"
 
-#: engines/scumm/dialogs.cpp:1677 engines/scumm/metaengine.cpp:705
+#: engines/scumm/dialogs.cpp:1677 engines/scumm/metaengine.cpp:707
 msgid ""
 "Replace music, sound effects, and speech clips with modded audio files, if "
 "available."
@@ -10289,36 +10376,36 @@ msgstr ""
 "evitarne la pirateria.\n"
 "La versione completa è disponibile per l'acquisto sull'iTunes Store."
 
-#: engines/scumm/metaengine.cpp:463
+#: engines/scumm/metaengine.cpp:465
 msgid "HE v71+ support is not compiled in"
 msgstr "Il supporto per HE v71+ non è stato incluso nella compilazione"
 
-#: engines/scumm/metaengine.cpp:487
+#: engines/scumm/metaengine.cpp:489
 msgid "SCUMM v7-8 support is not compiled in"
 msgstr "Il supporto per SCUMM v7-8 non è stato incluso nella compilazione"
 
-#: engines/scumm/metaengine.cpp:633
+#: engines/scumm/metaengine.cpp:635
 msgid "Show Object Line"
 msgstr "Mostra riga nomi oggetti"
 
-#: engines/scumm/metaengine.cpp:634
+#: engines/scumm/metaengine.cpp:636
 msgid "Show the names of objects at the bottom of the screen"
 msgstr "Mostra i nomi degli oggetti nella parte inferiore dello schermo"
 
-#: engines/scumm/metaengine.cpp:642
+#: engines/scumm/metaengine.cpp:644
 msgid "Use NES Classic Palette"
 msgstr "Usa palette NES Classica"
 
-#: engines/scumm/metaengine.cpp:643
+#: engines/scumm/metaengine.cpp:645
 msgid "Use a more neutral color palette that closely emulates the NES Classic"
 msgstr ""
 "Usa una palette di colori neutrale, più simile ai colori originali del NES"
 
-#: engines/scumm/metaengine.cpp:651
+#: engines/scumm/metaengine.cpp:653
 msgid "Trim FM-TOWNS games to 200 pixels height"
 msgstr "Riduci la risoluzione verticale dei giochi FM-TOWNS a 200 pixel"
 
-#: engines/scumm/metaengine.cpp:652
+#: engines/scumm/metaengine.cpp:654
 msgid ""
 "Cut the extra 40 pixels at the bottom of the screen, to make it standard 200 "
 "pixels height, allowing using 'aspect ratio correction'"
@@ -10327,11 +10414,11 @@ msgstr ""
 "risoluzione verticale a 200 pixel e permettendo l'uso di \"correzione "
 "proporzioni\""
 
-#: engines/scumm/metaengine.cpp:660
+#: engines/scumm/metaengine.cpp:662
 msgid "Run in original 640 x 480 resolution"
 msgstr "Usa la risoluzione originale 640 x 480"
 
-#: engines/scumm/metaengine.cpp:661
+#: engines/scumm/metaengine.cpp:663
 msgid ""
 "This allows more accurate pause/restart banners, but might impact "
 "performance or shader/scaler usage."
@@ -10339,35 +10426,35 @@ msgstr ""
 "I banner pausa/ricomincia gioco saranno più fedeli all'originale, ma "
 "potebbero peggiorare le prestazioni o il funzionamento degli scaler/shader."
 
-#: engines/scumm/metaengine.cpp:668
+#: engines/scumm/metaengine.cpp:670
 msgid "Play simplified music"
 msgstr "Riproduci musica semplificata"
 
-#: engines/scumm/metaengine.cpp:669
+#: engines/scumm/metaengine.cpp:671
 msgid "This music was intended for low-end Macs, and uses only one channel."
 msgstr ""
 "Questa musica era destinata ai Mac di fascia bassa, ed utilizza un solo "
 "canale."
 
-#: engines/scumm/metaengine.cpp:677
+#: engines/scumm/metaengine.cpp:679
 msgid "Enable smooth scrolling"
 msgstr "Attiva lo scorrimento fluido"
 
-#: engines/scumm/metaengine.cpp:678
+#: engines/scumm/metaengine.cpp:680
 msgid "(instead of the normal 8-pixels steps scrolling)"
 msgstr "(al posto dello scorrimento a scatti di 8 pixel)"
 
-#: engines/scumm/metaengine.cpp:686
+#: engines/scumm/metaengine.cpp:688
 msgid "Allow semi-smooth scrolling"
 msgstr "Permetti scorrimento semi-fluido"
 
-#: engines/scumm/metaengine.cpp:687
+#: engines/scumm/metaengine.cpp:689
 msgid ""
 "Allow scrolling to be less smooth during the fast camera movement in the "
 "intro."
 msgstr "Riduce l'intensità dell'effetto durante le scene dell'introduzione."
 
-#: engines/scumm/metaengine.cpp:714
+#: engines/scumm/metaengine.cpp:716
 msgid ""
 "Allow the game to use the in-engine graphical interface and the original "
 "save/load menu. \t\tUse it together with the \"Ask for confirmation on exit"
@@ -10377,11 +10464,11 @@ msgstr ""
 "salvataggio/caricamento del gioco originale. Per un'esperienza ottimale, "
 "abilita anche l'opzione \"Chiedi conferma in uscita\"."
 
-#: engines/scumm/metaengine.cpp:723
+#: engines/scumm/metaengine.cpp:725
 msgid "Enable low latency audio mode"
 msgstr "Abilita audio a bassa latenza"
 
-#: engines/scumm/metaengine.cpp:724
+#: engines/scumm/metaengine.cpp:726
 msgid ""
 "Allows the game to use low latency audio, at the cost of sound accuracy. \t"
 "\tIt is recommended to enable this feature only if you incur in audio "
@@ -10391,11 +10478,11 @@ msgstr ""
 "fedeltà del suono. È consigliabile abilitare questa opzione solo se rilevi "
 "problemi di latenza durante il gioco."
 
-#: engines/scumm/metaengine.cpp:733
+#: engines/scumm/metaengine.cpp:735
 msgid "Enable the \"A Pirate I Was Meant To Be\" song"
 msgstr "Abilita la canzone \"A Pirate I Was Meant To Be\""
 
-#: engines/scumm/metaengine.cpp:734
+#: engines/scumm/metaengine.cpp:736
 msgid ""
 "Enable the song at the beginning of Part 3 of the game, \"A Pirate I Was "
 "Meant To Be\", \t\twhich was cut in international releases. Beware though: "
@@ -10405,28 +10492,28 @@ msgstr ""
 "versioni internazionali) all'inizio della terza Parte del gioco. Attenzione: "
 "i sottotitoli potrebbero con essere tradotti interamente."
 
-#: engines/scumm/metaengine.cpp:821
+#: engines/scumm/metaengine.cpp:823
 msgid "Down Left"
 msgstr "Giù Sinistra"
 
-#: engines/scumm/metaengine.cpp:834
+#: engines/scumm/metaengine.cpp:836
 msgid "Down Right"
 msgstr "Giù Destra"
 
-#: engines/scumm/metaengine.cpp:854
+#: engines/scumm/metaengine.cpp:856
 msgid "Up Left"
 msgstr "Su Sinistra"
 
-#: engines/scumm/metaengine.cpp:867
+#: engines/scumm/metaengine.cpp:869
 msgid "Up Right"
 msgstr "Su Destra"
 
-#: engines/scumm/metaengine.cpp:879
+#: engines/scumm/metaengine.cpp:881
 msgid "Switch weapon"
 msgstr "Cambia arma"
 
 #. I18N: Lets one skip the bike/car fight sequences in Full Throttle
-#: engines/scumm/metaengine.cpp:893
+#: engines/scumm/metaengine.cpp:895
 msgid "Win the bike fight cheat"
 msgstr "Cheat: Vinci combattimento in moto"
 

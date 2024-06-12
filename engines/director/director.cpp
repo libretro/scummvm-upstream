@@ -31,7 +31,6 @@
 
 #include "director/director.h"
 #include "director/debugger.h"
-#include "director/debugtools.h"
 #include "director/archive.h"
 #include "director/cast.h"
 #include "director/movie.h"
@@ -39,6 +38,7 @@
 #include "director/score.h"
 #include "director/sound.h"
 #include "director/window.h"
+#include "director/debugger/debugtools.h"
 
 /**
  * When detection is compiled dynamically, directory globs end up in detection plugin and
@@ -291,9 +291,9 @@ Common::Error DirectorEngine::run() {
 
 #ifdef USE_IMGUI
 	ImGuiCallbacks callbacks;
-	callbacks.init = onImGuiInit;
-	callbacks.render = onImGuiRender;
-	callbacks.cleanup = onImGuiCleanup;
+	callbacks.init = DT::onImGuiInit;
+	callbacks.render = DT::onImGuiRender;
+	callbacks.cleanup = DT::onImGuiCleanup;
 	_system->setImGuiCallbacks(callbacks);
 #endif
 

@@ -141,7 +141,7 @@ public:
 	 * Closes current data-file, if it's not already closed
 	 * @return          Error return code
 	 */
-	ErrorCode close();
+	ErrorCode close() override;
 
 	/**
 	 * Destroys current data-file, if any, and starts a new empty one
@@ -168,12 +168,12 @@ public:
 	 * Writes specified to data-file.
 	 * @param lRecNum           Record number to read
 	 * @param pBuf              Buffer to write data from
-	 * @param lRecSize          Size of buffer
+	 * @param lSize             Size of buffer
 	 * @param bUpdateHeader     True if header is to be committed to disk
 	 * @param lKey              Hash key
 	 * @return                  Error return code
 	 */
-	ErrorCode writeRecord(int32 lRecNum, void *pBuf, int32 lRecSize = -1, bool bUpdateHeader = false, uint32 lKey = 0xFFFFFFFF);
+	ErrorCode writeRecord(int32 lRecNum, void *pBuf, int32 lSize = -1, bool bUpdateHeader = false, uint32 lKey = 0xFFFFFFFF);
 
 	/**
 	 * Verifies specified record in data-file.
@@ -191,12 +191,12 @@ public:
 	/**
 	 * Adds a new record to the data-file.
 	 * @param pBuf              Buffer to write data from
-	 * @param lRecSize          Size of buffer
+	 * @param lLength           Size of buffer
 	 * @param bUpdateHeader     true if header is to be committed to disk
 	 * @param lKey              hash Key
 	 * @return                  Error return code
 	 */
-	ErrorCode addRecord(void *pBuf, int32 lRecSize, bool bUpdateHeader = false, uint32 lKey = 0xFFFFFFFF);
+	ErrorCode addRecord(void *pBuf, int32 lLength, bool bUpdateHeader = false, uint32 lKey = 0xFFFFFFFF);
 
 	/**
 	 * Finds record by it's key.
@@ -220,7 +220,7 @@ public:
 	 * @param lBytes        Number of bytes
 	 * @return              Error code
 	 */
-	ErrorCode read(void *pDestBuf, int32 lBytes);
+	ErrorCode read(void *pDestBuf, int32 lBytes) override;
 	ErrorCode read(HeaderRec &rec);
 	ErrorCode read(HeadInfo &rec);
 
@@ -230,7 +230,7 @@ public:
 	 * @param lBytes        Number of bytes
 	 * @return              Error code
 	 */
-	ErrorCode write(const void *pSrcBuf, int32 lBytes);
+	ErrorCode write(const void *pSrcBuf, int32 lBytes) override;
 	ErrorCode write(HeaderRec &rec);
 	ErrorCode write(HeadInfo &rec);
 };

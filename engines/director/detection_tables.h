@@ -948,6 +948,7 @@ static const PlainGameDescriptor directorGames[] = {
 	{ "technicus",			"Technicus: Ten Hours Left" },
 	{ "tiefsee",			"S.O.S. Tiefsee" },
 	{ "tkkgkit",			"TKKG: Identikit" },
+	{ "www",				"Wellen, Wracks und Wassermänner" },
 	{ "wdw",				"Welt der Wunder: Eine Insel in Gefahr" },
 	{ "wdw2",				"Welt der Wunder 2: Eine Stadt spielt verrückt" },
 	{ "wettlauf",			"Wettlauf Ins All" },
@@ -1421,6 +1422,7 @@ static const PlainGameDescriptor directorGames[] = {
 	{ "polis3",				"Polis 3: Vargspår" },
 	{ "requiem",			"Requiem: en mordgåta på 1600-talet" },
 	{ "rymdjakten",			"Rymdjakten" },
+	{ "singingbirdbook",		"Jan Lindblad presenterar den sjungande Fågelboken" },
 	{ "sverigejakten",		"Sverigejakten"},
 	{ "speltajm",			"Trazan & Banarne presenterar Speltajm" },
 	{ "xtown1",				"CrossTown: Giftet" },
@@ -5461,6 +5463,14 @@ static const DirectorGameDescription gameDescriptions[] = {
 	// Win version is D5
 	MACGAME1("simpsontrivia", "v3.1", "Simpsons Trivia 3.1", "db9b7f11aea52a294d2986a94a184000", 58354, 403),
 
+	// Jan Lindblad presenterar den sjungande Fågelboken
+	// There is also a Macintosh version which also appears to be using
+	// Macromedia 4.0.4. But dumping that version still gives you the
+	// lindblad.exe file, and I assume all the data files are functionally
+	// the same, even if they have resource and data forks.
+	WINGAME1_l("singingbirdbook", "", "lindblad.exe", "t:713376834e4e94d87ad931a66c3575fc", 698995, Common::SE_SWE, 404),
+	MACGAME1_l("singingbirdbook", "", "xn--Den Sjungande Fgelboken-y8b", "fc608944b366a5f450fa6f11625ce75f", 482582, Common::SE_SWE, 404),
+
 	// Published by Pearson in association with the Ski Club of Great Britain
 	WINDEMO1("skieurope96", "Demo", "SKI.EXE", "3643257d68fadce83611760435ca5cd4", 696861, 404),
 
@@ -5860,6 +5870,11 @@ static const DirectorGameDescription gameDescriptions[] = {
 	WINDEMO1("wwaldogeo", "Demo", "WALDOPC.EXE", "t:019433037fe5b5d166536d0f28819519", 2094361, 404),
 
 	WINDEMO1("wwanimals", "Demo", "ANIMALS.EXE", "25fee176193d52cf7cbc2b604bfcbf8c", 6961631, 404),
+
+	// Original filename is "Wellen, Wracks und Wassermänner"
+	MACGAME1_l("www", "", "xn--Wellen, Wracks und Wassermnner-ltc", "tr:6e0e5a0a2f9aa278fb36a12b4aad1c7a", 483058, Common::DE_DEU, 404),
+	WINGAME2_l("www", "", "WWW.EXE",			"t:ae93455c01b997db10ed6cab146eda0d", 702365,
+							"71HAFEN.DXR",		"52002fe0598521a9672a4ab84503e494", 2444290, Common::DE_DEU, 404),
 
 	MACGAME1_l("xaxa", "", "XAXA MACHINE", "ff0b7a4b925c7345785c372d618d0967", 342977, Common::JA_JPN, 400),
 

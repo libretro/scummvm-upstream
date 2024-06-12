@@ -1,5 +1,8 @@
 package org.scummvm.scummvm;
 
+import static android.content.res.Configuration.HARDKEYBOARDHIDDEN_NO;
+import static android.content.res.Configuration.KEYBOARD_QWERTY;
+
 import android.Manifest;
 import android.annotation.TargetApi;
 import android.app.Activity;
@@ -8,8 +11,6 @@ import android.content.ClipboardManager;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.content.SharedPreferences;
-import android.content.UriPermission;
 import android.content.pm.PackageManager;
 import android.content.res.AssetManager;
 import android.content.res.Configuration;
@@ -23,7 +24,6 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
-import android.os.ParcelFileDescriptor;
 import android.os.Process;
 import android.os.SystemClock;
 import android.provider.DocumentsContract;
@@ -34,7 +34,6 @@ import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
-import android.view.PointerIcon;
 import android.view.SurfaceHolder;
 import android.view.View;
 import android.view.ViewGroup;
@@ -49,7 +48,6 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.RequiresApi;
 
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -57,20 +55,12 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.Reader;
-import java.io.UnsupportedEncodingException;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.Properties;
 import java.util.TreeSet;
 
-import static android.content.res.Configuration.HARDKEYBOARDHIDDEN_NO;
-import static android.content.res.Configuration.KEYBOARD_QWERTY;
-
 public class ScummVMActivity extends Activity implements OnKeyboardVisibilityListener {
-
 	/* Establish whether the hover events are available */
 	private static boolean _hoverAvailable;
 
@@ -849,6 +839,18 @@ public class ScummVMActivity extends Activity implements OnKeyboardVisibilityLis
 		}
 
 		@Override
+		protected void setCurrentGame(String target) {
+			Uri data = null;
+			if (target != null) {
+				data = Uri.fromParts("scummvm", target, null);
+			}
+			Intent intent = new Intent(Intent.ACTION_MAIN, data,
+				ScummVMActivity.this, ScummVMActivity.class);
+			setIntent(intent);
+			Log.d(ScummVM.LOG_TAG, "Current activity Intent is: " + data);
+		}
+
+		@Override
 		protected String[] getSysArchives() {
 			Log.d(ScummVM.LOG_TAG, "Adding to Search Archive: " + _actualScummVMDataDir.getPath());
 			if (_externalPathAvailableForReadAccess && _possibleExternalScummVMDir != null) {
@@ -917,7 +919,7 @@ public class ScummVMActivity extends Activity implements OnKeyboardVisibilityLis
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
-//		Log.d(ScummVM.LOG_TAG, "onCreate");
+//		Log.d(ScummVM.LOG_TAG, "onCreate: " + getIntent().getData());
 
 		super.onCreate(savedInstanceState);
 
@@ -1018,9 +1020,19 @@ public class ScummVMActivity extends Activity implements OnKeyboardVisibilityLis
 		// We should have a valid path to a configuration file here
 
 		// Start ScummVM
-		_scummvm.setArgs(new String[]{
-			"ScummVM"
-		});
+		final Uri intentData = getIntent().getData();
+		String[] args;
+		if (intentData == null) {
+			args = new String[]{
+				"ScummVM"
+			};
+		} else {
+			args = new String[]{
+				"ScummVM",
+				intentData.getSchemeSpecificPart()
+			};
+		}
+		_scummvm.setArgs(args);
 
 		Log.d(ScummVM.LOG_TAG, "Hover available: " + _hoverAvailable);
 		_mouseHelper = null;
@@ -1061,6 +1073,64 @@ public class ScummVMActivity extends Activity implements OnKeyboardVisibilityLis
 //		Log.d(ScummVM.LOG_TAG, "onStart");
 
 		super.onStart();
+	}
+
+	@Override
+	protected void onNewIntent(Intent intent) {
+//		Log.d(ScummVM.LOG_TAG, "onNewIntent: " + intent.getData());
+
+		super.onNewIntent(intent);
+
+		Uri intentData = intent.getData();
+
+		// No specific game, we just continue
+		if (intentData == null) {
+			return;
+		}
+
+		// Same game requested, we continue too
+		if (intentData.equals(getIntent().getData())) {
+			return;
+		}
+
+		setIntent(intent);
+
+		if (_events == null) {
+			finish();
+			startActivity(intent);
+			return;
+		}
+
+		// Don't finish our activity on C++ end
+		_finishing = true;
+
+		_events.clearEventHandler();
+		_events.sendQuitEvent();
+
+		// Make sure the thread is actively polling for events
+		_scummvm.setPause(false);
+		try {
+			// 2s timeout
+			_scummvm_thread.join(2000);
+		} catch (InterruptedException e) {
+			Log.i(ScummVM.LOG_TAG, "Error while joining ScummVM thread", e);
+		}
+
+		// Our join failed: kill ourselves to not have two ScummVM running at the same time
+		if (_scummvm_thread.isAlive()) {
+			Process.killProcess(Process.myPid());
+		}
+
+		_finishing = false;
+
+		String[] args = new String[]{
+			"ScummVM",
+			intentData.getSchemeSpecificPart()
+		};
+		_scummvm.setArgs(args);
+
+		_scummvm_thread = new Thread(_scummvm, "ScummVM");
+		_scummvm_thread.start();
 	}
 
 	@Override
@@ -1119,7 +1189,7 @@ public class ScummVMActivity extends Activity implements OnKeyboardVisibilityLis
 			// Make sure the thread is actively polling for events
 			_scummvm.setPause(false);
 			try {
-				// 1s timeout
+				// 2s timeout
 				_scummvm_thread.join(2000);
 			} catch (InterruptedException e) {
 				Log.i(ScummVM.LOG_TAG, "Error while joining ScummVM thread", e);
@@ -1357,58 +1427,14 @@ public class ScummVMActivity extends Activity implements OnKeyboardVisibilityLis
 		}
 	}
 
-	/**
-	 * Auxiliary function to read our ini configuration file
-	 * Code is from https://stackoverflow.com/a/41084504
-	 * returns The sections of the ini file as a Map of the header Strings to a Properties object (the key=value list of each section)
-	 */
-	@TargetApi(Build.VERSION_CODES.GINGERBREAD)
-	private static Map<String, Properties> parseINI(Reader reader) throws IOException {
-		final HashMap<String, Properties> result = new HashMap<>();
-		new Properties() {
-
-			private Properties section;
-
-			@Override
-			public Object put(Object key, Object value) {
-				String header = (key + " " + value).trim();
-				if (header.startsWith("[") && header.endsWith("]"))
-					return result.put(header.substring(1, header.length() - 1),
-						section = new Properties());
-				else
-					return section.put(key, value);
-			}
-
-		}.load(reader);
-		return result;
-	}
-
 	private static String getVersionInfoFromScummvmConfiguration(String fullIniFilePath) {
-		try (BufferedReader bufferedReader = new BufferedReader(new FileReader(fullIniFilePath))) {
-			Map<String, Properties> parsedIniMap = parseINI(bufferedReader);
-			if (!parsedIniMap.isEmpty()
-			    && parsedIniMap.containsKey("scummvm")
-			    && parsedIniMap.get("scummvm") != null) {
-				return parsedIniMap.get("scummvm").getProperty("versioninfo", "");
-			}
+		Map<String, Map<String, String>> parsedIniMap;
+		try (FileReader reader = new FileReader(fullIniFilePath)) {
+			parsedIniMap = INIParser.parse(reader);
 		} catch (IOException ignored) {
-		} catch (NullPointerException ignored) {
+			return null;
 		}
-		return "";
-	}
-
-	private static String getSavepathInfoFromScummvmConfiguration(String fullIniFilePath) {
-		try (BufferedReader bufferedReader = new BufferedReader(new FileReader(fullIniFilePath))) {
-			Map<String, Properties> parsedIniMap = parseINI(bufferedReader);
-			if (!parsedIniMap.isEmpty()
-			    && parsedIniMap.containsKey("scummvm")
-			    && parsedIniMap.get("scummvm") != null) {
-				return parsedIniMap.get("scummvm").getProperty("savepath", "");
-			}
-		} catch (IOException ignored) {
-		} catch (NullPointerException ignored) {
-		}
-		return "";
+		return INIParser.get(parsedIniMap, "scummvm", "versioninfo", null);
 	}
 
 	private boolean seekAndInitScummvmConfiguration() {
@@ -1570,9 +1596,9 @@ public class ScummVMActivity extends Activity implements OnKeyboardVisibilityLis
 				Log.d(ScummVM.LOG_TAG, "ScummVM Config file already exists!");
 				Log.d(ScummVM.LOG_TAG, "Existing ScummVM INI: " + _configScummvmFile.getPath());
 				String existingVersionInfo = getVersionInfoFromScummvmConfiguration(_configScummvmFile.getPath());
-				if (!TextUtils.isEmpty(existingVersionInfo) && !TextUtils.isEmpty(existingVersionInfo.trim()) ) {
-					Log.d(ScummVM.LOG_TAG, "Existing ScummVM Version: " + existingVersionInfo.trim());
-					Version tmpOldVersionFound = new Version(existingVersionInfo.trim());
+				if (!TextUtils.isEmpty(existingVersionInfo) && !TextUtils.isEmpty(existingVersionInfo) ) {
+					Log.d(ScummVM.LOG_TAG, "Existing ScummVM Version: " + existingVersionInfo);
+					Version tmpOldVersionFound = new Version(existingVersionInfo);
 					if (tmpOldVersionFound.compareTo(maxOldVersionFound) > 0) {
 						maxOldVersionFound = tmpOldVersionFound;
 						existingVersionFoundInScummVMDataDir = tmpOldVersionFound;

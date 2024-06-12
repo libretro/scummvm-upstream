@@ -11,8 +11,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: ScummVM 1.9.0git\n"
 "Report-Msgid-Bugs-To: scummvm-devel@lists.scummvm.org\n"
-"POT-Creation-Date: 2024-05-30 18:11+0000\n"
-"PO-Revision-Date: 2024-05-18 10:44+0000\n"
+"POT-Creation-Date: 2024-06-11 12:49+0000\n"
+"PO-Revision-Date: 2024-06-05 08:44+0000\n"
 "Last-Translator: Eugene Sandulenko <sev@scummvm.org>\n"
 "Language-Team: Ukrainian <https://translations.scummvm.org/projects/scummvm/"
 "scummvm/uk/>\n"
@@ -89,7 +89,7 @@ msgstr "Вгору"
 #: gui/saveload-dialog.cpp:540 gui/saveload-dialog.cpp:824
 #: gui/saveload-dialog.cpp:1220 gui/shaderbrowser-dialog.cpp:80
 #: gui/themebrowser.cpp:54 gui/unknown-game-dialog.cpp:53 base/main.cpp:604
-#: dists/android.strings.xml.cpp:43 engines/engine.cpp:764
+#: dists/android.strings.xml.cpp:46 engines/engine.cpp:764
 #: backends/dialogs/gtk/gtk-dialogs.cpp:65
 #: backends/events/default/default-events.cpp:193
 #: backends/events/default/default-events.cpp:217
@@ -334,7 +334,7 @@ msgstr "Невірний формат JSON-коду."
 #: gui/editgamedialog.cpp:363 gui/editrecorddialog.cpp:67
 #: gui/fluidsynth-dialog.cpp:153 gui/launcher.cpp:557 gui/launcher.cpp:561
 #: gui/massadd.cpp:90 gui/options.cpp:2354 gui/predictivedialog.cpp:69
-#: gui/saveload-dialog.cpp:1221 dists/android.strings.xml.cpp:32
+#: gui/saveload-dialog.cpp:1221 dists/android.strings.xml.cpp:33
 #: engines/engine.cpp:567 engines/engine.cpp:590
 #: backends/platform/wii/options.cpp:46 engines/agos/animation.cpp:577
 #: engines/agos/midi.cpp:320 engines/agos/midi.cpp:378
@@ -949,7 +949,7 @@ msgstr "Взаємодія"
 #: engines/dragons/metaengine.cpp:160 engines/freescape/movement.cpp:35
 #: engines/griffon/metaengine.cpp:121 engines/grim/grim.cpp:473
 #: engines/grim/grim.cpp:554 engines/icb/icb.cpp:68 engines/icb/icb.cpp:152
-#: engines/scumm/metaengine.cpp:860 engines/twine/metaengine.cpp:465
+#: engines/scumm/metaengine.cpp:862 engines/twine/metaengine.cpp:465
 #: engines/twine/metaengine.cpp:532 engines/twp/metaengine.cpp:154
 #: engines/wintermute/keymapper_tables.h:1290
 #: engines/wintermute/keymapper_tables.h:1373
@@ -964,7 +964,7 @@ msgstr "Догори"
 #: engines/dragons/metaengine.cpp:166 engines/freescape/movement.cpp:41
 #: engines/griffon/metaengine.cpp:127 engines/grim/grim.cpp:478
 #: engines/grim/grim.cpp:559 engines/icb/icb.cpp:73 engines/icb/icb.cpp:157
-#: engines/scumm/metaengine.cpp:827 engines/twine/metaengine.cpp:472
+#: engines/scumm/metaengine.cpp:829 engines/twine/metaengine.cpp:472
 #: engines/twine/metaengine.cpp:540 engines/twp/metaengine.cpp:155
 #: engines/wintermute/keymapper_tables.h:1296
 #: engines/wintermute/keymapper_tables.h:1379
@@ -978,7 +978,7 @@ msgstr "Донизу"
 #: engines/crab/input/input.cpp:107 engines/crab/input/input.cpp:157
 #: engines/dragons/metaengine.cpp:172 engines/griffon/metaengine.cpp:133
 #: engines/grim/grim.cpp:483 engines/grim/grim.cpp:564 engines/icb/icb.cpp:78
-#: engines/icb/icb.cpp:162 engines/scumm/metaengine.cpp:840
+#: engines/icb/icb.cpp:162 engines/scumm/metaengine.cpp:842
 #: engines/twine/metaengine.cpp:487 engines/twine/metaengine.cpp:555
 #: engines/twp/metaengine.cpp:152 engines/wintermute/keymapper_tables.h:320
 #: engines/wintermute/keymapper_tables.h:1302
@@ -993,7 +993,7 @@ msgstr "Наліво"
 #: engines/crab/input/input.cpp:113 engines/crab/input/input.cpp:163
 #: engines/dragons/metaengine.cpp:178 engines/griffon/metaengine.cpp:139
 #: engines/grim/grim.cpp:488 engines/grim/grim.cpp:569 engines/icb/icb.cpp:83
-#: engines/icb/icb.cpp:167 engines/scumm/metaengine.cpp:847
+#: engines/icb/icb.cpp:167 engines/scumm/metaengine.cpp:849
 #: engines/twine/metaengine.cpp:479 engines/twine/metaengine.cpp:548
 #: engines/twp/metaengine.cpp:153 engines/wintermute/keymapper_tables.h:326
 #: engines/wintermute/keymapper_tables.h:1308
@@ -2662,7 +2662,7 @@ msgstr "Записувати або відтворювати процес гри
 
 #: gui/recorderdialog.cpp:72 gui/recorderdialog.cpp:212
 #: gui/saveload-dialog.cpp:460 gui/saveload-dialog.cpp:540
-#: dists/android.strings.xml.cpp:44 engines/engine.cpp:613
+#: dists/android.strings.xml.cpp:47 engines/engine.cpp:613
 msgid "Delete"
 msgstr "Видалити"
 
@@ -3158,11 +3158,15 @@ msgid "ScummVM"
 msgstr "ScummVM"
 
 #: dists/android.strings.xml.cpp:31
+msgid "ScummVM (debug)"
+msgstr "ScummVM (відладка)"
+
+#: dists/android.strings.xml.cpp:32
 msgid "Graphic adventure game engine"
 msgstr "Движок графічних квестів"
 
 #. I18N: This directly quits the game.
-#: dists/android.strings.xml.cpp:33
+#: dists/android.strings.xml.cpp:34
 #: backends/events/default/default-events.cpp:217
 #: backends/events/default/default-events.cpp:358
 #: engines/adl/metaengine.cpp:328 engines/cge2/metaengine.cpp:239
@@ -3173,31 +3177,39 @@ msgstr "Движок графічних квестів"
 msgid "Quit"
 msgstr "Вихід"
 
-#: dists/android.strings.xml.cpp:34
+#: dists/android.strings.xml.cpp:35
+msgid "Log File Error"
+msgstr "Помилка файла логу"
+
+#: dists/android.strings.xml.cpp:36
+msgid "Unable to read ScummVM log file or create a new one!"
+msgstr "Не вдалося прочитати лог-файл ScummVM або створити новий!"
+
+#: dists/android.strings.xml.cpp:37
 msgid "Config File Error"
 msgstr "Помилка файла конфігурації"
 
-#: dists/android.strings.xml.cpp:35
+#: dists/android.strings.xml.cpp:38
 msgid "Unable to read ScummVM config file or create a new one!"
 msgstr "Не вдалося прочитати файл конфігурації ScummVM або створити новий!"
 
-#: dists/android.strings.xml.cpp:36
+#: dists/android.strings.xml.cpp:39
 msgid "Save Path Error"
 msgstr "Помилка шляху зберігання"
 
-#: dists/android.strings.xml.cpp:37
+#: dists/android.strings.xml.cpp:40
 msgid "Unable to create or access default save path!"
 msgstr "Не вдалося створити або дістатися до шляху збереження ігор!"
 
-#: dists/android.strings.xml.cpp:38
+#: dists/android.strings.xml.cpp:41
 msgid "Icons Path Error"
 msgstr "Помилка шляху іконок"
 
-#: dists/android.strings.xml.cpp:39
+#: dists/android.strings.xml.cpp:42
 msgid "Unable to create or access default icons and shaders path!"
 msgstr "Не вдалося створити або дістатися до шляху іконок та шейдерів!"
 
-#: dists/android.strings.xml.cpp:40
+#: dists/android.strings.xml.cpp:43
 msgid ""
 "Unable to access the globally set save path! Please revert to default from "
 "ScummVM Options"
@@ -3205,40 +3217,40 @@ msgstr ""
 "Не вдалося дістатися до глобального шляху збереження ігор! Будь-ласка, "
 "поверніться до значень за замовченням в Налаштуваннях ScummVM"
 
-#: dists/android.strings.xml.cpp:41
+#: dists/android.strings.xml.cpp:44
 msgid "Toggle virtual keyboard"
 msgstr "Перемикнути віртуальну клавіатуру"
 
-#: dists/android.strings.xml.cpp:42 engines/scumm/help.cpp:82
+#: dists/android.strings.xml.cpp:45 engines/scumm/help.cpp:82
 #: engines/scumm/help.cpp:86 engines/scumm/help.cpp:88
 #: engines/scumm/help.cpp:102 engines/scumm/help.cpp:103
 #: engines/scumm/help.cpp:104
 msgid "Alt"
 msgstr "Alt"
 
-#: dists/android.strings.xml.cpp:45
+#: dists/android.strings.xml.cpp:48
 #: backends/platform/libretro/src/libretro-options-widget.cpp:222
 msgid "Done"
 msgstr "Готове"
 
-#: dists/android.strings.xml.cpp:46
+#: dists/android.strings.xml.cpp:49
 msgid "Mode change"
 msgstr "Змінити режим"
 
-#: dists/android.strings.xml.cpp:47
+#: dists/android.strings.xml.cpp:50
 msgid "Shift"
 msgstr "Shift"
 
-#: dists/android.strings.xml.cpp:48 engines/dragons/metaengine.cpp:154
+#: dists/android.strings.xml.cpp:51 engines/dragons/metaengine.cpp:154
 #: engines/scumm/help.cpp:88 engines/scumm/help.cpp:91
 msgid "Enter"
 msgstr "Enter"
 
-#: dists/android.strings.xml.cpp:49
+#: dists/android.strings.xml.cpp:52
 msgid "Close popup"
 msgstr "Закрити вискакуючий список"
 
-#: dists/android.strings.xml.cpp:50
+#: dists/android.strings.xml.cpp:53
 msgid ""
 "Please select the *root* of your external (physical) SD card. This is "
 "required for ScummVM to access this path: "
@@ -3246,9 +3258,41 @@ msgstr ""
 "Будь-ласка, оберіть папку *root* (корень) у вашій зовнішній (фізичній) SD-"
 "картці. Це необхідно, щоб ScummVM міг дістатися цієї папки: "
 
-#: dists/android.strings.xml.cpp:51
+#: dists/android.strings.xml.cpp:54
 msgid "Storage Access Framework Permissions for ScummVM were revoked!"
 msgstr "Дозвіл доступу ScummVM до Storage Access Framework було вилучено!"
+
+#: dists/android.strings.xml.cpp:55
+msgid "Configuration file could not be parsed"
+msgstr "Файл конфігурації має помилку у форматі"
+
+#: dists/android.strings.xml.cpp:56
+msgid "Run a game"
+msgstr "Запустити гру"
+
+#: dists/android.strings.xml.cpp:57
+msgid "Search a game"
+msgstr "Шукати гру"
+
+#: dists/android.strings.xml.cpp:58
+msgid ""
+"No games (yet)\n"
+"Open ScummVM and add your games here."
+msgstr ""
+"Нема ігор (ще)\n"
+"Відкрийте ScummVM і додайте свої ігри."
+
+#: dists/android.strings.xml.cpp:59
+msgid "Game icon"
+msgstr "Іконки гри"
+
+#: dists/android.strings.xml.cpp:60
+msgid "Shortcut label"
+msgstr "Мітка скроту"
+
+#: dists/android.strings.xml.cpp:61
+msgid "Shortcut icon"
+msgstr "Іконка скроту"
 
 #. I18N: One line summary as shown in *nix distributions
 #: dists/org.scummvm.scummvm.metainfo.xml.cpp:32
@@ -4636,12 +4680,12 @@ msgstr "Режим збільшення вимкнено. Вмикаю режи�
 msgid "Magnify Mode Off"
 msgstr "Режим збільшення вимкнено"
 
-#: backends/platform/android/android.cpp:1048
+#: backends/platform/android/android.cpp:1050
 #: backends/platform/ios7/ios7_osys_misc.mm:249
 msgid "Getting help"
 msgstr "Допомога"
 
-#: backends/platform/android/android.cpp:1051
+#: backends/platform/android/android.cpp:1053
 msgid ""
 "## Help, I'm lost!\n"
 "\n"
@@ -4681,13 +4725,13 @@ msgstr ""
 "навіть карколомні. Якщо ви застрягли в грі, можливо вам потрібно звернутися "
 "до її покрокового проходження. Успіхів!\n"
 
-#: backends/platform/android/android.cpp:1060
+#: backends/platform/android/android.cpp:1062
 #: backends/platform/ios7/ios7_osys_misc.mm:261
 #: backends/platform/ios7/ios7_osys_misc.mm:357
 msgid "Touch Controls"
 msgstr "Керування дотиком"
 
-#: backends/platform/android/android.cpp:1063
+#: backends/platform/android/android.cpp:1065
 msgid ""
 "## Touch control modes\n"
 "The touch control mode can be changed by tapping or clicking on the "
@@ -4823,13 +4867,13 @@ msgstr ""
 "   ![Піктограма Клавіатури](keyboard.png \"Піктограма клавіатури\"){w=10em}\n"
 "\n"
 
-#: backends/platform/android/android.cpp:1119
+#: backends/platform/android/android.cpp:1121
 #: backends/platform/ios7/ios7_osys_misc.mm:336
 #: backends/platform/ios7/ios7_osys_misc.mm:380
 msgid "Adding Games"
 msgstr "Додавання ігор"
 
-#: backends/platform/android/android.cpp:1122
+#: backends/platform/android/android.cpp:1124
 msgid ""
 "## Adding Games \n"
 "\n"
@@ -5392,83 +5436,83 @@ msgstr ""
 
 #: backends/platform/libretro/src/libretro-options-widget.cpp:46
 msgid "LIBRETRO PLAYLIST GENERATOR"
-msgstr ""
+msgstr "ГЕНЕРАТОР СПИСКІВ LIBRETRO"
 
 #: backends/platform/libretro/src/libretro-options-widget.cpp:47
 msgid "(check '? > Libretro playlist' for detailed info)"
-msgstr ""
+msgstr "(виберіть '?> список Libretro' для подальшої інформації)"
 
 #: backends/platform/libretro/src/libretro-options-widget.cpp:48
-#, fuzzy
-#| msgid "Plugins Path:"
 msgid "Playlists Path"
-msgstr "Шлях до втулків:"
+msgstr "Шлях до списків"
 
 #: backends/platform/libretro/src/libretro-options-widget.cpp:49
-#, fuzzy
-#| msgid "Specifies where your saved games are put"
 msgid "Specifies where your playlist will be saved."
-msgstr "Вказує шлях до збережених ігор"
+msgstr "Вказує шлях де будуть збережені ваші списки до програвання."
 
 #: backends/platform/libretro/src/libretro-options-widget.cpp:52
-#, fuzzy
-#| msgid "Platform:"
 msgid "Playlist format:"
-msgstr "Платформа:"
+msgstr "Формат списку:"
 
 #: backends/platform/libretro/src/libretro-options-widget.cpp:57
-#, fuzzy
-#| msgid "Goto location"
 msgid "Hooks location:"
-msgstr "Перейти у локацію"
+msgstr "Локація для гуків:"
 
 #: backends/platform/libretro/src/libretro-options-widget.cpp:59
-#, fuzzy
-#| msgid "Add a new folder"
 msgid "All in save folder"
-msgstr "Додати нову папку"
+msgstr "Все до папки збереження"
 
 #: backends/platform/libretro/src/libretro-options-widget.cpp:60
 msgid "One in each game folder"
-msgstr ""
+msgstr "Один у кожну папку гри"
 
 #: backends/platform/libretro/src/libretro-options-widget.cpp:62
 msgid "Clear existing hooks"
-msgstr ""
+msgstr "Прибрати поточні гуки"
 
 #: backends/platform/libretro/src/libretro-options-widget.cpp:64
 msgid "Generate playlist"
-msgstr ""
+msgstr "Згенерувати список"
 
 #: backends/platform/libretro/src/libretro-options-widget.cpp:66
-#, fuzzy
-#| msgid "Status:"
 msgid "Status: "
-msgstr "Стан:"
+msgstr "Стан: "
 
 #: backends/platform/libretro/src/libretro-options-widget.cpp:148
-#, fuzzy
-#| msgid "Failed to save game to file."
 msgid "Failed, can't access playlist file"
-msgstr "Не вдалося зберегти гру у файл."
+msgstr "Не вдалося отримати доступ до файлу списку"
 
 #: backends/platform/libretro/src/libretro-options-widget.cpp:224
-#, fuzzy
-#| msgid "Reading data failed"
 msgid "cleaning failed"
-msgstr "Помилка читання"
+msgstr "помилка очищення"
 
 #: backends/platform/libretro/src/libretro-options-widget.cpp:226
-#, fuzzy
-#| msgid "Failed to read the file!"
 msgid "Failed, can't create hook files"
-msgstr "Не вдалося прочитати файл!"
+msgstr "Не вдалося створити файли з гуками"
 
 #: backends/platform/libretro/src/libretro-options-widget.cpp:236
-#, fuzzy
-#| msgid "Select additional game directory"
 msgid "Select Playlist directory"
-msgstr "Виберіть додаткову папку гри"
+msgstr "Виберіть папку для списку"
+
+#: backends/platform/libretro/src/libretro-os-utils.cpp:172
+msgid "Libretro playlist"
+msgstr "Список Libretro"
+
+#: backends/platform/libretro/src/libretro-os-utils.cpp:175
+msgid ""
+"## Libretro playlists for ScummVM core\n"
+"Playlists used in Libretro frontends (e.g. Retroarch) are plain text lists "
+"used to directly launch a game with a specific core from the user interface. "
+"Those lists are structured to pass to the core the path of a specific "
+"content file to be loaded (e.g. ROM).\n"
+"\n"
+"ScummVM core can accept as content the path to any of the files inside a "
+"valid game folder, the detection system will try to autodetect the game from "
+"the content file parent folder and run the game with default ScummVM "
+"options.\n"
+"\n"
+"The core also supports dedicated per game **hook** plain text files with **."
+msgstr ""
 
 #: backends/platform/maemo/maemo.cpp:157
 msgid "Click Mode"
@@ -5625,64 +5669,44 @@ msgid "BSD License"
 msgstr "Ліцензія BSD"
 
 #: backends/platform/sdl/macosx/appmenu_osx.mm:329
-#, fuzzy
-#| msgid "GPL License"
 msgid "Apache License"
-msgstr "Ліцензія GPL"
+msgstr "Ліцензія Apache"
 
 #: backends/platform/sdl/macosx/appmenu_osx.mm:330
-#, fuzzy
-#| msgid "BSD License"
 msgid "BSL License"
-msgstr "Ліцензія BSD"
+msgstr "Ліцензія BSL"
 
 #: backends/platform/sdl/macosx/appmenu_osx.mm:331
-#, fuzzy
-#| msgid "GPL License"
 msgid "GLAD License"
-msgstr "Ліцензія GPL"
+msgstr "Ліцензія GLAD"
 
 #: backends/platform/sdl/macosx/appmenu_osx.mm:332
-#, fuzzy
-#| msgid "BSD License"
 msgid "ISC License"
-msgstr "Ліцензія BSD"
+msgstr "Ліцензія ISC"
 
 #: backends/platform/sdl/macosx/appmenu_osx.mm:333
-#, fuzzy
-#| msgid "GPL License"
 msgid "Lua License"
-msgstr "Ліцензія GPL"
+msgstr "Ліцензія Lua"
 
 #: backends/platform/sdl/macosx/appmenu_osx.mm:334
-#, fuzzy
-#| msgid "GPL License"
 msgid "MIT License"
-msgstr "Ліцензія GPL"
+msgstr "Ліцензія MIT"
 
 #: backends/platform/sdl/macosx/appmenu_osx.mm:335
-#, fuzzy
-#| msgid "GPL License"
 msgid "MKV License"
-msgstr "Ліцензія GPL"
+msgstr "Ліцензія MKV"
 
 #: backends/platform/sdl/macosx/appmenu_osx.mm:336
-#, fuzzy
-#| msgid "GPL License"
 msgid "MPL License"
-msgstr "Ліцензія GPL"
+msgstr "Ліцензія MPL"
 
 #: backends/platform/sdl/macosx/appmenu_osx.mm:337
-#, fuzzy
-#| msgid "GPL License"
 msgid "TinyGL License"
-msgstr "Ліцензія GPL"
+msgstr "Ліцензія TinyGL"
 
 #: backends/platform/sdl/macosx/appmenu_osx.mm:338
-#, fuzzy
-#| msgid "Freefont License"
 msgid "Catharon License"
-msgstr "Ліцензія на Freefont"
+msgstr "Ліцензія Catharon"
 
 #. I18N: Hardware key
 #: backends/platform/sdl/miyoo/miyoo.cpp:79
@@ -6356,17 +6380,15 @@ msgstr "Все одно зчитати"
 
 #: engines/bagel/metaengine.cpp:41
 msgid "Wait"
-msgstr ""
+msgstr "Чекати"
 
 #: engines/bagel/metaengine.cpp:42
 msgid "Soldier 714 Eye Cheat"
-msgstr ""
+msgstr "Чіт для ока Soldier 714"
 
 #: engines/bagel/metaengine.cpp:83
-#, fuzzy
-#| msgid "General"
 msgid "General Keys"
-msgstr "Загальні"
+msgstr "Загальні клавіші"
 
 #: engines/bladerunner/bladerunner.cpp:404
 msgid "Failed to initialize resources"
@@ -6581,7 +6603,7 @@ msgstr "Перемкнути режим бою"
 
 #. I18N: This keymap allows skipping video cutscenes
 #: engines/bladerunner/metaengine.cpp:229 engines/scumm/help.cpp:79
-#: engines/scumm/metaengine.cpp:886 engines/twp/metaengine.cpp:162
+#: engines/scumm/metaengine.cpp:888 engines/twp/metaengine.cpp:162
 #: engines/zvision/metaengine.cpp:284
 msgid "Skip cutscene"
 msgstr "Пропустити ролік"
@@ -6890,7 +6912,7 @@ msgstr "Говорити/Взаємодіятя"
 
 #. I18N: Combat command in Might & Magic 1
 #: engines/crab/input/input.cpp:125 engines/griffon/metaengine.cpp:145
-#: engines/mm/mm1/metaengine.cpp:65 engines/scumm/metaengine.cpp:873
+#: engines/mm/mm1/metaengine.cpp:65 engines/scumm/metaengine.cpp:875
 msgid "Attack"
 msgstr "Атака"
 
@@ -7109,6 +7131,16 @@ msgstr "Інвертувати вісь Y миші"
 msgid "Use alternative camera controls"
 msgstr "Використовувати альтернативне управління камерою"
 
+#: engines/freescape/metaengine.cpp:117
+#, fuzzy
+#| msgid "Filter graphics"
+msgid "Authentic graphics"
+msgstr "Фільтрування графіки"
+
+#: engines/freescape/metaengine.cpp:118
+msgid "Keep graphics as close as possible to the original"
+msgstr ""
+
 #: engines/freescape/movement.cpp:47 engines/hpl1/metaengine.cpp:78
 #: engines/mm/mm1/metaengine.cpp:99
 msgid "Strafe Left"
@@ -7153,14 +7185,12 @@ msgid "Enable/Disable Jetpack"
 msgstr ""
 
 #: engines/freescape/games/driller/driller.cpp:109
-#, fuzzy
-#| msgid "Debug Apply Celling Grid"
 msgid "Deploy drilling rig"
-msgstr "Відладка: Накласти сітку стелі"
+msgstr "Запустити обладнання буріння"
 
 #: engines/freescape/games/driller/driller.cpp:115
 msgid "Collect drilling rig"
-msgstr ""
+msgstr "Взяти обладнання буріння"
 
 #: engines/glk/glk_api.cpp:62
 msgid "[ press any key to exit ]"
@@ -9468,7 +9498,7 @@ msgstr ""
 "Активує деякі сучасні зручності; наприклад, не показує фальшивий екран "
 "завантаження звуку в Sam&Max і робить оригінальне меню збереження швидшим."
 
-#: engines/scumm/dialogs.cpp:1181 engines/scumm/metaengine.cpp:713
+#: engines/scumm/dialogs.cpp:1181 engines/scumm/metaengine.cpp:715
 msgid "Enable the original GUI and Menu"
 msgstr "Ввімкнути оригінальні GUI та меню"
 
@@ -9588,11 +9618,11 @@ msgstr ""
 "коли вона почне програватись. Використовуйте це, якщо музика вимикається "
 "передчасно, або ви чуєте частину попередньої музики."
 
-#: engines/scumm/dialogs.cpp:1677 engines/scumm/metaengine.cpp:704
+#: engines/scumm/dialogs.cpp:1677 engines/scumm/metaengine.cpp:706
 msgid "Load modded audio"
 msgstr "Завантажити модифіковане аудіо"
 
-#: engines/scumm/dialogs.cpp:1677 engines/scumm/metaengine.cpp:705
+#: engines/scumm/dialogs.cpp:1677 engines/scumm/metaengine.cpp:707
 msgid ""
 "Replace music, sound effects, and speech clips with modded audio files, if "
 "available."
@@ -10196,35 +10226,35 @@ msgstr ""
 "Задля запобігання піратства, Lite-версія гри Putt-Putt Save the Zoo для iOS\n"
 "не підтримується. Повну версію можна придбати у iTunes Store."
 
-#: engines/scumm/metaengine.cpp:463
+#: engines/scumm/metaengine.cpp:465
 msgid "HE v71+ support is not compiled in"
 msgstr "Підтримку для версії HE v71+ не скомпільовано"
 
-#: engines/scumm/metaengine.cpp:487
+#: engines/scumm/metaengine.cpp:489
 msgid "SCUMM v7-8 support is not compiled in"
 msgstr "Підтримку для SCUMM v7-8 не скомпільовано"
 
-#: engines/scumm/metaengine.cpp:633
+#: engines/scumm/metaengine.cpp:635
 msgid "Show Object Line"
 msgstr "Показувати лінії об'єктів"
 
-#: engines/scumm/metaengine.cpp:634
+#: engines/scumm/metaengine.cpp:636
 msgid "Show the names of objects at the bottom of the screen"
 msgstr "Показувати назви об'єктів внизу екрану"
 
-#: engines/scumm/metaengine.cpp:642
+#: engines/scumm/metaengine.cpp:644
 msgid "Use NES Classic Palette"
 msgstr "Використовувати класичну палітру NES"
 
-#: engines/scumm/metaengine.cpp:643
+#: engines/scumm/metaengine.cpp:645
 msgid "Use a more neutral color palette that closely emulates the NES Classic"
 msgstr "Використовувати більш нейтральну палітру, яка подібна до NES Classic"
 
-#: engines/scumm/metaengine.cpp:651
+#: engines/scumm/metaengine.cpp:653
 msgid "Trim FM-TOWNS games to 200 pixels height"
 msgstr "Обрізати ігри FM-TOWNS до висоти у 200 пікселів"
 
-#: engines/scumm/metaengine.cpp:652
+#: engines/scumm/metaengine.cpp:654
 msgid ""
 "Cut the extra 40 pixels at the bottom of the screen, to make it standard 200 "
 "pixels height, allowing using 'aspect ratio correction'"
@@ -10232,11 +10262,11 @@ msgstr ""
 "Виріжте зайві 40 пікселів внизу екрана, щоб зробити їх стандартними 200 "
 "пікселів, дозволяючи використовувати 'корекцію пропорцій'"
 
-#: engines/scumm/metaengine.cpp:660
+#: engines/scumm/metaengine.cpp:662
 msgid "Run in original 640 x 480 resolution"
 msgstr "Запускати в оригінальній роздільній здатності 640 x 480"
 
-#: engines/scumm/metaengine.cpp:661
+#: engines/scumm/metaengine.cpp:663
 msgid ""
 "This allows more accurate pause/restart banners, but might impact "
 "performance or shader/scaler usage."
@@ -10244,36 +10274,36 @@ msgstr ""
 "Це дозволяє точніше призупиняти/перезапускати банери, але може вплинути на "
 "продуктивність або використання шейдерів/масштабувальників."
 
-#: engines/scumm/metaengine.cpp:668
+#: engines/scumm/metaengine.cpp:670
 msgid "Play simplified music"
 msgstr "Грати спрощену музику"
 
-#: engines/scumm/metaengine.cpp:669
+#: engines/scumm/metaengine.cpp:671
 msgid "This music was intended for low-end Macs, and uses only one channel."
 msgstr ""
 "Ця музика була призначена для слабих комп'ютерів Mac і використовує тільки "
 "один канал."
 
-#: engines/scumm/metaengine.cpp:677
+#: engines/scumm/metaengine.cpp:679
 msgid "Enable smooth scrolling"
 msgstr "Ввімкнути плавну прокрутку"
 
-#: engines/scumm/metaengine.cpp:678
+#: engines/scumm/metaengine.cpp:680
 msgid "(instead of the normal 8-pixels steps scrolling)"
 msgstr "(замість звичайної прокрутки у 8 пікселів)"
 
-#: engines/scumm/metaengine.cpp:686
+#: engines/scumm/metaengine.cpp:688
 msgid "Allow semi-smooth scrolling"
 msgstr "Ввімкнути навів-плавну прокрутку"
 
-#: engines/scumm/metaengine.cpp:687
+#: engines/scumm/metaengine.cpp:689
 msgid ""
 "Allow scrolling to be less smooth during the fast camera movement in the "
 "intro."
 msgstr ""
 "Вмикає менш плавну прокрутку під час швидкого переміщення камери у заставці."
 
-#: engines/scumm/metaengine.cpp:714
+#: engines/scumm/metaengine.cpp:716
 msgid ""
 "Allow the game to use the in-engine graphical interface and the original "
 "save/load menu. \t\tUse it together with the \"Ask for confirmation on exit"
@@ -10283,11 +10313,11 @@ msgstr ""
 "зберігання/завантаження. \t\tВикористовуйте його разом з \"Запитувати "
 "підтвердження виходу\" для більш логічної повединки."
 
-#: engines/scumm/metaengine.cpp:723
+#: engines/scumm/metaengine.cpp:725
 msgid "Enable low latency audio mode"
 msgstr "Ввімкнути режим низької затримки звуку"
 
-#: engines/scumm/metaengine.cpp:724
+#: engines/scumm/metaengine.cpp:726
 msgid ""
 "Allows the game to use low latency audio, at the cost of sound accuracy. \t"
 "\tIt is recommended to enable this feature only if you incur in audio "
@@ -10297,11 +10327,11 @@ msgstr ""
 "відтворення. \t\tРекомендуємо вмикати цю опцію тільки в разі, якщо ви "
 "зтикаєтесь з затримками звуку під час гри."
 
-#: engines/scumm/metaengine.cpp:733
+#: engines/scumm/metaengine.cpp:735
 msgid "Enable the \"A Pirate I Was Meant To Be\" song"
 msgstr "Увімкнути пісню \"Пірат, яким би я мав бути\" (ліричну)"
 
-#: engines/scumm/metaengine.cpp:734
+#: engines/scumm/metaengine.cpp:736
 msgid ""
 "Enable the song at the beginning of Part 3 of the game, \"A Pirate I Was "
 "Meant To Be\", \t\twhich was cut in international releases. Beware though: "
@@ -10311,28 +10341,28 @@ msgstr ""
 "\tкотру було вилучено з деяких перекладів гри. Важайте: субтитри можуть бути "
 "неповними."
 
-#: engines/scumm/metaengine.cpp:821
+#: engines/scumm/metaengine.cpp:823
 msgid "Down Left"
 msgstr "Донизу-наліво"
 
-#: engines/scumm/metaengine.cpp:834
+#: engines/scumm/metaengine.cpp:836
 msgid "Down Right"
 msgstr "Донизу-направо"
 
-#: engines/scumm/metaengine.cpp:854
+#: engines/scumm/metaengine.cpp:856
 msgid "Up Left"
 msgstr "Догори-наліво"
 
-#: engines/scumm/metaengine.cpp:867
+#: engines/scumm/metaengine.cpp:869
 msgid "Up Right"
 msgstr "Догори-направо"
 
-#: engines/scumm/metaengine.cpp:879
+#: engines/scumm/metaengine.cpp:881
 msgid "Switch weapon"
 msgstr "Перемкнути зброю"
 
 #. I18N: Lets one skip the bike/car fight sequences in Full Throttle
-#: engines/scumm/metaengine.cpp:893
+#: engines/scumm/metaengine.cpp:895
 msgid "Win the bike fight cheat"
 msgstr "Чіт вигравання бою на мотиках"
 
@@ -10421,25 +10451,23 @@ msgstr "Чи ви хочете розпочати або приєднатися 
 
 #. I18N: Random map generator for Moonbase Commander
 #: engines/scumm/he/moonbase/dialog-mapgenerator.cpp:55
-#, fuzzy
-#| msgid "Game Options"
 msgid "Random Map Options"
-msgstr "Налашт. гри"
+msgstr "Налашт. випадкової мапи"
 
 #. I18N: Map generator algorthims
 #: engines/scumm/he/moonbase/dialog-mapgenerator.cpp:59
 msgid "Algorithm"
-msgstr ""
+msgstr "Алгоритм"
 
 #. I18N: Spiff algorthim
 #: engines/scumm/he/moonbase/dialog-mapgenerator.cpp:63
 msgid "Spiff"
-msgstr ""
+msgstr "Spiff"
 
 #. I18N: Katton algorthim
 #: engines/scumm/he/moonbase/dialog-mapgenerator.cpp:65
 msgid "Katton"
-msgstr ""
+msgstr "Katton"
 
 #. I18N: Random algorthim
 #. I18N: Random map size
@@ -10453,47 +10481,41 @@ msgstr ""
 #: engines/scumm/he/moonbase/dialog-mapgenerator.cpp:112
 #: engines/scumm/he/moonbase/dialog-mapgenerator.cpp:124
 #: engines/scumm/he/moonbase/dialog-mapgenerator.cpp:136
-#, fuzzy
-#| msgid "Random seed:"
 msgid "Random"
-msgstr "Випадкове початкове значення:"
+msgstr "Випадковий"
 
 #: engines/scumm/he/moonbase/dialog-mapgenerator.cpp:67
 msgid "Picks the map algorithm randomly."
-msgstr ""
+msgstr "Вибирає алгоритм мапи випадковим чином."
 
 #. I18N: Map sizes
 #: engines/scumm/he/moonbase/dialog-mapgenerator.cpp:70
 msgid "Size"
-msgstr ""
+msgstr "Розмір"
 
 #: engines/scumm/he/moonbase/dialog-mapgenerator.cpp:74
-#, fuzzy
-#| msgid "75% - Small"
 msgid "Small"
-msgstr "75% - Малий"
+msgstr "Малий"
 
 #: engines/scumm/he/moonbase/dialog-mapgenerator.cpp:76
 msgid "Large"
-msgstr "Велике"
+msgstr "Великий"
 
 #: engines/scumm/he/moonbase/dialog-mapgenerator.cpp:77
 msgid "Huge"
-msgstr ""
+msgstr "Надвеликий"
 
 #: engines/scumm/he/moonbase/dialog-mapgenerator.cpp:78
 msgid "SAI"
-msgstr ""
+msgstr "SAI"
 
 #: engines/scumm/he/moonbase/dialog-mapgenerator.cpp:79
 msgid "Ridiculous"
-msgstr ""
+msgstr "Обурливий"
 
 #: engines/scumm/he/moonbase/dialog-mapgenerator.cpp:80
-#, fuzzy
-#| msgid "Map"
 msgid "Max"
-msgstr "Призначити"
+msgstr "Максимальний"
 
 #: engines/scumm/he/moonbase/dialog-mapgenerator.cpp:82
 msgid "Picks the map size randomly."
@@ -10501,10 +10523,8 @@ msgstr ""
 
 #. I18N: Map tilesets
 #: engines/scumm/he/moonbase/dialog-mapgenerator.cpp:85
-#, fuzzy
-#| msgid "Reset"
 msgid "Tileset"
-msgstr "Скинути"
+msgstr "Плитки"
 
 #: engines/scumm/he/moonbase/dialog-mapgenerator.cpp:99
 msgid "Picks the map tileset randomly."
@@ -10513,12 +10533,12 @@ msgstr ""
 #. I18N: Percentage of energy pools
 #: engines/scumm/he/moonbase/dialog-mapgenerator.cpp:102
 msgid "Energy"
-msgstr ""
+msgstr "Енергія"
 
 #. I18N: Energy slider label
 #: engines/scumm/he/moonbase/dialog-mapgenerator.cpp:107
 msgid "Scarce - Lots"
-msgstr ""
+msgstr "Мало - Багато"
 
 #: engines/scumm/he/moonbase/dialog-mapgenerator.cpp:112
 msgid "Picks the random amount of energy pools."
@@ -10527,12 +10547,12 @@ msgstr ""
 #. I18N: Percentage of terrain
 #: engines/scumm/he/moonbase/dialog-mapgenerator.cpp:115
 msgid "Terrain"
-msgstr ""
+msgstr "Рельєф"
 
 #. I18N: Terrain slider label
 #: engines/scumm/he/moonbase/dialog-mapgenerator.cpp:120
 msgid "Barren - Rough"
-msgstr ""
+msgstr "Рівний - Грубий"
 
 #: engines/scumm/he/moonbase/dialog-mapgenerator.cpp:124
 msgid "Picks the random amount of terrain level."
@@ -10541,12 +10561,12 @@ msgstr ""
 #. I18N: Percentage of water
 #: engines/scumm/he/moonbase/dialog-mapgenerator.cpp:127
 msgid "Water"
-msgstr ""
+msgstr "Вода"
 
 #. I18N: Water slider label
 #: engines/scumm/he/moonbase/dialog-mapgenerator.cpp:132
 msgid "Driest - Wettest"
-msgstr ""
+msgstr "Сухо - Мокро"
 
 #: engines/scumm/he/moonbase/dialog-mapgenerator.cpp:136
 msgid "Picks the random amount of water."
@@ -10554,10 +10574,8 @@ msgstr ""
 
 #. I18N: Generate new map
 #: engines/scumm/he/moonbase/dialog-mapgenerator.cpp:140
-#, fuzzy
-#| msgid "General"
 msgid "Generate"
-msgstr "Загальні"
+msgstr "Згенерувати"
 
 #: engines/scumm/he/sound_he.cpp:1555
 msgid ""
@@ -11240,34 +11258,28 @@ msgid "Select highlighted verb"
 msgstr "Виберіть виділене дієслово"
 
 #: engines/twp/metaengine.cpp:156
-#, fuzzy
-#| msgid "Go to previous directory level"
 msgid "Go to previous object"
-msgstr "Перейти на папку рівнем вище"
+msgstr "Перейти на попередній об'єкт"
 
 #: engines/twp/metaengine.cpp:157
-#, fuzzy
-#| msgid "Go to setup menu"
 msgid "Go to next object"
-msgstr "Перейти у меню налаштування"
+msgstr "Перейти на наступний об'єкт"
 
 #: engines/twp/metaengine.cpp:158
 msgid "Select verb/item Left"
-msgstr ""
+msgstr "Вибрати дію/предмет наліво"
 
 #: engines/twp/metaengine.cpp:159
-#, fuzzy
-#| msgid "Slide Right"
 msgid "Select verb/item Right"
-msgstr "Ковзати направо"
+msgstr "Вибрати дію/предмет направо"
 
 #: engines/twp/metaengine.cpp:160
 msgid "Select verb/item Up"
-msgstr ""
+msgstr "Вибрати дію/предмет догори"
 
 #: engines/twp/metaengine.cpp:161
 msgid "Select verb/item Down"
-msgstr ""
+msgstr "Вибрати дію/предмет донизу"
 
 #: engines/twp/metaengine.cpp:163
 msgid "Select Actor 1"

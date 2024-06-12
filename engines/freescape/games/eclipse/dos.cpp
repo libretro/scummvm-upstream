@@ -93,7 +93,7 @@ void EclipseEngine::loadAssetsDOSFullGame() {
 		loadMessagesFixedSize(&file, 0x710f, 16, 17);
 		loadSoundsFx(&file, 0xd670, 1);
 		loadSpeakerFxDOS(&file, 0x7396 + 0x200, 0x72a1 + 0x200);
-		loadFonts(&file, 0xd403);
+		loadFonts(&file, 0xd403, _font);
 		load8bitBinary(&file, 0x3ce0, 16);
 		for (auto &it : _areaMap) {
 			it._value->addStructure(_areaMap[255]);
@@ -122,7 +122,7 @@ void EclipseEngine::loadAssetsDOSFullGame() {
 
 		loadMessagesFixedSize(&file, 0x594f, 16, 17);
 		load1bPCM(&file, 0xd038 - 4);
-		loadFonts(&file, 0xb785);
+		loadFonts(&file, 0xb785, _font);
 		load8bitBinary(&file, 0x2530, 4);
 		for (auto &it : _areaMap) {
 			it._value->addStructure(_areaMap[255]);
@@ -213,6 +213,11 @@ soundFx *EclipseEngine::load1bPCM(Common::SeekableReadStream *file, int offset) 
 }
 
 void EclipseEngine::loadSoundsFx(Common::SeekableReadStream *file, int offset, int number) {
+	if (isAmiga() || isAtariST()) {
+		FreescapeEngine::loadSoundsFx(file, offset, number);
+		return;
+	}
+
 	for (int i = 0; i < 5; i++) {
 		_soundsFx[i] = load1bPCM(file, offset);
 		offset += (_soundsFx[i]->size / 8) + 4;
@@ -221,6 +226,11 @@ void EclipseEngine::loadSoundsFx(Common::SeekableReadStream *file, int offset, i
 
 
 void EclipseEngine::playSoundFx(int index, bool sync) {
+	if (isAmiga() || isAtariST()) {
+		FreescapeEngine::playSoundFx(index, sync);
+		return;
+	}
+
 	if (_soundsFx.size() == 0) {
 		debugC(1, kFreescapeDebugMedia, "WARNING: Sounds are not loaded");
 		return;

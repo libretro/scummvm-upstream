@@ -55,24 +55,24 @@ public:
 	bool loadSprite(const char *pszPathName, int nCels = 1);
 	bool loadSprite(CBofBitmap *pBitmap, int nCels = 1);
 
-	bool paintSprite(CBofBitmap *pBmp, const int x, const int y);
+	bool paintSprite(CBofBitmap *pBmp, int x, int y);
 	bool paintSprite(CBofBitmap *pBmp, CBofPoint point) {
 		return paintSprite(pBmp, point.x, point.y);
 	}
 
-	bool paintSprite(CBofWindow *pWnd, const int x, const int y);
+	bool paintSprite(CBofWindow *pWnd, int x, int y);
 	bool paintSprite(CBofWindow *pWnd, CBofPoint point) {
 		return paintSprite(pWnd, point.x, point.y);
 	}
 
-	bool paintCel(CBofWindow *pWnd, int nCelId, const int x, const int y);
-	bool paintCel(CBofBitmap *pBmp, int nCelId, const int x, const int y);
+	bool paintCel(CBofWindow *pWnd, int nCelId, int x, int y);
+	bool paintCel(CBofBitmap *pBmp, int nCelId, int x, int y);
 
-	void batchPaint(const int, const int y);
+	void batchPaint(int, int y);
 	void batchErase();
 
-	bool setupCels(const int nCels);
-	void setCel(const int nCelID);
+	bool setupCels(int nCels);
+	void setCel(int nCelID);
 
 	void nextCel();
 	void prevCel();
@@ -91,7 +91,7 @@ public:
 	// sprites no longer retain their background, so there would be no way
 	// to restore the background, and that's all eraseSprite does.
 
-	CBofSprite *interception(CBofRect *newRect, CBofSprite *pSprite);
+	CBofSprite *interception(CBofRect *newRect, CBofSprite *pTestSprite);
 	CBofSprite *interception(CBofSprite *pTestSprite);
 
 	CBofSprite *interception() {
@@ -102,7 +102,7 @@ public:
 		return interception(newRect, _pSpriteChain);
 	}
 
-	bool testInterception(CBofSprite *pSprite, CBofPoint *pPoint = nullptr);
+	bool testInterception(CBofSprite *pTestSprite, CBofPoint *pPoint = nullptr);
 
 	void setPosition(int x, int y);
 
@@ -170,8 +170,8 @@ public:
 		return _pSpriteChain;
 	}
 
-	static bool updateDirtyRect(CBofWindow *pWnd, CBofSprite *pSprite = nullptr);
-	static bool updateDirtyRect(CBofBitmap *pBmp, CBofSprite *pSprite = nullptr);
+	static bool updateDirtyRect(CBofWindow *pWnd, CBofSprite *pPrimarySprite = nullptr);
+	static bool updateDirtyRect(CBofBitmap *pBmp, CBofSprite *pPrimarySprite = nullptr);
 	static void addToDirtyRect(CBofRect *pRect);
 	static void clearDirtyRect() {
 		_cDirtyRect->setRectEmpty();

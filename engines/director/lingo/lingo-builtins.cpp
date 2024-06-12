@@ -2542,7 +2542,7 @@ void LB::b_pasteClipBoardInto(int nargs) {
 
 	Score *score = movie->getScore();
 	castMember->setModified(true);
-	movie->createOrReplaceCastMember(*to.u.cast, castMember);
+	movie->duplicateCastMember(*g_director->_clipBoard, *to.u.cast);
 	score->refreshPointersForCastMemberID(to.asMemberID());
 }
 
@@ -2916,6 +2916,13 @@ void LB::b_zoomBox(int nargs) {
 	if (endRect.isEmpty()) {
 		warning("b_zoomBox: unknown end sprite #%d", endSpriteId);
 		return;
+	}
+
+	if (Director::g_director->desktopEnabled()) {
+		Director::Datum stageRect = Director::g_director->getStage()->getStageRect();
+		Common::Point stageOffset(stageRect.u.farr->arr[0].asInt(), stageRect.u.farr->arr[1].asInt());
+		startRect.translate(stageOffset.x, stageOffset.y);
+		endRect.translate(stageOffset.x, stageOffset.y);
 	}
 
 	Graphics::ZoomBox *box = new Graphics::ZoomBox;

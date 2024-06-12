@@ -38,7 +38,7 @@ Renderer *CreateGfxTinyGL(int screenW, int screenH, Common::RenderMode renderMod
 	return new TinyGLRenderer(screenW, screenH, renderMode);
 }
 
-TinyGLRenderer::TinyGLRenderer(int screenW, int screenH, Common::RenderMode renderMode) : Renderer(screenW, screenH, renderMode) {
+TinyGLRenderer::TinyGLRenderer(int screenW, int screenH, Common::RenderMode renderMode) : Renderer(screenW, screenH, renderMode, true) {
 	_verts = (Vertex *)malloc(sizeof(Vertex) * kVertexArraySize);
 	_texturePixelFormat = TinyGLTexture::getRGBAPixelFormat();
 	_variableStippleArray = nullptr;
@@ -146,6 +146,14 @@ void TinyGLRenderer::renderPlayerShootRay(byte color, const Common::Point positi
 	tglMatrixMode(TGL_MODELVIEW);
 	tglLoadIdentity();
 
+	if (_renderMode == Common::kRenderCGA || _renderMode == Common::kRenderZX) {
+		r = g = b = 255;
+	} else {
+		r = g = b = 255;
+		tglEnable(TGL_BLEND);
+		tglBlendFunc(TGL_ONE_MINUS_DST_COLOR, TGL_ZERO);
+	}
+
 	tglDisable(TGL_DEPTH_TEST);
 	tglDepthMask(TGL_FALSE);
 
@@ -169,6 +177,7 @@ void TinyGLRenderer::renderPlayerShootRay(byte color, const Common::Point positi
 	tglDrawArrays(TGL_LINES, 0, 8);
 	tglDisableClientState(TGL_VERTEX_ARRAY);
 
+	tglDisable(TGL_BLEND);
 	tglEnable(TGL_DEPTH_TEST);
 	tglDepthMask(TGL_TRUE);
 }
@@ -228,7 +237,7 @@ void TinyGLRenderer::useStipple(bool enabled) {
 		if (_renderMode == Common::kRenderZX  ||
 			_renderMode == Common::kRenderCPC ||
 			_renderMode == Common::kRenderCGA)
-			;//tglPolygonStipple(_variableStippleArray);
+			tglPolygonStipple(_variableStippleArray);
 		/*else
 			tglPolygonStipple(_defaultStippleArray);*/
 	} else {

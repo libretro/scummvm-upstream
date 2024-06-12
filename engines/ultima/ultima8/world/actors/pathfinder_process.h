@@ -25,6 +25,7 @@
 #include "ultima/ultima8/kernel/process.h"
 
 #include "ultima/ultima8/world/actors/pathfinder.h"
+#include "ultima/ultima8/misc/point3.h"
 
 namespace Ultima {
 namespace Ultima8 {
@@ -35,7 +36,7 @@ class PathfinderProcess : public Process {
 public:
 	PathfinderProcess();
 	PathfinderProcess(Actor *actor, ObjId item, bool hit = false);
-	PathfinderProcess(Actor *actor, int32 x, int32 y, int32 z);
+	PathfinderProcess(Actor *actor, const Point3 &target);
 	~PathfinderProcess() override;
 
 	ENABLE_RUNTIME_CLASSTYPE()
@@ -47,7 +48,7 @@ public:
 	void saveData(Common::WriteStream *ws) override;
 
 protected:
-	int32 _targetX, _targetY, _targetZ;
+	Point3 _target;
 	ObjId _targetItem;
 	bool _hitMode;
 

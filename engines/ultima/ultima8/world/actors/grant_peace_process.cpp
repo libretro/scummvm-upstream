@@ -23,7 +23,7 @@
 #include "ultima/ultima8/world/world.h"
 #include "ultima/ultima8/world/current_map.h"
 #include "ultima/ultima8/gumps/target_gump.h"
-#include "ultima/ultima8/graphics/palette_fader_process.h"
+#include "ultima/ultima8/gfx/palette_fader_process.h"
 #include "ultima/ultima8/usecode/uc_list.h"
 #include "ultima/ultima8/world/loop_script.h"
 #include "ultima/ultima8/kernel/kernel.h"
@@ -73,7 +73,7 @@ void GrantPeaceProcess::run() {
 	ObjId targetid = static_cast<ObjId>(_result);
 	Actor *target = getActor(targetid);
 
-	if (targetid == 1 || !target) {
+	if (targetid == kMainActorId || !target) {
 		// targeting the avatar, no target or not an Actor
 		terminate();
 		return;
@@ -115,11 +115,10 @@ void GrantPeaceProcess::run() {
 				hit = true;
 
 				if (t->getShape() == 411 && khumash) { // CONSTANT!
-					int32 tx, ty, tz;
-					t->getLocation(tx, ty, tz);
+					Point3 pt = t->getLocation();
 
 					// CONSTANT! (shape 480, frame 0-9, repeat 1, delay 1)
-					Process *sp = new SpriteProcess(480, 0, 9, 1, 1, tx, ty, tz);
+					Process *sp = new SpriteProcess(480, 0, 9, 1, 1, pt.x, pt.y, pt.z);
 					Kernel::get_instance()->addProcess(sp);
 
 					Item *throne = getItem(KGlist.getuint16(0));

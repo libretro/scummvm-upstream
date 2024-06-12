@@ -41,8 +41,8 @@ int32 CameraProcess::_earthquake = 0;
 int32 CameraProcess::_eqX = 0;
 int32 CameraProcess::_eqY = 0;
 
-CameraProcess::CameraProcess() : Process(), _sx(0), _sy(0), _sz(0),
-	_ex(0), _ey(0), _ez(0), _time(0), _elapsed(0),
+CameraProcess::CameraProcess() : Process(), _s(),
+	_e(), _time(0), _elapsed(0),
 	_itemNum(0), _lastFrameNum(0) {
 }
 
@@ -64,6 +64,10 @@ void CameraProcess::ResetCameraProcess() {
 }
 
 void CameraProcess::moveToLocation(int32 x, int32 y, int32 z) {
+	moveToLocation(Point3(x, y, z));
+}
+
+void CameraProcess::moveToLocation(const Point3 &p) {
 	if (_itemNum) {
 		Item *item = getItem(_itemNum);
 		if (item)
@@ -71,36 +75,36 @@ void CameraProcess::moveToLocation(int32 x, int32 y, int32 z) {
 		_itemNum = 0;
 	}
 
-	_sx = _sy = _sz = _time = _elapsed = _lastFrameNum = 0;
+	_s.x = _s.y = _s.z = _time = _elapsed = _lastFrameNum = 0;
 	_eqX = _eqY = _earthquake = 0;
-	_ex = x;
-	_ey = y;
-	_ez = z;
-	GetCameraLocation(_sx, _sy, _sz);
+	_e = p;
+	_s = GetCameraLocation();
 }
 
-void CameraProcess::GetCameraLocation(int32 &x, int32 &y, int32 &z) {
-	if (!_camera) {
-		World *world = World::get_instance();
-		CurrentMap *map = world->getCurrentMap();
-		int map_num = map->getNum();
-		Actor *av = getControlledActor();
-
-		if (!av || av->getMapNum() != map_num) {
-			x = 8192;
-			y = 8192;
-			z = 64;
-		} else {
-			av->getLocation(x, y, z);
-		}
-
-		if (_earthquake) {
-			x += 2 * _eqX + 4 * _eqY;
-			y += -2 * _eqX + 4 * _eqY;
-		}
-	} else {
-		_camera->GetLerped(x, y, z, 256, true);
+Point3 CameraProcess::GetCameraLocation() {
+	if (_camera) {
+		return _camera->GetLerped(256, true);
 	}
+
+	World *world = World::get_instance();
+	CurrentMap *map = world->getCurrentMap();
+	int map_num = map->getNum();
+	Actor *av = getControlledActor();
+	Point3 pt;
+
+	if (!av || av->getMapNum() != map_num) {
+		pt.x = 8192;
+		pt.y = 8192;
+		pt.z = 64;
+	} else {
+		pt = av->getLocation();
+	}
+
+	if (_earthquake) {
+		pt.x += 2 * _eqX + 4 * _eqY;
+		pt.y += -2 * _eqX + 4 * _eqY;
+	}
+	return pt;
 }
 
 //
@@ -109,42 +113,35 @@ void CameraProcess::GetCameraLocation(int32 &x, int32 &y, int32 &z) {
 
 // Track item, do nothing
 CameraProcess::CameraProcess(uint16 _itemnum) :
-	_time(0), _elapsed(0), _itemNum(_itemnum), _lastFrameNum(0) {
-	GetCameraLocation(_sx, _sy, _sz);
+	_e(), _time(0), _elapsed(0), _itemNum(_itemnum), _lastFrameNum(0) {
+	_s = GetCameraLocation();
 
 	if (_itemNum) {
 		Item *item = getItem(_itemNum);
 		if (item) {
 			item->setExtFlag(Item::EXT_CAMERA);
-			item->getLocation(_ex, _ey, _ez);
-			_ez += 20; //!!constant
-		} else {
-			_ex = 0;
-			_ey = 0;
-			_ez = 0;
+			_e = item->getLocation();
+			_e.z += 20; //!!constant
 		}
-		return;
+	} else {
+		// No item
+		_itemNum = 0;
+		_e = _s;
 	}
-
-	// No item
-	_itemNum = 0;
-	_ex = _sx;
-	_ey = _sy;
-	_ez = _sz;
 }
 
 // Stay over point
-CameraProcess::CameraProcess(int32 x, int32 y, int32 z) :
-	_ex(x), _ey(y), _ez(z), _time(0), _elapsed(0), _itemNum(0), _lastFrameNum(0) {
-	GetCameraLocation(_sx, _sy, _sz);
+CameraProcess::CameraProcess(const Point3 &p) :
+	_e(p), _time(0), _elapsed(0), _itemNum(0), _lastFrameNum(0) {
+	_s = GetCameraLocation();
 }
 
 // Scroll
-CameraProcess::CameraProcess(int32 x, int32 y, int32 z, int32 time) :
-	_ex(x), _ey(y), _ez(z), _time(time), _elapsed(0), _itemNum(0), _lastFrameNum(0) {
-	GetCameraLocation(_sx, _sy, _sz);
-	//debug(MM_INFO, "Scrolling from (%d, %d,%d) to (%d, %d, %d) in %d frames",
-	//  sx, sy, sz, ex, ey, ez,  _time);
+CameraProcess::CameraProcess(const Point3 &p, int32 time) :
+	_e(p), _time(time), _elapsed(0), _itemNum(0), _lastFrameNum(0) {
+	_s = GetCameraLocation();
+	debug(10, "Scrolling from (%d, %d,%d) to (%d, %d, %d) in %d frames",
+		_s.x, _s.y, _s.z, _e.x, _e.y, _e.z,  _time);
 }
 
 void CameraProcess::terminate() {
@@ -171,7 +168,7 @@ void CameraProcess::run() {
 
 	if (_time && _elapsed > _time) {
 		_result = 0; // do we need this
-		CameraProcess::SetCameraProcess(0); // This will terminate us
+		CameraProcess::SetCameraProcess(nullptr); // This will terminate us
 		return;
 	}
 
@@ -188,21 +185,21 @@ void CameraProcess::itemMoved() {
 	if (!item || !item->hasExtFlags(Item::EXT_LERP_NOPREV))
 		return;
 
-	int32 ix, iy, iz;
-	item->getLocation(ix, iy, iz);
+	Point3 pt = item->getLocation();
 
-	int32 maxdist = MAX(MAX(abs(_ex - iz), abs(_ey - iy)), abs(_ez - iz));
+	int32 maxdist = MAX(MAX(abs(_e.x - pt.z), abs(_e.y - pt.y)), abs(_e.z - pt.z));
 
 	if (GAME_IS_U8 || (GAME_IS_CRUSADER && maxdist > 0x40)) {
-		_sx = _ex = ix;
-		_sy = _ey = iy;
-		_ez = iz;
-		_sz = _ez += 20;
-		World::get_instance()->getCurrentMap()->updateFastArea(_sx, _sy, _sz, _ex, _ey, _ez);
+		_s.x = _e.x = pt.x;
+		_s.y = _e.y = pt.y;
+		_e.z = pt.z;
+		_s.z = _e.z += 20;
+		World::get_instance()->getCurrentMap()->updateFastArea(_s, _e);
 	}
 }
 
-void CameraProcess::GetLerped(int32 &x, int32 &y, int32 &z, int32 factor, bool noupdate) {
+Point3 CameraProcess::GetLerped(int32 factor, bool noupdate) {
+	Point3 pt;
 	if (_time == 0) {
 		if (!noupdate) {
 
@@ -216,40 +213,32 @@ void CameraProcess::GetLerped(int32 &x, int32 &y, int32 &z, int32 factor, bool n
 			}
 
 			if (!inBetween) {
-				_sx = _ex;
-				_sy = _ey;
-				_sz = _ez;
+				_s = _e;
 
 				if (_itemNum) {
 					Item *item = getItem(_itemNum);
 					// Got it
 					if (item) {
 						item->setExtFlag(Item::EXT_CAMERA);
-						_sx = _ex;
-						_sy = _ey;
-						_sz = _ez;
-						item->getLocation(_ex, _ey, _ez);
-						_ez += 20; //!!constant
+						_s = _e;
+						_e = item->getLocation();
+						_e.z += 20; //!!constant
 					}
 				}
 				// Update the fast area
-				World::get_instance()->getCurrentMap()->updateFastArea(_sx, _sy, _sz, _ex, _ey, _ez);
+				World::get_instance()->getCurrentMap()->updateFastArea(_s, _e);
 			}
 		}
 
 		if (factor == 256) {
-			x = _ex;
-			y = _ey;
-			z = _ez;
+			pt = _e;
 		} else if (factor == 0) {
-			x = _sx;
-			y = _sy;
-			z = _sz;
+			pt = _s;
 		} else {
 			// This way while possibly slower is more accurate
-			x = ((_sx * (256 - factor) + _ex * factor) >> 8);
-			y = ((_sy * (256 - factor) + _ey * factor) >> 8);
-			z = ((_sz * (256 - factor) + _ez * factor) >> 8);
+			pt.x = ((_s.x * (256 - factor) + _e.x * factor) >> 8);
+			pt.y = ((_s.y * (256 - factor) + _e.y * factor) >> 8);
+			pt.z = ((_s.z * (256 - factor) + _e.z * factor) >> 8);
 		}
 	} else {
 		// Do a quadratic interpolation here of velocity (maybe), but not yet
@@ -259,39 +248,42 @@ void CameraProcess::GetLerped(int32 &x, int32 &y, int32 &z, int32 factor, bool n
 		if (sfactor > _time) sfactor = _time;
 		if (efactor > _time) efactor = _time;
 
-		int32 lsx = ((_sx * (_time - sfactor) + _ex * sfactor) / _time);
-		int32 lsy = ((_sy * (_time - sfactor) + _ey * sfactor) / _time);
-		int32 lsz = ((_sz * (_time - sfactor) + _ez * sfactor) / _time);
+		Point3 ls;
+		ls.x = ((_s.x * (_time - sfactor) + _e.x * sfactor) / _time);
+		ls.y = ((_s.y * (_time - sfactor) + _e.y * sfactor) / _time);
+		ls.z = ((_s.z * (_time - sfactor) + _e.z * sfactor) / _time);
 
-		int32 lex = ((_sx * (_time - efactor) + _ex * efactor) / _time);
-		int32 ley = ((_sy * (_time - efactor) + _ey * efactor) / _time);
-		int32 lez = ((_sz * (_time - efactor) + _ez * efactor) / _time);
+		Point3 le;
+		le.x = ((_s.x * (_time - efactor) + _e.x * efactor) / _time);
+		le.y = ((_s.y * (_time - efactor) + _e.y * efactor) / _time);
+		le.z = ((_s.z * (_time - efactor) + _e.z * efactor) / _time);
 
 		// Update the fast area
-		if (!noupdate) World::get_instance()->getCurrentMap()->updateFastArea(lsx, lsy, lsz, lex, ley, lez);
+		if (!noupdate)
+			World::get_instance()->getCurrentMap()->updateFastArea(ls, le);
 
 		// This way while possibly slower is more accurate
-		x = ((lsx * (256 - factor) + lex * factor) >> 8);
-		y = ((lsy * (256 - factor) + ley * factor) >> 8);
-		z = ((lsz * (256 - factor) + lez * factor) >> 8);
+		pt.x = ((ls.x * (256 - factor) + le.x * factor) >> 8);
+		pt.y = ((ls.y * (256 - factor) + le.y * factor) >> 8);
+		pt.z = ((ls.z * (256 - factor) + le.z * factor) >> 8);
 	}
 
 	if (_earthquake) {
-		x += 2 * _eqX + 4 * _eqY;
-		y += -2 * _eqX + 4 * _eqY;
+		pt.x += 2 * _eqX + 4 * _eqY;
+		pt.y += -2 * _eqX + 4 * _eqY;
 	}
+	return pt;
 }
 
 uint16 CameraProcess::findRoof(int32 factor) {
-	int32 x, y, z;
 	int32 earthquake_old = _earthquake;
 	_earthquake = 0;
-	GetLerped(x, y, z, factor);
+	Point3 pt = GetLerped(factor);
 	_earthquake = earthquake_old;
 
 	// Default camera box based on 1x1x1 footpad,
 	// which is the minimal size to avoid floor detected as roof
-	Box target(x, y, z, 32, 32, 8);
+	Box target(pt.x, pt.y, pt.z, 32, 32, 8);
 
 	// Should _itemNum be used when not focused on main actor?
 	Item *item = getItem(1);
@@ -309,12 +301,12 @@ uint16 CameraProcess::findRoof(int32 factor) {
 void CameraProcess::saveData(Common::WriteStream *ws) {
 	Process::saveData(ws);
 
-	ws->writeUint32LE(static_cast<uint32>(_sx));
-	ws->writeUint32LE(static_cast<uint32>(_sy));
-	ws->writeUint32LE(static_cast<uint32>(_sz));
-	ws->writeUint32LE(static_cast<uint32>(_ex));
-	ws->writeUint32LE(static_cast<uint32>(_ey));
-	ws->writeUint32LE(static_cast<uint32>(_ez));
+	ws->writeUint32LE(static_cast<uint32>(_s.x));
+	ws->writeUint32LE(static_cast<uint32>(_s.y));
+	ws->writeUint32LE(static_cast<uint32>(_s.z));
+	ws->writeUint32LE(static_cast<uint32>(_e.x));
+	ws->writeUint32LE(static_cast<uint32>(_e.y));
+	ws->writeUint32LE(static_cast<uint32>(_e.z));
 	ws->writeUint32LE(static_cast<uint32>(_time));
 	ws->writeUint32LE(static_cast<uint32>(_elapsed));
 	ws->writeUint16LE(_itemNum);
@@ -327,12 +319,12 @@ void CameraProcess::saveData(Common::WriteStream *ws) {
 bool CameraProcess::loadData(Common::ReadStream *rs, uint32 version) {
 	if (!Process::loadData(rs, version)) return false;
 
-	_sx = static_cast<int32>(rs->readUint32LE());
-	_sy = static_cast<int32>(rs->readUint32LE());
-	_sz = static_cast<int32>(rs->readUint32LE());
-	_ex = static_cast<int32>(rs->readUint32LE());
-	_ey = static_cast<int32>(rs->readUint32LE());
-	_ez = static_cast<int32>(rs->readUint32LE());
+	_s.x = static_cast<int32>(rs->readUint32LE());
+	_s.y = static_cast<int32>(rs->readUint32LE());
+	_s.z = static_cast<int32>(rs->readUint32LE());
+	_e.x = static_cast<int32>(rs->readUint32LE());
+	_e.y = static_cast<int32>(rs->readUint32LE());
+	_e.z = static_cast<int32>(rs->readUint32LE());
 	_time = static_cast<int32>(rs->readUint32LE());
 	_elapsed = static_cast<int32>(rs->readUint32LE());
 	_itemNum = rs->readUint16LE();
@@ -356,7 +348,8 @@ uint32 CameraProcess::I_moveTo(const uint8 *args, unsigned int argsize) {
 	}
 
 	World_FromUsecodeXY(x, y);
-	CameraProcess::SetCameraProcess(new CameraProcess(x, y, z));
+	Point3 pt(x, y, z);
+	CameraProcess::SetCameraProcess(new CameraProcess(pt));
 	return 0;
 }
 
@@ -375,7 +368,8 @@ uint32 CameraProcess::I_scrollTo(const uint8 *args, unsigned int /*argsize*/) {
 	ARG_NULL16(); // some uint16?
 
 	World_FromUsecodeXY(x, y);
-	return CameraProcess::SetCameraProcess(new CameraProcess(x, y, z, 25));
+	Point3 pt(x, y, z);
+	return CameraProcess::SetCameraProcess(new CameraProcess(pt, 25));
 }
 
 //	Camera::startQuake(word)
@@ -392,23 +386,20 @@ uint32 CameraProcess::I_stopQuake(const uint8 * /*args*/, unsigned int /*argsize
 }
 
 uint32 CameraProcess::I_getCameraX(const uint8 *args, unsigned int argsize) {
-	int32 x, y, z;
 	assert(GAME_IS_CRUSADER);
-	GetCameraLocation(x, y, z);
-	return World_ToUsecodeCoord(x);
+	Point3 pt = GetCameraLocation();
+	return World_ToUsecodeCoord(pt.x);
 }
 
 uint32 CameraProcess::I_getCameraY(const uint8 *args, unsigned int argsize) {
-	int32 x, y, z;
 	assert(GAME_IS_CRUSADER);
-	GetCameraLocation(x, y, z);
-	return World_ToUsecodeCoord(y);
+	Point3 pt = GetCameraLocation();
+	return World_ToUsecodeCoord(pt.y);
 }
 
 uint32 CameraProcess::I_getCameraZ(const uint8 *args, unsigned int argsize) {
-	int32 x, y, z;
-	GetCameraLocation(x, y, z);
-	return z;
+	Point3 pt = GetCameraLocation();
+	return pt.z;
 }
 
 } // End of namespace Ultima8
