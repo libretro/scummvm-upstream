@@ -20,7 +20,7 @@
  */
 
 //include <cstring>
-#include "ags/lib/std/algorithm.h"
+#include "common/std/algorithm.h"
 #include "ags/shared/util/buffered_stream.h"
 #include "ags/shared/util/stdio_compat.h"
 #include "ags/shared/util/string.h"

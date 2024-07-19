@@ -49,7 +49,7 @@
 
 #include "common/str.h"
 
-#include "ags/lib/std/vector.h"
+#include "common/std/vector.h"
 #include "ags/shared/core/platform.h"
 #include "ags/shared/core/types.h"
 

@@ -26,6 +26,8 @@
 
 #include "mtropolis/detection.h"
 
+#include "common/translation.h"
+
 namespace MTropolis {
 
 static const MTropolisGameDescription gameDescriptions[] = {
@@ -579,7 +581,7 @@ static const MTropolisGameDescription gameDescriptions[] = {
 	  // Published by Tivola, 1998
 		{
 			"albert1",
-			"",
+			_s("Missing game code"),
 			{
 				{ "Albert.exe",   0, "0e513dac9d2a0d7cfcdc670cab2a9bda", 757760 },
 				{ "album411.MPL", 0, "08a742f5087d25e8ee45c2fcd57ad9a6", 17979781 },
@@ -593,7 +595,7 @@ static const MTropolisGameDescription gameDescriptions[] = {
 			},
 			Common::DE_DEU,
 			Common::kPlatformWindows,
-			ADGF_UNSTABLE,
+			ADGF_UNSUPPORTED,
 			GUIO0()
 		},
 		GID_ALBERT1,
@@ -601,12 +603,92 @@ static const MTropolisGameDescription gameDescriptions[] = {
 		MTBOOT_ALBERT1_WIN_DE,
 	},
 
+	{ // Uncle Albert's Magical Album (English, Windows)
+	  // Published by VTech, 1999
+		{
+			"albert1",
+			_s("Missing game code"),
+			{
+				{"ALBUM.EXE",    0, "0e513dac9d2a0d7cfcdc670cab2a9bda", 757760},
+				{"album411.MPL", 0, "ad34822a1d7a4fd2c69487566c383b2e", 17658069},
+				{"album412.MPX", 0, "a2d01cdbed904f875fde71734b25f8d7", 308697831},
+				// { "BASIC.X95",    0, "a1b474e90cc285bfdcfa87355f890b9e", 242688 },
+				// { "BITMAP.R95",   0, "2bf7305eca9df63dbc75f55093b84cc0", 81408 },
+				// { "CURSORS.C95",  0, "c1e2eebe7183b5ea33de7872a8ea4d2b", 87040 },
+				// { "EXTRAS.R95",   0, "c5830771609c774de9dbeaa5dff69b3e", 185344 },
+				// { "ROTATORK.R95", 0, "c271f786f028c0076635bea49a2be890", 66560 },
+				AD_LISTEND
+			},
+			Common::EN_ANY,
+			Common::kPlatformWindows,
+			ADGF_UNSUPPORTED,
+			GUIO0()
+		},
+		GID_ALBERT1,
+		0,
+		MTBOOT_ALBERT1_WIN_EN,
+	},
+
+	{ // Uncle Albert's Magical Album (French, Windows)
+	  // Original title: L'Album secret de l'oncle Ernest
+	  // Published by Emme, 1998
+		{
+			"albert1",
+			_s("Missing game code"),
+			{
+				{"MTPLAY95.EXE", 0, "0e513dac9d2a0d7cfcdc670cab2a9bda", 757760},
+				{"album421.MPL", 0, "2f3cc30f13ecc99e8e4818353cef1d34", 18879823},
+				{"album422.MPX", 0, "132db6e709ff40b49e5c702c6d14bd95", 293417240},
+				// { "BASIC.X95",    0, "a1b474e90cc285bfdcfa87355f890b9e", 242688 },
+				// { "BITMAP.R95",   0, "2bf7305eca9df63dbc75f55093b84cc0", 81408 },
+				// { "CURSORS.C95",  0, "c1e2eebe7183b5ea33de7872a8ea4d2b", 87040 },
+				// { "EXTRAS.R95",   0, "c5830771609c774de9dbeaa5dff69b3e", 185344 },
+				// { "ROTATORK.R95", 0, "c271f786f028c0076635bea49a2be890", 66560 },
+			 AD_LISTEND
+			},
+			Common::FR_FRA,
+			Common::kPlatformWindows,
+			ADGF_UNSUPPORTED,
+			GUIO0()
+		},
+		GID_ALBERT1,
+		0,
+		MTBOOT_ALBERT1_WIN_FR,
+	},
+
+	{ // Uncle Albert's Magical Album (Dutch, Windows)
+	  // Original title: Het Magische Boek Van Oom Ernest
+	  // Published by Emme, 1999
+		{
+			"albert1",
+			_s("Missing game code"),
+			{
+				{"Boek.EXE", 0, "0e513dac9d2a0d7cfcdc670cab2a9bda", 757760},
+				{"boek1.MPL", 0, "4d10ee9943bdf9d8b751c7527e1c3a13", 18053917},
+				{"boek2.MPX", 0, "53f3df424a09b957da89dbf84828d92b", 297560609},
+				// { "BASIC.X95",    0, "a1b474e90cc285bfdcfa87355f890b9e", 242688 },
+				// { "BITMAP.R95",   0, "2bf7305eca9df63dbc75f55093b84cc0", 81408 },
+				// { "CURSORS.C95",  0, "c1e2eebe7183b5ea33de7872a8ea4d2b", 87040 },
+				// { "EXTRAS.R95",   0, "c5830771609c774de9dbeaa5dff69b3e", 185344 },
+				// { "ROTATORK.R95", 0, "c271f786f028c0076635bea49a2be890", 66560 },
+			 	AD_LISTEND
+			},
+			Common::NL_NLD,
+			Common::kPlatformWindows,
+			ADGF_UNSUPPORTED,
+			GUIO0()
+		},
+		GID_ALBERT1,
+		0,
+		MTBOOT_ALBERT1_WIN_NL,
+	},
+
 	{ // Uncle Albert's Fabulous Voyage (German, Windows)
 	  // Original title: Alberts abenteuerliche Reise
 	  // Published by Tivola, 2000
 		{
 			"albert2",
-			"",
+			_s("Missing game code"),
 			{
 				{ "reise.exe",    0, "0e513dac9d2a0d7cfcdc670cab2a9bda", 757760 },
 				{ "voyage1.MPL",  0, "fe202ad897cb6cf5303f2f046e8123d5", 26122297 },
@@ -620,7 +702,7 @@ static const MTropolisGameDescription gameDescriptions[] = {
 			},
 			Common::DE_DEU,
 			Common::kPlatformWindows,
-			ADGF_UNSTABLE,
+			ADGF_UNSUPPORTED,
 			GUIO0()
 		},
 		GID_ALBERT2,
@@ -628,16 +710,96 @@ static const MTropolisGameDescription gameDescriptions[] = {
 		MTBOOT_ALBERT2_WIN_DE,
 	},
 
+	{ // Uncle Albert's Fabulous Voyage (English, Windows)
+	  // Published by Emme, 2000
+		{
+			"albert2",
+			_s("Missing game code"),
+			{
+				{"voyage.exe",  0, "0e513dac9d2a0d7cfcdc670cab2a9bda", 757760},
+				{"voyage1.MPL", 0, "1859b9507c118f52402ecb248fa4ae9c", 25972983},
+				{"voyage2.MPX", 0, "639428214b71e057c825f41402d3694e", 254333940},
+				// { "BASIC.X95",    0, "a1b474e90cc285bfdcfa87355f890b9e", 242688 },
+				// { "BITMAP.R95",   0, "2bf7305eca9df63dbc75f55093b84cc0", 81408 },
+				// { "CURSORS.C95",  0, "c1e2eebe7183b5ea33de7872a8ea4d2b", 87040 },
+				// { "EXTRAS.R95",   0, "c5830771609c774de9dbeaa5dff69b3e", 185344 },
+				// { "ROTATORK.R95", 0, "c271f786f028c0076635bea49a2be890", 66560 },
+				AD_LISTEND
+			},
+			Common::EN_ANY,
+			Common::kPlatformWindows,
+			ADGF_UNSUPPORTED,
+			GUIO0()
+		},
+		GID_ALBERT2,
+		0,
+		MTBOOT_ALBERT2_WIN_EN,
+	},
+
+	{ // Uncle Albert's Fabulous Voyage (French, Windows)
+	  // Original title: Le Fabuleux Voyage de l'oncle Ernest
+	  // Published by Emme, 1999
+		{
+			"albert2",
+			_s("Missing game code"),
+			{
+				{"voyage.exe", 0, "0e513dac9d2a0d7cfcdc670cab2a9bda", 757760},
+				{"voyage1.MPL", 0, "174683d29a1c8511830262940223cc8a", 27889879},
+				{"voyage2.MPX", 0, "e7204f9afcd19ad883ae33e63f199525", 240409364},
+				// { "BASIC.X95",    0, "a1b474e90cc285bfdcfa87355f890b9e", 242688 },
+				// { "BITMAP.R95",   0, "2bf7305eca9df63dbc75f55093b84cc0", 81408 },
+				// { "CURSORS.C95",  0, "c1e2eebe7183b5ea33de7872a8ea4d2b", 87040 },
+				// { "EXTRAS.R95",   0, "c5830771609c774de9dbeaa5dff69b3e", 185344 },
+				// { "ROTATORK.R95", 0, "c271f786f028c0076635bea49a2be890", 66560 },
+				AD_LISTEND
+			},
+			Common::FR_FRA,
+			Common::kPlatformWindows,
+			ADGF_UNSUPPORTED,
+			GUIO0()
+		},
+		GID_ALBERT2,
+		0,
+		MTBOOT_ALBERT2_WIN_FR,
+	},
+
+	{ // Uncle Albert's Fabulous Voyage (Dutch, Windows)
+	  // Original title: De Fabelachtige Reis Van Oom Ernest
+	  // Published by Emme, 1999
+		{
+			"albert2",
+			_s("Missing game code"),
+			{
+				{"reis.exe", 0, "0e513dac9d2a0d7cfcdc670cab2a9bda", 757760},
+				{"voyage1.MPL", 0, "1bda2dd6149cc398296031439dc3d25b", 25618601},
+				{"voyage2.MPX", 0, "a02b7be7dd5a2324bd691299c66e4477", 246786921},
+				// { "BASIC.X95",    0, "a1b474e90cc285bfdcfa87355f890b9e", 242688 },
+				// { "BITMAP.R95",   0, "2bf7305eca9df63dbc75f55093b84cc0", 81408 },
+				// { "CURSORS.C95",  0, "c1e2eebe7183b5ea33de7872a8ea4d2b", 87040 },
+				// { "EXTRAS.R95",   0, "c5830771609c774de9dbeaa5dff69b3e", 185344 },
+				// { "ROTATORK.R95", 0, "c271f786f028c0076635bea49a2be890", 66560 },
+				AD_LISTEND
+			},
+			Common::NL_NLD,
+			Common::kPlatformWindows,
+			ADGF_UNSUPPORTED,
+			GUIO0()
+		},
+		GID_ALBERT2,
+		0,
+		MTBOOT_ALBERT2_WIN_NL,
+	},
+
 	{ // Uncle Albert's Mysterious Island (German, Windows)
 	  // Original title: Alberts mysteriöse Insel
 	  // Published by Tivola, 2001
 		{
 			"albert3",
-			"",
+			_s("Missing game code"),
 			{
 				{ "insel.exe",      0, "0e513dac9d2a0d7cfcdc670cab2a9bda", 757760 },
 				{ "ile_myst1.MPL",  0, "44ac2e944a61303f4028408165bafeb4", 24080377 },
-				{ "ILEMYST2.MPX",   0, "ecb1d2c8b99eb5b2ac6be55893b97f50", 283748531 },
+				{ "ile_myst2.MPX",  0, "ecb1d2c8b99eb5b2ac6be55893b97f50", 283748531 },
 				// { "BASIC.X95",     0, "a1b474e90cc285bfdcfa87355f890b9e", 242688 },
 				// { "BITMAP.R95",    0, "2bf7305eca9df63dbc75f55093b84cc0", 81408 },
 				// { "CURSORS.C95",   0, "c1e2eebe7183b5ea33de7872a8ea4d2b", 87040 },
@@ -647,12 +809,119 @@ static const MTropolisGameDescription gameDescriptions[] = {
 			},
 			Common::DE_DEU,
 			Common::kPlatformWindows,
-			ADGF_UNSTABLE,
+			ADGF_UNSUPPORTED,
 			GUIO0()
 		},
 		GID_ALBERT3,
 		0,
 		MTBOOT_ALBERT3_WIN_DE,
+	},
+
+	{ // Uncle Albert's Mysterious Island (English, Windows)
+	  // Published by Emme, 2000
+		{
+			"albert3",
+			_s("Missing game code"),
+			{
+				{"Ile_myst.exe",  0, "0e513dac9d2a0d7cfcdc670cab2a9bda", 757760},
+				{"ile_myst1.MPL", 0, "90a71952e2336bddd30d0bacd59aa510", 22167812},
+				{"ile_myst2.MPX", 0, "aa49de0c8337ec97045c6af57ead02a3", 277412342},
+				// { "BASIC.X95",     0, "a1b474e90cc285bfdcfa87355f890b9e", 242688 },
+				// { "BITMAP.R95",    0, "2bf7305eca9df63dbc75f55093b84cc0", 81408 },
+				// { "CURSORS.C95",   0, "c1e2eebe7183b5ea33de7872a8ea4d2b", 87040 },
+				// { "EXTRAS.R95",    0, "c5830771609c774de9dbeaa5dff69b3e", 185344 },
+				// { "ROTATORK.R95",  0, "c271f786f028c0076635bea49a2be890", 66560 },
+				AD_LISTEND
+			},
+			Common::EN_ANY,
+			Common::kPlatformWindows,
+			ADGF_UNSUPPORTED,
+			GUIO0()
+		},
+		GID_ALBERT3,
+		0,
+		MTBOOT_ALBERT3_WIN_EN,
+	},
+
+	{ // Uncle Albert's Mysterious Island (French, Windows)
+	  // Original title: L'Île Mystérieuse de l'oncle Ernest
+	  // Published by Emme, 2000
+		{
+			"albert3",
+			_s("Missing game code"),
+			{
+				{"Ile_myst.exe", 0, "0e513dac9d2a0d7cfcdc670cab2a9bda", 757760},
+				{"ile_myst1.MPL", 0, "426868b7ea8fa555fa9240594c5e9903", 22181982},
+				{"ile_myst2.MPX", 0, "c4343b14271ad3c73aed1114bab704ef", 264549665},
+				// { "BASIC.X95",     0, "a1b474e90cc285bfdcfa87355f890b9e", 242688 },
+				// { "BITMAP.R95",    0, "2bf7305eca9df63dbc75f55093b84cc0", 81408 },
+				// { "CURSORS.C95",   0, "c1e2eebe7183b5ea33de7872a8ea4d2b", 87040 },
+				// { "EXTRAS.R95",    0, "c5830771609c774de9dbeaa5dff69b3e", 185344 },
+				// { "ROTATORK.R95",  0, "c271f786f028c0076635bea49a2be890", 66560 },
+				AD_LISTEND
+			},
+			Common::FR_FRA,
+			Common::kPlatformWindows,
+			ADGF_UNSUPPORTED,
+			GUIO0()
+		},
+		GID_ALBERT3,
+		0,
+		MTBOOT_ALBERT3_WIN_FR,
+	},
+
+	{ // Uncle Albert's Mysterious Island (Dutch, Windows)
+	  // Original title: Het Mysterieuze Eiland Van Oom Ernest
+	  // Published by Emme, 2001
+		{
+			"albert3",
+			_s("Missing game code"),
+			{
+				{"Eiland.exe", 0, "0e513dac9d2a0d7cfcdc670cab2a9bda", 757760},
+				{"ile_myst1.MPL", 0, "d851ca7a48c7adc98445624e154dc0bb", 21866179},
+				{"ile_myst2.MPX", 0, "637470c04417dafb55dee53e954857d8", 277233382},
+				// { "BASIC.X95",     0, "a1b474e90cc285bfdcfa87355f890b9e", 242688 },
+				// { "BITMAP.R95",    0, "2bf7305eca9df63dbc75f55093b84cc0", 81408 },
+				// { "CURSORS.C95",   0, "c1e2eebe7183b5ea33de7872a8ea4d2b", 87040 },
+				// { "EXTRAS.R95",    0, "c5830771609c774de9dbeaa5dff69b3e", 185344 },
+				// { "ROTATORK.R95",  0, "c271f786f028c0076635bea49a2be890", 66560 },
+			 	AD_LISTEND
+			},
+			Common::NL_NLD,
+			Common::kPlatformWindows,
+			ADGF_UNSUPPORTED,
+			GUIO0()
+		},
+		GID_ALBERT3,
+		0,
+		MTBOOT_ALBERT3_WIN_NL,
+	},
+
+	{ // Uncle Albert's Mysterious Island (Catalan, Windows)
+	  // Original title: L'Illa Misteriosa de l'oncle Albert
+	  // Published by Emme, 2001
+		{
+			"albert3",
+			_s("Missing game code"),
+			{
+				{"Ile_Myst.exe", 0, "0e513dac9d2a0d7cfcdc670cab2a9bda", 757760},
+				{"ile_myst1.MPL", 0, "9ca7bddd55bf755df6508dd4aca3fa69", 21280759},
+				{"ile_myst2.MPX", 0, "a0f49ee642ecc3b2bc18221f19855de1", 271726516},
+				// { "BASIC.X95",     0, "a1b474e90cc285bfdcfa87355f890b9e", 242688 },
+				// { "BITMAP.R95",    0, "2bf7305eca9df63dbc75f55093b84cc0", 81408 },
+				// { "CURSORS.C95",   0, "c1e2eebe7183b5ea33de7872a8ea4d2b", 87040 },
+				// { "EXTRAS.R95",    0, "c5830771609c774de9dbeaa5dff69b3e", 185344 },
+				// { "ROTATORK.R95",  0, "c271f786f028c0076635bea49a2be890", 66560 },
+				AD_LISTEND
+			},
+			Common::CA_ESP,
+			Common::kPlatformWindows,
+			ADGF_UNSUPPORTED,
+			GUIO0()
+		},
+		GID_ALBERT3,
+		0,
+		MTBOOT_ALBERT3_WIN_CA,
 	},
 
 	{ // SPQR: The Empire's Darkest Hour Windows CD-ROM

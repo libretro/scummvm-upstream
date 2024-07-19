@@ -41,7 +41,7 @@ enum {
 };
 
 LibretroOptionsWidget::LibretroOptionsWidget(GuiObject *boss, const Common::String &name, const Common::String &domain) :
-	OptionsContainerWidget(boss, name, "LibretroOptionsDialog", false, domain) {
+	OptionsContainerWidget(boss, name, "LibretroOptionsDialog", domain) {
 
 	new GUI::StaticTextWidget(widgetsBoss(), "LibretroOptionsDialog.PlaylistHeader", _("LIBRETRO PLAYLIST GENERATOR"));
 	new GUI::StaticTextWidget(widgetsBoss(), "LibretroOptionsDialog.PlaylistSubheader", _("(check '? > Libretro playlist' for detailed info)"));
@@ -73,7 +73,7 @@ LibretroOptionsWidget::~LibretroOptionsWidget() {
 void LibretroOptionsWidget::defineLayout(GUI::ThemeEval &layouts, const Common::String &layoutName, const Common::String &overlayedLayout) const {
 	layouts.addDialog(layoutName, overlayedLayout)
 	.addLayout(GUI::ThemeLayout::kLayoutVertical, 8)
-	.addPadding(16, 16, 16, 16)
+	.addPadding(0, 0, 0, 0)
 	.addWidget("PlaylistHeader", "", -1, layouts.getVar("Globals.Line.Height"))
 	.addWidget("PlaylistSubheader", "", -1, layouts.getVar("Globals.Line.Height"))
 	.addLayout(GUI::ThemeLayout::kLayoutHorizontal, 10, GUI::ThemeLayout::kItemAlignCenter)

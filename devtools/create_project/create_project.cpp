@@ -355,6 +355,20 @@ int main(int argc, char *argv[]) {
 		setFeatureBuildState("opengl_game_shaders", setup.features, false);
 	}
 
+	// HACK: Check IMGUI dependencies
+	if (!getFeatureBuildState("opengl", setup.features) ||
+		!getFeatureBuildState("freetype2", setup.features) ||
+		!setup.useSDL2) {
+		std::cerr << "WARNING: imgui requires opengl, freetype2 and sdl2\n";
+		setFeatureBuildState("imgui", setup.features, false);
+	}
+	// HACK: IMGUI is not available on Xcode
+#ifdef ENABLE_XCODE
+	if (projectType == kProjectXcode) {
+		setFeatureBuildState("imgui", setup.features, false);
+	}
+#endif
+
 	// Disable engines for which we are missing dependencies
 	for (EngineDescList::const_iterator i = setup.engines.begin(); i != setup.engines.end(); ++i) {
 		if (i->enable) {
@@ -1112,6 +1126,7 @@ const Feature s_features[] = {
 	{             "aspect",                    "USE_ASPECT", false, true,  "Aspect ratio correction" },
 	{              "16bit",                 "USE_RGB_COLOR", false, true,  "16bit color support" },
 	{            "highres",                   "USE_HIGHRES", false, true,  "high resolution" },
+	{              "imgui",                     "USE_IMGUI", false, true,  "Dear ImGui based debugger" },
 	{            "mt32emu",                   "USE_MT32EMU", false, true,  "integrated MT-32 emulator" },
 	{                "lua",                       "USE_LUA", false, true,  "lua" },
 	{               "nasm",                      "USE_NASM", false, true,  "IA-32 assembly support" }, // This feature is special in the regard, that it needs additional handling.

@@ -35,8 +35,8 @@
 #ifndef AGS_ENGINE_AC_DYNOBJ_SCRIPTDICT_H
 #define AGS_ENGINE_AC_DYNOBJ_SCRIPTDICT_H
 
-#include "ags/lib/std/map.h"
-#include "ags/lib/std/map.h"
+#include "common/std/map.h"
+#include "common/std/map.h"
 #include "ags/engine/ac/dynobj/cc_ags_dynamic_object.h"
 #include "ags/shared/util/stream.h"
 #include "ags/shared/util/string.h"

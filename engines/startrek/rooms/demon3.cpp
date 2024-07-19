@@ -246,7 +246,7 @@ void Room::demon3Tick1() {
 
 	if (!_awayMission->demon.field56) {
 		_awayMission->demon.field56 = true;
-		playMidiMusicTracks(0, -1);
+		playMidiMusicTracks(MIDITRACK_0);
 	}
 }
 
@@ -258,7 +258,7 @@ void Room::demon3Timer0Expired() {
 	_awayMission->demon.boulder1Gone = true;
 	_awayMission->demon.numBouldersGone++;
 	_awayMission->disableInput = true;
-	playMidiMusicTracks(2, -1);
+	playMidiMusicTracks(MIDITRACK_2);
 	playVoc("BOULDERK");
 }
 
@@ -298,7 +298,7 @@ void Room::demon3FinishedAnimation2() {
 
 void Room::demon3FinishedWalking5() {
 	loadActorAnim2(OBJECT_MCCOY, "mscanw", -1, -1, 0);
-	playSoundEffectIndex(0x04);
+	playSoundEffectIndex(kSfxTricorder);
 	showText(TX_SPEAKER_MCCOY, TX_DEM3_019);
 
 	_awayMission->disableInput = false;
@@ -376,7 +376,7 @@ void Room::demon3FireAtBoulder() {
 	}
 
 	loadActorAnim(17, _roomVar.demon.boulderAnim, 0, 0, 0);
-	playSoundEffectIndex(0x06);
+	playSoundEffectIndex(kSfxPhaser);
 	if (!_roomVar.demon.boulder1Shot)
 		_awayMission->timers[0] = 1;
 	_awayMission->disableInput = false;
@@ -470,13 +470,13 @@ void Room::demon3BoulderCommon() {
 
 void Room::demon3UseSTricorderOnMiner() {
 	loadActorAnim2(OBJECT_SPOCK, "sscann", -1, -1, 0);
-	playSoundEffectIndex(0x04);
+	playSoundEffectIndex(kSfxTricorder);
 	showText(TX_SPEAKER_SPOCK, TX_DEM3_008);
 }
 
 void Room::demon3UseSTricorderOnPanel() {
 	loadActorAnim2(OBJECT_SPOCK, "sscann", -1, -1, 0);
-	playSoundEffectIndex(0x04);
+	playSoundEffectIndex(kSfxTricorder);
 	showText(TX_SPEAKER_SPOCK, TX_DEM3_009);
 }
 
@@ -484,7 +484,7 @@ void Room::demon3UseSTricorderOnBoulder() {
 	if (_awayMission->demon.foundMiner)
 		return;
 	loadActorAnim2(OBJECT_SPOCK, "sscann", -1, -1, 0);
-	playSoundEffectIndex(0x04);
+	playSoundEffectIndex(kSfxTricorder);
 	showText(TX_SPEAKER_SPOCK, TX_DEM3_010);
 }
 
@@ -492,7 +492,7 @@ void Room::demon3UseMTricorderOnBoulder() {
 	if (_awayMission->demon.foundMiner)
 		return;
 	loadActorAnim2(OBJECT_MCCOY, "mscann", -1, -1, 0);
-	playSoundEffectIndex(0x04);
+	playSoundEffectIndex(kSfxTricorder);
 	showText(TX_SPEAKER_MCCOY, TX_DEM3_020);
 }
 
@@ -527,7 +527,7 @@ void Room::demon3RedshirtUsedPanel() {
 		showText(TX_SPEAKER_EVERTS, TX_DEM3_A32);
 
 		loadActorAnim2(OBJECT_REDSHIRT, "rkille", -1, -1, 3);
-		playSoundEffectIndex(0x06);
+		playSoundEffectIndex(kSfxPhaser);
 		_awayMission->redshirtDead = true;
 		_awayMission->demon.field45 = true;
 	} else {
@@ -555,19 +555,19 @@ void Room::demon3RedshirtElectrocuted() {
 
 void Room::demon3UseSTricorderOnDoor() {
 	loadActorAnim2(OBJECT_SPOCK, "sscann", -1, -1, 0);
-	playSoundEffectIndex(0x04);
+	playSoundEffectIndex(kSfxTricorder);
 	showText(TX_SPEAKER_SPOCK, TX_DEM3_012);
 }
 
 void Room::demon3UseSTricorderOnAnything() {
 	loadActorAnim2(OBJECT_SPOCK, "sscann", -1, -1, 0);
-	playSoundEffectIndex(0x04);
+	playSoundEffectIndex(kSfxTricorder);
 	showText(TX_SPEAKER_SPOCK, TX_DEM3_027);
 }
 
 void Room::demon3UseMTricorderOnDoor() {
 	loadActorAnim2(OBJECT_SPOCK, "mscann", -1, -1, 0);
-	playSoundEffectIndex(0x04);
+	playSoundEffectIndex(kSfxTricorder);
 	showText(TX_SPEAKER_MCCOY, TX_DEM3_016);
 }
 
@@ -604,7 +604,7 @@ void Room::demon3KirkUsedHandPanel() {
 
 void Room::demon3UseMTricorderOnMiner() {
 	loadActorAnim2(OBJECT_MCCOY, "mscann", -1, -1, 0);
-	playSoundEffectIndex(0x04);
+	playSoundEffectIndex(kSfxTricorder);
 
 	if (_awayMission->demon.minerDead) {
 		showText(TX_SPEAKER_MCCOY, TX_DEM3_022);

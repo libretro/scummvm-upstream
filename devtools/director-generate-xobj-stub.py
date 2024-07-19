@@ -67,13 +67,13 @@ namespace Director {{
 
 class {xobject_class} : public Object<{xobject_class}> {{
 public:
-	{xobject_class}(ObjectType objType);
+	{xobject_class}(ObjectType objType);{xtra_props_h}
 }};
 
 namespace {xobj_class} {{
 
 extern const char *xlibName;
-extern const char *fileNames[];
+extern const XlibFileDesc fileNames[];
 
 void open(ObjectType type, const Common::Path &path);
 void close(ObjectType type);
@@ -115,9 +115,9 @@ TEMPLATE = (
 namespace Director {{
 
 const char *{xobj_class}::xlibName = "{name}";
-const char *{xobj_class}::fileNames[] = {{
-	"{filename}",
-	nullptr
+const XlibFileDesc {xobj_class}::fileNames[] = {{
+	{{ "{filename}",   nullptr }},
+	{{ nullptr,        nullptr }},
 }};
 
 static MethodProto xlibMethods[] = {{
@@ -130,18 +130,15 @@ static BuiltinProto xlibBuiltins[] = {{
 	{{ nullptr, nullptr, 0, 0, 0, VOIDSYM }}
 }};
 
-static BuiltinProto xlibTopLevel[] = {{
-{xlib_toplevels}
-	{{ nullptr, nullptr, 0, 0, 0, VOIDSYM }}
-}};
-
 {xobject_class}::{xobject_class}(ObjectType ObjectType) :Object<{xobject_class}>("{name}") {{
 	_objType = ObjectType;
-}}
+}}{xtra_props}
 
 void {xobj_class}::open(ObjectType type, const Common::Path &path) {{
     {xobject_class}::initMethods(xlibMethods);
     {xobject_class} *xobj = new {xobject_class}(type);
+    if (type == kXtraObj)
+        g_lingo->_openXtras.push_back(xlibName);
     g_lingo->exposeXObject(xlibName, xobj);
     g_lingo->initBuiltIns(xlibBuiltins);
 }}
@@ -166,6 +163,26 @@ XLIB_NEW_TEMPLATE = """void {xobj_class}::m_new(int nargs) {{
 	g_lingo->push(g_lingo->_state->me);
 }}"""
 
+
+# XTRA PROPS TEMPLATE and Header contains extra newline at the beginning.
+# This keeps the newlines correct when `TEMPLATE` is used for xlibs.
+XTRA_PROPS_TEMPLATE = """
+
+bool {xobject_class}::hasProp(const Common::String &propName) {{
+	return (propName == "name");
+}}
+
+Datum {xobject_class}::getProp(const Common::String &propName) {{
+	if (propName == "name")
+		return Datum({xobj_class}::xlibName);
+	warning("{xobj_class}::getProp: unknown property '%s'", propName.c_str());
+	return Datum();
+}}"""
+
+XTRA_PROPS_H = """
+
+	bool hasProp(const Common::String &propName) override;
+	Datum getProp(const Common::String &propName) override;"""
 
 
 XCMD_TEMPLATE_H = (
@@ -321,7 +338,7 @@ def inject_lingo_object(slug: str, xobj_class: str, director_version: int, xcode
 
     # write entry in the XLibProto table
     lo_contents = open(LINGO_OBJECT_PATH, "r").readlines()
-    expr = re.compile("^\t\\{ ([a-zA-Z0-9_]+)::fileNames")
+    expr = re.compile("^\tXLIBDEF\\(([a-zA-Z0-9_]+),")
     in_xlibs = False
     for i in range(len(lo_contents)):
         m = expr.match(lo_contents[i])
@@ -335,7 +352,7 @@ def inject_lingo_object(slug: str, xobj_class: str, director_version: int, xcode
             elif xobj_class < m.group(1):
                 lo_contents.insert(
                     i,
-                    f"	{{ {xobj_class}::fileNames,			{xobj_class}::open,			{xobj_class}::close,		{obj_type},					{director_version} }},	// D{director_version // 100}\n",
+                    f"	XLIBDEF({xobj_class},			{obj_type},					{director_version}),	// D{director_version // 100}\n",
                 )
                 with open(LINGO_OBJECT_PATH, "w") as f:
                     f.writelines(lo_contents)
@@ -344,7 +361,7 @@ def inject_lingo_object(slug: str, xobj_class: str, director_version: int, xcode
             # final entry in the list
             lo_contents.insert(
                 i,
-                f"	{{ {xobj_class}::fileNames,			{xobj_class}::open,			{xobj_class}::close,		{obj_type},					{director_version} }},	// D{director_version // 100}\n",
+                f"	XLIBDEF({xobj_class},			{obj_type},					{director_version}),	// D{director_version // 100}\n",
             )
             with open(LINGO_OBJECT_PATH, "w") as f:
                 f.writelines(lo_contents)
@@ -723,6 +740,7 @@ def generate_xobject_stubs(
                 for x in meths
             ]
         ),
+        xtra_props="",
 		xobj_new=XLIB_NEW_TEMPLATE.format(xobj_class=xobj_class),
         xobj_stubs="\n".join(
             [
@@ -747,6 +765,7 @@ def generate_xobject_stubs(
         slug_upper=slug.upper(),
         xobject_class=xobject_class,
         xobj_class=xobj_class,
+        xtra_props_h="",
         methlist="\n".join([TEMPLATE_HEADER_METH.format(**x) for x in meths]),
     )
     if dry_run:
@@ -893,6 +912,8 @@ def generate_xtra_stubs(
             director_version=director_version,
             methtype="HBLTIN",
         ) for x in meths if x["functype"] == "toplevel"]),
+        xtra_props=XTRA_PROPS_TEMPLATE.format(xobj_class=xobj_class,
+                                              xobject_class=xobject_class),
 		xobj_new=XLIB_NEW_TEMPLATE.format(xobj_class=xobj_class),
         xobj_stubs="\n".join(
             [
@@ -915,6 +936,7 @@ def generate_xtra_stubs(
         slug_upper=slug.upper(),
         xobject_class=xobject_class,
         xobj_class=xobj_class,
+        xtra_props_h=XTRA_PROPS_H,
         methlist="\n".join([TEMPLATE_HEADER_METH.format(**x) for x in meths]),
     )
     if dry_run:

@@ -22,7 +22,7 @@
 #ifndef AGS_SHARED_AC_CHARACTER_INFO_H
 #define AGS_SHARED_AC_CHARACTER_INFO_H
 
-#include "ags/lib/std/vector.h"
+#include "common/std/vector.h"
 #include "ags/shared/ac/common_defines.h" // constants
 #include "ags/shared/ac/game_version.h"
 #include "ags/shared/core/types.h"

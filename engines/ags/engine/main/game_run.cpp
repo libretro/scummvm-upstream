@@ -23,7 +23,7 @@
 // Game loop
 //
 
-#include "ags/lib/std/limits.h"
+#include "common/std/limits.h"
 #include "ags/engine/ac/button.h"
 #include "ags/shared/ac/common.h"
 #include "ags/engine/ac/character_extras.h"

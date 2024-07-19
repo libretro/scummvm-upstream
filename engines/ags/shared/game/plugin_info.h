@@ -28,7 +28,7 @@
 #ifndef AGS_SHARED_GAME_PLUGIN_INFO_H
 #define AGS_SHARED_GAME_PLUGIN_INFO_H
 
-#include "ags/lib/std/memory.h"
+#include "common/std/memory.h"
 #include "ags/shared/util/string.h"
 
 // TODO: why 10 MB limit?

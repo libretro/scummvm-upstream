@@ -33,15 +33,13 @@ public:
 namespace JourneyWareXINIXObj {
 
 extern const char *xlibName;
-extern const char *fileNames[];
+extern const XlibFileDesc fileNames[];
 
 void open(ObjectType type, const Common::Path &path);
 void close(ObjectType type);
 
 void m_new(int nargs);
-void m_name(int nargs);
 void m_clear(int nargs);
-void m_dispose(int nargs);
 
 void m_GetPrivateProfileInt(int nargs);
 void m_GetPrivateProfileString(int nargs);

@@ -74,9 +74,9 @@ S       mVolList
 namespace Director {
 
 const char *MMovieXObj::xlibName = "MMovie";
-const char *MMovieXObj::fileNames[] = {
-	"MMovie",
-	nullptr
+const XlibFileDesc MMovieXObj::fileNames[] = {
+	{ "MMovie",	nullptr },
+	{ nullptr,	nullptr },
 };
 
 static MethodProto xlibMethods[] = {
@@ -186,6 +186,13 @@ int MMovieXObject::updateScreenBlocking() {
 				if (_abortOnClick) {
 					result = MMovieError::MMOVIE_ABORT_DOUBLE_CLICK;
 					keepPlaying = false;
+				} else if (_shiftAbort) {
+					if (event.type == Common::EVENT_RBUTTONDOWN ||
+						(event.type == Common::EVENT_LBUTTONDOWN &&
+						(g_system->getEventManager()->getModifierState() & Common::KBD_SHIFT))) {
+						result = MMovieError::MMOVIE_ABORT_DOUBLE_CLICK;
+						keepPlaying = false;
+					}
 				}
 				break;
 			default:
@@ -578,7 +585,7 @@ void MMovieXObj::m_readFile(int nargs) {
 	Common::String prefix = savePrefix();
 	Common::String result;
 	if (origPath.empty()) {
-		path = getFileNameFromModal(false, Common::String(), "txt");
+		path = getFileNameFromModal(false, Common::String(), Common::String(), "txt");
 		if (path.empty()) {
 			debugC(5, kDebugXObj, "MMovieXObj::m_readFile(): read cancelled by modal");
 			g_lingo->push(result);
@@ -639,7 +646,7 @@ void MMovieXObj::m_writeFile(int nargs) {
 
 	Common::String prefix = savePrefix();
 	if (origPath.empty()) {
-		path = getFileNameFromModal(true, Common::String(), "txt");
+		path = getFileNameFromModal(true, Common::String(), Common::String(), "txt");
 		if (path.empty()) {
 			debugC(5, kDebugXObj, "MMovieXObj::m_writeFile(): read cancelled by modal");
 			g_lingo->push(result);

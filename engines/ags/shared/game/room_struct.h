@@ -46,7 +46,7 @@
 #ifndef AGS_SHARED_GAME_ROOM_INFO_H
 #define AGS_SHARED_GAME_ROOM_INFO_H
 
-#include "ags/lib/std/memory.h"
+#include "common/std/memory.h"
 #include "ags/lib/allegro.h" // RGB
 #include "ags/shared/ac/common_defines.h"
 #include "ags/shared/game/interactions.h"

@@ -176,6 +176,8 @@ Lingo::Lingo(DirectorEngine *vm) : _vm(vm) {
 	_currentChannelId = -1;
 	_globalCounter = 0;
 	_freezeState = false;
+	_freezePlay = false;
+	_playDone = false;
 	_abort = false;
 	_expectError = false;
 	_caughtError = false;
@@ -645,10 +647,6 @@ bool Lingo::execute() {
 			score->updateWidgets(true);
 
 			g_system->updateScreen();
-			if (_vm->getCurrentMovie()->getScore()->_playState == kPlayStopped) {
-				_freezeState = true;
-				break;
-			}
 		}
 
 		uint current = _state->pc;
@@ -691,7 +689,10 @@ bool Lingo::execute() {
 	}
 
 	bool result = !_freezeState;
-	if (_freezeState) {
+	if (_freezePlay) {
+		debugC(5, kDebugLingoExec, "Lingo::execute(): Called play, pausing execution to the play buffer");
+		freezePlayState();
+	} else if (_freezeState) {
 		debugC(5, kDebugLingoExec, "Lingo::execute(): Context is frozen, pausing execution");
 		freezeState();
 	} else if (_abort || _vm->getCurrentMovie()->getScore()->_playState == kPlayStopped) {
@@ -702,6 +703,7 @@ bool Lingo::execute() {
 	}
 	_abort = false;
 	_freezeState = false;
+	_freezePlay = false;
 
 	g_debugger->stepHook();
 	// return true if execution finished, false if the context froze for later
@@ -1118,8 +1120,6 @@ Common::String Datum::asString(bool printonly) const {
 		break;
 	case FLOAT:
 		s = Common::String::format(g_lingo->_floatPrecisionFormat.c_str(), u.f);
-		if (printonly)
-			s += "f";		// 0.0f
 		break;
 	case STRING:
 		if (!printonly) {
@@ -1254,11 +1254,11 @@ Common::String Datum::asString(bool printonly) const {
 	return s;
 }
 
-CastMemberID Datum::asMemberID(CastType castType) const {
+CastMemberID Datum::asMemberID(CastType castType, int castLib) const {
 	if (type == CASTREF || type == FIELDREF)
 		return *u.cast;
 
-	return g_lingo->resolveCastMember(*this, DEFAULT_CAST_LIB, castType);
+	return g_lingo->resolveCastMember(*this, castLib, castType);
 }
 
 Common::Point Datum::asPoint() const {

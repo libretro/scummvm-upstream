@@ -1619,6 +1619,45 @@ static const uint16 ecoquest2PatchIconBarTutorial[] = {
 	PATCH_END
 };
 
+// When awarding points, the game often corrupts a random global variable.
+//  Rain:points takes an optional second parameter as the points flag to test.
+//  Instead of testing the parameter count before setting the flag, the script
+//  tests the parameter even if it doesn't exist. If the undefined value on the
+//  stack happens to be non-zero then the game treats it as a flag and attempts
+//  to set it. If the value is an object then this causes an arithmetic error,
+//  such as when clicking the passport on the customs officer, otherwise the
+//  "flag" is set and a global is altered.
+//
+// We fix this by testing the parameter count as the other points methods do.
+//
+// Applies to: All versions
+// Responsible method: Rain:points
+// Fixes bugs: #4939, #5750
+static const uint16 ecoquest2SignaturePointsFlag[] = {
+	SIG_MAGICDWORD,
+	0x87, 0x02,                         // lap 02 [ flag ]
+	0x31, 0x06,                         // bnt 06
+	0x78,                               // push1
+	0x36,                               // push
+	0x40, SIG_ADDTOOFFSET(+2), 0x02,    // call set-flag 02
+	0x8f, 0x01,                         // lsp 01 [ points (never negative) ]
+	0x35, 0x00,                         // ldi 00
+	0x1e,                               // gt?    [ points > 0 ]
+	SIG_END
+};
+
+static const uint16 ecoquest2PatchPointsFlag[] = {
+	0x78,                               // push1
+	0x87, 0x00,                         // lap 00 [ argc ]
+	0x22,                               // lt?    [ 1 < argc ]
+	0x31, 0x07,                         // bnt 07
+	0x78,                               // push1
+	0x8f, 0x02,                         // lsp 02 [ flag ]
+	0x40, PATCH_GETORIGINALUINT16ADJUST(7, -3), 0x02, // call set-flag 02
+	0x87, 0x01,                         // lap 01 [ points (never negative) ]
+	PATCH_END
+};
+
 // The electronic organizer and password paper reappear in room 500 after they
 //  fall into the water when entering the canoe. rm500:init only tests if these
 //  items are in inventory. It should have also tested the canoe flag like room
@@ -1786,6 +1825,7 @@ static const uint16 ecoquest2PatchCampMessages2[] = {
 //          script, description,                                        signature                          patch
 static const SciScriptPatcherEntry ecoquest2Signatures[] = {
 	{  true,     0, "icon bar tutorial",                            10, ecoquest2SignatureIconBarTutorial, ecoquest2PatchIconBarTutorial },
+	{  true,     0, "points flag",                                   1, ecoquest2SignaturePointsFlag,      ecoquest2PatchPointsFlag },
 	{  true,    10, "disable speed test",                            1, sci11SpeedTestSignature,           sci11SpeedTestPatch},
 	{  true,    50, "initial text not removed on ecorder",           3, ecoquest2SignatureEcorder,         ecoquest2PatchEcorder },
 	{  true,   333, "initial text not removed on ecorder tutorial",  3, ecoquest2SignatureEcorderTutorial, ecoquest2PatchEcorderTutorial },
@@ -1844,6 +1884,32 @@ static const uint16 fanmadeSignatureDemoQuestInfiniteLoop[] = {
 static const uint16 fanmadePatchDemoQuestInfiniteLoop[] = {
 	PATCH_ADDTOOFFSET(+10),
 	0x30, PATCH_UINT16(0x0032),      // bnt 0032  [06a8] --> pushi 004c
+	PATCH_END
+};
+
+// WORKAROUND
+// Betrayed Alliance contains a malformed menu string that happens to have no
+//  visible effect in the original interpreter, but does in ours. The speed menu
+//  string has the word "Music" at the end, making it appear to be part of the
+//  previous menu item shortcut. Sierra's parser happened to ignore this invalid
+//  suffix, but ours accepts it and displays it in the speed menu.
+//
+// It would take significant modifications to our menu parser to match the
+//  original interpreter's undefined behavior, and the string has already been
+//  fixed in newer versions of the game, so we just patch the bad menu string.
+//
+// Applies to: Betrayed Alliance version 1.3.2 and below
+// Responsible method: heap in script 997
+// Fixes bug: #15159
+static const uint16 fangameSignatureBetrayedAllianceMenu[] = {
+	SIG_MAGICDWORD,                                 // :Slower
+	0x60, 0x2d, 0x4d, 0x75, 0x73, 0x69, 0x63, 0x00, // `-Music
+	SIG_END
+};
+
+static const uint16 fangamePatchBetrayedAllianceMenu[] = {
+	PATCH_ADDTOOFFSET(+2),
+	0x00,                                           // :Slower`-
 	PATCH_END
 };
 
@@ -1936,6 +2002,7 @@ static const SciScriptPatcherEntry fanmadeSignatures[] = {
 	{  true,     0, "SCI Template: disable volume reset",          1, fangameSignatureVolumeReset2,              fangamePatchVolumeReset2 },
 	{  true,   994, "Cascade Quest: fix auto-saving",              1, fanmadeSignatureCascadeQuestFixAutoSaving, fanmadePatchCascadeQuestFixAutoSaving },
 	{  true,   997, "SCI Template: fix volume slider",             1, fangameSignatureVolumeSlider1,             fangamePatchVolumeSlider1 },
+	{  true,   997, "Betrayed Alliance: fix menu",                 1, fangameSignatureBetrayedAllianceMenu,      fangamePatchBetrayedAllianceMenu },
 	{  true,   997, "SCI Template: fix volume slider",             1, fangameSignatureVolumeSlider2,             fangamePatchVolumeSlider2 },
 	{  true,   999, "Demo Quest: infinite loop on typo",           1, fanmadeSignatureDemoQuestInfiniteLoop,     fanmadePatchDemoQuestInfiniteLoop },
 	SCI_SIGNATUREENTRY_TERMINATOR
@@ -2463,9 +2530,30 @@ static const uint16 hoyle4PatchEuchreHandsOff[] = {
 	PATCH_END
 };
 
+// In Hearts, a utility function returns the hand of a given player, but
+//  the function uses an uninitialized temp instead of the parameter.
+//
+// We fix this by using the parameter. This bug also appears in Hoyle5.
+//
+// Applies to: All versions
+// Responsible method: The first (and only) local proc in script 300
+static const uint16 hoyle4SignatureHeartsStrategy[] = {
+	0x8d, 0x00,                        // lst 00  [ temp0, uninitialized ]
+	0x81, SIG_MAGICDWORD, 0x75,        // lag 75  [ theHands ]
+	0x4a, 0x06,                        // send 06 [ theHands at: temp0 ] 
+	0x48,                              // ret
+	SIG_END
+};
+
+static const uint16 hoyle4PatchHeartsStrategy[] = {
+	0x8f, 0x01,                        // lsp 01 [ param1, the player (0-3) ] 
+	PATCH_END
+};
+
 //          script, description,                                      signature                         patch
 static const SciScriptPatcherEntry hoyle4Signatures[] = {
 	{  true,   100, "crazy eights sound",                          1, hoyle4SignatureCrazyEightsSound,  hoyle4PatchCrazyEightsSound },
+	{  true,   300, "hearts strategy",                             1, hoyle4SignatureHeartsStrategy,    hoyle4PatchHeartsStrategy },
 	{  true,   400, "gin undercut sound",                          1, hoyle4SignatureGinUndercutSound,  hoyle4PatchGinUndercutSound },
 	{  true,   733, "bridge arithmetic against object",            1, hoyle4SignatureBridgeArithmetic,  hoyle4PatchBridgeArithmetic },
 	{  true,   800, "euchre handsoff",                             1, hoyle4SignatureEuchreHandsOff,    hoyle4PatchEuchreHandsOff },
@@ -2510,7 +2598,7 @@ static const uint16 hoyle5SetScaleSignature[] = {
 	SIG_MAGICDWORD,
 	0x38, SIG_SELECTOR16(setScale), // pushi setScale ($14b)
 	0x38, SIG_UINT16(0x05),         // pushi 5
-	0x51, 0x2c,                     // class Scaler
+	0x51,                           // class Scaler
 	SIG_END
 };
 
@@ -2540,90 +2628,128 @@ static const uint16 hoyle5PatchSetScale[] = {
 // - Poker (script 1100)
 // - Backgammon (script 1300)
 static const uint16 hoyle5SignatureHearts[] = {
+	0x38, SIG_SELECTOR16(init), // pushi init
+	0x76,                       // push0
+	SIG_ADDTOOFFSET(+4),
 	SIG_MAGICDWORD,
-	0x38, 0x8e, 0x00,      // pushi 008e
-	0x76,                  // push0
-	0x38, 0xf0, 0x02,      // pushi 02f0
-	0x76,                  // push0
-	0x72, 0xdc, 0x03,      // lofsa chooseHearts
-	0x4a, 0x08, 0x00,      // send  0008
+	0x72, SIG_UINT16(0x03dc),   // lofsa chooseHearts
+	0x4a, SIG_UINT16(0x0008),   // send 08
 	SIG_END
 };
 
 static const uint16 hoyle5SignatureGinRummy[] = {
+	0x38, SIG_SELECTOR16(init), // pushi init
+	0x76,                       // push0
+	SIG_ADDTOOFFSET(+4),
 	SIG_MAGICDWORD,
-	0x38, 0x8e, 0x00,      // pushi 008e
-	0x76,                  // push0
-	0x38, 0xf0, 0x02,      // pushi 02f0
-	0x76,                  // push0
-	0x72, 0xbc, 0x02,      // lofsa chooseGinRummy
-	0x4a, 0x08, 0x00,      // send  0008
+	0x72, SIG_UINT16(0x02bc),   // lofsa chooseGinRummy
+	0x4a, SIG_UINT16(0x0008),   // send 08
 	SIG_END
 };
 
 static const uint16 hoyle5SignatureCribbage[] = {
+	0x38, SIG_SELECTOR16(init), // pushi init
+	0x76,                       // push0
+	SIG_ADDTOOFFSET(+4),
 	SIG_MAGICDWORD,
-	0x38, 0x8e, 0x00,      // pushi 008e
-	0x76,                  // push0
-	0x38, 0xf0, 0x02,      // pushi 02f0
-	0x76,                  // push0
-	0x72, 0x4c, 0x03,      // lofsa chooseCribbage
-	0x4a, 0x08, 0x00,      // send  0008
+	0x72, SIG_UINT16(0x034c),   // lofsa chooseCribbage
+	0x4a, SIG_UINT16(0x0008),   // send 08
 	SIG_END
 };
 
 static const uint16 hoyle5SignatureKlondike[] = {
+	0x38, SIG_SELECTOR16(init), // pushi init
+	0x76,                       // push0
+	SIG_ADDTOOFFSET(+4),
 	SIG_MAGICDWORD,
-	0x38, 0x8e, 0x00,      // pushi 008e
-	0x76,                  // push0
-	0x38, 0xf0, 0x02,      // pushi 02f0
-	0x76,                  // push0
-	0x72, 0xfc, 0x04,      // lofsa chooseKlondike
-	0x4a, 0x08, 0x00,      // send  0008
+	0x72, SIG_UINT16(0x04fc),   // lofsa chooseKlondike
+	0x4a, SIG_UINT16(0x0008),   // send 08
 	SIG_END
 };
 
 static const uint16 hoyle5SignatureBridge[] = {
+	0x38, SIG_SELECTOR16(init), // pushi init
+	0x76,                       // push0
+	SIG_ADDTOOFFSET(+4),
 	SIG_MAGICDWORD,
-	0x38, 0x8e, 0x00,      // pushi 008e
-	0x76,                  // push0
-	0x38, 0xf0, 0x02,      // pushi 02f0
-	0x76,                  // push0
-	0x72, 0x6c, 0x04,      // lofsa chooseBridge
-	0x4a, 0x08, 0x00,      // send  0008
+	0x72, SIG_UINT16(0x046c),   // lofsa chooseBridge
+	0x4a, SIG_UINT16(0x0008),   // send 08
 	SIG_END
 };
 
 static const uint16 hoyle5SignaturePoker[] = {
+	0x38, SIG_SELECTOR16(init), // pushi init
+	0x76,                       // push0
+	SIG_ADDTOOFFSET(+4),
 	SIG_MAGICDWORD,
-	0x38, 0x8e, 0x00,      // pushi 008e
-	0x76,                  // push0
-	0x38, 0xf0, 0x02,      // pushi 02f0
-	0x76,                  // push0
-	0x72, 0x8c, 0x05,      // lofsa choosePoker
-	0x4a, 0x08, 0x00,      // send  0008
+	0x72, SIG_UINT16(0x058c),   // lofsa choosePoker
+	0x4a, SIG_UINT16(0x0008),   // send 08
 	SIG_END
 };
 
 static const uint16 hoyle5SignatureBackgammon[] = {
+	0x38, SIG_SELECTOR16(init), // pushi init
+	0x76,                       // push0
+	SIG_ADDTOOFFSET(+4),
 	SIG_MAGICDWORD,
-	0x38, 0x8e, 0x00,      // pushi 008e
-	0x76,                  // push0
-	0x38, 0xf0, 0x02,      // pushi 02f0
-	0x76,                  // push0
-	0x72, 0xac, 0x06,      // lofsa chooseBackgammon
-	0x4a, 0x08, 0x00,      // send  0008
+	0x72, SIG_UINT16(0x06ac),   // lofsa chooseBackgammon
+	0x4a, SIG_UINT16(0x0008),   // send 08
 	SIG_END
 };
 
 static const uint16 hoyle5PatchDisableGame[] = {
-	0x35, 0x00,                      // ldi 00
-	0x35, 0x00,                      // ldi 00
-	0x35, 0x00,                      // ldi 00
-	0x35, 0x00,                      // ldi 00
-	0x35, 0x00,                      // ldi 00
-	0x35, 0x00,                      // ldi 00
-	0x35, 0x00,                      // ldi 00
+	0x33, 0x0c,                 // jmp 0c
+	PATCH_END
+};
+
+// Hoyle School House Math is similar to the Children's Collection and Bridge
+//  versions above, where the individual card games were launched externally
+//  by passing a config file to the interpreter. The menus for this game are
+//  present, although they are still using Hoyle4 graphics, but they are missing
+//  some scripts and resources. We work around this with three patches:
+//
+// 1. Skip the broken Sierra logo (room 900) and go to the intro (room 2)
+// 2. Disable the broken buttons on the main menu
+// 3. Disable Euchre and Bridge buttons, because those games aren't present
+static const uint16 hoyle5SignatureSierraLogo[] = {
+	SIG_MAGICDWORD,
+	0x38, SIG_SELECTOR16(newRoom),     // pushi newRoom
+	0x78,                              // push1
+	0x38, SIG_UINT16(0x0384),          // pushi 0384 [ room 900: sierra ]
+	SIG_END
+};
+
+static const uint16 hoyle5PatchSierraLogo[] = {
+	PATCH_ADDTOOFFSET(+4),
+	0x38, PATCH_UINT16(0x0002),       // pushi 0002 [ room 2: intro ]
+	PATCH_END
+};
+
+static const uint16 hoyle5SignatureMainMenuButtons[] = {
+	0x38, SIG_SELECTOR16(init),        // pushi init
+	SIG_ADDTOOFFSET(+33),
+	SIG_MAGICDWORD,
+	0x72, SIG_UINT16(0x050e),          // lofsa information
+	0x4a, SIG_UINT16(0x0008),          // send 08
+	SIG_END
+};
+
+static const uint16 hoyle5PatchMainMenuButtons[] = {
+	0x32, PATCH_UINT16(0x0027),        // jmp 0027 [ skip button init ]
+	PATCH_END
+};
+
+static const uint16 hoyle5SignatureEuchreBridge[] = {
+	0x38, SIG_SELECTOR16(init),        // pushi init
+	SIG_ADDTOOFFSET(+19),
+	SIG_MAGICDWORD,
+	0x72, SIG_UINT16(0x037a),          // lofsa chooseBridge
+	0x4a, SIG_UINT16(0x0008),          // send 08
+	SIG_END
+};
+
+static const uint16 hoyle5PatchEuchreBridge[] = {
+	0x32, PATCH_UINT16(0x0019),        // jmp 0019 [ skip button init ]
 	PATCH_END
 };
 
@@ -2690,11 +2816,33 @@ static const uint16 hoyle5PatchSolitaireInit[] = {
 	PATCH_END
 };
 
+// In Hearts, a utility function returns the hand of a given player, but
+//  the function uses an uninitialized temp instead of the parameter.
+//
+// We fix this by using the parameter. This bug also appears in Hoyle4.
+//
+// Applies to: All versions
+// Responsible method: The first (and only) local proc in script 300
+static const uint16 hoyle5SignatureHeartsStrategy[] = {
+	0x8d, 0x00,                        // lst 00  [ temp0, uninitialized ]
+	0x81, SIG_MAGICDWORD, 0x75,        // lag 75  [ theHands ]
+	0x4a, SIG_UINT16(0x0006),          // send 06 [ theHands at: temp0 ] 
+	0x48,                              // ret
+	SIG_END
+};
+
+static const uint16 hoyle5PatchHeartsStrategy[] = {
+	0x8f, 0x01,                        // lsp 01 [ param1, the player (0-3) ] 
+	PATCH_END
+};
+
 //          script, description,                                      signature                         patch
 static const SciScriptPatcherEntry hoyle5Signatures[] = {
+	{  true,     0, "disable volume reset on startup",             1, sci2VolumeResetSignature,         sci2VolumeResetPatch },
 	{  true,     3, "remove kGetTime spin",                        1, hoyle5SignatureSpinLoop,          hoyle5PatchSpinLoop },
 	{  true,    23, "remove kGetTime spin",                        1, hoyle5SignatureSpinLoop,          hoyle5PatchSpinLoop },
 	{  true,   200, "fix setScale calls",                         11, hoyle5SetScaleSignature,          hoyle5PatchSetScale },
+	{  true,   300, "hearts strategy",                             1, hoyle5SignatureHeartsStrategy,    hoyle5PatchHeartsStrategy },
 	{  true,   500, "remove kGetTime spin",                        1, hoyle5SignatureSpinLoop,          hoyle5PatchSpinLoop },
 	{  true,  6001, "fix solitaire init",                          1, hoyle5SignatureSolitaireInit,     hoyle5PatchSolitaireInit },
 	{  true,  6002, "fix solitaire init",                          1, hoyle5SignatureSolitaireInit,     hoyle5PatchSolitaireInit },
@@ -2713,6 +2861,9 @@ static const SciScriptPatcherEntry hoyle5Signatures[] = {
 	{ false,   975, "disable Poker",                               1, hoyle5SignaturePoker,             hoyle5PatchDisableGame },
 	{ false,   975, "disable Hearts",                              1, hoyle5SignatureHearts,            hoyle5PatchDisableGame },
 	{ false,   975, "disable Backgammon",                          1, hoyle5SignatureBackgammon,        hoyle5PatchDisableGame },
+	{ false,     0, "disable sierra logo",                         1, hoyle5SignatureSierraLogo,        hoyle5PatchSierraLogo },
+	{ false,     2, "disable main menu buttons",                   1, hoyle5SignatureMainMenuButtons,   hoyle5PatchMainMenuButtons },
+	{ false,   975, "disable Euchre and Bridge",                   1, hoyle5SignatureEuchreBridge,      hoyle5PatchEuchreBridge},
 	SCI_SIGNATUREENTRY_TERMINATOR
 };
 
@@ -7787,7 +7938,7 @@ static const SciScriptPatcherEntry lighthouseSignatures[] = {
 #endif
 
 // ===========================================================================
-// When Robin hands out the scroll to Marion and then types his name using the
+// When Robin hands out the scroll to Marian and then types his name using the
 // hand code, the German version's script contains a typo (likely a copy/paste
 // error), and the local procedure that shows each letter is called twice. The
 // The procedure expects a letter arg and returns no value, so the first call
@@ -9195,7 +9346,7 @@ static const uint16 larry6HiresSetScaleSignature[] = {
 	SIG_MAGICDWORD,
 	0x38, SIG_SELECTOR16(setScale), // pushi setScale ($14b)
 	0x38, SIG_UINT16(0x0005),       // pushi 5
-	0x51, 0x2c,                     // class Scaler
+	0x51,                           // class Scaler
 	SIG_END
 };
 
@@ -13155,8 +13306,69 @@ static const uint16 pepperPatchGlassJar[] = {
 	PATCH_END
 };
 
+// Ben Franklin's puzzle box cannot be solved. It is a sliding tile puzzle that
+//  is always initialized to the same state, but that state cannot reach the
+//  goal state. The puzzle can only be completed by pressing the Help button,
+//  because it "solves" the puzzle one tile at a time by swapping them instead
+//  of sliding. Swapping tiles can place the puzzle in a solvable state.
+//  
+// We have verified this with sliding tile puzzle solver programs. They reject
+//  the initial state as unsolvable. There is no indication that this was the
+//  intention for the puzzle box.
+//
+// We fix this by swapping the initial positions of the last two tiles. This is
+//  all it takes for the initial state to be solvable.
+//
+// Applies to: All versions
+// Responsible method: rm116:init
+// Fixes bug: #15225
+static const uint16 pepperSignaturePuzzleBox[] = {
+	SIG_MAGICDWORD,
+	0x36,                            // push
+	0x72, SIG_UINT16(0x0284),        // lofsa t3
+	SIG_ADDTOOFFSET(+9),
+	0x72, SIG_UINT16(0x0594),        // lofsa t11
+	SIG_END
+};
+
+static const uint16 pepperPatchPuzzleBox[] = {
+	PATCH_ADDTOOFFSET(+1),
+	0x72, PATCH_GETORIGINALUINT16(+14),  // lofsa t11
+	PATCH_ADDTOOFFSET(+9),
+	0x72, PATCH_GETORIGINALUINT16(+2),   // lofsa t3
+	PATCH_END
+};
+
+// In the maze, clicking on the dictionary word "musty" can display the wrong
+//  definition. The east doorway is missing a doVerb method, so unlike the
+//  other doorways, it does not update the dictionary word global.
+//
+// We fix this by patching mazeHallE to use mazeHallW's method dictionary
+//  instead of its own empty one. This creates the missing doVerb method.
+//
+// Applies to: All versions
+// Responsible method: heap in script 400
+// Fixes bug: #15266
+static const uint16 pepperSignatureMustyMessage[] = {
+	SIG_MAGICDWORD,                      // mazeHallW
+	SIG_UINT16(0x015a),                  // property dictionary = none
+	SIG_UINT16(0x015a),                  // method dictionary   = doVerb
+	SIG_ADDTOOFFSET(+0x58),              // mazeHallE
+	SIG_UINT16(0x0160),                  // property dictionary = none
+	SIG_UINT16(0x0160),                  // method dictionary   = empty
+	SIG_END
+};
+
+static const uint16 pepperPatchMustyMessage[] = {
+	PATCH_ADDTOOFFSET(+0x5e),           // mazeHallE
+	PATCH_UINT16(0x015a),               // method dictionary = doVerb
+	PATCH_END
+};
+
 //          script, description,                                         signature                            patch
 static const SciScriptPatcherEntry pepperSignatures[] = {
+	{  true,   116, "puzzle box fix",                                 1, pepperSignaturePuzzleBox,            pepperPatchPuzzleBox },
+	{  true,   400, "musty message fix",                              1, pepperSignatureMustyMessage,         pepperPatchMustyMessage },
 	{  true,   894, "glass jar fix",                                  1, pepperSignatureGlassJar,             pepperPatchGlassJar },
 	{  true,   928, "Narrator lockup fix",                            1, sciNarratorLockupSignature,          sciNarratorLockupPatch },
 	SCI_SIGNATUREENTRY_TERMINATOR
@@ -21117,11 +21329,11 @@ static const uint16 sq4FloppyPatchEndlessFlight[] = {
 //  without a pointer to the text. This has to be a typo, because there is no
 //  unused text to be found within that script.
 //
-// Sierra's "patch" didn't include a proper fix (as in a modified script).
-//  Instead they shipped a dummy text resource, which somewhat "solved" the
-//  issue in Sierra SCI, but it still showed another textbox with garbage in
-//  it. Funnily Sierra must have known that, because that new text resource
-//  contains: "Hi! This is a kludge!"
+// Sierra's "patch" didn't alter any scripts. Instead they shipped a dummy text
+//  resource, which prevented the missing-resource crash, but still showed
+//  another textbox with garbage in it. The new text resource contains the text:
+//  "Hi! This is a kludge!" By avoiding script changes, the patch was compatible
+//  with all versions on all platforms, and didn't invalidate existing saves.
 //
 // A copy of this script exists in the arcade when the sequel police arrive, but
 //  it has an additional typo that adds another broken function call to the ATM
@@ -25887,7 +26099,12 @@ void ScriptPatcher::processScript(uint16 scriptNr, SciSpan<byte> scriptData) {
 				}
 				break;
 			case GID_HOYLE5:
-				if (!g_sci->getResMan()->testResource(ResourceId(kResourceTypeScript, 700))) {
+				if (g_sci->getResMan()->testResource(ResourceId(kResourceTypeView, 21))) {
+					// Hoyle school house math
+					enablePatch(signatureTable, "disable sierra logo");
+					enablePatch(signatureTable, "disable main menu buttons");
+					enablePatch(signatureTable, "disable Euchre and Bridge");
+				} else if (!g_sci->getResMan()->testResource(ResourceId(kResourceTypeScript, 700))) {
 					// Hoyle 5 children's collection
 					enablePatch(signatureTable, "disable Gin Rummy");
 					enablePatch(signatureTable, "disable Cribbage");

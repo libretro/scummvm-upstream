@@ -25,6 +25,7 @@
 
 #include "common/savefile.h"
 #include "common/system.h"
+#include "common/translation.h"
 
 #include "graphics/surface.h"
 
@@ -33,6 +34,22 @@
 #define MAX_SAVES 99
 
 namespace Voyeur {
+
+static const ADExtraGuiOptionsMap optionsList[] = {
+	{
+		GAMEOPTION_COPY_PROTECTION,
+		{
+			_s("Enable lockout system"),
+			_s("Require a lockout code to start the game."),
+			"copy_protection",
+			false,
+			0,
+			0
+		},
+	},
+
+	AD_EXTRA_GUI_OPTIONS_TERMINATOR
+};
 
 uint32 VoyeurEngine::getFeatures() const {
 	return _gameDescription->desc.flags;
@@ -52,14 +69,18 @@ bool VoyeurEngine::getIsDemo() const {
 
 } // End of namespace Voyeur
 
-class VoyeurMetaEngine : public AdvancedMetaEngine {
+class VoyeurMetaEngine : public AdvancedMetaEngine<Voyeur::VoyeurGameDescription> {
 public:
 	const char *getName() const override {
 		return "voyeur";
 	}
 
+	const ADExtraGuiOptionsMap *getAdvancedExtraGuiOptions() const override {
+		return Voyeur::optionsList;
+	}
+
 	bool hasFeature(MetaEngineFeature f) const override;
-	Common::Error createInstance(OSystem *syst, Engine **engine, const ADGameDescription *desc) const override;
+	Common::Error createInstance(OSystem *syst, Engine **engine, const Voyeur::VoyeurGameDescription *desc) const override;
 	SaveStateList listSaves(const char *target) const override;
 	int getMaximumSaveSlot() const override;
 	void removeSaveState(const char *target, int slot) const override;
@@ -83,8 +104,8 @@ bool Voyeur::VoyeurEngine::hasFeature(EngineFeature f) const {
 		(f == kSupportsSavingDuringRuntime);
 }
 
-Common::Error VoyeurMetaEngine::createInstance(OSystem *syst, Engine **engine, const ADGameDescription *desc) const {
-	*engine = new Voyeur::VoyeurEngine(syst, (const Voyeur::VoyeurGameDescription *)desc);
+Common::Error VoyeurMetaEngine::createInstance(OSystem *syst, Engine **engine, const Voyeur::VoyeurGameDescription *desc) const {
+	*engine = new Voyeur::VoyeurEngine(syst,desc);
 	return Common::kNoError;
 }
 

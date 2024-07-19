@@ -24,11 +24,11 @@
 
 #include "common/serializer.h"
 
-#include "asylum/console.h"
 #include "asylum/shared.h"
 
 namespace Asylum {
 
+class AsylumEngine;
 class EventHandler;
 class Puzzle;
 

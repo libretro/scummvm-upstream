@@ -89,6 +89,16 @@ Token::Type FCLInstruction::getType() {
 	return _type;
 }
 
+void FreescapeEngine::executeEntranceConditions(Entrance *entrance) {
+	if (!entrance->_conditionSource.empty()) {
+		_firstSound = true;
+		_syncSound = false;
+
+		debugC(1, kFreescapeDebugCode, "Executing entrance condition with collision flag: %s", entrance->_conditionSource.c_str());
+		executeCode(entrance->_condition, false, true, false, false);
+	}
+}
+
 bool FreescapeEngine::executeObjectConditions(GeometricObject *obj, bool shot, bool collided, bool activated) {
 	bool executed = false;
 	assert(obj != nullptr);
@@ -121,11 +131,13 @@ void FreescapeEngine::executeLocalGlobalConditions(bool shot, bool collided, boo
 		executeCode(conditions[i], shot, collided, timer, false);
 	}
 
+	_executingGlobalCode = true;
 	debugC(1, kFreescapeDebugCode, "Executing global conditions (%d)", _conditions.size());
 	for (uint i = 0; i < _conditions.size(); i++) {
 		debugC(1, kFreescapeDebugCode, "%s", _conditionSources[i].c_str());
 		executeCode(_conditions[i], shot, collided, timer, false);
 	}
+	_executingGlobalCode = false;
 }
 
 void FreescapeEngine::executeCode(FCLInstructionVector &code, bool shot, bool collided, bool timer, bool activated) {
@@ -161,8 +173,12 @@ void FreescapeEngine::executeCode(FCLInstructionVector &code, bool shot, bool co
 			break;
 
 		case Token::VARNOTEQ:
-			if (executeEndIfNotEqual(instruction))
-				ip = codeSize;
+			if (executeEndIfNotEqual(instruction)) {
+				if (isCastle())
+					skip = true;
+				else
+					ip = codeSize;
+			}
 			break;
 		case Token::IFGTEQ:
 			skip = !checkIfGreaterOrEqual(instruction);
@@ -355,6 +371,8 @@ void FreescapeEngine::executeSPFX(FCLInstruction &instruction) {
 			_currentArea->remapColor(_currentArea->_usualBackgroundColor, _renderMode == Common::kRenderCGA ? 1 : _currentArea->_underFireBackgroundColor);
 		else if (src == 0 && dst == 0)
 			_currentArea->unremapColor(_currentArea->_usualBackgroundColor);
+		else if (src == 15 && dst == 15) // Found in Total Eclipse (DOS)
+			_currentArea->unremapColor(_currentArea->_usualBackgroundColor);
 		else
 			_currentArea->remapColor(src, dst);
 	}
@@ -534,9 +552,20 @@ void FreescapeEngine::executeMakeVisible(FCLInstruction &instruction) {
 	debugC(1, kFreescapeDebugCode, "Making obj %d visible in area %d!", objectID, areaID);
 	if (_areaMap.contains(areaID)) {
 		Object *obj = _areaMap[areaID]->objectWithID(objectID);
-		if (!obj && isCastle())
+		if (!obj && isCastle() && _executingGlobalCode)
 			return; // No side effects
-		assert(obj); // We assume an object should be there
+
+		if (!obj) {
+			obj = _areaMap[255]->objectWithID(objectID);
+			if (!obj) {
+				error("obj %d does not exists in area %d nor in the global one!", objectID, areaID);
+				return;
+			}
+			_currentArea->addObjectFromArea(objectID, _areaMap[255]);
+			obj = _areaMap[areaID]->objectWithID(objectID);
+			assert(obj); // We know that an object should be there
+		}
+
 		obj->makeVisible();
 		if (!isDriller()) {
 			Math::AABB boundingBox = createPlayerAABB(_position, _playerHeight);

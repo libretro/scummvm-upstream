@@ -40,6 +40,8 @@ namespace Scumm {
 class MacSndChannel {
 public:
 	MacSndChannel(MacLowLevelPCMDriver *drv, Audio::Mixer::SoundType sndtp, int synth, bool interp, bool enableL, bool enableR, MacLowLevelPCMDriver::ChanCallback *callback);
+	~MacSndChannel();
+
 	MacLowLevelPCMDriver::ChanHandle getHandle() const;
 
 	void playSamples(const MacLowLevelPCMDriver::PCMSound *snd);
@@ -515,6 +517,10 @@ MacSndChannel::MacSndChannel(MacLowLevelPCMDriver *drv, Audio::Mixer::SoundType 
 	}
 }
 
+MacSndChannel::~MacSndChannel() {
+	flush();
+}
+
 MacLowLevelPCMDriver::ChanHandle MacSndChannel::getHandle() const {
 	const void *ptr = this;
 	return *reinterpret_cast<const int*>(&ptr);
@@ -557,6 +563,12 @@ void MacSndChannel::wait(uint32 duration) {
 }
 
 void MacSndChannel::flush() {
+	for (Common::Array<SoundCommand>::const_iterator i = _sndCmdQueue.begin(); i != _sndCmdQueue.end(); ++i) {
+		if (i->ptr && i->arg2 == 1)
+			delete reinterpret_cast<MacLowLevelPCMDriver::PCMSound*>(i->ptr);
+		else if (i->ptr && i->arg2 == 2)
+			delete[] reinterpret_cast<byte*>(i->ptr);
+	}
 	_sndCmdQueue.clear();
 	_tmrInc = 0;
 	_duration = 0;
@@ -735,6 +747,7 @@ void MacSndChannel::setupSound(const MacLowLevelPCMDriver::PCMSound *snd) {
 	_res = Common::SharedPtr<const int8>(buff, Common::ArrayDeleter<const int8>());
 	_frameSize = snd->stereo ? 2 : 1;
 	_loopSt = 0;
+	_data = nullptr;
 
 	if (snd->loopend - snd->loopst < 2 || snd->loopend < snd->loopst) {
 		_loopSt2 = 0;

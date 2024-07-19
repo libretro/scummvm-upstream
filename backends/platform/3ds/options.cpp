@@ -59,7 +59,7 @@ private:
 };
 
 N3DSOptionsWidget::N3DSOptionsWidget(GuiObject *boss, const Common::String &name, const Common::String &domain) :
-		OptionsContainerWidget(boss, name, "N3DSOptionsDialog", false, domain), _enabled(true) {
+		OptionsContainerWidget(boss, name, "N3DSOptionsDialog", domain), _enabled(true) {
 
 	_showCursorCheckbox = new GUI::CheckboxWidget(widgetsBoss(), "N3DSOptionsDialog.ShowCursor", _("Show mouse cursor"), Common::U32String(), 0, 'T');
 	_snapToBorderCheckbox = new GUI::CheckboxWidget(widgetsBoss(), "N3DSOptionsDialog.SnapToBorder", _("Snap to edges"), Common::U32String(), 0, 'T');
@@ -78,7 +78,7 @@ N3DSOptionsWidget::~N3DSOptionsWidget() {
 void N3DSOptionsWidget::defineLayout(GUI::ThemeEval &layouts, const Common::String &layoutName, const Common::String &overlayedLayout) const {
 	layouts.addDialog(layoutName, overlayedLayout)
 	    .addLayout(GUI::ThemeLayout::kLayoutVertical)
-	        .addPadding(8, 8, 8, 8)
+	        .addPadding(0, 0, 0, 0)
 	        .addWidget("ShowCursor", "Checkbox")
 	        .addWidget("SnapToBorder", "Checkbox")
 	        .addWidget("StretchToFit", "Checkbox")

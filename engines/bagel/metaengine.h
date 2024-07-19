@@ -29,9 +29,9 @@ namespace Bagel {
 	enum KeybindingAction {
 		KEYBIND_NONE, KEYBIND_WAIT, KEYBIND_CHEAT714
 	};
-};
+}
 
-class BagelMetaEngine : public AdvancedMetaEngine {
+class BagelMetaEngine : public AdvancedMetaEngine<ADGameDescription> {
 public:
 	const char *getName() const override;
 

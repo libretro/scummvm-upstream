@@ -23,6 +23,7 @@
  *
  * USED IN:
  * Standard Director Xtra
+ * Karma: Curse of the 12 Caves
  *
  *************************************/
 
@@ -134,10 +135,11 @@ delete object me -- deletes the open file
 namespace Director {
 
 const char *FileIO::xlibName = "FileIO";
-const char *FileIO::fileNames[] = {
-	"FileIO",
-	"shFILEIO", // TD loads this up using openXLib("@:shFILEIO.DLL")
-	nullptr
+const XlibFileDesc FileIO::fileNames[] = {
+	{ "FileIO",		nullptr },
+	{ "shFILEIO",	nullptr }, // TD loads this up using openXLib("@:shFILEIO.DLL")
+	{ "FILE",		nullptr },
+	{ nullptr,		nullptr },
 };
 
 static MethodProto xlibMethods[] = {
@@ -181,6 +183,8 @@ static BuiltinProto xlibBuiltins[] = {
 void FileIO::open(ObjectType type, const Common::Path &path) {
 	FileObject::initMethods(xlibMethods);
 	FileObject *xobj = new FileObject(type);
+	if (g_director->getVersion() >= 500)
+		g_lingo->_openXtras.push_back(xlibName);
 	g_lingo->exposeXObject(xlibName, xobj);
 	g_lingo->initBuiltIns(xlibBuiltins);
 }
@@ -214,6 +218,17 @@ FileObject::~FileObject() {
 	clear();
 }
 
+bool FileObject::hasProp(const Common::String &propName) {
+	return (propName == "name");
+}
+
+Datum FileObject::getProp(const Common::String &propName) {
+	if (propName == "name")
+		return Datum(FileIO::xlibName);
+	warning("FileIO::getProp: unknown property '%s'", propName.c_str());
+	return Datum();
+}
+
 FileIOError FileObject::open(const Common::String &origpath, const Common::String &mode) {
 	Common::SaveFileManager *saves = g_system->getSavefileManager();
 	Common::String path = origpath;
@@ -224,7 +239,7 @@ FileIOError FileObject::open(const Common::String &origpath, const Common::Strin
 
 	if (option.hasPrefix("?")) {
 		option = option.substr(1);
-		path = getFileNameFromModal(option.equalsIgnoreCase("write"), origpath, "txt");
+		path = getFileNameFromModal(option.equalsIgnoreCase("write"), origpath, Common::String(), "txt");
 		if (path.empty()) {
 			return kErrorFileNotFound;
 		}
@@ -326,18 +341,33 @@ FileIOError FileObject::saveFileError() {
 
 void FileIO::m_new(int nargs) {
 	FileObject *me = static_cast<FileObject *>(g_lingo->_state->me.u.obj);
+	Datum result = g_lingo->_state->me;
 	if (nargs == 2) {
+		if (me->getObjType() != kXObj) {
+			warning("FileIO::m_new: called with XObject API however was expecting object type %d", me->getObjType());
+		}
 		Datum d2 = g_lingo->pop();
 		Datum d1 = g_lingo->pop();
 
 		Common::String option = d1.asString();
 		Common::String path = d2.asString();
-		FileIOError result = me->open(path, option);
-		if (result != kErrorNone) {
-			me->_lastError = result;
+		FileIOError err = me->open(path, option);
+		// if there's an error, return an errorcode int instead of an object
+		if (err != kErrorNone) {
+			me->_lastError = err;
+			warning("FileIO::m_new: couldn't open file at path %s, error %d", path.c_str(), err);
+			g_lingo->push(Datum(err));
+			return;
 		}
+	} else if (nargs == 0) {
+		if (me->getObjType() != kXtraObj) {
+			warning("FileIO::m_new: called with Xtra API however was expecting object type %d", me->getObjType());
+		}
+	} else {
+		warning("FileIO::m_new: expected 0 or 2 args, assuming 0");
+		g_lingo->dropStack(nargs);
 	}
-	g_lingo->push(g_lingo->_state->me);
+	g_lingo->push(result);
 }
 
 void FileIO::m_openFile(int nargs) {
@@ -374,11 +404,13 @@ void FileIO::m_closeFile(int nargs) {
 XOBJSTUB(FileIO::m_createFile, 0)
 
 void FileIO::m_displayOpen(int nargs) {
-	g_lingo->push(getFileNameFromModal(false, Common::String(), "txt"));
+	g_lingo->push(getFileNameFromModal(false, Common::String(), Common::String(), "txt"));
 }
 
 void FileIO::m_displaySave(int nargs) {
-	g_lingo->push(getFileNameFromModal(true, Common::String(), "txt"));
+	Datum defaultFileName = g_lingo->pop();
+	Datum title = g_lingo->pop();
+	g_lingo->push(getFileNameFromModal(true, Common::String(), title.asString(), "txt"));
 }
 
 XOBJSTUB(FileIO::m_setFilterMask, 0)

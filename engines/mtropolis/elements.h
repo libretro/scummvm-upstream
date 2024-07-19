@@ -23,6 +23,7 @@
 #define MTROPOLIS_ELEMENTS_H
 
 #include "graphics/fontman.h"
+#include "graphics/palette.h"
 
 #include "mtropolis/data.h"
 #include "mtropolis/runtime.h"
@@ -63,12 +64,17 @@ public:
 
 	void render(Window *window) override;
 
+	Common::SharedPtr<Structural> shallowClone() const override;
+	void visitInternalReferences(IStructuralReferenceVisitor *visitor) override;
+
 #ifdef MTROPOLIS_DEBUG_ENABLE
 	const char *debugGetTypeName() const override { return "Graphic Element"; }
 	SupportStatus debugGetSupportStatus() const override { return kSupportStatusDone; }
 #endif
 
 private:
+	GraphicElement(const GraphicElement &other);
+
 	bool _cacheBitmap;
 
 	Common::SharedPtr<Graphics::ManagedSurface> _mask;
@@ -104,6 +110,9 @@ public:
 
 	void setResizeFilter(const Common::SharedPtr<MovieResizeFilter> &filter);
 
+	Common::SharedPtr<Structural> shallowClone() const override;
+	void visitInternalReferences(IStructuralReferenceVisitor *visitor) override;
+
 #ifdef MTROPOLIS_DEBUG_ENABLE
 	const char *debugGetTypeName() const override { return "Movie Element"; }
 	SupportStatus debugGetSupportStatus() const override { return kSupportStatusDone; }
@@ -119,6 +128,8 @@ private:
 	IntRange computeRealRange() const;
 
 	void stopSubtitles();
+
+	void initFallbackPalette();
 
 	MiniscriptInstructionOutcome scriptSetRange(MiniscriptThread *thread, const DynamicValue &value);
 	MiniscriptInstructionOutcome scriptSetRangeStart(MiniscriptThread *thread, const DynamicValue &value);
@@ -173,6 +184,8 @@ private:
 	Common::SharedPtr<SubtitlePlayer> _subtitles;
 
 	Common::Array<int> _damagedFrames;
+
+	Common::ScopedPtr<Graphics::Palette> _fallbackPalette;
 };
 
 class ImageElement : public VisualElement {
@@ -189,6 +202,9 @@ public:
 	void deactivate() override;
 
 	void render(Window *window) override;
+
+	Common::SharedPtr<Structural> shallowClone() const override;
+	void visitInternalReferences(IStructuralReferenceVisitor *visitor) override;
 
 #ifdef MTROPOLIS_DEBUG_ENABLE
 	const char *debugGetTypeName() const override { return "Image Element"; }
@@ -230,6 +246,9 @@ public:
 
 	Common::Rect getRelativeCollisionRect() const override;
 
+	Common::SharedPtr<Structural> shallowClone() const override;
+	void visitInternalReferences(IStructuralReferenceVisitor *visitor) override;
+
 #ifdef MTROPOLIS_DEBUG_ENABLE
 	const char *debugGetTypeName() const override { return "mToon Element"; }
 	SupportStatus debugGetSupportStatus() const override { return kSupportStatusDone; }
@@ -237,6 +256,8 @@ public:
 #endif
 
 private:
+	MToonElement(const MToonElement &other);
+
 	struct StartPlayingTaskData {
 		StartPlayingTaskData() : runtime(nullptr) {}
 
@@ -331,12 +352,17 @@ public:
 	Graphics::FontManager::FontUsage getDefaultUsageForMacFont(uint16 macFontID, uint size);
 	Graphics::FontManager::FontUsage getDefaultUsageForNamedFont(const Common::String &fontFamilyName, uint size);
 
+	Common::SharedPtr<Structural> shallowClone() const override;
+	void visitInternalReferences(IStructuralReferenceVisitor *visitor) override;
+
 #ifdef MTROPOLIS_DEBUG_ENABLE
 	const char *debugGetTypeName() const override { return "Text Label Element"; }
 	SupportStatus debugGetSupportStatus() const override { return kSupportStatusPartial; }
 #endif
 
 private:
+	TextLabelElement(const TextLabelElement &other);
+
 	struct TextLabelLineWriteInterface {
 		static MiniscriptInstructionOutcome write(MiniscriptThread *thread, const DynamicValue &dest, void *objectRef, uintptr ptrOrOffset);
 		static MiniscriptInstructionOutcome refAttrib(MiniscriptThread *thread, DynamicValueWriteProxy &proxy, void *objectRef, uintptr ptrOrOffset, const Common::String &attrib);
@@ -352,7 +378,7 @@ private:
 	bool _cacheBitmap;
 	bool _needsRender;
 
-	//bool _isBitmap;
+	bool _isBitmap;
 	uint32 _assetID;
 
 	Common::String _text;
@@ -391,6 +417,9 @@ public:
 
 	bool resolveMediaMarkerLabel(const Label &label, int32 &outResolution) const override;
 
+	Common::SharedPtr<Structural> shallowClone() const override;
+	void visitInternalReferences(IStructuralReferenceVisitor *visitor) override;
+
 #ifdef MTROPOLIS_DEBUG_ENABLE
 	const char *debugGetTypeName() const override { return "Sound Element"; }
 	SupportStatus debugGetSupportStatus() const override { return kSupportStatusDone; }
@@ -398,6 +427,9 @@ public:
 #endif
 
 private:
+	SoundElement(const SoundElement &other);
+
+	void initSubtitles();
 	void stopPlayer();
 
 	MiniscriptInstructionOutcome scriptSetLoop(MiniscriptThread *thread, const DynamicValue &value);

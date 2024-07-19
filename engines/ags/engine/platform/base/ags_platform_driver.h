@@ -28,7 +28,7 @@
 #ifndef AGS_ENGINE_PLATFORM_BASE_AGS_PLATFORM_DRIVER_H
 #define AGS_ENGINE_PLATFORM_BASE_AGS_PLATFORM_DRIVER_H
 
-#include "ags/lib/std/vector.h"
+#include "common/std/vector.h"
 #include "ags/engine/ac/date_time.h"
 #include "ags/engine/ac/path_helper.h"
 #include "ags/shared/debugging/output_handler.h"

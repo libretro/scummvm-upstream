@@ -28,7 +28,7 @@
 //
 //=============================================================================
 
-#include "ags/lib/std/vector.h"
+#include "common/std/vector.h"
 #include "ags/shared/core/types.h"
 #include "ags/engine/ac/character_extras.h"
 #include "ags/shared/ac/common.h"

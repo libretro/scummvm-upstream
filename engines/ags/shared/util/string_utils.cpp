@@ -22,7 +22,7 @@
 #include "ags/shared/util/string_utils.h"
 #include "ags/shared/util/utf8.h"
 #include "ags/shared/core/platform.h"
-#include "ags/lib/std/regex.h"
+#include "common/std/regex.h"
 #include "ags/shared/util/math.h"
 #include "ags/shared/util/stream.h"
 #include "ags/shared/util/string_compat.h"

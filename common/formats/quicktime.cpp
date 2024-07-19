@@ -50,6 +50,10 @@ QuickTimeParser::QuickTimeParser() {
 	_resFork = new MacResManager();
 	_disposeFileHandle = DisposeAfterUse::YES;
 	_timeScale = 1;
+	_qtvrType = QTVRType::OTHER;
+	_winX = 0;
+	_winY = 0;
+	_panoTrack = nullptr;
 
 	initParseTable();
 }
@@ -92,6 +96,11 @@ bool QuickTimeParser::parseFile(const Path &filename) {
 	if (readDefault(atom) < 0 || !_foundMOOV)
 		return false;
 
+	if (_qtvrType == QTVRType::PANORAMA) {
+		if (!parsePanoramaAtoms())
+			return false;
+	}
+
 	init();
 	return true;
 }
@@ -108,7 +117,46 @@ bool QuickTimeParser::parseStream(SeekableReadStream *stream, DisposeAfterUse::F
 		return false;
 	}
 
+	if (_qtvrType == QTVRType::PANORAMA) {
+		if (!parsePanoramaAtoms())
+			return false;
+	}
+
 	init();
+	return true;
+}
+
+bool QuickTimeParser::parsePanoramaAtoms() {
+	for (uint i = 0; i < _tracks.size(); i++) {
+		if (_tracks[i]->codecType == CODEC_TYPE_PANO) {
+			_panoTrack = _tracks[i];
+			break;
+		}
+	}
+
+	if (!_panoTrack) {
+		warning("QuickTimeParser::parsePanoramaAtoms(): No panoramic track found");
+		return false;
+	}
+
+	Array<uint32> sizes;
+
+	if (_panoTrack->sampleSize) {
+		sizes = { _panoTrack->sampleSize };
+	} else {
+		sizes.resize(_panoTrack->sampleCount);
+		for (uint32 i = 0; i < _panoTrack->sampleCount; i++) 
+			sizes[i] = _panoTrack->sampleSizes[i];
+	}
+
+	for (uint32 i = 0; i < sizes.size() && i < _panoTrack->chunkCount; i++) {
+		_panoTrack->panoSamples.resize(_panoTrack->panoSamples.size() + 1);
+		Atom atom = { 0, _panoTrack->chunkOffsets[i], sizes[i] };
+		_fd->seek(_panoTrack->chunkOffsets[i], SEEK_SET);
+		if (readDefault(atom) < 0)
+			return false;
+	}
+
 	return true;
 }
 
@@ -150,7 +198,7 @@ void QuickTimeParser::initParseTable() {
 		{ &QuickTimeParser::readDefault, MKTAG('m', 'i', 'n', 'f') },
 		{ &QuickTimeParser::readMOOV,    MKTAG('m', 'o', 'o', 'v') },
 		{ &QuickTimeParser::readMVHD,    MKTAG('m', 'v', 'h', 'd') },
-		{ &QuickTimeParser::readLeaf,    MKTAG('s', 'm', 'h', 'd') },
+		{ &QuickTimeParser::readSMHD,    MKTAG('s', 'm', 'h', 'd') },
 		{ &QuickTimeParser::readDefault, MKTAG('s', 't', 'b', 'l') },
 		{ &QuickTimeParser::readSTCO,    MKTAG('s', 't', 'c', 'o') },
 		{ &QuickTimeParser::readSTSC,    MKTAG('s', 't', 's', 'c') },
@@ -160,14 +208,25 @@ void QuickTimeParser::initParseTable() {
 		{ &QuickTimeParser::readSTTS,    MKTAG('s', 't', 't', 's') },
 		{ &QuickTimeParser::readTKHD,    MKTAG('t', 'k', 'h', 'd') },
 		{ &QuickTimeParser::readTRAK,    MKTAG('t', 'r', 'a', 'k') },
-		{ &QuickTimeParser::readLeaf,    MKTAG('u', 'd', 't', 'a') },
-		{ &QuickTimeParser::readLeaf,    MKTAG('v', 'm', 'h', 'd') },
+		{ &QuickTimeParser::readDefault, MKTAG('u', 'd', 't', 'a') },
+		{ &QuickTimeParser::readCTYP,    MKTAG('c', 't', 'y', 'p') },
+		{ &QuickTimeParser::readWLOC,    MKTAG('W', 'L', 'O', 'C') },
+		{ &QuickTimeParser::readNAVG,    MKTAG('N', 'A', 'V', 'G') },
+		{ &QuickTimeParser::readVMHD,    MKTAG('v', 'm', 'h', 'd') },
 		{ &QuickTimeParser::readCMOV,    MKTAG('c', 'm', 'o', 'v') },
 		{ &QuickTimeParser::readWAVE,    MKTAG('w', 'a', 'v', 'e') },
 		{ &QuickTimeParser::readESDS,    MKTAG('e', 's', 'd', 's') },
 		{ &QuickTimeParser::readSMI,     MKTAG('S', 'M', 'I', ' ') },
 		{ &QuickTimeParser::readDefault, MKTAG('g', 'm', 'h', 'd') },
-		{ &QuickTimeParser::readLeaf,    MKTAG('g', 'm', 'i', 'n') },
+		{ &QuickTimeParser::readGMIN,    MKTAG('g', 'm', 'i', 'n') },
+		{ &QuickTimeParser::readDefault, MKTAG('S', 'T', 'p', 'n') },
+		{ &QuickTimeParser::readPINF,    MKTAG('p', 'I', 'n', 'f') },
+		{ &QuickTimeParser::readDefault, MKTAG('S', 'T', 'p', 'n') },
+		{ &QuickTimeParser::readPHDR,    MKTAG('p', 'H', 'd', 'r') },
+		{ &QuickTimeParser::readPHOT,    MKTAG('p', 'H', 'o', 't') },
+		{ &QuickTimeParser::readSTRT,    MKTAG('s', 't', 'r', 'T') },
+		{ &QuickTimeParser::readPLNK,    MKTAG('p', 'L', 'n', 'k') },
+		{ &QuickTimeParser::readPNAV,    MKTAG('p', 'N', 'a', 'v') },
 		{ nullptr, 0 }
 	};
 
@@ -376,6 +435,16 @@ int QuickTimeParser::readTRAK(Atom atom) {
 	return readDefault(atom);
 }
 
+int QuickTimeParser::readSMHD(Atom atom) {
+	Track *track = _tracks.back();
+
+	_fd->readUint32BE(); // version + flags
+	track->soundBalance = _fd->readUint16BE();
+	_fd->readUint16BE(); // reserved
+
+	return 0;
+}
+
 int QuickTimeParser::readTKHD(Atom atom) {
 	Track *track = _tracks.back();
 	byte version = _fd->readByte();
@@ -479,6 +548,8 @@ int QuickTimeParser::readHDLR(Atom atom) {
 		track->codecType = CODEC_TYPE_AUDIO;
 	else if (type == MKTAG('m', 'u', 's', 'i'))
 		track->codecType = CODEC_TYPE_MIDI;
+	else if (type == MKTAG('S', 'T', 'p', 'n') || type == MKTAG('s', 't', 'p', 'n'))
+		track->codecType = CODEC_TYPE_PANO;
 
 	_fd->readUint32BE(); // component manufacture
 	_fd->readUint32BE(); // component flags
@@ -662,6 +733,16 @@ int QuickTimeParser::readSTTS(Atom atom) {
 	return 0;
 }
 
+int QuickTimeParser::readVMHD(Atom atom) {
+	Track *track = _tracks.back();
+
+	_fd->readUint32BE(); // version + flags
+	track->graphicsMode = (GraphicsMode)_fd->readUint16BE();
+	_fd->readMultipleBE(track->opcolor);
+
+	return 0;
+}
+
 int QuickTimeParser::readSTCO(Atom atom) {
 	Track *track = _tracks.back();
 
@@ -798,6 +879,96 @@ int QuickTimeParser::readSMI(Atom atom) {
 	return 0;
 }
 
+int QuickTimeParser::readCTYP(Atom atom) {
+	uint32 ctype = _fd->readUint32BE();
+
+	switch (ctype) {
+	case MKTAG('s', 't', 'n', 'a'):
+		_qtvrType = QTVRType::OBJECT;
+		break;
+
+	case MKTAG('S', 'T', 'p', 'n'):
+	case MKTAG('s', 't', 'p', 'n'):
+		_qtvrType = QTVRType::PANORAMA;
+		break;
+
+	default:
+		_qtvrType = QTVRType::OTHER;
+		warning("QuickTimeParser::readCTYP(): Unknown QTVR Type ('%s')", tag2str(ctype));
+		break;
+	}
+
+	return 0;
+}
+
+int QuickTimeParser::readWLOC(Atom atom) {
+	_winX = _fd->readUint16BE();
+	_winY = _fd->readUint16BE();
+
+	return 0;
+}
+
+static float readAppleFloatField(SeekableReadStream *stream) {
+	int16 a = stream->readSint16BE();
+	uint16 b = stream->readUint16BE();
+
+	float value = (float)a + (float)b / 65536.0f;
+
+	return value;
+}
+
+int QuickTimeParser::readNAVG(Atom atom) {
+	_fd->readUint16BE(); // version
+	_nav.columns = _fd->readUint16BE();
+	_nav.rows = _fd->readUint16BE();
+	_fd->readUint16BE(); // reserved
+	_nav.loop_size = _fd->readUint16BE();
+	_nav.frame_duration = _fd->readUint16BE();
+	_nav.movie_type = (MovieType)_fd->readUint16BE();
+	_nav.loop_ticks = _fd->readUint16BE();
+	_nav.field_of_view = readAppleFloatField(_fd);
+	_nav.startHPan = readAppleFloatField(_fd);
+	_nav.endHPan = readAppleFloatField(_fd);
+	_nav.endVPan = readAppleFloatField(_fd);
+	_nav.startVPan = readAppleFloatField(_fd);
+	_nav.initialHPan = readAppleFloatField(_fd);
+	_nav.initialVPan = readAppleFloatField(_fd);
+	_fd->readUint32BE(); // reserved2
+
+	return 0;
+}
+
+int QuickTimeParser::readGMIN(Atom atom) {
+	Track *track = _tracks.back();
+
+	_fd->readUint32BE(); // version + flags
+	track->graphicsMode = (GraphicsMode)_fd->readUint16BE();
+	_fd->readMultipleBE(track->opcolor);
+	track->soundBalance = _fd->readUint16BE();
+	_fd->readUint16BE(); // reserved
+
+	return 0;
+}
+
+int QuickTimeParser::readPINF(Atom atom) {
+	Track *track = _tracks.back();
+
+	track->panoInfo.name = _fd->readPascalString();
+	_fd->seek((int64)atom.offset + 32);
+	track->panoInfo.defNodeID = _fd->readUint32BE();
+	track->panoInfo.defZoom = readAppleFloatField(_fd);
+	_fd->readUint32BE(); // reserved
+	_fd->readSint16BE(); // padding
+	int16 numEntries = _fd->readSint16BE();
+	track->panoInfo.nodes.resize(numEntries);
+	for (int16 i = 0; i < numEntries; i++) {
+		track->panoInfo.nodes[i].nodeID = _fd->readUint32BE();
+		track->panoInfo.nodes[i].timestamp = _fd->readUint32BE();
+	}
+
+	return 0;
+}
+
 int QuickTimeParser::readDREF(Atom atom) {
 	if (atom.size > 1) {
 		Track *track = _tracks.back();
@@ -863,6 +1034,151 @@ int QuickTimeParser::readDREF(Atom atom) {
 		}
 
 		_fd->seek(endPos, SEEK_SET);
+	}
+
+	return 0;
+}
+
+int QuickTimeParser::readPHDR(Atom atom) {
+	PanoSampleHeader &pHdr = _panoTrack->panoSamples.back().hdr;
+
+	pHdr.nodeID = _fd->readUint32BE();
+
+	pHdr.defHPan = readAppleFloatField(_fd);
+	pHdr.defVPan = readAppleFloatField(_fd);
+	pHdr.defZoom = readAppleFloatField(_fd);
+
+	pHdr.minHPan = readAppleFloatField(_fd);
+	pHdr.minVPan = readAppleFloatField(_fd);
+	pHdr.minZoom = readAppleFloatField(_fd);
+	pHdr.maxHPan = readAppleFloatField(_fd);
+	pHdr.maxVPan = readAppleFloatField(_fd);
+	pHdr.minHPan = readAppleFloatField(_fd);
+
+	_fd->readSint64BE(); // reserved1 + reserved2
+
+	pHdr.nameStrOffset = _fd->readSint32BE();
+	pHdr.commentStrOffset = _fd->readSint32BE();
+
+	return 0;
+}
+
+int QuickTimeParser::readPHOT(Atom atom) {
+	PanoHotSpotTable &pHotSpotTable = _panoTrack->panoSamples.back().hotSpotTable;
+
+	_fd->readUint16BE(); // padding
+
+	int16 numHotSpots = _fd->readSint16BE();
+	pHotSpotTable.hotSpots.resize(numHotSpots);
+
+	for (int i = 0; i < numHotSpots; i++) {
+		pHotSpotTable.hotSpots[i].id = _fd->readUint16BE();
+
+		_fd->readUint16BE(); // reserved
+
+		uint32 type = _fd->readUint32BE();
+
+		switch (type) {
+		case MKTAG('l', 'i', 'n', 'k'):
+			pHotSpotTable.hotSpots[i].type = HotSpotType::link;
+			break;
+
+		case MKTAG('n', 'a', 'v', 'g'):
+			pHotSpotTable.hotSpots[i].type = HotSpotType::navg;
+			break;
+
+		default:
+			pHotSpotTable.hotSpots[i].type = HotSpotType::undefined;
+			warning("QuickTimeParser::readPHOT(): Unknown HotSpot Type ('%s')", tag2str(type));
+			break;
+		}
+
+		pHotSpotTable.hotSpots[i].typeData = _fd->readUint32BE();
+
+		pHotSpotTable.hotSpots[i].viewHPan = readAppleFloatField(_fd);
+		pHotSpotTable.hotSpots[i].viewVPan = readAppleFloatField(_fd);
+		pHotSpotTable.hotSpots[i].viewZoom = readAppleFloatField(_fd);
+
+		pHotSpotTable.hotSpots[i].rect.top = _fd->readSint16BE();
+		pHotSpotTable.hotSpots[i].rect.left = _fd->readSint16BE();
+		pHotSpotTable.hotSpots[i].rect.bottom = _fd->readSint16BE();
+		pHotSpotTable.hotSpots[i].rect.right = _fd->readSint16BE();
+
+		pHotSpotTable.hotSpots[i].mouseOverCursorID = _fd->readSint32BE();
+		pHotSpotTable.hotSpots[i].mouseDownCursorID = _fd->readSint32BE();
+		pHotSpotTable.hotSpots[i].mouseUpCursorID = _fd->readSint32BE();
+
+		_fd->readSint32BE(); // reserved2
+
+		pHotSpotTable.hotSpots[i].nameStrOffset = _fd->readSint32BE();
+		pHotSpotTable.hotSpots[i].commentStrOffset = _fd->readSint32BE();
+	}
+
+	return 0;
+}
+
+int QuickTimeParser::readSTRT(Atom atom) {
+	PanoStringTable &pStrTable = _panoTrack->panoSamples.back().strTable;
+
+	pStrTable.strings = _fd->readString(0, atom.size);
+
+	return 0;
+}
+
+int QuickTimeParser::readPLNK(Atom atom) {
+	PanoLinkTable &pLinkTable = _panoTrack->panoSamples.back().linkTable;
+
+	_fd->readUint16BE(); // padding
+
+	int16 numLinks = _fd->readSint16BE();
+	pLinkTable.links.resize(numLinks);
+
+	for (int i = 0; i < numLinks; i++) {
+		pLinkTable.links[i].id = _fd->readUint16BE();
+
+		_fd->readUint16BE(); // reserved
+		_fd->readUint64BE(); // reserved2 + reserved3
+
+		pLinkTable.links[i].toNodeID = _fd->readUint32BE();
+
+		_fd->skip(12); // reserved4
+
+		pLinkTable.links[i].toHPan = readAppleFloatField(_fd);
+		pLinkTable.links[i].toVPan = readAppleFloatField(_fd);
+		pLinkTable.links[i].toZoom = readAppleFloatField(_fd);
+
+		_fd->readUint64BE(); // reserved5 + reserved6
+
+		pLinkTable.links[i].nameStrOffset = _fd->readSint32BE();
+		pLinkTable.links[i].commentStrOffset = _fd->readSint32BE();
+	}
+
+	return 0;
+}
+
+int QuickTimeParser::readPNAV(Atom atom) {
+	PanoNavigationTable &pLinkTable = _panoTrack->panoSamples.back().navTable;
+
+	_fd->readUint16BE(); // padding
+
+	int16 numNavs = _fd->readSint16BE();
+	pLinkTable.navs.resize(numNavs);
+
+	for (int i = 0; i < numNavs; i++) {
+		pLinkTable.navs[i].id = _fd->readUint16BE();
+
+		_fd->readUint16BE(); // reserved
+		_fd->readUint32BE(); // reserved2
+
+		pLinkTable.navs[i].rect.top = _fd->readSint16BE();
+		pLinkTable.navs[i].rect.left = _fd->readSint16BE();
+		pLinkTable.navs[i].rect.bottom = _fd->readSint16BE();
+		pLinkTable.navs[i].rect.right = _fd->readSint16BE();
+
+		_fd->readSint32BE(); // reserved3
+
+		pLinkTable.navs[i].nameStrOffset = _fd->readSint32BE();
+		pLinkTable.navs[i].commentStrOffset = _fd->readSint32BE();
 	}
 
 	return 0;
@@ -961,6 +1277,21 @@ QuickTimeParser::Track::Track() {
 	mediaDuration = 0;
 	nlvlFrom = -1;
 	nlvlTo = -1;
+	graphicsMode = GraphicsMode::COPY;
+	opcolor[0] = opcolor[1] = opcolor[2] = 0;
+	soundBalance = 0;
+}
+
+String QuickTimeParser::PanoStringTable::getString(int32 offset) const {
+	offset -= 8;
+
+	if (offset < 0)
+		return String();
+
+	int32 str_start = offset + 1;
+	int32 str_length = strings[offset];
+
+	return strings.substr(str_start, str_length);
 }
 
 QuickTimeParser::Track::~Track() {

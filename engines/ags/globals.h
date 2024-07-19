@@ -25,7 +25,7 @@
 #include "ags/shared/core/platform.h"
 #define AGS_PLATFORM_DEFINES_PSP_VARS (AGS_PLATFORM_OS_IOS || AGS_PLATFORM_OS_ANDROID)
 
-#include "ags/lib/std/queue.h"
+#include "common/std/queue.h"
 #include "ags/shared/ac/game_version.h"
 #include "ags/shared/ac/keycode.h"
 #include "ags/shared/util/stdio_compat.h"
@@ -43,10 +43,10 @@
 #include "ags/engine/media/audio/audio_defines.h"
 #include "ags/engine/script/script.h"
 #include "ags/engine/script/script_runtime.h"
-#include "ags/lib/std/array.h"
-#include "ags/lib/std/chrono.h"
-#include "ags/lib/std/memory.h"
-#include "ags/lib/std/set.h"
+#include "common/std/array.h"
+#include "common/std/chrono.h"
+#include "common/std/memory.h"
+#include "common/std/set.h"
 #include "ags/lib/allegro/color.h"
 #include "ags/lib/allegro/fixed.h"
 #include "ags/lib/allegro/aintern.h"
@@ -758,7 +758,7 @@ public:
 	// TODO: IMPORTANT!!
 	// we cannot simply replace these arrays with vectors, or other C++ containers,
 	// until we implement safe management of such containers in script exports
-	// system. Noteably we would need an alternate to StaticArray class to track
+	// system. Notably we would need an alternate to StaticArray class to track
 	// access to their elements.
 	ScriptObject *_scrObj;
 	ScriptGUI *_scrGui = nullptr;
@@ -839,7 +839,7 @@ public:
 	 */
 
 	 // Following struct instructs the engine to run game loops until
-	 // certain condition is not fullfilled.
+	 // certain condition is not fulfilled.
 	struct RestrictUntil {
 		int type = 0; // type of condition, UNTIL_* constant
 		int disabled_for = 0; // FOR_* constant

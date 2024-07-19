@@ -238,6 +238,19 @@ ios7bundle: scummvm-static-ios
 			print "\t\t</dict>";\
 			print "\t</dict>";\
 			s=2}\
+		/<key>CFBundleIcons~ipad<\/key>/ {\
+			print $$0;\
+			print "\t<dict>";\
+			print "\t\t<key>CFBundlePrimaryIcon</key>";\
+			print "\t\t<dict>";\
+			print "\t\t\t<key>CFBundleIconFiles</key>";\
+			print "\t\t\t<array>";\
+			print "\t\t\t\t<string>AppIcon76x76</string>";\
+			print "\t\t\t\t<string>AppIcon83.5x83.5</string>";\
+			print "\t\t\t</array>";\
+			print "\t\t</dict>";\
+			print "\t</dict>";\
+			s=2}\
 		/<key>UILaunchImages<\/key>/ {\
 			print $$0;\
 			print "\t<array>";\
@@ -554,6 +567,10 @@ endif
 
 ifdef USE_RETROWAVE
 OSX_STATIC_LIBS += $(STATICLIBPATH)/lib/libRetroWave.a
+endif
+
+ifdef USE_SONIVOX
+OSX_STATIC_LIBS += $(STATICLIBPATH)/lib/libsonivox-static.a
 endif
 
 ifdef USE_SPARKLE

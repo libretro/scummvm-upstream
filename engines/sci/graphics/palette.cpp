@@ -27,6 +27,7 @@
 #include "sci/sci.h"
 #include "sci/engine/state.h"
 #include "sci/graphics/cache.h"
+#include "sci/graphics/gfxdrivers.h"
 #include "sci/graphics/maciconbar.h"
 #include "sci/graphics/palette.h"
 #include "sci/graphics/remap.h"
@@ -84,23 +85,7 @@ GfxPalette::GfxPalette(ResourceManager *resMan, GfxScreen *screen)
 	_macClut = nullptr;
 	loadMacIconBarPalette();
 
-	switch (_resMan->getViewType()) {
-	case kViewEga:
-		_totalScreenColors = 16;
-		break;
-	case kViewAmiga:
-		_totalScreenColors = 32;
-		break;
-	case kViewAmiga64:
-		_totalScreenColors = 64;
-		break;
-	case kViewVga:
-	case kViewVga11:
-			_totalScreenColors = 256;
-		break;
-	default:
-		error("GfxPalette: Unknown view type");
-	}
+	_totalScreenColors = _screen->gfxDriver()->numColors();
 }
 
 GfxPalette::~GfxPalette() {
@@ -552,10 +537,10 @@ void GfxPalette::kernelUnsetFlag(uint16 fromColor, uint16 toColor, uint16 flag) 
 }
 
 void GfxPalette::kernelSetIntensity(uint16 fromColor, uint16 toColor, uint16 intensity, bool setPalette) {
-	memset(&_sysPalette.intensity[0] + fromColor, intensity, toColor - fromColor);
-	if (setPalette) {
+	if (_screen->gfxDriver()->supportsPalIntensity())
+		memset(&_sysPalette.intensity[0] + fromColor, intensity, toColor - fromColor);
+	if (setPalette)
 		setOnScreen();
-	}
 }
 
 int16 GfxPalette::kernelFindColor(uint16 r, uint16 g, uint16 b, bool force16BitColorMatch) {

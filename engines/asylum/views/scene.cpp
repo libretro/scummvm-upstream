@@ -314,7 +314,6 @@ bool Scene::handleEvent(const AsylumEvent &evt) {
 		return init();
 
 	case EVENT_ASYLUM_ACTIVATE:
-	case Common::EVENT_RBUTTONUP:
 		activate();
 		break;
 
@@ -322,7 +321,10 @@ bool Scene::handleEvent(const AsylumEvent &evt) {
 		return update();
 
 	case Common::EVENT_CUSTOM_ENGINE_ACTION_START:
-		return action((AsylumAction)evt.customType);
+		return actionDown((AsylumAction)evt.customType);
+
+	case Common::EVENT_CUSTOM_ENGINE_ACTION_END:
+		return actionUp((AsylumAction)evt.customType);
 
 	case Common::EVENT_KEYDOWN:
 		if (evt.kbd.flags & Common::KBD_CTRL)
@@ -337,8 +339,12 @@ bool Scene::handleEvent(const AsylumEvent &evt) {
 
 	case Common::EVENT_LBUTTONDOWN:
 	case Common::EVENT_RBUTTONDOWN:
-	case Common::EVENT_MBUTTONDOWN:
 		return getCursor()->isHidden() ? false : clickDown(evt);
+
+	case Common::EVENT_RBUTTONUP:
+		_rightButtonDown = false;
+		activate();
+		break;
 	}
 
 	return false;
@@ -421,7 +427,9 @@ bool Scene::update() {
 	return true;
 }
 
-bool Scene::action(AsylumAction a) {
+bool Scene::actionDown(AsylumAction a) {
+	Actor *player = getActor();
+
 	switch (a) {
 	case kAsylumActionShowVersion:
 		_debugShowVersion = !_debugShowVersion;
@@ -471,7 +479,68 @@ bool Scene::action(AsylumAction a) {
 			}
 		}
 		break;
+
+	case kAsylumActionMoveUp:
+		if (player->getStatus() != kActorStatusDisabled) {
+			player->changeStatus(kActorStatusWalking);
+		}
+		_keyState |= kWalkUp;
+		break;
+
+	case kAsylumActionMoveDown:
+		if (player->getStatus() != kActorStatusDisabled) {
+			player->changeStatus(kActorStatusWalking);
+		}
+		_keyState |= kWalkDown;
+		break;
+
+	case kAsylumActionMoveLeft:
+		if (player->getStatus() != kActorStatusDisabled) {
+			player->changeStatus(kActorStatusWalking);
+		}
+		_keyState |= kWalkLeft;
+		break;
+
+	case kAsylumActionMoveRight:
+		if (player->getStatus() != kActorStatusDisabled) {
+			player->changeStatus(kActorStatusWalking);
+		}
+		_keyState |= kWalkRight;
+		break;
+
+	default:
+		break;
 	}
+
+	return true;
+}
+
+bool Scene::actionUp(AsylumAction a) {
+	byte lastKeyState = _keyState;
+
+	switch (a) {
+	case kAsylumActionMoveUp:
+		_keyState &= ~kWalkUp;
+		break;
+
+	case kAsylumActionMoveDown:
+		_keyState &= ~kWalkDown;
+		break;
+
+	case kAsylumActionMoveLeft:
+		_keyState &= ~kWalkLeft;
+		break;
+
+	case kAsylumActionMoveRight:
+		_keyState &= ~kWalkRight;
+		break;
+
+	default:
+		break;
+	}
+
+	if (lastKeyState && !_keyState)
+		activate();
 
 	return true;
 }
@@ -552,19 +621,12 @@ bool Scene::clickDown(const AsylumEvent &evt) {
 		} else if (player->getStatus() != kActorStatusDisabled) {
 			player->changeStatus(kActorStatusWalking);
 		}
-		break;
 
-	case Common::EVENT_MBUTTONDOWN:
-		if (player->getStatus() != kActorStatusDisabled) {
-			if (player->getStatus() == kActorStatusShowingInventory || player->getStatus() == kActorStatus10)
-				player->changeStatus(kActorStatusEnabled);
-			else
-				player->changeStatus(kActorStatusShowingInventory);
-		}
+		_rightButtonDown = true;
 		break;
 
 	case Common::EVENT_LBUTTONDOWN:
-		if (getCursor()->getState() & kCursorStateRight)
+		if (_rightButtonDown || _keyState)
 			break;
 
 		if (getSpeech()->getSoundResourceId())
@@ -722,6 +784,37 @@ void Scene::updateMouse() {
 	}
 
 	ActorDirection newDirection = kDirectionInvalid;
+
+	if (_keyState) {
+		if (_keyState & kWalkLeft) {
+			if (_keyState & kWalkUp) {
+				newDirection = kDirectionNW;
+			} else if (_keyState & kWalkDown) {
+				newDirection = kDirectionSW;
+			} else {
+				newDirection = kDirectionW;
+			}
+		} else if (_keyState & kWalkRight) {
+			if (_keyState & kWalkUp) {
+				newDirection = kDirectionNE;
+			} else if (_keyState & kWalkDown) {
+				newDirection = kDirectionSE;
+			} else {
+				newDirection = kDirectionE;
+			}
+		} else if (_keyState & kWalkUp) {
+			newDirection = kDirectionN;
+		} else if (_keyState & kWalkDown) {
+			newDirection = kDirectionS;
+		}
+
+		updateCursor(newDirection, actorRect);
+
+		if (newDirection >= kDirectionN)
+			if (player->getStatus() == kActorStatusWalking || player->getStatus() == kActorStatusWalking2)
+				player->changeDirection(newDirection);
+		return;
+	}
 
 	if (mouse.x < actorRect.left) {
 		if (mouse.y >= actorRect.top) {
@@ -1168,7 +1261,7 @@ void Scene::updateCursor(ActorDirection direction, const Common::Rect &rect) {
 		return;
 	}
 
-	if (getCursor()->getState() & kCursorStateRight) {
+	if (_rightButtonDown || _keyState) {
 		if (player->getStatus() == kActorStatusWalking || player->getStatus() == kActorStatusWalking2) {
 
 			if (direction >= kDirectionN) {
@@ -1878,13 +1971,13 @@ bool Scene::speak(Common::KeyCode code) {
 		default:
 			break;
 
-		case 0:
+		case kActorMax:
 			index = GET_INDEX();
 			break;
 
-		case 1:
-		case 2:
-		case 3:
+		case kActorSarah:
+		case kActorCyclops:
+		case kActorAztec:
 			index = 1;
 			break;
 		}
@@ -1895,13 +1988,13 @@ bool Scene::speak(Common::KeyCode code) {
 		default:
 			break;
 
-		case 0:
+		case kActorMax:
 			index = 3 - GET_INDEX();
 			break;
 
-		case 1:
-		case 2:
-		case 3:
+		case kActorSarah:
+		case kActorCyclops:
+		case kActorAztec:
 			index = 2;
 			break;
 		}
@@ -1912,13 +2005,13 @@ bool Scene::speak(Common::KeyCode code) {
 		default:
 			break;
 
-		case 0:
+		case kActorMax:
 			index = 2;
 			break;
 
-		case 1:
-		case 2:
-		case 3:
+		case kActorSarah:
+		case kActorCyclops:
+		case kActorAztec:
 			index = 4;
 			break;
 		}
@@ -1929,13 +2022,13 @@ bool Scene::speak(Common::KeyCode code) {
 		default:
 			break;
 
-		case 0:
+		case kActorMax:
 			index = 5;
 			break;
 
-		case 1:
-		case 2:
-		case 3:
+		case kActorSarah:
+		case kActorCyclops:
+		case kActorAztec:
 			index = 3;
 			break;
 		}
@@ -1946,13 +2039,13 @@ bool Scene::speak(Common::KeyCode code) {
 		default:
 			break;
 
-		case 0:
+		case kActorMax:
 			index = 6;
 			break;
 
-		case 1:
-		case 2:
-		case 3:
+		case kActorSarah:
+		case kActorCyclops:
+		case kActorAztec:
 			index = 4;
 			break;
 		}
@@ -1963,12 +2056,12 @@ bool Scene::speak(Common::KeyCode code) {
 		default:
 			break;
 
-		case 0:
+		case kActorMax:
 			index = 7;
 			break;
 
-		case 1:
-		case 2:
+		case kActorSarah:
+		case kActorCyclops:
 			index = 5;
 			break;
 		}
@@ -1979,12 +2072,12 @@ bool Scene::speak(Common::KeyCode code) {
 		default:
 			break;
 
-		case 0:
+		case kActorMax:
 			index = 8;
 			break;
 
-		case 1:
-		case 2:
+		case kActorSarah:
+		case kActorCyclops:
 			index = 6;
 			break;
 		}
@@ -1995,12 +2088,12 @@ bool Scene::speak(Common::KeyCode code) {
 		default:
 			break;
 
-		case 0:
+		case kActorMax:
 			index = 9;
 			break;
 
-		case 1:
-		case 2:
+		case kActorSarah:
+		case kActorCyclops:
 			index = 7;
 			break;
 		}
@@ -2011,12 +2104,12 @@ bool Scene::speak(Common::KeyCode code) {
 		default:
 			break;
 
-		case 0:
+		case kActorMax:
 			index = 10;
 			break;
 
-		case 1:
-		case 2:
+		case kActorSarah:
+		case kActorCyclops:
 			index = 8;
 			break;
 		}
@@ -2027,12 +2120,12 @@ bool Scene::speak(Common::KeyCode code) {
 		default:
 			break;
 
-		case 0:
+		case kActorMax:
 			index = 11;
 			break;
 
-		case 1:
-		case 2:
+		case kActorSarah:
+		case kActorCyclops:
 			index = 9;
 			break;
 		}
@@ -2043,12 +2136,12 @@ bool Scene::speak(Common::KeyCode code) {
 		default:
 			break;
 
-		case 0:
+		case kActorMax:
 			index = 13 - GET_INDEX();
 			break;
 
-		case 1:
-		case 2:
+		case kActorSarah:
+		case kActorCyclops:
 			index = 10;
 			break;
 		}
@@ -2059,11 +2152,11 @@ bool Scene::speak(Common::KeyCode code) {
 		default:
 			break;
 
-		case 0:
+		case kActorMax:
 			index = 15 - GET_INDEX();
 			break;
 
-		case 2:
+		case kActorCyclops:
 			index = 12 - GET_INDEX();
 			break;
 		}

@@ -222,7 +222,7 @@ bool AGOSEngine_Waxworks::confirmOverWrite(WindowBlock *window) {
 }
 
 bool AGOSEngine_Elvira2::confirmOverWrite(WindowBlock *window) {
-	// Original verison never confirmed
+	// Original version never confirmed
 	return true;
 }
 
@@ -716,6 +716,9 @@ void AGOSEngine_Simon1::userGame(bool load) {
 restart:;
 	i = userGameGetKey(&b, maxChar);
 
+	Common::Keymapper *keymapper = AGOSEngine::getEventManager()->getKeymapper();
+	keymapper->getKeymap("game-shortcuts")->setEnabled(false);
+
 	if (i == 205)
 		goto get_out;
 	if (!load) {
@@ -835,6 +838,8 @@ get_out:;
 	disableFileBoxes();
 
 	_gameStoppedClock = getTime() - saveTime + _gameStoppedClock;
+
+	keymapper->getKeymap("game-shortcuts")->setEnabled(true);
 }
 
 int AGOSEngine_Simon1::userGameGetKey(bool *b, uint maxChar) {

@@ -119,6 +119,7 @@ public:
 
 	bool renderTransition(uint16 frameId, RenderMode mode);
 	void renderFrame(uint16 frameId, RenderMode mode = kRenderModeNormal);
+	void incrementFilmLoops();
 	void updateSprites(RenderMode mode = kRenderModeNormal);
 	bool renderPrePaletteCycle(RenderMode mode = kRenderModeNormal);
 	void setLastPalette();
@@ -144,7 +145,7 @@ private:
 	bool checkShotSimilarity(const Graphics::Surface *surface1, const Graphics::Surface *surface2);
 
 	bool processImmediateFrameScript(Common::String s, int id);
-	bool processFrozenScripts();
+	bool processFrozenScripts(bool recursion = false, int count = 0);
 
 public:
 	Common::Array<Channel *> _channels;

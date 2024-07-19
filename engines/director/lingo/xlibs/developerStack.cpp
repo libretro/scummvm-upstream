@@ -23,6 +23,7 @@
 
 #include "director/director.h"
 #include "director/lingo/lingo.h"
+#include "director/lingo/lingo-object.h"
 #include "director/lingo/xlibs/developerStack.h"
 
 /*************************************
@@ -131,13 +132,13 @@
 namespace Director {
 
 const char *DeveloperStack::xlibName = "SetVolume";
-const char *DeveloperStack::fileNames[] = {
-	"SetVolume",
-	nullptr
+const XlibFileDesc DeveloperStack::fileNames[] = {
+	{ "SetVolume",	nullptr },
+	{ nullptr,		nullptr },
 };
 
 static BuiltinProto builtins[] = {
-	{ "SetVolume",	DeveloperStack::b_setvolume, 2, 2, 300, HBLTIN },
+	{ "SetVolume", DeveloperStack::b_setvolume, 2, 2, 300, HBLTIN },
 	{ nullptr, nullptr, 0, 0, 0, VOIDSYM }
 };
 

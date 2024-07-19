@@ -27,13 +27,23 @@ public:
 	~CastleEngine();
 
 	Graphics::ManagedSurface *_option;
+	Graphics::Surface *_menu;
 	void initGameState() override;
 	void endGame() override;
+
+	void drawInfoMenu() override;
 	void loadAssetsDOSFullGame() override;
 	void loadAssetsDOSDemo() override;
 	void loadAssetsAmigaDemo() override;
+	void loadAssetsZXFullGame() override;
+	void titleScreen() override;
+	void selectCharacterScreen();
+	void drawOption();
+
+	void initZX();
 
 	void drawDOSUI(Graphics::Surface *surface) override;
+	void drawZXUI(Graphics::Surface *surface) override;
 	void drawEnergyMeter(Graphics::Surface *surface);
 	void pressedKey(const int keycode) override;
 	void checkSensors() override;
@@ -45,12 +55,26 @@ public:
 	Common::Error loadGameStreamExtended(Common::SeekableReadStream *stream) override;
 
 	Common::StringArray _riddleList;
+	Common::BitArray _fontPlane1;
+	Common::BitArray _fontPlane2;
+	Common::BitArray _fontPlane3;
+
+	void drawStringInSurface(const Common::String &str, int x, int y, uint32 fontColor, uint32 backColor, Graphics::Surface *surface, int offset = 0) override;
+	//void drawStringInSurface(const Common::String &str, int x, int y, uint32 primaryFontColor, uint32 secondaryFontColor, uint32 backColor, Graphics::Surface *surface, int offset = 0) override;
+	Graphics::Surface *loadFramesWithHeader(Common::SeekableReadStream *file, int pos, int numFrames, uint32 back);
+	Graphics::Surface *loadFrames(Common::SeekableReadStream *file, Graphics::Surface *surface, int width, int height, uint32 back);
+
+	Graphics::Surface *_keysFrame;
+	int _numberKeys;
+
 private:
 	Common::SeekableReadStream *decryptFile(const Common::Path &filename);
 	void loadRiddles(Common::SeekableReadStream *file, int offset, int number);
+	void loadDOSFonts(Common::SeekableReadStream *file, int pos);
 	void drawFullscreenRiddleAndWait(uint16 riddle);
 	void drawRiddle(uint16 riddle, uint32 front, uint32 back, Graphics::Surface *surface);
 	void addGhosts();
+	Texture *_optionTexture;
 };
 
 extern byte kFreescapeCastleFont[];

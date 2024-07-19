@@ -28,7 +28,7 @@
 #ifndef AGS_ENGINE_PLUGIN_PLUGIN_ENGINE_H
 #define AGS_ENGINE_PLUGIN_PLUGIN_ENGINE_H
 
-#include "ags/lib/std/vector.h"
+#include "common/std/vector.h"
 #include "ags/engine/game/game_init.h"
 #include "ags/shared/game/plugin_info.h"
 

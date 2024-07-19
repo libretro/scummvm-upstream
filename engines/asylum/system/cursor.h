@@ -32,12 +32,6 @@ namespace Asylum {
 class AsylumEngine;
 class GraphicResource;
 
-enum CursorState {
-	kCursorStateLeft = 1,
-	kCursorStateRight = 2,
-	kCursorMiddle = 3
-};
-
 enum CursorAnimation {
 	kCursorAnimationNone   = 0,
 	kCursorAnimationLinear = 1,
@@ -88,8 +82,6 @@ public:
 	void animate();
 
 	// Accessors
-	void setState(const Common::Event &evt);
-	byte getState() { return _state; }
 	void setForceHide(bool state) { _forceHide = state; }
 	ResourceId getResourceId() { return _graphicResourceId; }
 	CursorAnimation getAnimation() { return _animation; }
@@ -101,8 +93,6 @@ public:
 
 private:
 	AsylumEngine *_vm;
-
-	byte _state;
 
 	// Cursor resource
 	GraphicResource *_cursorRes;

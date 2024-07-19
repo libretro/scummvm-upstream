@@ -47,31 +47,22 @@
 #include "director/lingo/lingo-utils.h"
 #include "director/lingo/xlibs/jwxini.h"
 
-
 namespace Director {
 
 const char *JourneyWareXINIXObj::xlibName = "INI";
-const char *JourneyWareXINIXObj::fileNames[] = {
-	"JWXINI",
-	"INI",
-	nullptr
+const XlibFileDesc JourneyWareXINIXObj::fileNames[] = {
+	{ "JWXINI",	nullptr },
+	{ "INI",	"www" },	// "Wellen, Wracks und Wassermaenner" names it INI.DLL
+	{ nullptr,	nullptr },
 };
 
 static MethodProto xlibMethods[] = {
-	{"dispose", 					JourneyWareXINIXObj::m_dispose, 0, 0, 400}, // D4
 	{"new", 						JourneyWareXINIXObj::m_new, 0, 0, 400}, // D4
-	{"name", 						JourneyWareXINIXObj::m_name, 0, 0, 400}, // D4
-	{"getPrivateProfileInt", 		JourneyWareXINIXObj::m_GetPrivateProfileInt, 4, 4, 400}, // D4
 	{"GetPrivateProfileInt", 		JourneyWareXINIXObj::m_GetPrivateProfileInt, 4, 4, 400}, // D4
-	{"getPrivateProfileString", 	JourneyWareXINIXObj::m_GetPrivateProfileString, 5, 5, 400}, // D4
 	{"GetPrivateProfileString", 	JourneyWareXINIXObj::m_GetPrivateProfileString, 5, 5, 400}, // D4
-	{"getProfileInt", 				JourneyWareXINIXObj::m_GetProfileInt, 3, 3, 400}, // D4
 	{"GetProfileInt", 				JourneyWareXINIXObj::m_GetProfileInt, 3, 3, 400}, // D4
-	{"getProfileString", 			JourneyWareXINIXObj::m_GetProfileString, 4, 4, 400}, // D4
 	{"GetProfileString", 			JourneyWareXINIXObj::m_GetProfileString, 4, 4, 400}, // D4
-	{"writePrivateProfileString", 	JourneyWareXINIXObj::m_WritePrivateProfileString, 4, 4, 400}, // D4
 	{"WritePrivateProfileString", 	JourneyWareXINIXObj::m_WritePrivateProfileString, 4, 4, 400}, // D4
-	{"writeProfileString", 			JourneyWareXINIXObj::m_WriteProfileString, 3, 3, 400}, // D4
 	{"WriteProfileString", 			JourneyWareXINIXObj::m_WriteProfileString, 3, 3, 400}, // D4
 	{nullptr, nullptr, 0, 0, 0}
 };
@@ -90,7 +81,6 @@ void JourneyWareXINIXObj::close(ObjectType type) {
 	   g_lingo->_globalvars[xlibName] = Datum();
    }
 }
-
 
 JourneyWareXINIXObject::JourneyWareXINIXObject(ObjectType ObjectType) :Object<JourneyWareXINIXObject>("INI") {
    _objType = ObjectType;
@@ -139,7 +129,5 @@ void JourneyWareXINIXObj::m_GetProfileString(int nargs) {
 
 XOBJSTUB(JourneyWareXINIXObj::m_WritePrivateProfileString, 0)
 XOBJSTUB(JourneyWareXINIXObj::m_WriteProfileString, 0)
-XOBJSTUBNR(JourneyWareXINIXObj::m_dispose)
-XOBJSTUB(JourneyWareXINIXObj::m_name, "")
 
 } // End of namespace Director

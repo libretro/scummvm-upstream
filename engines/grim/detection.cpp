@@ -235,7 +235,7 @@ static const GrimGameDescription gameDescriptions[] = {
 			"grim",
 			"",
 			AD_ENTRY2s("VOX0001.LAB", "444f05f2af689c1bffd179b8b6a632bd", 57993159,
-					   "grim.ko.tab", NULL, -1),
+					   "grim.ko.tab", NULL, AD_NO_SIZE),
 			Common::KO_KOR,
 			Common::kPlatformWindows,
 			ADGF_NO_FLAGS,
@@ -694,14 +694,19 @@ static const GrimGameDescription gameDescriptions[] = {
 	{ AD_TABLE_END_MARKER, GType_GRIM }
 };
 
-class GrimMetaEngineDetection : public AdvancedMetaEngineDetection {
+class GrimMetaEngineDetection : public AdvancedMetaEngineDetection<Grim::GrimGameDescription> {
 public:
-	GrimMetaEngineDetection() : AdvancedMetaEngineDetection(Grim::gameDescriptions, sizeof(Grim::GrimGameDescription), grimGames) {
+	GrimMetaEngineDetection() : AdvancedMetaEngineDetection(Grim::gameDescriptions, grimGames) {
 		_guiOptions = GUIO_NOMIDI;
 	}
 
 	PlainGameDescriptor findGame(const char *gameid) const override {
 		return Engines::findGameID(gameid, _gameIds, obsoleteGameIDsTable);
+	}
+
+	Common::Error identifyGame(DetectedGame &game, const void **descriptor) override {
+		Engines::upgradeTargetIfNecessary(obsoleteGameIDsTable);
+		return AdvancedMetaEngineDetection::identifyGame(game, descriptor);
 	}
 
 	const char *getEngineName() const override {

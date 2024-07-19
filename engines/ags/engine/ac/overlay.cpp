@@ -19,7 +19,7 @@
  *
  */
 
-#include "ags/lib/std/algorithm.h"
+#include "common/std/algorithm.h"
 #include "ags/engine/ac/overlay.h"
 #include "ags/shared/ac/common.h"
 #include "ags/shared/ac/sprite_cache.h"

@@ -46,10 +46,9 @@ namespace Director {
 */
 
 const char *AskUser::xlibName = "AskUser";
-const char *AskUser::fileNames[] = {
-	"AskUser",
-	"ASKUSER",
-	nullptr
+const XlibFileDesc AskUser::fileNames[] = {
+	{ "AskUser",	nullptr },
+	{ nullptr,		nullptr },
 };
 
 static MethodProto xlibMethods[] = {

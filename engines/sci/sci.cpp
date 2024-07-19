@@ -54,6 +54,7 @@
 #include "sci/graphics/controls16.h"
 #include "sci/graphics/coordadjuster.h"
 #include "sci/graphics/cursor.h"
+#include "sci/graphics/gfxdrivers.h"
 #include "sci/graphics/macfont.h"
 #include "sci/graphics/maciconbar.h"
 #include "sci/graphics/menu.h"
@@ -318,9 +319,29 @@ Common::Error SciEngine::run() {
 	}
 
 	if (getSciVersion() < SCI_VERSION_2) {
+		Common::RenderMode renderMode = Common::kRenderDefault;
+
+		bool undither = ConfMan.getBool("disable_dithering");
+		if (ConfMan.hasKey("render_mode"))
+			renderMode = Common::parseRenderMode(ConfMan.get("render_mode"));
+
+		// Check if the selected render mode is available for the game. This is quite specific for each game.
+		// Sometime it is only EGA, sometimes only CGA b/w without CGA 4 colors, etc. Also set default mode if undithering is enabled.
+		if ((renderMode == Common::kRenderEGA && (((getSciVersion() <= SCI_VERSION_0_LATE || getSciVersion() == SCI_VERSION_1_EGA_ONLY) && undither) ||
+			(getSciVersion() >= SCI_VERSION_1_EARLY && getSciVersion() <= SCI_VERSION_1_1 && !SCI1_EGADriver::validateMode()))) ||
+			(renderMode == Common::kRenderVGAGrey && !SCI1_VGAGreyScaleDriver::validateMode()) ||
+			(renderMode == Common::kRenderCGA && !SCI0_CGADriver::validateMode()) ||
+			(renderMode == Common::kRenderCGA_BW && !SCI0_CGABWDriver::validateMode()) ||
+			((renderMode == Common::kRenderHercA || renderMode == Common::kRenderHercG) && !SCI0_HerculesDriver::validateMode()))
+			renderMode = Common::kRenderDefault;
+
+		// Disable undithering for CGA and Hercules modes
+		if (renderMode != Common::kRenderDefault)
+			undither = false;
+
 		// Initialize the game screen
-		_gfxScreen = new GfxScreen(_resMan);
-		_gfxScreen->enableUndithering(ConfMan.getBool("disable_dithering"));
+		_gfxScreen = new GfxScreen(_resMan, renderMode);
+		_gfxScreen->enableUndithering(undither);
 	}
 
 	_kernel = new Kernel(_resMan, segMan);

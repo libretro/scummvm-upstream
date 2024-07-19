@@ -433,8 +433,8 @@ void GfxView::getCelScaledRect(int16 loopNo, int16 celNo, int16 x, int16 y, int1
 	const CelInfo *celInfo = getCelInfo(loopNo, celNo);
 
 	// Scaling displaceX/Y, Width/Height
-	int16 scaledDisplaceX = (celInfo->displaceX * scaleX) >> 7;
-	int16 scaledDisplaceY = (celInfo->displaceY * scaleY) >> 7;
+	int16 scaledDisplaceX = (celInfo->displaceX * scaleX) / 128;
+	int16 scaledDisplaceY = (celInfo->displaceY * scaleY) / 128;
 	int16 scaledWidth = (celInfo->width * scaleX) >> 7;
 	int16 scaledHeight = (celInfo->height * scaleY) >> 7;
 	scaledWidth = CLIP<int16>(scaledWidth, 0, _screen->getWidth());
@@ -872,8 +872,16 @@ void GfxView::drawScaled(const Common::Rect &rect, const Common::Rect &clipRect,
 		_palette->set(&_viewPalette, false);
 
 	Common::Array<uint16> scalingX, scalingY;
-	createScalingTable(scalingX, celWidth, _screen->getWidth(), scaleX);
-	createScalingTable(scalingY, celHeight, _screen->getHeight(), scaleY);
+	const bool mirrorFlag = _loop[CLIP<int16>(loopNo, 0, _loop.size() - 1)].mirrorFlag;
+	createScalingTable(scalingX, celWidth, _screen->getWidth(), scaleX, mirrorFlag);
+	if (mirrorFlag) {
+		// reverse the table when mirroring; we already reversed the bitmap
+		uint scaleTableSize = scalingX.size();
+		for (uint i = 0; i < scaleTableSize / 2; i++) {
+			SWAP(scalingX[i], scalingX[scaleTableSize - i - 1]);
+		}
+	}
+	createScalingTable(scalingY, celHeight, _screen->getHeight(), scaleY, false);
 
 	int16 scaledWidth = MIN(clipRect.width(), (int16)scalingX.size());
 	int16 scaledHeight = MIN(clipRect.height(), (int16)scalingY.size());
@@ -894,22 +902,44 @@ void GfxView::drawScaled(const Common::Rect &rect, const Common::Rect &clipRect,
 	}
 }
 
-void GfxView::createScalingTable(Common::Array<uint16> &table, int16 celSize, uint16 maxSize, int16 scale) {
+void GfxView::createScalingTable(Common::Array<uint16> &table, int16 celSize, uint16 maxSize, int16 scale, bool mirrorFlag) {
 	const int16 scaledSize = (celSize * scale) >> 7;
 	const int16 clippedScaledSize = CLIP<int16>(scaledSize, 0, maxSize);
 	const int16 stepCount = scaledSize - 1;
 
-	if (stepCount <= 0) {
+	if (clippedScaledSize <= 0) {
 		table.clear();
 		return;
 	}
 
-	uint32 acc;
-	uint32 inc = ((celSize - 1) << 16) / stepCount;
-	if ((inc & 0xffff8000) == 0) {
-		acc = 0x8000;
+	// Note that the table produced by this algorithm when mirroring
+	// is slightly different than simply reversing the normal table.
+	const int16 start = mirrorFlag ? (celSize - 1) : 0;
+	const int16 end   = mirrorFlag ? 0 : (celSize - 1);
+
+	int32 acc;
+	int32 inc;
+	bool negative = false;
+	if (stepCount == 0) {
+		acc = start << 16;
+		inc = 0;
 	} else {
-		acc = inc & 0xffff;
+		acc = start << 16;
+		inc = end << 16;
+		inc -= acc;
+		inc /= stepCount;
+		if (inc < 0) {
+			inc = -inc;
+			negative = true;
+		}
+		if ((inc & 0xffff8000) == 0) {
+			acc = (acc & 0xffff0000) | 0x8000;
+		} else {
+			acc = (acc & 0xffff0000) | (inc & 0xffff);
+		}
+	}
+	if (negative) {
+		inc = -inc;
 	}
 
 	table.resize(clippedScaledSize);

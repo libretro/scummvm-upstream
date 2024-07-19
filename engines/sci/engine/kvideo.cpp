@@ -19,11 +19,11 @@
  *
  */
 
-#include "engines/util.h"
 #include "sci/engine/kernel.h"
 #include "sci/engine/state.h"
 #include "sci/graphics/helpers.h"
 #include "sci/graphics/cursor.h"
+#include "sci/graphics/gfxdrivers.h"
 #include "sci/graphics/palette.h"
 #include "sci/graphics/screen.h"
 #include "sci/util.h"
@@ -87,9 +87,9 @@ void playVideo(Video::VideoDecoder &videoDecoder) {
 					const SciSpan<const byte> input((const byte *)frame->getPixels(), frame->w * frame->h * bytesPerPixel);
 					// TODO: Probably should do aspect ratio correction in KQ6
 					g_sci->_gfxScreen->scale2x(input, *scaleBuffer, videoDecoder.getWidth(), videoDecoder.getHeight(), bytesPerPixel);
-					g_sci->_gfxScreen->copyVideoFrameToScreen(scaleBuffer->getUnsafeDataAt(0, pitch * height), pitch, rect, bytesPerPixel == 1);
+					g_sci->_gfxScreen->copyVideoFrameToScreen(scaleBuffer->getUnsafeDataAt(0, pitch * height), pitch, rect);
 				} else {
-					g_sci->_gfxScreen->copyVideoFrameToScreen((const byte *)frame->getPixels(), frame->pitch, rect, bytesPerPixel == 1);
+					g_sci->_gfxScreen->copyVideoFrameToScreen((const byte *)frame->getPixels(), frame->pitch, rect);
 				}
 
 				if (videoDecoder.hasDirtyPalette()) {
@@ -114,14 +114,13 @@ void playVideo(Video::VideoDecoder &videoDecoder) {
 }
 
 reg_t kShowMovie(EngineState *s, int argc, reg_t *argv) {
+	reg_t retval = s->r_acc;
+
 	// Hide the cursor if it's showing and then show it again if it was
 	// previously visible.
 	bool reshowCursor = g_sci->_gfxCursor->isVisible();
 	if (reshowCursor)
 		g_sci->_gfxCursor->kernelHide();
-
-	uint16 screenWidth = g_system->getWidth();
-	uint16 screenHeight = g_system->getHeight();
 
 	Common::ScopedPtr<Video::VideoDecoder> videoDecoder;
 
@@ -141,7 +140,7 @@ reg_t kShowMovie(EngineState *s, int argc, reg_t *argv) {
 				for (it = supportedFormats.begin(); it != supportedFormats.end(); ++it) {
 					if (it->bytesPerPixel == 2) {
 						const Graphics::PixelFormat format = *it;
-						initGraphics(screenWidth, screenHeight, &format);
+						g_sci->_gfxScreen->gfxDriver()->initScreen(&format);
 						switchedGraphicsMode = true;
 						break;
 					}
@@ -168,9 +167,10 @@ reg_t kShowMovie(EngineState *s, int argc, reg_t *argv) {
 			}
 		}
 	} else {
-		// Windows AVI
-		// TODO: This appears to be some sort of subop. case 0 contains the string
-		// for the video, so we'll just play it from there for now.
+		// Windows AVI: Only used by KQ6 CD for the Sierra logo and intro cartoon.
+		// The first parameter is a subop. Some of the subops set the accumulator.
+		// The interpreter implements subops 0-6. KQ6 only calls 0, 1, 2, 3, 6.
+		// Subop 0 plays the AVI; it is the only one that needs to be implemented.
 
 		switch (argv[0].toUint16()) {
 		case 0: {
@@ -180,10 +180,11 @@ reg_t kShowMovie(EngineState *s, int argc, reg_t *argv) {
 				warning("Failed to open movie file %s", filename.c_str());
 				videoDecoder.reset();
 			}
+			retval = TRUE_REG;
 			break;
 		}
 		default:
-			warning("Unhandled SCI kShowMovie subop %d", argv[0].toUint16());
+			debug(kDebugLevelVideo, "Unhandled kShowMovie subop %d", argv[0].toUint16());
 		}
 	}
 
@@ -195,7 +196,7 @@ reg_t kShowMovie(EngineState *s, int argc, reg_t *argv) {
 		// HACK: Switch back to 8bpp if we played a true color video.
 		// We also won't be copying the screen to the SCI screen...
 		if (switchedGraphicsMode)
-			initGraphics(screenWidth, screenHeight);
+			g_sci->_gfxScreen->gfxDriver()->initScreen();
 		else if (is8bit) {
 			g_sci->_gfxScreen->kernelSyncWithFramebuffer();
 			g_sci->_gfxPalette16->kernelSyncScreenPalette();
@@ -205,7 +206,7 @@ reg_t kShowMovie(EngineState *s, int argc, reg_t *argv) {
 	if (reshowCursor)
 		g_sci->_gfxCursor->kernelShow();
 
-	return s->r_acc;
+	return retval;
 }
 
 #ifdef ENABLE_SCI32

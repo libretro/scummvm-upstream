@@ -286,60 +286,23 @@ void PluginManager::addPluginProvider(PluginProvider *pp) {
 	_providers.push_back(pp);
 }
 
-const Plugin *PluginManager::getEngineFromMetaEngine(const Plugin *plugin) {
-	assert(plugin->getType() == PLUGIN_TYPE_ENGINE_DETECTION);
+PluginManagerUncached::~PluginManagerUncached() {
+	// Unload from memory all engine plugins without deleting them
+	// They are also referenced from _allEnginePlugins which we clean up here
+	unloadPluginsExcept(PLUGIN_TYPE_ENGINE, nullptr, false);
 
-	const Plugin *enginePlugin = nullptr;
-
-	// Use the engineID from MetaEngine for comparison.
-	Common::String metaEnginePluginName = plugin->getName();
-
-	enginePlugin = PluginMan.findEnginePlugin(metaEnginePluginName);
-
-	if (enginePlugin) {
-		debug(9, "MetaEngine: %s \t matched to \t Engine: %s", plugin->get<MetaEngineDetection>().getEngineName(), enginePlugin->getFileName().toString().c_str());
-		return enginePlugin;
+	for (PluginList::iterator p = _allEnginePlugins.begin(); p != _allEnginePlugins.end(); ++p) {
+		delete *p;
 	}
+	_allEnginePlugins.clear();
 
-	debug(9, "MetaEngine: %s couldn't find a match for an engine plugin.", plugin->get<MetaEngineDetection>().getEngineName());
-	return nullptr;
-}
-
-const Plugin *PluginManager::getMetaEngineFromEngine(const Plugin *plugin) {
-	assert(plugin->getType() == PLUGIN_TYPE_ENGINE);
-
-	const Plugin *metaEngine = nullptr;
-
-	PluginList pl = PluginMan.getPlugins(PLUGIN_TYPE_ENGINE_DETECTION);
-
-	// This will return a name of the Engine plugin, which will be identical to
-	// a getEngineID from a relevant MetaEngine.
-	Common::String enginePluginName(plugin->getName());
-
-	for (PluginList::const_iterator itr = pl.begin(); itr != pl.end(); itr++) {
-		Common::String metaEngineName = (*itr)->getName();
-
-		if (metaEngineName.equalsIgnoreCase(enginePluginName)) {
-			metaEngine = (*itr);
-			break;
-		}
-	}
-
-	if (metaEngine) {
-		debug(9, "Engine: %s matched to MetaEngine: %s", plugin->getFileName().toString().c_str(), metaEngine->get<MetaEngineDetection>().getEngineName());
-		return metaEngine;
-	}
-
-	debug(9, "Engine: %s couldn't find a match for a MetaEngine plugin.", plugin->getFileName().toString().c_str());
-	return nullptr;
+	delete _detectionPlugin;
 }
 
 /**
  * This should only be called once by main()
  **/
 void PluginManagerUncached::init() {
-	unloadAllPlugins();
-	_allEnginePlugins.clear();
 	ConfMan.setBool("always_run_fallback_detection_extern", false);
 
 	unloadPluginsExcept(PLUGIN_TYPE_ENGINE, nullptr, false); // empty the engine plugins
@@ -463,45 +426,43 @@ void PluginManagerUncached::updateConfigWithFileName(const Common::String &engin
 
 #ifndef DETECTION_STATIC
 void PluginManagerUncached::loadDetectionPlugin() {
-	bool linkMetaEngines = false;
-
 	if (_isDetectionLoaded) {
 		debug(9, "Detection plugin is already loaded. Adding each available engines to the memory.");
-		linkMetaEngines = true;
-	} else {
-		if (_detectionPlugin) {
-			if (_detectionPlugin->loadPlugin()) {
-				assert((_detectionPlugin)->getType() == PLUGIN_TYPE_DETECTION);
-
-				linkMetaEngines = true;
-				_isDetectionLoaded = true;
-			} else {
-				debug(9, "Detection plugin was not loaded correctly.");
-				return;
-			}
-		} else {
-			debug(9, "Detection plugin not found.");
-			return;
-		}
+		return;
 	}
 
-	if (linkMetaEngines) {
-		_pluginsInMem[PLUGIN_TYPE_ENGINE_DETECTION].clear();
-		const Detection &detectionConnect = _detectionPlugin->get<Detection>();
-		const PluginList &pl = detectionConnect.getPlugins();
-		Common::for_each(pl.begin(), pl.end(), Common::bind1st(Common::mem_fun(&PluginManagerUncached::tryLoadPlugin), this));
+	if (!_detectionPlugin) {
+		debug(9, "Detection plugin not found.");
+		return;
 	}
 
+	// Unload all leftover engines before reloading the detection plugin
+	unloadPluginsExcept(PLUGIN_TYPE_ENGINE, nullptr, false);
+
+	if (!_detectionPlugin->loadPlugin()) {
+		debug(9, "Detection plugin was not loaded correctly.");
+		return;
+	}
+
+	assert((_detectionPlugin)->getType() == PLUGIN_TYPE_DETECTION);
+
+	_pluginsInMem[PLUGIN_TYPE_ENGINE_DETECTION].clear();
+	const Detection &detectionConnect = _detectionPlugin->get<Detection>();
+	const PluginList &pl = detectionConnect.getPlugins();
+	Common::for_each(pl.begin(), pl.end(), Common::bind1st(Common::mem_fun(&PluginManagerUncached::tryLoadPlugin), this));
+
+	_isDetectionLoaded = true;
 }
 
 void PluginManagerUncached::unloadDetectionPlugin() {
-	if (_isDetectionLoaded) {
-		_pluginsInMem[PLUGIN_TYPE_ENGINE_DETECTION].clear();
-		_detectionPlugin->unloadPlugin();
-		_isDetectionLoaded = false;
-	} else {
+	if (!_isDetectionLoaded) {
 		debug(9, "Detection plugin is already unloaded.");
+		return;
 	}
+
+	unloadPluginsExcept(PLUGIN_TYPE_ENGINE_DETECTION, nullptr, true);
+	_detectionPlugin->unloadPlugin();
+	_isDetectionLoaded = false;
 }
 #endif
 
@@ -632,8 +593,9 @@ void PluginManager::addToPluginsInMemList(Plugin *plugin) {
 	// The plugin is valid, see if it provides the same module as an
 	// already loaded one and should replace it.
 
-	PluginList::iterator pl = _pluginsInMem[plugin->getType()].begin();
-	while (!found && pl != _pluginsInMem[plugin->getType()].end()) {
+	PluginList &list = _pluginsInMem[plugin->getType()];
+	PluginList::iterator pl = list.begin();
+	while (!found && pl != list.end()) {
 		if (!strcmp(plugin->getName(), (*pl)->getName())) {
 			// Found a duplicated module. Replace the old one.
 			found = true;
@@ -647,7 +609,7 @@ void PluginManager::addToPluginsInMemList(Plugin *plugin) {
 
 	if (!found) {
 		// If it provides a new module, just add it to the list of known plugins in memory.
-		_pluginsInMem[plugin->getType()].push_back(plugin);
+		list.push_back(plugin);
 	}
 }
 
@@ -671,7 +633,7 @@ QualifiedGameList EngineManager::findGamesMatching(const Common::String &engineI
 
 	if (!engineId.empty()) {
 		// If we got an engine name, look for THE game only in that engine
-		const Plugin *p = EngineMan.findPlugin(engineId);
+		const Plugin *p = EngineMan.findDetectionPlugin(engineId);
 		if (p) {
 			const MetaEngineDetection &engine = p->get<MetaEngineDetection>();
 			DebugMan.addAllDebugChannels(engine.getDebugChannels());
@@ -697,7 +659,7 @@ QualifiedGameList EngineManager::findGamesMatching(const Common::String &engineI
  **/
 QualifiedGameList EngineManager::findGameInLoadedPlugins(const Common::String &gameId) const {
 	// Find the GameDescriptor for this target
-	const PluginList &plugins = getPlugins();
+	const PluginList &plugins = getPlugins(PLUGIN_TYPE_ENGINE_DETECTION);
 
 	QualifiedGameList results;
 	PluginList::const_iterator iter;
@@ -811,8 +773,8 @@ Common::String EngineManager::createTargetForGame(const DetectedGame &game) {
 	return domain;
 }
 
-const Plugin *EngineManager::findPlugin(const Common::String &engineId) const {
-	const PluginList &plugins = getPlugins();
+const Plugin *EngineManager::findDetectionPlugin(const Common::String &engineId) const {
+	const PluginList &plugins = getPlugins(PLUGIN_TYPE_ENGINE_DETECTION);
 
 	for (PluginList::const_iterator iter = plugins.begin(); iter != plugins.end(); iter++)
 		if (engineId == (*iter)->get<MetaEngineDetection>().getName())
@@ -860,7 +822,7 @@ const Plugin *PluginManager::findEnginePlugin(const Common::String &engineId) {
 	return nullptr;
 }
 
-QualifiedGameDescriptor EngineManager::findTarget(const Common::String &target, const Plugin **plugin) const {
+QualifiedGameDescriptor EngineManager::findTarget(const Common::String &target) const {
 	// Ignore empty targets
 	if (target.empty())
 		return QualifiedGameDescriptor();
@@ -871,7 +833,7 @@ QualifiedGameDescriptor EngineManager::findTarget(const Common::String &target, 
 		return QualifiedGameDescriptor();
 
 	// Look for the engine ID
-	const Plugin *foundPlugin = findPlugin(domain->getVal("engineid"));
+	const Plugin *foundPlugin = findDetectionPlugin(domain->getVal("engineid"));
 	if (!foundPlugin) {
 		return QualifiedGameDescriptor();
 	}
@@ -883,9 +845,6 @@ QualifiedGameDescriptor EngineManager::findTarget(const Common::String &target, 
 	if (!desc.gameId) {
 		return QualifiedGameDescriptor();
 	}
-
-	if (plugin)
-		*plugin = foundPlugin;
 
 	return QualifiedGameDescriptor(engine.getName(), desc);
 }
@@ -939,7 +898,7 @@ void EngineManager::upgradeTargetForEngineId(const Common::String &target) const
 
 	// First, try to update entries for engines that previously used the "single id" system
 	// Search for an engine whose ID is the game ID
-	const Plugin *plugin = findPlugin(oldGameId);
+	const Plugin *plugin = findDetectionPlugin(oldGameId);
 	if (plugin) {
 		// Run detection on the game path
 		Common::FSNode dir(path);

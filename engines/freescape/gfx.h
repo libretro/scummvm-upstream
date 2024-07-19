@@ -22,6 +22,7 @@
 #ifndef FREESCAPE_GFX_H
 #define FREESCAPE_GFX_H
 
+#include "common/hashmap.h"
 #include "common/rendermode.h"
 #include "common/rect.h"
 
@@ -149,7 +150,7 @@ public:
 	 */
 
 	virtual void positionCamera(const Math::Vector3d &pos, const Math::Vector3d &interest) = 0;
-	virtual void updateProjectionMatrix(float fov, float nearClipPlane, float farClipPlane) = 0;
+	virtual void updateProjectionMatrix(float fov, float yminValue, float ymaxValue, float nearClipPlane, float farClipPlane) = 0;
 
 	Math::Matrix4 getMvpMatrix() const { return _mvpMatrix; }
 	virtual Graphics::Surface *getScreenshot() = 0;

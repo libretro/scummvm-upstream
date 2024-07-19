@@ -26,16 +26,31 @@
  */
 
 #include "engines/advancedDetector.h"
-#include "engines/obsolete.h"
+
+#include "common/translation.h"
 
 #include "gob/gameidtotype.h"
 #include "gob/gob.h"
-#include "gob/obsolete.h"
 
 // For struct GOBGameDescription.
 #include "gob/detection/detection.h"
 
-class GobMetaEngine : public AdvancedMetaEngine {
+static const ADExtraGuiOptionsMap optionsList[] = {
+	{
+		GAMEOPTION_COPY_PROTECTION,
+                {
+                        _s("Enable copy protection"),
+                        _s("Enable any copy protection that would otherwise be bypassed by default."),
+                        "copy_protection",
+                        false,
+                        0,
+                        0
+                },
+        },
+	AD_EXTRA_GUI_OPTIONS_TERMINATOR
+};
+
+class GobMetaEngine : public AdvancedMetaEngine<Gob::GOBGameDescription> {
 public:
 	const char *getName() const override {
 		return "gob";
@@ -43,12 +58,11 @@ public:
 
 	bool hasFeature(MetaEngineFeature f) const override;
 
-	Common::Error createInstance(OSystem *syst, Engine **engine) override {
-		Engines::upgradeTargetIfNecessary(obsoleteGameIDsTable);
-		return AdvancedMetaEngine::createInstance(syst, engine);
-	}
+	Common::Error createInstance(OSystem *syst, Engine **engine, const Gob::GOBGameDescription *desc) const override;
 
-	Common::Error createInstance(OSystem *syst, Engine **engine, const ADGameDescription *desc) const override;
+	const ADExtraGuiOptionsMap *getAdvancedExtraGuiOptions() const override {
+		return optionsList;
+	}
 };
 
 bool GobMetaEngine::hasFeature(MetaEngineFeature f) const {
@@ -60,8 +74,7 @@ bool Gob::GobEngine::hasFeature(EngineFeature f) const {
 		(f == kSupportsReturnToLauncher);
 }
 
-Common::Error GobMetaEngine::createInstance(OSystem *syst, Engine **engine, const ADGameDescription *desc) const {
-	const Gob::GOBGameDescription *gd = (const Gob::GOBGameDescription *)desc;
+Common::Error GobMetaEngine::createInstance(OSystem *syst, Engine **engine, const Gob::GOBGameDescription *gd) const {
 	*engine = new Gob::GobEngine(syst);
 	((Gob::GobEngine *)*engine)->initGame(gd);
 	return Common::kNoError;

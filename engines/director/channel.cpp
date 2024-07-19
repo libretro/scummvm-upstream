@@ -386,7 +386,13 @@ void Channel::setCast(CastMemberID memberID) {
 	if (_sprite->_cast)
 		_sprite->_cast->releaseWidget();
 
-	_sprite->setCast(memberID);
+	// Replace the cast member in the sprite.
+	// Only change the dimensions if the "stretch" flag is set,
+	// indicating that the sprite has already been warped away from cast
+	// dimensions. In puppet mode Lingo can first change the
+	// dimensions of the sprite, -then- change the cast ID, and expect
+	// those custom dimensions to stick around.
+	_sprite->setCast(memberID, !_sprite->_stretch);
 	replaceWidget();
 
 	// Based on Director in a Nutshell, page 15
@@ -418,22 +424,8 @@ void Channel::setClean(Sprite *nextSprite, bool partial) {
 					((DigitalVideoCastMember *)nextSprite->_cast)->startVideo();
 				}
 			} else if (nextSprite->_cast->_type == kCastFilmLoop) {
-				// brand new film loop, reset the frame counter
-				_filmLoopFrame = 0;
-			}
-		}
-
-		// if the next sprite in the channel shares the cast member
-		if (nextSprite->_cast && _sprite->_castId == nextSprite->_castId) {
-			if (nextSprite->_cast->_type == kCastFilmLoop) {
-				FilmLoopCastMember *fl = ((FilmLoopCastMember *)nextSprite->_cast);
-				if (!fl->_frames.empty()) {
-					// increment the film loop counter
-					_filmLoopFrame += 1;
-					_filmLoopFrame %= ((FilmLoopCastMember *)nextSprite->_cast)->_frames.size();
-				} else {
-					warning("Channel::setClean(): invalid film loop in castId %s", nextSprite->_castId.asString().c_str());
-				}
+				// brand new film loop, reset the frame counter.
+				_filmLoopFrame = 1;
 			}
 		}
 
@@ -474,9 +466,11 @@ void Channel::setStretch(bool enabled) {
 		g_director->getCurrentWindow()->addDirtyRect(getBbox());
 		_dirty = true;
 
-		Common::Rect bbox = _sprite->_cast->getBbox();
-		_sprite->setWidth(bbox.width());
-		_sprite->setHeight(bbox.height());
+		if (_sprite->_cast) {
+			Common::Rect bbox = _sprite->_cast->getBbox();
+			_sprite->setWidth(bbox.width());
+			_sprite->setHeight(bbox.height());
+		}
 	}
 	_sprite->_stretch = enabled;
 }

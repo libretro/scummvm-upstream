@@ -24,7 +24,7 @@
 
 #include "common/savefile.h"
 #include "common/stream.h"
-#include "ags/lib/std/functional.h"
+#include "common/std/functional.h"
 #include "ags/shared/util/data_stream.h"
 #include "ags/shared/util/file.h" // TODO: extract filestream mode constants
 

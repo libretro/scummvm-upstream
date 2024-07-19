@@ -20,7 +20,7 @@
  */
 
 #include "ags/shared/util/geometry.h"
-#include "ags/lib/std/algorithm.h"
+#include "common/std/algorithm.h"
 
 namespace AGS3 {
 

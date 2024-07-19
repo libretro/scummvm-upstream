@@ -3069,8 +3069,12 @@ EOF
 			if test "$_macos_min_version" -lt 1060 ; then
 				add_line_to_config_mk 'MACOSX_LEOPARD_OR_BELOW = 1'
 				if test "$_debug_build" != no ; then
-					# Newer compiler but ancient gdb
-					append_var CXXFLAGS "-gstabs+"
+					# Prefer DWARF over stabs on older OSX; this requires a
+					# newer GDB, but we need it for the updated toolchain
+					# anyway. This improves the debugging experience quite
+					# a lot, and it still creates meaningful traces for the
+					# Crash Reporter of OSX 10.4.
+					append_var CXXFLAGS "-gdwarf-2"
 				fi
 			fi
 
@@ -3444,6 +3448,12 @@ if test -n "$_host"; then
 	echo "Cross-compiling to $_host"
 	case "$_host" in
 		3ds)
+			if test "$_dynamic_modules" = yes ; then
+				_detection_features_static=no
+				_plugins_default=dynamic
+			else
+				_detection_features_full=no
+			fi
 			append_var DEFINES "-DDISABLE_FANCY_THEMES"
 			append_var DEFINES "-DDISABLE_HELP_STRINGS"
 			append_var DEFINES "-DDISABLE_NES_APU"
@@ -5213,6 +5223,8 @@ echocheck "FLAC >= 1.0.1"
 if test "$_flac" = auto ; then
 	_flac=no
 	cat > $TMPC << EOF
+#define FLAC__NO_DLL // Like in audio/decoders/flac.cpp
+
 #include <FLAC/stream_decoder.h>
 #include <FLAC/format.h>
 int main(void) {
@@ -5999,17 +6011,31 @@ append_var SONIVOX_LIBS "-lsonivox"
 if test "$_sonivox" = auto; then
 	_sonivox=no
 	cat > $TMPC << EOF
+#include <stddef.h>
 #include <sonivox/eas.h>
-int main(void) { /* delete_fluid_settings(new_fluid_settings()); */ return 0; }
+
+EAS_DATA_HANDLE mEASDataHandle = NULL;
+
+int main(void) {
+	EAS_Init(&mEASDataHandle);
+	return 0;
+}
 EOF
 	cc_check_no_clean $SONIVOX_CFLAGS $SONIVOX_LIBS && _sonivox=yes
 	if test "$_sonivox" != yes && test "$_pkg_config" = "yes" && $_pkgconfig --exists sonivox; then
 		SONIVOX_LIBS="`$_pkgconfig --static --libs sonivox`"
 		cc_check_no_clean $SONIVOX_CFLAGS $SONIVOX_LIBS && _sonivox=yes
 	fi
-	if test "$_sonivox" != yes && test "$_pkg_config" = "yes" && $_pkgconfig --exists sonivox-static; then
-		SONIVOX_LIBS="`$_pkgconfig --static --libs sonivox-static`"
-		cc_check_no_clean $SONIVOX_CFLAGS $SONIVOX_LIBS && _sonivox=yes
+	if test "$_sonivox" != yes ; then
+		if test "$_pkg_config" = "yes" && $_pkgconfig --exists sonivox-static; then
+			SONIVOX_LIBS="`$_pkgconfig --static --libs sonivox-static`"
+			cc_check_no_clean $SONIVOX_CFLAGS $SONIVOX_LIBS && _sonivox=yes
+		fi
+
+		if test "$_sonivox" != yes ; then
+			SONIVOX_LIBS="-lsonivox-static"
+			cc_check_no_clean $SONIVOX_CFLAGS $SONIVOX_LIBS && _sonivox=yes
+		fi
 	fi
 	cc_check_clean
 fi

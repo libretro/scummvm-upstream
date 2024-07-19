@@ -19,7 +19,7 @@
  *
  */
 
-#include "ags/lib/std/vector.h"
+#include "common/std/vector.h"
 #include "ags/engine/ac/dynobj/managed_object_pool.h"
 #include "ags/engine/ac/dynobj/cc_dynamic_array.h" // globalDynamicArray, constants
 #include "ags/shared/debugging/out.h"

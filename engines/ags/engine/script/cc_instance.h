@@ -22,8 +22,8 @@
 #ifndef AGS_ENGINE_SCRIPT_CC_INSTANCE_H
 #define AGS_ENGINE_SCRIPT_CC_INSTANCE_H
 
-#include "ags/lib/std/memory.h"
-#include "ags/lib/std/map.h"
+#include "common/std/memory.h"
+#include "common/std/map.h"
 #include "ags/engine/ac/timer.h"
 #include "ags/shared/script/cc_internal.h"
 #include "ags/shared/script/cc_script.h"  // ccScript

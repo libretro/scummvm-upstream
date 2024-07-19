@@ -38,9 +38,7 @@ EclipseEngine::EclipseEngine(OSystem *syst, const ADGameDescription *gd) : Frees
 		initAmigaAtari();
 
 	_playerHeightNumber = 1;
-	_playerHeights.push_back(32);
-	_playerHeights.push_back(48);
-	_playerHeight = _playerHeights[_playerHeightNumber];
+	_playerHeightMaxNumber = 1;
 
 	_playerWidth = 8;
 	_playerDepth = 8;
@@ -48,9 +46,9 @@ EclipseEngine::EclipseEngine(OSystem *syst, const ADGameDescription *gd) : Frees
 
 	_playerStepIndex = 2;
 	_playerSteps.clear();
-	_playerSteps.push_back(1);
-	_playerSteps.push_back(10);
-	_playerSteps.push_back(25);
+	_playerSteps.push_back(2);
+	_playerSteps.push_back(30);
+	_playerSteps.push_back(60);
 
 	_angleRotationIndex = 1;
 	_angleRotations.push_back(5);
@@ -67,6 +65,7 @@ EclipseEngine::EclipseEngine(OSystem *syst, const ADGameDescription *gd) : Frees
 	_endEntrance = 33;
 
 	_lastThirtySeconds = 0;
+	_lastSecond = -1;
 	_resting = false;
 }
 
@@ -74,7 +73,6 @@ void EclipseEngine::initGameState() {
 	FreescapeEngine::initGameState();
 
 	_playerHeightNumber = 1;
-	_playerHeight = _playerHeights[_playerHeightNumber];
 
 	_gameStateVars[k8bitVariableEnergy] = _initialEnergy;
 	_gameStateVars[k8bitVariableShield] = _initialShield;
@@ -94,7 +92,8 @@ void EclipseEngine::loadAssets() {
 	_fallenMessage = _messagesList[3];
 	_crushedMessage = _messagesList[2];
 	_areaMap[1]->addFloor();
-	_areaMap[51]->addFloor();
+	if (!isDemo())
+		_areaMap[51]->addFloor();
 }
 
 bool EclipseEngine::checkIfGameEnded() {
@@ -359,10 +358,10 @@ void EclipseEngine::pressedKey(const int keycode) {
 		rotate(-_angleRotations[_angleRotationIndex], 0);
 	} else if (keycode == Common::KEYCODE_w) {
 		rotate(_angleRotations[_angleRotationIndex], 0);
+	} else if (keycode == Common::KEYCODE_a) {
+		changeAngle();
 	} else if (keycode == Common::KEYCODE_s) {
-		increaseStepSize();
-	} else if (keycode ==  Common::KEYCODE_x) {
-		decreaseStepSize();
+		changeStepSize();
 	} else if (keycode == Common::KEYCODE_h) {
 		if (_playerHeightNumber == 0)
 			rise();
@@ -415,6 +414,49 @@ void EclipseEngine::drawAnalogClockHand(Graphics::Surface *surface, int x, int y
 	double w = magnitude * cos(degrees * degtorad);
 	double h = magnitude * sin(degrees * degtorad);
 	surface->drawLine(x, y, x+(int)w, y+(int)h, color);
+}
+
+void EclipseEngine::drawCompass(Graphics::Surface *surface, int x, int y, double degrees, double magnitude, uint32 color) {
+	const double degtorad = (M_PI * 2) / 360;
+	double w = magnitude * cos(-degrees * degtorad);
+	double h = magnitude * sin(-degrees * degtorad);
+
+	int dx = 0;
+	int dy = 0;
+
+	// Adjust dx and dy to make the compass look like a compass
+	if (degrees == 0 || degrees == 360) {
+		dx = 0;
+		dy = 2;
+	} else if (degrees > 0 && degrees < 90) {
+		dx = 1;
+		dy = 1;
+	} else if (degrees == 90) {
+		dx = 2;
+		dy = 0;
+	} else if (degrees > 90 && degrees < 180) {
+		dx = 1;
+		dy = -1;
+	} else if (degrees == 180) {
+		dx = 0;
+		dy = 2;
+	} else if (degrees > 180 && degrees < 270) {
+		dx = -1;
+		dy = -1;
+	} else if (degrees == 270) {
+		dx = 2;
+		dy = 0;
+	} else if (degrees > 270 && degrees < 360) {
+		dx = -1;
+		dy = 1;
+	}
+
+	surface->drawLine(x, y, x+(int)w, y+(int)h, color);
+	surface->drawLine(x - dx, y - dy, x+(int)w, y+(int)h, color);
+	surface->drawLine(x + dx, y + dy, x+(int)w, y+(int)h, color);
+
+	surface->drawLine(x - dx, y - dy, x+(int)-w, y+(int)-h, color);
+	surface->drawLine(x + dx, y + dy, x+(int)-w, y+(int)-h, color);
 }
 
 // Copied from BITMAP::circlefill in engines/ags/lib/allegro/surface.cpp
@@ -575,6 +617,15 @@ void EclipseEngine::updateTimeVariables() {
 		}
 
 		executeLocalGlobalConditions(false, false, true);
+	}
+
+	if (isEclipse() && isSpectrum() && _currentArea->getAreaID() == 42) {
+		if (_lastSecond != seconds) { // Swap ink and paper colors every second
+			_lastSecond = seconds;
+			int tmp = _gfx->_inkColor;
+			_gfx->_inkColor = _gfx->_paperColor;
+			_gfx->_paperColor = tmp;
+		}
 	}
 }
 

@@ -38,6 +38,8 @@ enum SIMONGameType {
 };
 
 struct AGOSGameDescription {
+	AD_GAME_DESCRIPTION_HELPERS(desc);
+
 	ADGameDescription desc;
 
 	int gameType;
@@ -50,6 +52,7 @@ struct AGOSGameDescription {
 #define GAMEOPTION_WINDOWS_TEMPOS       GUIO_GAMEOPTIONS3
 #define GAMEOPTION_PREFER_DIGITAL_SFX   GUIO_GAMEOPTIONS4
 #define GAMEOPTION_DISABLE_FADE_EFFECTS GUIO_GAMEOPTIONS5
+#define GAMEOPTION_COPY_PROTECTION      GUIO_GAMEOPTIONS6
 
 } // End of namespace AGOS
 

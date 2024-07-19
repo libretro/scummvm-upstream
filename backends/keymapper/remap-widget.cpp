@@ -44,7 +44,7 @@ enum {
 };
 
 RemapWidget::RemapWidget(GuiObject *boss, const Common::String &name, const KeymapArray &keymaps) :
-		OptionsContainerWidget(boss, name, "", true, ""),
+		OptionsContainerWidget(boss, name, "", ""),
 		_keymapTable(keymaps),
 		_remapKeymap(nullptr),
 		_remapAction(nullptr),
@@ -96,6 +96,11 @@ void RemapWidget::handleInputChanged() {
 	}
 
 	refreshKeymap();
+}
+
+void RemapWidget::reflowLayout() {
+	OptionsContainerWidget::reflowLayout();
+	reflowActionWidgets();
 }
 
 void RemapWidget::reflowActionWidgets() {
@@ -164,8 +169,6 @@ void RemapWidget::handleCommand(GUI::CommandSender *sender, uint32 cmd, uint32 d
 		resetMapping(cmd - kResetActionCmd);
 	} else if (cmd >= kResetKeymapCmd && cmd < kResetKeymapCmd + _actions.size()) {
 		resetKeymap(cmd - kResetKeymapCmd);
-	} else if (cmd == kReflowCmd) {
-		reflowActionWidgets();
 	} else {
 		OptionsContainerWidget::handleCommand(sender, cmd, data);
 	}

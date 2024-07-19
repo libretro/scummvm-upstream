@@ -19,7 +19,7 @@
  *
  */
 
-#include "ags/lib/std/algorithm.h"
+#include "common/std/algorithm.h"
 #include "ags/lib/aastr-0.1.1/aastr.h"
 #include "ags/shared/core/platform.h"
 #include "ags/shared/ac/common.h"
@@ -1582,7 +1582,7 @@ void prepare_characters_for_drawing() {
 			_GP(charextra)[aa].height = newheight;
 		} else {
 			// draw at original size, so just use the sprite width and height
-			// TODO: store width and height always, that's much simplier to use for reference!
+			// TODO: store width and height always, that's much simpler to use for reference!
 			_GP(charextra)[aa].width = 0;
 			_GP(charextra)[aa].height = 0;
 			newwidth = src_sprwidth;

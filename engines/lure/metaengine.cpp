@@ -30,9 +30,19 @@
 
 namespace Lure {
 
-#ifdef USE_TTS
-
 static const ADExtraGuiOptionsMap optionsList[] = {
+	{
+		GAMEOPTION_COPY_PROTECTION,
+		{
+			_s("Enable copy protection"),
+			_s("Enable any copy protection that would otherwise be bypassed by default."),
+			"copy_protection",
+			false,
+			0,
+			0
+		},
+	},
+#ifdef USE_TTS
 	{
 		GAMEOPTION_TTS_NARRATOR,
 		{
@@ -44,11 +54,10 @@ static const ADExtraGuiOptionsMap optionsList[] = {
 			0
 		}
 	},
+#endif
 
 	AD_EXTRA_GUI_OPTIONS_TERMINATOR
 };
-
-#endif
 
 uint32 LureEngine::getFeatures() const { return _gameDescription->features; }
 Common::Language LureEngine::getLanguage() const { return _gameDescription->desc.language; }
@@ -71,20 +80,18 @@ LureLanguage LureEngine::getLureLanguage() const {
 
 } // End of namespace Lure
 
-class LureMetaEngine : public AdvancedMetaEngine {
+class LureMetaEngine : public AdvancedMetaEngine<Lure::LureGameDescription> {
 public:
 	const char *getName() const override {
 		return "lure";
 	}
 
-#ifdef USE_TTS
 	const ADExtraGuiOptionsMap *getAdvancedExtraGuiOptions() const override {
 		return Lure::optionsList;
 	}
-#endif
 
 	bool hasFeature(MetaEngineFeature f) const override;
-	Common::Error createInstance(OSystem *syst, Engine **engine, const ADGameDescription *desc) const override;
+	Common::Error createInstance(OSystem *syst, Engine **engine, const Lure::LureGameDescription *desc) const override;
 
 	SaveStateList listSaves(const char *target) const override;
 	int getMaximumSaveSlot() const override;
@@ -106,8 +113,8 @@ bool Lure::LureEngine::hasFeature(EngineFeature f) const {
 		(f == kSupportsSavingDuringRuntime);
 }
 
-Common::Error LureMetaEngine::createInstance(OSystem *syst, Engine **engine, const ADGameDescription *desc) const {
-	*engine = new Lure::LureEngine(syst, (const Lure::LureGameDescription *)desc);
+Common::Error LureMetaEngine::createInstance(OSystem *syst, Engine **engine, const Lure::LureGameDescription *desc) const {
+	*engine = new Lure::LureEngine(syst,desc);
 	return Common::kNoError;
 }
 

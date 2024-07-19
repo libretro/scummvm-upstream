@@ -46,10 +46,10 @@ static const char *const g_vcruiseDirectoryGlobs[] = {
 
 #include "vcruise/detection_tables.h"
 
-class VCruiseMetaEngineDetection : public AdvancedMetaEngineDetection {
+class VCruiseMetaEngineDetection : public AdvancedMetaEngineDetection<VCruise::VCruiseGameDescription> {
 public:
-	VCruiseMetaEngineDetection() : AdvancedMetaEngineDetection(VCruise::gameDescriptions, sizeof(VCruise::VCruiseGameDescription), g_vcruiseGames) {
-		_guiOptions = GUIO4(GAMEOPTION_FAST_ANIMATIONS, GAMEOPTION_INCREASE_DRAG_DISTANCE, GAMEOPTION_LAUNCH_DEBUG, GAMEOPTION_SKIP_MENU);
+	VCruiseMetaEngineDetection() : AdvancedMetaEngineDetection(VCruise::gameDescriptions, g_vcruiseGames) {
+		_guiOptions = GUIO5(GAMEOPTION_FAST_ANIMATIONS, GAMEOPTION_INCREASE_DRAG_DISTANCE, GAMEOPTION_LAUNCH_DEBUG, GAMEOPTION_SKIP_MENU, GAMEOPTION_PRELOAD_SOUNDS);
 		_maxScanDepth = 3;
 		_directoryGlobs = g_vcruiseDirectoryGlobs;
 		_flags = kADFlagCanPlayUnknownVariants;

@@ -34,8 +34,8 @@
 #ifndef AGS_ENGINE_AC_DYNOBJ_SCRIPTSET_H
 #define AGS_ENGINE_AC_DYNOBJ_SCRIPTSET_H
 
-#include "ags/lib/std/set.h"
-#include "ags/lib/std/unordered_set.h"
+#include "common/std/set.h"
+#include "common/std/unordered_set.h"
 #include "ags/engine/ac/dynobj/cc_ags_dynamic_object.h"
 #include "ags/shared/util/stream.h"
 #include "ags/shared/util/string.h"

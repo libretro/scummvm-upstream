@@ -28,9 +28,9 @@
 #ifndef AGS_ENGINE_GFX_GFX_DRIVER_BASE_H
 #define AGS_ENGINE_GFX_GFX_DRIVER_BASE_H
 
-#include "ags/lib/std/memory.h"
-#include "engines/ags/lib/std/map.h"
-#include "ags/lib/std/vector.h"
+#include "common/std/memory.h"
+#include "common/std/map.h"
+#include "common/std/vector.h"
 #include "ags/engine/gfx/ddb.h"
 #include "ags/shared/gfx/gfx_def.h"
 #include "ags/engine/gfx/graphics_driver.h"

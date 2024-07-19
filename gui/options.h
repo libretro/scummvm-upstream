@@ -55,6 +55,7 @@ class GuiObject;
 class RadiobuttonGroup;
 class RadiobuttonWidget;
 class PathWidget;
+class ScrollContainerWidget;
 class OptionsContainerWidget;
 
 class OptionsDialog : public Dialog {
@@ -120,7 +121,8 @@ protected:
 	TabWidget *_tabWidget;
 	int _graphicsTabId;
 	int _midiTabId;
-	int _pathsTabId;
+
+	ScrollContainerWidget *_pathsContainer;
 
 	PathWidget *_shader;
 	ButtonWidget *_shaderClearButton;
@@ -369,6 +371,7 @@ protected:
 	void storageSavesSyncedCallback(const Cloud::Storage::BoolResponse &response);
 	void storageErrorCallback(const Networking::ErrorResponse &response);
 #endif // USE_LIBCURL
+#endif // USE_CLOUD
 
 #ifdef USE_SDL_NET
 	//
@@ -390,7 +393,6 @@ protected:
 	void reflowNetworkTabLayout();
 #endif // USE_SDL_NET
 
-#endif // USE_CLOUD
 	//
 	// Accessibility controls
 	//

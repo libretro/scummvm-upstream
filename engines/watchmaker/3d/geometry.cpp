@@ -1610,7 +1610,7 @@ void t3dLightCharacter(t3dCHARACTER *Ch) {
 	for (j = 0; j < mesh->NumVerts; j++, gv++)
 		gv->diffuse = amb;
 
-	auto light = Ch->CurRoom->LightTable[0];
+	const auto &light = Ch->CurRoom->LightTable[0];
 	if (light.Type & T3D_LIGHT_ALLLIGHTSOFF) {
 		mesh->VBptr = nullptr;
 		return;
@@ -2809,8 +2809,7 @@ void t3dCheckMaterialVB(MaterialPtr mat) {
 //	gv = rLockVertexPtr(mat->VB, DDLOCK_WRITEONLY | DDLOCK_NOSYSLOCK);
 	mat->VBO->_buffer.clear();
 	for (int i = 0; i < mat->NumAllocatedVerts(); i++) {
-		auto vert = *mat->VertsList[i];
-		mat->VBO->_buffer.push_back(vert);
+		mat->VBO->_buffer.push_back(*mat->VertsList[i]);
 		//memcpy(gv, mat->VertsList[i], sizeof(gVertex));
 	}
 

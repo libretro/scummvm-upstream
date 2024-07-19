@@ -29,7 +29,7 @@
 #ifndef AGS_SHARED_UTIL_BUFFEREDSTREAM_H
 #define AGS_SHARED_UTIL_BUFFEREDSTREAM_H
 
-#include "ags/lib/std/vector.h"
+#include "common/std/vector.h"
 #include "ags/shared/util/file_stream.h"
 #include "ags/shared/util/file.h" // TODO: extract filestream mode constants
 

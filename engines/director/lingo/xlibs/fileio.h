@@ -64,6 +64,9 @@ public:
 	FileObject(const FileObject &obj);
 	~FileObject() override;
 
+	bool hasProp(const Common::String &propName) override;
+	Datum getProp(const Common::String &propName) override;
+
 	FileIOError open(const Common::String &origpath, const Common::String &mode);
 	void clear();
 	FileIOError saveFileError();
@@ -72,7 +75,7 @@ public:
 
 namespace FileIO {
 	extern const char *xlibName;
-	extern const char *fileNames[];
+	extern const XlibFileDesc fileNames[];
 
 	void open(ObjectType type, const Common::Path &path);
 	void close(ObjectType type);

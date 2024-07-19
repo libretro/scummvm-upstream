@@ -25,6 +25,10 @@
 #include "common/system.h"
 #include "common/translation.h"
 
+#include "backends/keymapper/action.h"
+#include "backends/keymapper/keymapper.h"
+#include "backends/keymapper/standard-actions.h"
+
 #include "engines/advancedDetector.h"
 #include "groovie/detection.h"
 
@@ -118,7 +122,7 @@ static const ADExtraGuiOptionsMap optionsList[] = {
 	AD_EXTRA_GUI_OPTIONS_TERMINATOR
 };
 
-class GroovieMetaEngine : public AdvancedMetaEngine {
+class GroovieMetaEngine : public AdvancedMetaEngine<GroovieGameDescription> {
 public:
 	const char *getName() const override {
 		return "groovie";
@@ -128,7 +132,7 @@ public:
 		return optionsList;
 	}
 
-	Common::Error createInstance(OSystem *syst, Engine **engine, const ADGameDescription *gd) const override;
+	Common::Error createInstance(OSystem *syst, Engine **engine, const GroovieGameDescription *gd) const override;
 	bool hasFeature(MetaEngineFeature f) const override;
 
 	SaveStateList listSaves(const char *target) const override;
@@ -136,15 +140,17 @@ public:
 	void removeSaveState(const char *target, int slot) const override;
 	SaveStateDescriptor querySaveMetaInfos(const char *target, int slot) const override;
 	int getAutosaveSlot() const override;
+
+	Common::KeymapArray initKeymaps(const char *target) const override;
 };
 
-Common::Error GroovieMetaEngine::createInstance(OSystem *syst, Engine **engine, const ADGameDescription *gd) const {
+Common::Error GroovieMetaEngine::createInstance(OSystem *syst, Engine **engine, const GroovieGameDescription *gd) const {
 #ifndef ENABLE_GROOVIE2
-	if (((const GroovieGameDescription *)gd)->version != kGroovieT7G)
+	if (gd->version != kGroovieT7G)
 		return Common::Error(Common::kUnsupportedGameidError, _s("GroovieV2 support is not compiled in"));
 #endif
 
-	*engine = new GroovieEngine(syst, (const GroovieGameDescription *)gd);
+	*engine = new GroovieEngine(syst,gd);
 	return Common::kNoError;
 }
 
@@ -186,6 +192,36 @@ SaveStateDescriptor GroovieMetaEngine::querySaveMetaInfos(const char *target, in
 
 int GroovieMetaEngine::getAutosaveSlot() const {
 	return GroovieEngine::AUTOSAVE_SLOT;
+}
+
+Common::KeymapArray GroovieMetaEngine::initKeymaps(const char *target) const {
+	using namespace Common;
+	using namespace Groovie;
+
+	Keymap *engineKeyMap = new Keymap(Keymap::kKeymapTypeGame, "groovie-engine", _("Groovie engine"));
+
+	Action *act;
+
+	act = new Action(kStandardActionLeftClick, _("Left click"));
+	act->setLeftClickEvent();
+	act->addDefaultInputMapping("MOUSE_LEFT");
+	act->addDefaultInputMapping("JOY_A");
+	engineKeyMap->addAction(act);
+
+	act = new Action(kStandardActionRightClick, _("Right click"));
+	act->setRightClickEvent();
+	act->addDefaultInputMapping("MOUSE_RIGHT");
+	act->addDefaultInputMapping("JOY_B");
+	engineKeyMap->addAction(act);
+	
+	act = new Action("SKIPORFAST", _("Skip or fast forward scene"));
+	act->setCustomEngineActionEvent(kActionSkip);
+	act->addDefaultInputMapping("ESCAPE");
+	act->addDefaultInputMapping("SPACE");
+	act->addDefaultInputMapping("JOY_X");
+	engineKeyMap->addAction(act);
+
+	return Keymap::arrayOf(engineKeyMap);
 }
 
 } // End of namespace Groovie

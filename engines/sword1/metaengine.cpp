@@ -20,12 +20,10 @@
  */
 
 #include "engines/advancedDetector.h"
-#include "engines/obsolete.h"
 
 #include "sword1/sword1.h"
 #include "sword1/control.h"
 #include "sword1/logic.h"
-#include "sword1/obsolete.h"
 
 #include "common/savefile.h"
 #include "common/system.h"
@@ -56,7 +54,7 @@ static const ADExtraGuiOptionsMap optionsList[] = {
 
 } // End of namespace Sword1
 
-class SwordMetaEngine : public AdvancedMetaEngine {
+class SwordMetaEngine : public AdvancedMetaEngine<ADGameDescription> {
 public:
 	const char *getName() const override {
 		return "sword1";
@@ -72,10 +70,6 @@ public:
 		return Sword1::optionsList;
 	}
 
-	Common::Error createInstance(OSystem *syst, Engine **engine) override {
-		Engines::upgradeTargetIfNecessary(obsoleteGameIDsTable);
-		return AdvancedMetaEngine::createInstance(syst, engine);
-	}
 	Common::Error createInstance(OSystem *syst, Engine **engine, const ADGameDescription *desc) const override;
 
 	Common::String getSavegameFile(int saveGameIdx, const char *target) const override {

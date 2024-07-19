@@ -179,7 +179,8 @@ void SetupMenu::init() {
 	_scrollbars[2]->setPosition(ConfMan.getInt("sfx_volume") / 255.0);
 
 	_exitButton = new UI::Button(5, _background._drawSurface,
-		_setupData->_buttonDownSrcs.back(), _setupData->_buttonDests.back());
+		_setupData->_buttonDownSrcs.back(), _setupData->_buttonDests.back(),
+		_setupData->_doneButtonHighlightSrc);
 	_exitButton->init();
 	_exitButton->setVisible(false);
 
@@ -225,6 +226,7 @@ void SetupMenu::run() {
 		auto *tog = _toggles[i];
 		tog->handleInput(input);
 		if (tog->_stateChanged) {
+			g_nancy->_sound->playSound("BUOK");
 			Common::String key = getToggleConfManKey(i);
 			if (key.size()) {
 				// Make sure we don't write an empty string as a key in ConfMan

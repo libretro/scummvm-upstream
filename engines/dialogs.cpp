@@ -90,7 +90,7 @@ MainMenuDialog::MainMenuDialog(Engine *engine)
 	if (!g_system->hasFeature(OSystem::kFeatureNoQuit) && (!(ConfMan.getBool("gui_return_to_launcher_at_exit")) || !_engine->hasFeature(Engine::kSupportsReturnToLauncher)))
 		new GUI::ButtonWidget(this, "GlobalMenu.Quit", _("~Q~uit"), Common::U32String(), kQuitCmd);
 
-	_aboutDialog = new GUI::AboutDialog();
+	_aboutDialog = new GUI::AboutDialog(true);
 	_loadDialog = new GUI::SaveLoadChooser(_("Load game:"), _("Load"), false);
 	_saveDialog = new GUI::SaveLoadChooser(_("Save game:"), _("Save"), true);
 }
@@ -301,7 +301,11 @@ ConfigDialog::ConfigDialog() :
 	int tabId = tab->addTab(_("Game"), "GlobalConfig_Engine");
 
 	if (g_engine->hasFeature(Engine::kSupportsChangingOptionsDuringRuntime)) {
-		_engineOptions = metaEngine->buildEngineOptionsWidget(tab, "GlobalConfig_Engine.Container", gameDomain);
+		ScrollContainerWidget *engineContainer = new ScrollContainerWidget(tab, "GlobalConfig_Engine.Container", "GlobalConfig_Engine_Container");
+		engineContainer->setBackgroundType(ThemeEngine::kWidgetBackgroundNo);
+		engineContainer->setTarget(this);
+
+		_engineOptions = metaEngine->buildEngineOptionsWidget(engineContainer, "GlobalConfig_Engine_Container.Container", gameDomain);
 	}
 
 	if (_engineOptions) {
@@ -339,14 +343,19 @@ ConfigDialog::ConfigDialog() :
 
 	Common::KeymapArray keymaps = metaEngine->initKeymaps(gameDomain.c_str());
 	if (!keymaps.empty()) {
-		tab->addTab(_("Keymaps"), "GlobalConfig_KeyMapper", false);
-		addKeyMapperControls(tab, "GlobalConfig_KeyMapper.", keymaps, gameDomain);
+		tab->addTab(_("Keymaps"), "GlobalConfig_KeyMapper");
+
+		ScrollContainerWidget *keymapContainer = new ScrollContainerWidget(tab, "GlobalConfig_KeyMapper.Container", "GlobalConfig_KeyMapper_Container");
+		keymapContainer->setBackgroundType(ThemeEngine::kWidgetBackgroundNo);
+		keymapContainer->setTarget(this);
+
+		addKeyMapperControls(keymapContainer, "GlobalConfig_KeyMapper_Container.", keymaps, gameDomain);
 	}
 
 	//
 	// The backend tab (shown only if the backend implements one)
 	//
-	int backendTabId = tab->addTab(_("Backend"), "GlobalConfig_Backend", false);
+	int backendTabId = tab->addTab(_("Backend"), "GlobalConfig_Backend");
 
 	ScrollContainerWidget *backendContainer = new ScrollContainerWidget(tab, "GlobalConfig_Backend.Container", "GlobalConfig_Backend_Container");
 	backendContainer->setBackgroundType(ThemeEngine::kWidgetBackgroundNo);
@@ -365,11 +374,11 @@ ConfigDialog::ConfigDialog() :
 	//
 	AchMan.setActiveDomain(metaEngine->getAchievementsInfo(gameDomain));
 	if (AchMan.getAchievementCount()) {
-		tab->addTab(_("Achievements"), "GlobalConfig_Achievements", false);
+		tab->addTab(_("Achievements"), "GlobalConfig_Achievements");
 		addAchievementsControls(tab, "GlobalConfig_Achievements.");
 	}
 	if (AchMan.getStatCount()) {
-		tab->addTab(_("Statistics"), "GlobalConfig_Achievements", false);
+		tab->addTab(_("Statistics"), "GlobalConfig_Achievements");
 		addStatisticsControls(tab, "GlobalConfig_Achievements.");
 	}
 
@@ -405,7 +414,7 @@ void ConfigDialog::apply() {
 }
 
 ExtraGuiOptionsWidget::ExtraGuiOptionsWidget(GuiObject *containerBoss, const Common::String &name, const Common::String &domain, const ExtraGuiOptions &options) :
-		OptionsContainerWidget(containerBoss, name, dialogLayout(domain), false, domain),
+		OptionsContainerWidget(containerBoss, name, "ExtraGuiOptionsDialog", domain),
 		_options(options) {
 
 	for (uint i = 0; i < _options.size(); i++) {
@@ -452,14 +461,6 @@ void ExtraGuiOptionsWidget::handleCommand(GUI::CommandSender *sender, uint32 cmd
 	}
 }
 
-Common::String ExtraGuiOptionsWidget::dialogLayout(const Common::String &domain) {
-	if (ConfMan.getActiveDomainName().equals(domain)) {
-		return "GlobalConfig_Engine_Container";
-	} else {
-		return "GameOptions_Game_Container";
-	}
-}
-
 void ExtraGuiOptionsWidget::load() {
 	// Set the state of engine-specific checkboxes
 	for (uint j = 0; j < _options.size() && j < _checkboxes.size(); ++j) {
@@ -487,7 +488,7 @@ bool ExtraGuiOptionsWidget::save() {
 
 void ExtraGuiOptionsWidget::defineLayout(ThemeEval& layouts, const Common::String& layoutName, const Common::String& overlayedLayout) const {
 	layouts.addDialog(layoutName, overlayedLayout);
-	layouts.addLayout(GUI::ThemeLayout::kLayoutVertical).addPadding(8, 8, 8, 8);
+	layouts.addLayout(GUI::ThemeLayout::kLayoutVertical).addPadding(0, 0, 0, 0);
 
 	for (uint i = 0; i < _options.size(); i++) {
 		Common::String id = Common::String::format("%d", i + 1);

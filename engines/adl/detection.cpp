@@ -443,9 +443,9 @@ static const AdlGameDescription gameDiskDescriptions[] = {
 	{ AD_TABLE_END_MARKER, GAME_TYPE_NONE, GAME_VER_NONE }
 };
 
-class AdlMetaEngineDetection : public AdvancedMetaEngineDetection {
+class AdlMetaEngineDetection : public AdvancedMetaEngineDetection<AdlGameDescription> {
 public:
-	AdlMetaEngineDetection() : AdvancedMetaEngineDetection(gameFileDescriptions, sizeof(AdlGameDescription), adlGames) { }
+	AdlMetaEngineDetection() : AdvancedMetaEngineDetection(gameFileDescriptions, adlGames) { }
 
 	const char *getEngineName() const override {
 		return "ADL";
@@ -553,7 +553,7 @@ ADDetectedGames AdlMetaEngineDetection::detectGame(const Common::FSNode &parent,
 				continue;
 			}
 
-			if (fDesc.fileSize != -1 && fDesc.fileSize != filesProps[fileName].size) {
+			if (fDesc.fileSize != AD_NO_SIZE && fDesc.fileSize != filesProps[fileName].size) {
 				debugC(3, kDebugGlobalDetection, "Size Mismatch. Skipping");
 				game.hasUnknownFiles = true;
 				continue;

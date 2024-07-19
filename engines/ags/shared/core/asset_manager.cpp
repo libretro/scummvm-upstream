@@ -20,8 +20,8 @@
  */
 
 #include "common/memstream.h"
-#include "ags/lib/std/algorithm.h"
-#include "ags/lib/std/utility.h"
+#include "common/std/algorithm.h"
+#include "common/std/utility.h"
 #include "ags/shared/core/platform.h"
 #include "ags/shared/core/asset_manager.h"
 #include "ags/shared/util/directory.h"

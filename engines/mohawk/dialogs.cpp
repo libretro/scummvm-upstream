@@ -93,7 +93,7 @@ enum {
 #ifdef ENABLE_MYST
 
 MystOptionsWidget::MystOptionsWidget(GuiObject *boss, const Common::String &name, const Common::String &domain) :
-		OptionsContainerWidget(boss, name, "MystGameOptionsDialog", false, domain),
+		OptionsContainerWidget(boss, name, "MystGameOptionsDialog", domain),
 		_zipModeCheckbox(nullptr),
 		_transitionsCheckbox(nullptr),
 		_mystFlyByCheckbox(nullptr),
@@ -175,7 +175,7 @@ MystOptionsWidget::~MystOptionsWidget() {
 void MystOptionsWidget::defineLayout(GUI::ThemeEval &layouts, const Common::String &layoutName, const Common::String &overlayedLayout) const {
 	layouts.addDialog(layoutName, overlayedLayout)
 	            .addLayout(GUI::ThemeLayout::kLayoutVertical)
-	                .addPadding(16, 16, 16, 16)
+	                .addPadding(0, 0, 0, 0)
 	                .addWidget("ZipMode", "Checkbox")
 	                .addWidget("Transistions", "Checkbox")
 	                .addWidget("PlayMystFlyBy", "Checkbox")
@@ -349,7 +349,7 @@ void MystMenuDialog::handleCommand(GUI::CommandSender *sender, uint32 cmd, uint3
 #ifdef ENABLE_RIVEN
 
 RivenOptionsWidget::RivenOptionsWidget(GuiObject *boss, const Common::String &name, const Common::String &domain) :
-		OptionsContainerWidget(boss, name, "RivenOptionsDialog", false, domain),
+		OptionsContainerWidget(boss, name, "RivenOptionsDialog", domain),
 		_languagePopUp(nullptr) {
 	Common::String guiOptions = ConfMan.get("guioptions", domain);
 	bool is25th = checkGameGUIOption(GAMEOPTION_25TH, guiOptions);
@@ -394,7 +394,7 @@ RivenOptionsWidget::~RivenOptionsWidget() {
 void RivenOptionsWidget::defineLayout(GUI::ThemeEval &layouts, const Common::String &layoutName, const Common::String &overlayedLayout) const {
 	layouts.addDialog(layoutName, overlayedLayout)
 	        .addLayout(GUI::ThemeLayout::kLayoutVertical)
-	            .addPadding(16, 16, 16, 16)
+	            .addPadding(0, 0, 0, 0)
 	            .addWidget("ZipMode", "Checkbox")
 	            .addWidget("WaterEffect", "Checkbox")
 	            .addLayout(GUI::ThemeLayout::kLayoutHorizontal)

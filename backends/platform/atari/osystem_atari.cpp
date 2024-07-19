@@ -59,6 +59,8 @@
 #include "base/main.h"
 #include "gui/debugger.h"
 
+#define INPUT_ACTIVE
+
 /*
  * Include header files needed for the getFilesystemFactory() method.
  */
@@ -70,17 +72,59 @@ typedef void (*KBDVEC)(void *);
 extern "C" KBDVEC atari_old_kbdvec;
 extern "C" KBDVEC atari_old_mousevec;
 
-extern "C" void atari_200hz_init();
-extern "C" void atari_200hz_shutdown();
-extern "C" volatile uint32 counter_200hz;
-
 extern void nf_init(void);
 extern void nf_print(const char* msg);
 
-static bool s_tt = false;
 static int s_app_id = -1;
 
+static volatile uint32 counter_200hz;
+
 static bool exit_already_called = false;
+
+static long atari_200hz_init(void)
+{
+	__asm__ __volatile__(
+	"\tmove		%%sr,-(%%sp)\n"
+	"\tor.w		#0x700,%%sr\n"
+
+	"\tmove.l	0x114.w,old_200hz\n"
+	"\tmove.l	#my_200hz,0x114.w\n"
+
+	"\tmove		(%%sp)+,%%sr\n"
+	"\tjbra		1f\n"
+
+	"\tdc.l		0x58425241\n" /* "XBRA" */
+	"\tdc.l		0x5343554d\n" /* "SCUM" */
+"old_200hz:\n"
+	"\tdc.l		0\n"
+"my_200hz:\n"
+	"\taddq.l	#1,%0\n"
+
+	"\tmove.l	old_200hz(%%pc),-(%%sp)\n"
+	"\trts\n"
+"1:\n"
+	: /* output */
+	: "m"(counter_200hz) /* inputs */
+	: "memory", "cc");
+
+	return 0;
+}
+
+static long atari_200hz_shutdown(void)
+{
+	__asm__ __volatile__(
+	"\tmove		%%sr,-(%%sp)\n"
+	"\tor.w		#0x700,%%sr\n"
+
+	"\tmove.l	old_200hz,0x114.w\n"
+
+	"\tmove		(%%sp)+,%%sr\n"
+	: /* output */
+	: /* inputs */
+	: "memory", "cc");
+
+	return 0;
+}
 
 static void critical_restore() {
 	extern void AtariAudioShutdown();
@@ -89,12 +133,9 @@ static void critical_restore() {
 	AtariAudioShutdown();
 	AtariGraphicsShutdown();
 
-	if (s_tt)
-		Supexec(asm_screen_tt_restore);
-	else
-		Supexec(asm_screen_falcon_restore);
 	Supexec(atari_200hz_shutdown);
 
+#ifdef INPUT_ACTIVE
 	if (atari_old_kbdvec && atari_old_mousevec) {
 		_KBDVECS *kbdvecs = Kbdvbase();
 		((uintptr *)kbdvecs)[-1] = (uintptr)atari_old_kbdvec;
@@ -110,6 +151,7 @@ static void critical_restore() {
 		// ok, restore mouse cursor at least
 		graf_mouse(M_ON, NULL);
 	}
+#endif
 }
 
 // called on normal program termination (via exit() or returning from main())
@@ -141,8 +183,6 @@ OSystem_Atari::OSystem_Atari() {
 		exit(EXIT_FAILURE);
 	}
 
-	s_tt = (vdo == VDO_TT);
-
 	enum {
 		MCH_ST = 0,
 		MCH_STE,
@@ -161,22 +201,17 @@ OSystem_Atari::OSystem_Atari() {
 		exit(EXIT_FAILURE);
 	}
 
+#ifdef INPUT_ACTIVE
 	_KBDVECS *kbdvecs = Kbdvbase();
 	atari_old_kbdvec = (KBDVEC)(((uintptr *)kbdvecs)[-1]);
 	atari_old_mousevec = kbdvecs->mousevec;
 
 	((uintptr *)kbdvecs)[-1] = (uintptr)atari_kbdvec;
 	kbdvecs->mousevec = atari_mousevec;
+#endif
 
 	Supexec(atari_200hz_init);
 	_timerInitialized = true;
-
-	if (s_tt)
-		Supexec(asm_screen_tt_save);
-	else
-		Supexec(asm_screen_falcon_save);
-
-	_videoInitialized = true;
 
 	// protect against sudden exit()
 	atexit(exit_restore);
@@ -209,16 +244,6 @@ OSystem_Atari::~OSystem_Atari() {
 
 	delete _fsFactory;
 	_fsFactory = nullptr;
-
-	if (_videoInitialized) {
-		if (s_tt)
-			Supexec(asm_screen_tt_restore);
-		else {
-			Supexec(asm_screen_falcon_restore);
-		}
-
-		_videoInitialized = false;
-	}
 
 	if (_timerInitialized) {
 		Supexec(atari_200hz_shutdown);
@@ -273,9 +298,11 @@ void OSystem_Atari::initBackend() {
 		_vdi_width = work_out[0] + 1;
 		_vdi_height = work_out[1] + 1;
 
+#ifdef INPUT_ACTIVE
 		graf_mouse(M_OFF, NULL);
 		// see https://github.com/freemint/freemint/issues/312
 		//wind_update(BEG_UPDATE);
+#endif
 	}
 
 	_timerManager = new DefaultTimerManager();
@@ -381,7 +408,7 @@ void OSystem_Atari::logMessage(LogMessageType::Type type, const char *message) {
 		output = stderr;
 
 	static char str[1024+1];
-	sprintf(str, "[%08d] %s", getMillis(), message);
+	snprintf(str, sizeof(str), "[%08d] %s", getMillis(), message);
 
 	fputs(str, output);
 	fflush(output);

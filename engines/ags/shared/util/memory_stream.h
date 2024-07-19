@@ -35,7 +35,7 @@
 #ifndef AGS_SHARED_UTIL_MEMORY_STREAM_H
 #define AGS_SHARED_UTIL_MEMORY_STREAM_H
 
-#include "ags/lib/std/vector.h"
+#include "common/std/vector.h"
 #include "ags/shared/util/data_stream.h"
 #include "ags/shared/util/string.h"
 

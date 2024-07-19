@@ -237,7 +237,7 @@ MediaCueMessengerModifier::MediaCueMessengerModifier() : _isActive(false), _cueS
 }
 
 MediaCueMessengerModifier::MediaCueMessengerModifier(const MediaCueMessengerModifier &other)
-	: _cueSourceType(other._cueSourceType), _cueSourceModifier(other._cueSourceModifier), _enableWhen(other._enableWhen), _disableWhen(other._disableWhen), _mediaCue(other._mediaCue), _isActive(other._isActive) {
+	: Modifier(other), _cueSourceType(other._cueSourceType), _cueSourceModifier(other._cueSourceModifier), _enableWhen(other._enableWhen), _disableWhen(other._disableWhen), _mediaCue(other._mediaCue), _isActive(other._isActive) {
 	_cueSource.destruct<uint64, &CueSourceUnion::asUnset>();
 
 	switch (_cueSourceType) {
@@ -1172,11 +1172,6 @@ MiniscriptInstructionOutcome ListVariableModifier::scriptSetCount(MiniscriptThre
 
 	size_t newSize = asInteger;
 	if (newSize > storage->_list->getSize()) {
-		if (storage->_list->getSize() == 0) {
-			thread->error("Restoring an empty list by setting its count isn't implemented");
-			return kMiniscriptInstructionOutcomeFailed;
-		}
-
 		storage->_list->expandToMinimumSize(newSize);
 	} else if (newSize < storage->_list->getSize()) {
 		storage->_list->truncateToSize(newSize);
@@ -1402,6 +1397,45 @@ bool SysInfoModifier::readAttribute(MiniscriptThread *thread, DynamicValue &resu
 	} else if (attrib == "currentram") {
 		result.setInt(256 * 1024 * 1024);
 		return true;
+	} else if (attrib == "architecture") {
+		ProjectPlatform platform = thread->getRuntime()->getProject()->getPlatform();
+
+		if (platform == kProjectPlatformWindows)
+			result.setString("80x86");
+		else if (platform == kProjectPlatformMacintosh)
+			result.setString("PowerPC"); // MC680x0 for 68k
+		else {
+			thread->error("Couldn't resolve architecture");
+			return false;
+		}
+
+		return true;
+	} else if (attrib == "sysversion") {
+		ProjectPlatform platform = thread->getRuntime()->getProject()->getPlatform();
+
+		if (platform == kProjectPlatformMacintosh)
+			result.setString("9.0.4");
+		else if (platform == kProjectPlatformWindows)
+			result.setString("4.0");	// Windows version?  MindGym checks for < 4
+		else {
+			thread->error("Couldn't resolve architecture");
+			return false;
+		}
+
+		return true;
+	} else if (attrib == "processor" || attrib == "nativecpu") {
+		ProjectPlatform platform = thread->getRuntime()->getProject()->getPlatform();
+
+		if (platform == kProjectPlatformMacintosh)
+			result.setString("604");		// PowerPC 604
+		else if (platform == kProjectPlatformWindows)
+			result.setString("Pentium");
+		else {
+			thread->error("Couldn't resolve architecture");
+			return false;
+		}
+
+		return true;
 	}
 
 	return false;
@@ -1451,6 +1485,27 @@ const char *PanningModifier::getDefaultName() const {
 	return "Panning Modifier"; // ???
 }
 
+FadeModifier::FadeModifier() {
+}
+
+FadeModifier::~FadeModifier() {
+}
+
+bool FadeModifier::load(const PlugInModifierLoaderContext &context, const Data::Standard::FadeModifier &data) {
+	return true;
+}
+
+void FadeModifier::disable(Runtime *runtime) {
+}
+
+Common::SharedPtr<Modifier> FadeModifier::shallowClone() const {
+	return Common::SharedPtr<Modifier>(new FadeModifier(*this));
+}
+
+const char *FadeModifier::getDefaultName() const {
+	return "Fade Modifier"; // ???
+}
+
 StandardPlugInHacks::StandardPlugInHacks() : allowGarbledListModData(false) {
 }
 
@@ -1461,7 +1516,8 @@ StandardPlugIn::StandardPlugIn()
 	, _objRefVarModifierFactory(this)
 	, _listVarModifierFactory(this)
 	, _sysInfoModifierFactory(this)
-	, _panningModifierFactory(this) {
+	, _panningModifierFactory(this)
+	, _fadeModifierFactory(this) {
 }
 
 StandardPlugIn::~StandardPlugIn() {
@@ -1476,6 +1532,7 @@ void StandardPlugIn::registerModifiers(IPlugInModifierRegistrar *registrar) cons
 	registrar->registerPlugInModifier("SysInfo", &_sysInfoModifierFactory);
 
 	registrar->registerPlugInModifier("panning", &_panningModifierFactory);
+	registrar->registerPlugInModifier("fade", &_fadeModifierFactory);
 }
 
 const StandardPlugInHacks &StandardPlugIn::getHacks() const {

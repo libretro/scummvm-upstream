@@ -22,7 +22,7 @@
 #ifndef AGS_ENGINE_AC_DRAW_H
 #define AGS_ENGINE_AC_DRAW_H
 
-#include "ags/lib/std/memory.h"
+#include "common/std/memory.h"
 #include "ags/shared/core/types.h"
 #include "ags/shared/ac/common_defines.h"
 #include "ags/shared/gfx/gfx_def.h"

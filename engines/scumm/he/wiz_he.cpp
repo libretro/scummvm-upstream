@@ -1152,10 +1152,17 @@ void Wiz::loadWizCursor(int resId, int palette, bool useColor) {
 	// In the original code, when useColor is false, the engine
 	// instructs the OS to set the cursor to black and white only.
 	// We obtain the same effect doing it like this...
-	if (!useColor && _vm->_bytesPerPixel == 1) {
-		for (int i = 0; i < ch * cw; i++) {
-			if (cursor[i] != 0 && cursor[i] != 5)
-				cursor[i] = 15;
+	if (!useColor) {
+		if (_vm->_bytesPerPixel == 1) {
+			for (int i = 0; i < ch * cw; i++) {
+				if (cursor[i] != 0 && cursor[i] != 5)
+					cursor[i] = 15;
+			}
+		} else {
+			for (int i = 0; i < ch * cw; i++) {
+				if (((uint16 *)cursor)[i] != 0 && ((uint16 *)cursor)[i] != 5)
+					((uint16 *)cursor)[i] = 0x7FFF;
+			}
 		}
 	}
 
@@ -1419,8 +1426,8 @@ void Wiz::dwCreateRawWiz(int imageNum, int w, int h, int flags, int bitsPerPixel
 	if (flags & kCWFSpot) {
 		WRITE_BE_UINT32(writePtr, MKTAG('S', 'P', 'O', 'T')); writePtr += 4;
 		WRITE_BE_UINT32(writePtr, WIZBLOCK_SPOT_SIZE); writePtr += 4;
-		WRITE_BE_UINT32(writePtr + 0, optionalSpotX);
-		WRITE_BE_UINT32(writePtr + 4, optionalSpotY);
+		WRITE_LE_UINT32(writePtr + 0, optionalSpotX);
+		WRITE_LE_UINT32(writePtr + 4, optionalSpotY);
 
 		writePtr += WIZBLOCK_SPOT_DATA_SIZE;
 	}
@@ -1428,7 +1435,7 @@ void Wiz::dwCreateRawWiz(int imageNum, int w, int h, int flags, int bitsPerPixel
 	if (flags & kCWFRemapTable) {
 		WRITE_BE_UINT32(writePtr, MKTAG('R', 'M', 'A', 'P')); writePtr += 4;
 		WRITE_BE_UINT32(writePtr, WIZBLOCK_RMAP_SIZE); writePtr += 4;
-		WRITE_BE_UINT32(writePtr, 0); writePtr += 4;
+		WRITE_LE_UINT32(writePtr, 0); writePtr += 4;
 
 		for (int i = 0; i < 256; ++i) {
 			*writePtr++ = i;

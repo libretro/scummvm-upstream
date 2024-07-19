@@ -60,10 +60,9 @@
 namespace Director {
 
 const char *ColorXObj::xlibName = "Color";
-const char *ColorXObj::fileNames[] = {
-	"color",
-	"color.dll",
-	nullptr
+const XlibFileDesc ColorXObj::fileNames[] = {
+	{ "color",		nullptr },
+	{ nullptr,		nullptr },
 };
 
 static MethodProto xlibMethods[] = {

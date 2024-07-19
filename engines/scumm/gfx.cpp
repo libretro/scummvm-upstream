@@ -62,8 +62,6 @@ struct StripTable {
 	int zrun[120];		// FIXME: Why only 120 here?
 };
 
-static const byte bitMasks[9] = { 0x00, 0x01, 0x03, 0x07, 0x0F, 0x1F, 0x3F, 0x7F, 0xFF };
-
 enum {
 	kNoDelay = 0,
 	// This should actually be 3 in all games using it;
@@ -1542,12 +1540,16 @@ void ScummEngine::drawBox(int x, int y, int x2, int y2, int color) {
 		}
 	} else if (_game.heversion >= 72) {
 		// Flags are used for different methods in HE games
+		uint32 colorToBack         = (!(_game.heversion > 99 || _isHE995)) ? 0x8000 : 0x1000000;
+		uint32 colorCopyForeToBack = (!(_game.heversion > 99 || _isHE995)) ? 0x4000 : 0x2000000;
+		uint32 colorCopyBackToFore = (!(_game.heversion > 99 || _isHE995)) ? 0x2000 : 0x4000000;
+
 		uint32 flags = color;
-		if ((flags & 0x2000) || (flags & 0x4000000)) {
+		if (flags & colorCopyBackToFore) {
 			blit(backbuff, vs->pitch, bgbuff, vs->pitch, width, height, vs->format.bytesPerPixel);
-		} else if ((flags & 0x4000) || (flags & 0x2000000)) {
+		} else if (flags & colorCopyForeToBack) {
 			blit(bgbuff, vs->pitch, backbuff, vs->pitch, width, height, vs->format.bytesPerPixel);
-		} else if ((flags & 0x8000) || (flags & 0x1000000)) {
+		} else if (flags & colorToBack) {
 			flags &= (flags & 0x1000000) ? 0xFFFFFF : 0x7FFF;
 			fill(backbuff, vs->pitch, flags, width, height, vs->format.bytesPerPixel);
 			fill(bgbuff, vs->pitch, flags, width, height, vs->format.bytesPerPixel);
@@ -2196,7 +2198,7 @@ void Gdi::drawBitmap(const byte *ptr, VirtScreen *vs, int x, const int y, const 
 		for (int i = 0; i < numzbuf; i++) {
 			byte *dst1, *dst2;
 
-			dst1 = dst2 = (byte *)vs->pixels + y * vs->pitch + x * 8;
+			dst1 = dst2 = (byte *)vs->getPixels(0,0) + y * vs->pitch + x * 8;
 			if (vs->hasTwoBuffers)
 				dst2 = vs->backBuf + y * vs->pitch + x * 8;
 			byte *mask_ptr = getMaskBuffer(x, y, i);
@@ -2263,8 +2265,13 @@ bool Gdi::drawStrip(byte *dstPtr, VirtScreen *vs, int x, int y, const int width,
 	// palette so that it matches the way these lines have been redrawn in the
 	// FM-TOWNS release.  We take care not to apply this palette change to the
 	// text or inventory, as they still require the original colors.
+	//
+	// Also, the background was redrawn for censorship reasons in the German
+	// release, so we have to take care of the different resource size there.
 	if (_vm->_game.id == GID_INDY3 && (_vm->_game.features & GF_OLD256) && _vm->_game.platform != Common::kPlatformFMTowns
-		&& _vm->_roomResource == 46 && smapLen == 43159 && vs->number == kMainVirtScreen && _vm->enhancementEnabled(kEnhMinorBugFixes)) {
+		&& _vm->_roomResource == 46 && vs->number == kMainVirtScreen
+		&& (smapLen == 43159 || (smapLen == 42953 && _vm->_language == Common::DE_DEU))
+		&& _vm->enhancementEnabled(kEnhMinorBugFixes)) {
 		if (_roomPalette[11] == 11 && _roomPalette[86] == 86)
 			_roomPalette[11] = 86;
 		if (_roomPalette[13] == 13 && _roomPalette[80] == 80)
@@ -2493,6 +2500,8 @@ void GdiV2::decodeMask(int x, int y, const int width, const int height,
 }
 
 #ifdef ENABLE_HE
+static const byte bitMasks[9] = { 0x00, 0x01, 0x03, 0x07, 0x0F, 0x1F, 0x3F, 0x7F, 0xFF };
+
 /**
  * Draw a bitmap onto a virtual screen. This is main drawing method for room backgrounds
  * used throughout HE71+ versions.
@@ -2533,12 +2542,11 @@ void Gdi::drawBMAPBg(const byte *ptr, VirtScreen *vs) {
 	case BMCOMP_SOLID_COLOR_FILL:
 	{
 		WizRawPixel color = (WizRawPixel)(*bmapPtr);
+		if (_vm->_game.heversion > 99 && _vm->VAR_COLOR_BLACK != 0xFF && _vm->VAR(_vm->VAR_COLOR_BLACK) == color)
+			break;
 
 		if (_vm->_game.heversion > 90)
 			color = ((ScummEngine_v71he *)_vm)->_wiz->convert8BppToRawPixel(*bmapPtr, (WizRawPixel *)_vm->getHEPaletteSlot(1));
-
-		if (_vm->_game.heversion > 99 && _vm->VAR_COLOR_BLACK != 0xFF && _vm->VAR(_vm->VAR_COLOR_BLACK) == color)
-			break;
 
 		WizSimpleBitmap dstBitmap;
 		dstBitmap.bufferPtr = WizPxShrdBuffer(dst, false);
@@ -2960,8 +2968,7 @@ void GdiHE::decompressTMSK(byte *dst, const byte *tmsk, const byte *src, int hei
 
 		maskCount--;
 
-		*dst |= srcbits;
-		*dst &= ~maskbits;
+		*dst = (*dst & (~maskbits)) | (srcbits & maskbits);
 
 		dst += _numStrips;
 		height--;

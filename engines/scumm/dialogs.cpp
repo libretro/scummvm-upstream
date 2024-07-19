@@ -1183,6 +1183,13 @@ GUI::CheckboxWidget *ScummOptionsContainerWidget::createOriginalGUICheckbox(GuiO
 	);
 }
 
+GUI::CheckboxWidget *ScummOptionsContainerWidget::createCopyProtectionCheckbox(GuiObject *boss, const Common::String &name) {
+	return new GUI::CheckboxWidget(boss, name,
+		_("Enable copy protection"),
+		_("Enable any copy protection that would otherwise be bypassed by default.")
+	);
+}
+
 void ScummOptionsContainerWidget::updateAdjustmentSlider(GUI::SliderWidget *slider, GUI::StaticTextWidget *value) {
 	int adjustment = slider->getValue();
 	const char *sign = "";
@@ -1254,7 +1261,7 @@ bool ScummGameOptionsWidget::save() {
 
 void ScummGameOptionsWidget::defineLayout(GUI::ThemeEval &layouts, const Common::String &layoutName, const Common::String &overlayedLayout) const {
 	layouts.addDialog(layoutName, overlayedLayout);
-	layouts.addLayout(GUI::ThemeLayout::kLayoutVertical).addPadding(0, 0, 8, 8);
+	layouts.addLayout(GUI::ThemeLayout::kLayoutVertical).addPadding(0, 0, 0, 0);
 
 	bool hasEnhancements = false;
 
@@ -1314,6 +1321,7 @@ LoomEgaGameOptionsWidget::LoomEgaGameOptionsWidget(GuiObject *boss, const Common
 
 	createEnhancementsWidget(widgetsBoss(), "LoomEgaGameOptionsDialog");
 	_enableOriginalGUICheckbox = createOriginalGUICheckbox(widgetsBoss(), "LoomEgaGameOptionsDialog.EnableOriginalGUI");
+	_enableCopyProtectionCheckbox = createCopyProtectionCheckbox(widgetsBoss(), "LoomEgaGameOptionsDialog.EnableCopyProtection");
 }
 
 void LoomEgaGameOptionsWidget::load() {
@@ -1328,6 +1336,7 @@ void LoomEgaGameOptionsWidget::load() {
 	updateOvertureTicksValue();
 
 	_enableOriginalGUICheckbox->setState(ConfMan.getBool("original_gui", _domain));
+	_enableCopyProtectionCheckbox->setState(ConfMan.getBool("copy_protection", _domain));
 }
 
 bool LoomEgaGameOptionsWidget::save() {
@@ -1335,6 +1344,7 @@ bool LoomEgaGameOptionsWidget::save() {
 
 	ConfMan.setInt("loom_overture_ticks", _overtureTicksSlider->getValue(), _domain);
 	ConfMan.setBool("original_gui", _enableOriginalGUICheckbox->getState(), _domain);
+	ConfMan.setBool("copy_protection", _enableCopyProtectionCheckbox->getState(), _domain);
 	return true;
 }
 
@@ -1344,7 +1354,8 @@ void LoomEgaGameOptionsWidget::defineLayout(GUI::ThemeEval &layouts, const Commo
 			.addPadding(0, 0, 0, 0)
 			.addLayout(GUI::ThemeLayout::kLayoutVertical, 4)
 				.addPadding(0, 0, 10, 0)
-				.addWidget("EnableOriginalGUI", "Checkbox");
+				.addWidget("EnableOriginalGUI", "Checkbox")
+				.addWidget("EnableCopyProtection", "Checkbox");
 	addEnhancementsLayout(layouts)
 		.closeLayout()
 			.addLayout(GUI::ThemeLayout::kLayoutHorizontal, 12)
@@ -1376,7 +1387,7 @@ void LoomEgaGameOptionsWidget::updateOvertureTicksValue() {
 
 // Mac Loom/MI1 options
 LoomMonkeyMacGameOptionsWidget::LoomMonkeyMacGameOptionsWidget(GuiObject *boss, const Common::String &name, const Common::String &domain, int gameId) :
-	ScummOptionsContainerWidget(boss, name, "LoomMonkeyMacGameOptionsWidget", domain), _sndQualitySlider(nullptr), _sndQualityValue(nullptr), _enableOriginalGUICheckbox(nullptr), _quality(0) {
+	ScummOptionsContainerWidget(boss, name, "LoomMonkeyMacGameOptionsWidget", domain), _sndQualitySlider(nullptr), _sndQualityValue(nullptr), _enableOriginalGUICheckbox(nullptr), _enableCopyProtectionCheckbox(nullptr), _quality(0) {
 	GUI::StaticTextWidget *text = new GUI::StaticTextWidget(widgetsBoss(), "LoomMonkeyMacGameOptionsWidget.SndQualityLabel", _("Music Quality:"));
 	text->setAlign(Graphics::TextAlign::kTextAlignEnd);
 
@@ -1391,6 +1402,9 @@ LoomMonkeyMacGameOptionsWidget::LoomMonkeyMacGameOptionsWidget(GuiObject *boss, 
 	updateQualitySlider();
 	createEnhancementsWidget(widgetsBoss(), "LoomMonkeyMacGameOptionsWidget");
 	_enableOriginalGUICheckbox = createOriginalGUICheckbox(widgetsBoss(), "LoomMonkeyMacGameOptionsWidget.EnableOriginalGUI");
+
+	if (gameId == GID_MONKEY)
+		_enableCopyProtectionCheckbox = createCopyProtectionCheckbox(widgetsBoss(), "LoomMonkeyMacGameOptionsWidget.EnableCopyProtection");
 }
 
 void LoomMonkeyMacGameOptionsWidget::load() {
@@ -1411,12 +1425,19 @@ void LoomMonkeyMacGameOptionsWidget::load() {
 	_sndQualitySlider->setValue(_quality);
 	updateQualitySlider();
 	_enableOriginalGUICheckbox->setState(ConfMan.getBool("original_gui", _domain));
+
+	if (_enableCopyProtectionCheckbox)
+		_enableCopyProtectionCheckbox->setState(ConfMan.getBool("copy_protection", _domain));
 }
 
 bool LoomMonkeyMacGameOptionsWidget::save() {
 	bool res = ScummOptionsContainerWidget::save();
 	ConfMan.setInt("mac_snd_quality", _quality, _domain);
 	ConfMan.setBool("original_gui", _enableOriginalGUICheckbox->getState(), _domain);
+
+	if (_enableCopyProtectionCheckbox)
+		ConfMan.setBool("copy_protection", _enableCopyProtectionCheckbox->getState(), _domain);
+
 	return res;
 }
 
@@ -1427,6 +1448,10 @@ void LoomMonkeyMacGameOptionsWidget::defineLayout(GUI::ThemeEval &layouts, const
 			.addLayout(GUI::ThemeLayout::kLayoutVertical, 4)
 				.addPadding(0, 0, 10, 0)
 				.addWidget("EnableOriginalGUI", "Checkbox");
+
+	if (_enableCopyProtectionCheckbox)
+		layouts.addWidget("EnableCopyProtection", "Checkbox");
+
 	addEnhancementsLayout(layouts)
 			.closeLayout()
 			.addLayout(GUI::ThemeLayout::kLayoutHorizontal, 12)
@@ -1673,7 +1698,7 @@ HENetworkGameOptionsWidget::HENetworkGameOptionsWidget(GuiObject *boss, const Co
 	_audioOverride = nullptr;
 	const Common::String guiOptionsString = ConfMan.get("guioptions", domain);
 	const Common::String guiOptions = parseGameGUIOptions(guiOptionsString);
-	if (guiOptions.contains(GUIO_AUDIO_OVERRIDE))
+	if (guiOptions.contains(GAMEOPTION_AUDIO_OVERRIDE))
 		_audioOverride = new GUI::CheckboxWidget(widgetsBoss(), "HENetworkGameOptionsDialog.AudioOverride", _("Load modded audio"), _("Replace music, sound effects, and speech clips with modded audio files, if available."));
 
 	GUI::StaticTextWidget *text = new GUI::StaticTextWidget(widgetsBoss(), "HENetworkGameOptionsDialog.SessionServerLabel", _("Multiplayer Server:"));

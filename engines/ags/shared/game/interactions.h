@@ -48,7 +48,7 @@
 #ifndef AGS_SHARED_GAME_INTEREACTIONS_H
 #define AGS_SHARED_GAME_INTEREACTIONS_H
 
-#include "ags/lib/std/memory.h"
+#include "common/std/memory.h"
 #include "ags/shared/util/string_types.h"
 
 namespace AGS3 {

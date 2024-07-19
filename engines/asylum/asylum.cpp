@@ -50,12 +50,16 @@
 #include "asylum/views/menu.h"
 #include "asylum/views/video.h"
 
+#include "asylum/console.h"
 #include "asylum/respack.h"
 
 namespace Asylum {
 
+const char *const engineKeyMapId = "asylum";
+const char *const resviewerKeyMapId = "asylum-resviewer";
+
 AsylumEngine::AsylumEngine(OSystem *system, const ADGameDescription *gd) : Engine(system), _gameDescription(gd),
-	_console(nullptr), _cursor(nullptr), _encounter(nullptr), _menu(nullptr), _resource(nullptr), _savegame(nullptr),
+	_cursor(nullptr), _encounter(nullptr), _menu(nullptr), _resource(nullptr), _savegame(nullptr),
 	_scene(nullptr), _screen(nullptr), _script(nullptr), _special(nullptr), _speech(nullptr), _sound(nullptr), _text(nullptr),
 	_video(nullptr), _handler(nullptr), _puzzles(nullptr) {
 
@@ -112,8 +116,7 @@ Common::Error AsylumEngine::run() {
 	initGraphics(640, 480);
 
 	// Create debugger. It requires GFX to be initialized
-	_console   = new Console(this);
-	setDebugger(_console);
+	setDebugger(new Console(this));
 
 	// Create resource manager
 	_resource  = new ResourceManager(this);
@@ -363,6 +366,8 @@ void AsylumEngine::playIntro() {
 					switch (ev.type) {
 					case Common::EVENT_LBUTTONDOWN:
 					case Common::EVENT_KEYDOWN:
+					case Common::EVENT_JOYBUTTON_DOWN:
+					case Common::EVENT_CUSTOM_ENGINE_ACTION_START:
 						skip = true;
 						break;
 					default:
@@ -392,11 +397,8 @@ void AsylumEngine::playIntro() {
 }
 
 void AsylumEngine::handleEvents() {
-	if (!_console || !_video || !_screen || !_sound || !_menu || !_cursor)
+	if (!_video || !_screen || !_sound || !_menu || !_cursor)
 		error("[AsylumEngine::handleEvents] Subsystems not initialized properly!");
-
-	// Show the debugger if required
-	_console->onFrame();
 
 	AsylumEvent ev;
 	Common::Keymapper *const keymapper = _eventMan->getKeymapper();
@@ -408,38 +410,17 @@ void AsylumEngine::handleEvents() {
 			break;
 
 		case Common::EVENT_CUSTOM_ENGINE_ACTION_START:
-			// Handle custom actions
-			if (_handler)
-				_handler->handleEvent(ev);
-			break;
-
+		case Common::EVENT_CUSTOM_ENGINE_ACTION_END:
+		case Common::EVENT_JOYBUTTON_DOWN:
+		case Common::EVENT_JOYBUTTON_UP:
 		case Common::EVENT_KEYDOWN:
-			if ((ev.kbd.flags & Common::KBD_CTRL) && ev.kbd.keycode == Common::KEYCODE_d) {
-				_console->attach();
-				break;
-			}
-
-			// Handle key events
-			if (_handler)
-				_handler->handleEvent(ev);
-			break;
-
 		case Common::EVENT_KEYUP:
-			// Handle key events
-			if (_handler)
-				_handler->handleEvent(ev);
-			break;
-
 		case Common::EVENT_MOUSEMOVE:
 		case Common::EVENT_LBUTTONDOWN:
 		case Common::EVENT_LBUTTONUP:
 		case Common::EVENT_RBUTTONDOWN:
 		case Common::EVENT_RBUTTONUP:
-		case Common::EVENT_MBUTTONUP:
-		case Common::EVENT_MBUTTONDOWN:
-			// Handle mouse events
-			_cursor->setState(ev);
-
+			// Handle events
 			if (_handler)
 				_handler->handleEvent(ev);
 			break;

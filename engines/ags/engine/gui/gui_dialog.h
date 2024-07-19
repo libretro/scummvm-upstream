@@ -22,7 +22,7 @@
 #ifndef AGS_ENGINE_GUI_GUI_DIALOG_H
 #define AGS_ENGINE_GUI_GUI_DIALOG_H
 
-#include "ags/lib/std/vector.h"
+#include "common/std/vector.h"
 #include "ags/shared/util/string.h"
 
 namespace AGS3 {

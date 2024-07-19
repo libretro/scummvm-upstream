@@ -41,9 +41,9 @@
 #ifndef AGS_SHARED_AC_SPRITE_CACHE_H
 #define AGS_SHARED_AC_SPRITE_CACHE_H
 
-#include "ags/lib/std/memory.h"
-#include "ags/lib/std/vector.h"
-#include "ags/lib/std/list.h"
+#include "common/std/memory.h"
+#include "common/std/vector.h"
+#include "common/std/list.h"
 #include "ags/shared/ac/sprite_file.h"
 #include "ags/shared/core/platform.h"
 #include "ags/shared/util/error.h"

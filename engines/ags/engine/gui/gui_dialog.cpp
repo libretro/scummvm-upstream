@@ -19,7 +19,7 @@
  *
  */
 
-#include "ags/lib/std/algorithm.h"
+#include "common/std/algorithm.h"
 #include "ags/lib/allegro.h" // find files
 #include "ags/engine/gui/gui_dialog.h"
 #include "ags/shared/ac/common.h"

@@ -124,7 +124,7 @@ enum {
 };
 
 AndroidOptionsWidget::AndroidOptionsWidget(GuiObject *boss, const Common::String &name, const Common::String &domain) :
-		OptionsContainerWidget(boss, name, "AndroidOptionsDialog", false, domain), _enabled(true) {
+		OptionsContainerWidget(boss, name, "AndroidOptionsDialog", domain), _enabled(true) {
 
 	const bool inAppDomain = domain.equalsIgnoreCase(Common::ConfigManager::kApplicationDomain);;
 
@@ -198,7 +198,7 @@ void AndroidOptionsWidget::defineLayout(GUI::ThemeEval &layouts, const Common::S
 
 	layouts.addDialog(layoutName, overlayedLayout)
 	        .addLayout(GUI::ThemeLayout::kLayoutVertical)
-	            .addPadding(16, 16, 16, 16)
+	            .addPadding(0, 0, 0, 0)
 	            .addWidget("OnScreenControl", "Checkbox")
 	            .addWidget("PreferredTouchModeText", "", -1, layouts.getVar("Globals.Line.Height"));
 

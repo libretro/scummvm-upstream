@@ -26,11 +26,13 @@
 //
 //=============================================================================
 
-#include "ags/lib/std/queue.h"
-#include "ags/lib/std/vector.h"
-#include "ags/lib/std/algorithm.h"
-#include "ags/lib/std/functional.h"
-#include "ags/lib/std/xutility.h"
+#include "common/std/queue.h"
+#include "common/std/vector.h"
+#include "common/std/algorithm.h"
+#include "common/std/functional.h"
+#include "common/std/xutility.h"
+
+#include "ags/lib/std.h"
 
 namespace AGS3 {
 

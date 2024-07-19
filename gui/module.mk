@@ -48,14 +48,17 @@ MODULE_OBJS := \
 	widgets/scrollcontainer.o \
 	widgets/tab.o
 
-ifdef USE_CLOUD
 ifdef USE_LIBCURL
+ifdef USE_CLOUD
 MODULE_OBJS += \
 	cloudconnectionwizard.o \
 	downloaddialog.o \
-	downloadpacksdialog.o \
 	remotebrowser.o
 endif
+
+MODULE_OBJS += \
+	downloadpacksdialog.o \
+	integrity-dialog.o
 endif
 
 ifdef USE_DLC

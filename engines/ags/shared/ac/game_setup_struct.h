@@ -22,7 +22,7 @@
 #ifndef AGS_SHARED_AC_GAME_SETUP_STRUCT_H
 #define AGS_SHARED_AC_GAME_SETUP_STRUCT_H
 
-#include "ags/lib/std/vector.h"
+#include "common/std/vector.h"
 #include "ags/shared/ac/audio_clip_type.h"
 #include "ags/shared/ac/character_info.h" // TODO: constants to separate header
 #include "ags/shared/ac/game_setup_struct_base.h"

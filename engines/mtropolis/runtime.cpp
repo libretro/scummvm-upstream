@@ -21,6 +21,7 @@
 
 #include "common/debug.h"
 #include "common/file.h"
+#include "common/hash-ptr.h"
 #include "common/macresman.h"
 #include "common/random.h"
 #include "common/substream.h"
@@ -140,7 +141,7 @@ void MainWindow::onAction(MTropolis::Actions::Action action) {
 
 class ModifierInnerScopeBuilder : public IStructuralReferenceVisitor {
 public:
-	ModifierInnerScopeBuilder(ObjectLinkingScope *scope);
+	ModifierInnerScopeBuilder(Runtime *runtime, Modifier *modifier, ObjectLinkingScope *scope);
 
 	void visitChildStructuralRef(Common::SharedPtr<Structural> &structural) override;
 	void visitChildModifierRef(Common::SharedPtr<Modifier> &modifier) override;
@@ -149,9 +150,12 @@ public:
 
 private:
 	ObjectLinkingScope *_scope;
+	Modifier *_modifier;
+	Runtime *_runtime;
 };
 
-ModifierInnerScopeBuilder::ModifierInnerScopeBuilder(ObjectLinkingScope *scope) : _scope(scope) {
+ModifierInnerScopeBuilder::ModifierInnerScopeBuilder(Runtime *runtime, Modifier *modifier, ObjectLinkingScope *scope)
+	: _scope(scope), _modifier(modifier), _runtime(runtime) {
 }
 
 void ModifierInnerScopeBuilder::visitChildStructuralRef(Common::SharedPtr<Structural> &structural) {
@@ -159,7 +163,10 @@ void ModifierInnerScopeBuilder::visitChildStructuralRef(Common::SharedPtr<Struct
 }
 
 void ModifierInnerScopeBuilder::visitChildModifierRef(Common::SharedPtr<Modifier> &modifier) {
-	_scope->addObject(modifier->getStaticGUID(), modifier->getName(), modifier);
+	uint32 oldStaticGUID = modifier->getStaticGUID();
+
+	_runtime->instantiateIfAlias(modifier, _modifier->getSelfReference());
+	_scope->addObject(oldStaticGUID, modifier->getName(), modifier);
 }
 
 void ModifierInnerScopeBuilder::visitWeakStructuralRef(Common::WeakPtr<Structural> &structural) {
@@ -171,7 +178,7 @@ void ModifierInnerScopeBuilder::visitWeakModifierRef(Common::WeakPtr<Modifier> &
 
 class ModifierChildMaterializer : public IStructuralReferenceVisitor {
 public:
-	ModifierChildMaterializer(Runtime *runtime, Modifier *modifier, ObjectLinkingScope *outerScope);
+	ModifierChildMaterializer(Runtime *runtime, ObjectLinkingScope *outerScope);
 
 	void visitChildStructuralRef(Common::SharedPtr<Structural> &structural) override;
 	void visitChildModifierRef(Common::SharedPtr<Modifier> &modifier) override;
@@ -180,9 +187,28 @@ public:
 
 private:
 	Runtime *_runtime;
-	Modifier *_modifier;
 	ObjectLinkingScope *_outerScope;
 };
+
+ModifierChildMaterializer::ModifierChildMaterializer(Runtime *runtime, ObjectLinkingScope *outerScope)
+	: _runtime(runtime), _outerScope(outerScope) {
+}
+
+void ModifierChildMaterializer::visitChildStructuralRef(Common::SharedPtr<Structural> &structural) {
+	assert(false);
+}
+
+void ModifierChildMaterializer::visitChildModifierRef(Common::SharedPtr<Modifier> &modifier) {
+	modifier->materialize(_runtime, _outerScope);
+}
+
+void ModifierChildMaterializer::visitWeakStructuralRef(Common::WeakPtr<Structural> &structural) {
+	// Do nothing
+}
+
+void ModifierChildMaterializer::visitWeakModifierRef(Common::WeakPtr<Modifier> &modifier) {
+	// Do nothing
+}
 
 class ModifierChildCloner : public IStructuralReferenceVisitor {
 public:
@@ -197,27 +223,6 @@ private:
 	Runtime *_runtime;
 	Common::WeakPtr<RuntimeObject> _relinkParent;
 };
-
-ModifierChildMaterializer::ModifierChildMaterializer(Runtime *runtime, Modifier *modifier, ObjectLinkingScope *outerScope)
-	: _runtime(runtime), _modifier(modifier), _outerScope(outerScope) {
-}
-
-void ModifierChildMaterializer::visitChildStructuralRef(Common::SharedPtr<Structural> &structural) {
-	assert(false);
-}
-
-void ModifierChildMaterializer::visitChildModifierRef(Common::SharedPtr<Modifier> &modifier) {
-	_runtime->instantiateIfAlias(modifier, _modifier->getSelfReference());
-	modifier->materialize(_runtime, _outerScope);
-}
-
-void ModifierChildMaterializer::visitWeakStructuralRef(Common::WeakPtr<Structural> &structural) {
-	// Do nothing
-}
-
-void ModifierChildMaterializer::visitWeakModifierRef(Common::WeakPtr<Modifier> &modifier) {
-	// Do nothing
-}
 
 ModifierChildCloner::ModifierChildCloner(Runtime *runtime, const Common::WeakPtr<RuntimeObject> &relinkParent)
 	: _runtime(runtime), _relinkParent(relinkParent) {
@@ -247,6 +252,130 @@ void ModifierChildCloner::visitWeakStructuralRef(Common::WeakPtr<Structural> &st
 
 void ModifierChildCloner::visitWeakModifierRef(Common::WeakPtr<Modifier> &modifier) {
 	// Do nothing
+}
+
+class ObjectCloner : public IStructuralReferenceVisitor {
+public:
+	ObjectCloner(Runtime *runtime, const Common::WeakPtr<RuntimeObject> &relinkParent, Common::HashMap<RuntimeObject *, RuntimeObject *> *objectRemaps);
+
+	void visitChildStructuralRef(Common::SharedPtr<Structural> &structural) override;
+	void visitChildModifierRef(Common::SharedPtr<Modifier> &modifier) override;
+	void visitWeakStructuralRef(Common::WeakPtr<Structural> &structural) override;
+	void visitWeakModifierRef(Common::WeakPtr<Modifier> &modifier) override;
+
+private:
+	Runtime *_runtime;
+	Common::WeakPtr<RuntimeObject> _relinkParent;
+
+	Common::HashMap<RuntimeObject *, RuntimeObject *> *_objectRemaps;
+};
+
+ObjectCloner::ObjectCloner(Runtime *runtime, const Common::WeakPtr<RuntimeObject> &relinkParent, Common::HashMap<RuntimeObject *, RuntimeObject *> *objectRemaps)
+	: _runtime(runtime), _relinkParent(relinkParent), _objectRemaps(objectRemaps) {
+}
+
+void ObjectCloner::visitChildStructuralRef(Common::SharedPtr<Structural> &structuralRef) {
+	uint32 oldGUID = structuralRef->getStaticGUID();
+	Common::SharedPtr<Structural> cloned = structuralRef->shallowClone();
+	assert(cloned->getStaticGUID() == oldGUID);
+
+	(void)oldGUID;
+
+	if (_objectRemaps)
+		(*_objectRemaps)[structuralRef.get()] = cloned.get();
+
+	assert(!_relinkParent.expired() && _relinkParent.lock()->isStructural());
+
+	cloned->setSelfReference(cloned);
+	cloned->setRuntimeGUID(_runtime->allocateRuntimeGUID());
+	cloned->setParent(static_cast<Structural *>(_relinkParent.lock().get()));
+
+	ObjectCloner recursiveCloner(_runtime, cloned, _objectRemaps);
+	cloned->visitInternalReferences(&recursiveCloner);
+
+	structuralRef = cloned;
+}
+
+void ObjectCloner::visitChildModifierRef(Common::SharedPtr<Modifier> &modifierRef) {
+	uint32 oldGUID = modifierRef->getStaticGUID();
+	Common::SharedPtr<Modifier> cloned = modifierRef->shallowClone();
+	assert(cloned->getStaticGUID() == oldGUID);
+
+	(void)oldGUID;
+
+	if (_objectRemaps)
+		(*_objectRemaps)[modifierRef.get()] = cloned.get();
+
+	cloned->setSelfReference(cloned);
+	cloned->setRuntimeGUID(_runtime->allocateRuntimeGUID());
+	cloned->setParent(_relinkParent);
+
+	ObjectCloner recursiveCloner(_runtime, cloned, _objectRemaps);
+	cloned->visitInternalReferences(&recursiveCloner);
+
+	modifierRef = cloned;
+}
+
+void ObjectCloner::visitWeakStructuralRef(Common::WeakPtr<Structural> &structural) {
+	// Do nothing
+}
+
+void ObjectCloner::visitWeakModifierRef(Common::WeakPtr<Modifier> &modifier) {
+	// Do nothing
+}
+
+
+
+class ObjectRefRemapper : public IStructuralReferenceVisitor {
+public:
+	explicit ObjectRefRemapper(const Common::HashMap<RuntimeObject *, RuntimeObject *> &objectRemaps);
+
+	void visitChildStructuralRef(Common::SharedPtr<Structural> &structural) override;
+	void visitChildModifierRef(Common::SharedPtr<Modifier> &modifier) override;
+	void visitWeakStructuralRef(Common::WeakPtr<Structural> &structural) override;
+	void visitWeakModifierRef(Common::WeakPtr<Modifier> &modifier) override;
+
+private:
+	const Common::HashMap<RuntimeObject *, RuntimeObject *> &_objectRemaps;
+};
+
+ObjectRefRemapper::ObjectRefRemapper(const Common::HashMap<RuntimeObject *, RuntimeObject *> &objectRemaps) : _objectRemaps(objectRemaps) {
+}
+
+void ObjectRefRemapper::visitChildStructuralRef(Common::SharedPtr<Structural> &structural) {
+	RuntimeObject *obj = structural.get();
+	if (obj) {
+		Common::HashMap<RuntimeObject *, RuntimeObject *> ::const_iterator it = _objectRemaps.find(obj);
+		if (it != _objectRemaps.end())
+			structural = it->_value->getSelfReference().lock().staticCast<Structural>();
+	}
+}
+
+void ObjectRefRemapper::visitChildModifierRef(Common::SharedPtr<Modifier> &modifier) {
+	RuntimeObject *obj = modifier.get();
+	if (obj) {
+		Common::HashMap<RuntimeObject *, RuntimeObject *>::const_iterator it = _objectRemaps.find(obj);
+		if (it != _objectRemaps.end())
+			modifier = it->_value->getSelfReference().lock().staticCast<Modifier>();
+	}
+}
+
+void ObjectRefRemapper::visitWeakStructuralRef(Common::WeakPtr<Structural> &structural) {
+	RuntimeObject *obj = structural.lock().get();
+	if (obj) {
+		Common::HashMap<RuntimeObject *, RuntimeObject *>::const_iterator it = _objectRemaps.find(obj);
+		if (it != _objectRemaps.end())
+			structural = it->_value->getSelfReference().staticCast<Structural>();
+	}
+}
+
+void ObjectRefRemapper::visitWeakModifierRef(Common::WeakPtr<Modifier> &modifier) {
+	RuntimeObject *obj = modifier.lock().get();
+	if (obj) {
+		Common::HashMap<RuntimeObject *, RuntimeObject *>::const_iterator it = _objectRemaps.find(obj);
+		if (it != _objectRemaps.end())
+			modifier = it->_value->getSelfReference().staticCast<Modifier>();
+	}
 }
 
 char invariantToLower(char c) {
@@ -1881,15 +2010,9 @@ DynamicValue DynamicValueSource::produceValue(const DynamicValue &incomingData) 
 	case DynamicValueSourceTypes::kIncomingData:
 		return incomingData;
 	case DynamicValueSourceTypes::kVariableReference: {
-			Common::SharedPtr<Modifier> resolution = _valueUnion._varReference.resolution.lock();
-			if (resolution && resolution->isVariable()) {
-				DynamicValue result;
-				static_cast<VariableModifier *>(resolution.get())->varGetValue(result);
-				return result;
-			} else {
-				warning("Dynamic value source wasn't a variable");
-				return DynamicValue();
-			}
+			DynamicValue result;
+			result.setObject(_valueUnion._varReference.resolution);
+			return result;
 		} break;
 	default:
 		warning("Dynamic value couldn't be resolved");
@@ -2428,11 +2551,10 @@ void VarReference::linkInternalReferences(ObjectLinkingScope *scope) {
 			warning("VarReference to '%s' failed to resolve a valid object", source.c_str());
 		} else {
 			Common::SharedPtr<RuntimeObject> objShr = obj.lock();
-			if (objShr->isModifier() && static_cast<Modifier *>(objShr.get())->isVariable()) {
+			if (objShr->isModifier())
 				this->resolution = obj.staticCast<Modifier>();
-			} else {
-				error("VarReference referenced a non-variable");
-			}
+			else
+				warning("VarReference to '%s' wasn't a modifier", source.c_str());
 		}
 	}
 }
@@ -2648,6 +2770,15 @@ void SimpleModifierContainer::appendModifier(const Common::SharedPtr<Modifier> &
 		modifier->setParent(nullptr);
 }
 
+void SimpleModifierContainer::removeModifier(const Modifier *modifier) {
+	for (Common::Array<Common::SharedPtr<Modifier> >::iterator it = _modifiers.begin(), itEnd = _modifiers.end(); it != itEnd; ++it) {
+		if (it->get() == modifier) {
+			_modifiers.erase(it);
+			return;
+		}
+	}
+}
+
 void SimpleModifierContainer::clear() {
 	_modifiers.clear();
 }
@@ -2711,11 +2842,108 @@ bool RuntimeObject::readAttributeIndexed(MiniscriptThread *thread, DynamicValue 
 }
 
 MiniscriptInstructionOutcome RuntimeObject::writeRefAttribute(MiniscriptThread *thread, DynamicValueWriteProxy &writeProxy, const Common::String &attrib) {
+	if (thread->getRuntime()->getProject()->getRuntimeVersion() < kRuntimeVersion200) {
+		// Per 2.0 release notes, the following attrib writes succeed without error
+		// on all objects
+		const char *sunkAttribs[] = {
+			"position", "width", "height", "rate", "range", "cel", "text", "volume", "timevalue",
+			"mastervolume", "usertimeout", "layer", "paused", "trackenable", "trackdisable",
+			"cache", "direct", "loop", "visible", "loopbackforth", "playeveryframe"
+		};
+
+		for (const char *sunkAttrib : sunkAttribs) {
+			if (attrib == sunkAttrib) {
+#ifdef MTROPOLIS_DEBUG_ENABLE
+				if (Debugger *debugger = thread->getRuntime()->debugGetDebugger())
+					debugger->notify(kDebugSeverityWarning, Common::String::format("'%s' attribute write was discarded", sunkAttrib));
+#endif
+				DynamicValueWriteDiscardHelper::create(writeProxy);
+				return kMiniscriptInstructionOutcomeContinue;
+			}
+		}
+	}
+
+	if (attrib == "clone") {
+		DynamicValueWriteFuncHelper<RuntimeObject, &RuntimeObject::scriptSetClone, false>::create(this, writeProxy);
+		return kMiniscriptInstructionOutcomeContinue;
+	}
+
+	if (attrib == "kill") {
+		DynamicValueWriteFuncHelper<RuntimeObject, &RuntimeObject::scriptSetKill, false>::create(this, writeProxy);
+		return kMiniscriptInstructionOutcomeContinue;
+	}
+
+	if (attrib == "parent") {
+		writeProxy.pod.ifc = DynamicValueWriteInterfaceGlue<ParentWriteProxyInterface>::getInstance();
+		writeProxy.pod.objectRef = this;
+		writeProxy.pod.ptrOrOffset = 0;
+		return kMiniscriptInstructionOutcomeContinue;
+	}
+
 	return kMiniscriptInstructionOutcomeFailed;
 }
 
 MiniscriptInstructionOutcome RuntimeObject::writeRefAttributeIndexed(MiniscriptThread *thread, DynamicValueWriteProxy &writeProxy, const Common::String &attrib, const DynamicValue &index) {
 	return kMiniscriptInstructionOutcomeFailed;
+}
+
+MiniscriptInstructionOutcome RuntimeObject::scriptSetClone(MiniscriptThread *thread, const DynamicValue &value) {
+	thread->getRuntime()->queueCloneObject(this->getSelfReference());
+	return kMiniscriptInstructionOutcomeContinue;
+}
+
+MiniscriptInstructionOutcome RuntimeObject::scriptSetKill(MiniscriptThread *thread, const DynamicValue &value) {
+	thread->getRuntime()->queueKillObject(this->getSelfReference());
+	return kMiniscriptInstructionOutcomeContinue;
+}
+
+MiniscriptInstructionOutcome RuntimeObject::scriptSetParent(MiniscriptThread *thread, const DynamicValue &value) {
+	if (value.getType() != DynamicValueTypes::kObject) {
+		thread->error("Object couldn't be re-parented to a non-object");
+		return kMiniscriptInstructionOutcomeFailed;
+	}
+
+	thread->getRuntime()->queueChangeObjectParent(this->getSelfReference(), value.getObject().object);
+
+	return kMiniscriptInstructionOutcomeContinue;
+}
+
+// Need special handling of "parent" property, assigns indirect the value but writes re-parent the object
+MiniscriptInstructionOutcome RuntimeObject::ParentWriteProxyInterface::write(MiniscriptThread *thread, const DynamicValue &dest, void *objectRef, uintptr ptrOrOffset) {
+	return static_cast<RuntimeObject *>(objectRef)->scriptSetParent(thread, dest);
+}
+
+RuntimeObject *RuntimeObject::ParentWriteProxyInterface::resolveObjectParent(RuntimeObject *obj) {
+	if (obj->isStructural())
+		return static_cast<Structural *>(obj)->getParent();
+	else if (obj->isModifier())
+		return static_cast<Modifier *>(obj)->getParent().lock().get();
+
+	return nullptr;
+}
+
+MiniscriptInstructionOutcome RuntimeObject::ParentWriteProxyInterface::refAttrib(MiniscriptThread *thread, DynamicValueWriteProxy &proxy, void *objectRef, uintptr ptrOrOffset, const Common::String &attrib) {
+	RuntimeObject *parent = resolveObjectParent(static_cast<RuntimeObject *>(objectRef));
+
+	if (!parent)
+		return kMiniscriptInstructionOutcomeFailed;
+
+	DynamicValueWriteProxy tempProxy;
+	DynamicValueWriteObjectHelper::create(parent, tempProxy);
+
+	return tempProxy.pod.ifc->refAttrib(thread, proxy, tempProxy.pod.objectRef, tempProxy.pod.ptrOrOffset, attrib);
+}
+
+MiniscriptInstructionOutcome RuntimeObject::ParentWriteProxyInterface::refAttribIndexed(MiniscriptThread *thread, DynamicValueWriteProxy &proxy, void *objectRef, uintptr ptrOrOffset, const Common::String &attrib, const DynamicValue &index) {
+	RuntimeObject *parent = resolveObjectParent(static_cast<RuntimeObject *>(objectRef));
+
+	if (!parent)
+		return kMiniscriptInstructionOutcomeFailed;
+
+	DynamicValueWriteProxy tempProxy;
+	DynamicValueWriteObjectHelper::create(parent, tempProxy);
+
+	return tempProxy.pod.ifc->refAttribIndexed(thread, proxy, tempProxy.pod.objectRef, tempProxy.pod.ptrOrOffset, attrib, index);
 }
 
 MessageProperties::MessageProperties(const Event &evt, const DynamicValue &value, const Common::WeakPtr<RuntimeObject> &source)
@@ -3071,6 +3299,11 @@ Structural::Structural() : Structural(nullptr) {
 Structural::Structural(Runtime *runtime) : _parent(nullptr), _paused(false), _loop(false), _flushPriority(0), _runtime(runtime) {
 }
 
+Structural::Structural(const Structural &other)
+	: RuntimeObject(other), Debuggable(other), _parent(other._parent), _children(other._children), _modifiers(other._modifiers), _name(other._name), _assets(other._assets)
+	, _paused(other._paused), _loop(other._loop), _flushPriority(other._flushPriority)/*, _hooks(other._hooks)*/, _runtime(other._runtime) {
+}
+
 Structural::~Structural() {
 }
 
@@ -3080,6 +3313,14 @@ void Structural::setHooks(const Common::SharedPtr<StructuralHooks> &hooks) {
 
 const Common::SharedPtr<StructuralHooks> &Structural::getHooks() const {
 	return _hooks;
+}
+
+void Structural::visitInternalReferences(IStructuralReferenceVisitor *visitor) {
+	for (Common::SharedPtr<Structural> &child : _children)
+		visitor->visitChildStructuralRef(child);
+
+	for (Common::SharedPtr<Modifier> &child : _modifiers)
+		visitor->visitChildModifierRef(child);
 }
 
 bool Structural::isStructural() const {
@@ -3133,9 +3374,7 @@ bool Structural::readAttribute(MiniscriptThread *thread, DynamicValue &result, c
 	} else if (attrib == "scene") {
 		result.clear();
 
-		// Scene returns the scene of the Miniscript modifier, even though it's looked up
-		// as if it's an element property, because it's treated like a keyword.
-		RuntimeObject *possibleScene = thread->getModifier();
+		RuntimeObject *possibleScene = this;
 		while (possibleScene) {
 			if (possibleScene->isModifier()) {
 				possibleScene = static_cast<Modifier *>(possibleScene)->getParent().lock().get();
@@ -3155,8 +3394,36 @@ bool Structural::readAttribute(MiniscriptThread *thread, DynamicValue &result, c
 			assert(false);
 			break;
 		}
+
 		if (possibleScene)
 			result.setObject(possibleScene->getSelfReference());
+		else
+			result.clear();
+		return true;
+	} else if (attrib == "section") {
+		result.clear();
+
+		RuntimeObject *possibleSection = this;
+		while (possibleSection) {
+			if (possibleSection->isSection())
+				break;
+
+			if (possibleSection->isModifier()) {
+				possibleSection = static_cast<Modifier *>(possibleSection)->getParent().lock().get();
+				continue;
+			}
+
+			if (possibleSection->isStructural()) {
+				possibleSection = static_cast<Structural *>(possibleSection)->getParent();
+				continue;
+			}
+
+			assert(false);
+			break;
+		}
+
+		if (possibleSection)
+			result.setObject(possibleSection->getSelfReference());
 		else
 			result.clear();
 		return true;
@@ -3200,6 +3467,20 @@ bool Structural::readAttribute(MiniscriptThread *thread, DynamicValue &result, c
 	} else if (attrib == "element") {
 		result.setObject(getSelfReference());
 		return true;
+	} else if (attrib == "elementindex") {
+		int32 elementIndex = 0;
+
+		for (const Common::SharedPtr<Structural> &parentChild : _parent->getChildren()) {
+			if (parentChild.get() == this)
+				break;
+
+			elementIndex++;
+		}
+
+		assert(static_cast<uint>(elementIndex) < _parent->getChildren().size());
+
+		result.setInt(elementIndex + 1);
+		return true;
 	}
 
 	// Traverse children (modifiers must be first)
@@ -3240,15 +3521,6 @@ MiniscriptInstructionOutcome Structural::writeRefAttribute(MiniscriptThread *thr
 	} else if (attrib == "system") {
 		DynamicValueWriteObjectHelper::create(thread->getRuntime()->getSystemInterface(), result);
 		return kMiniscriptInstructionOutcomeContinue;
-	} else if (attrib == "parent") {
-		// NOTE: Re-parenting objects is allowed by mTropolis but we don't currently support that.
-		Structural *parent = getParent();
-		if (parent) {
-			DynamicValueWriteObjectHelper::create(getParent(), result);
-			return kMiniscriptInstructionOutcomeContinue;
-		} else {
-			return kMiniscriptInstructionOutcomeFailed;
-		}
 	} else if (attrib == "next") {
 		Structural *sibling = findNextSibling();
 		if (sibling) {
@@ -3294,6 +3566,29 @@ MiniscriptInstructionOutcome Structural::writeRefAttribute(MiniscriptThread *thr
 
 	return RuntimeObject::writeRefAttribute(thread, result, attrib);
 }
+
+bool Structural::readAttributeIndexed(MiniscriptThread *thread, DynamicValue &result, const Common::String &attrib, const DynamicValue &index) {
+	if (attrib == "nthelement") {
+		DynamicValue indexConverted;
+		if (!index.convertToType(DynamicValueTypes::kInteger, indexConverted)) {
+			thread->error("Invalid index for 'nthelement'");
+			return false;
+		}
+
+		int32 indexInt = indexConverted.getInt();
+
+		if (indexInt < 1 || static_cast<uint32>(indexInt) > _children.size()) {
+			thread->error("Index out of range for 'nthelement'");
+			return false;
+		}
+
+		result.setObject(_children[indexInt - 1]->getSelfReference());
+		return true;
+	}
+
+	return Structural::readAttributeIndexed(thread, result, attrib, index);
+}
+
 
 const Common::Array<Common::SharedPtr<Structural> > &Structural::getChildren() const {
 	return _children;
@@ -3405,6 +3700,15 @@ const Common::Array<Common::SharedPtr<Modifier> > &Structural::getModifiers() co
 void Structural::appendModifier(const Common::SharedPtr<Modifier> &modifier) {
 	_modifiers.push_back(modifier);
 	modifier->setParent(getSelfReference());
+}
+
+void Structural::removeModifier(const Modifier *modifier) {
+	for (Common::Array<Common::SharedPtr<Modifier> >::iterator it = _modifiers.begin(), itEnd = _modifiers.end(); it != itEnd; ++it) {
+		if (it->get() == modifier) {
+			_modifiers.erase(it);
+			return;
+		}
+	}
 }
 
 bool Structural::respondsToEvent(const Event &evt) const {
@@ -3779,6 +4083,10 @@ LowLevelSceneStateTransitionAction &LowLevelSceneStateTransitionAction::operator
 
 HighLevelSceneTransition::HighLevelSceneTransition(const Common::SharedPtr<Structural> &hlst_scene, Type hlst_type, bool hlst_addToDestinationScene, bool hlst_addToReturnList)
 	: scene(hlst_scene), type(hlst_type), addToDestinationScene(hlst_addToDestinationScene), addToReturnList(hlst_addToReturnList) {
+}
+
+ObjectParentChange::ObjectParentChange(const Common::WeakPtr<RuntimeObject> &object, const Common::WeakPtr<RuntimeObject> &newParent)
+	: _object(object), _newParent(newParent) {
 }
 
 SceneTransitionEffect::SceneTransitionEffect()
@@ -4265,6 +4573,9 @@ void SceneTransitionHooks::onSceneTransitionSetup(Runtime *runtime, const Common
 void SceneTransitionHooks::onSceneTransitionEnded(Runtime *runtime, const Common::WeakPtr<Structural> &newScene) {
 }
 
+void SceneTransitionHooks::onProjectStarted(Runtime *runtime) {
+}
+
 
 Palette::Palette() {
 	initDefaultPalette(1);
@@ -4544,7 +4855,61 @@ bool Runtime::runFrame() {
 			Common::SharedPtr<MessageDispatch> psDispatch(new MessageDispatch(psProps, _project.get(), false, true, false));
 			queueMessage(psDispatch);
 
+			for (const Common::SharedPtr<SceneTransitionHooks> &hook : _hacks.sceneTransitionHooks)
+				hook->onProjectStarted(this);
+
 			_pendingSceneTransitions.push_back(HighLevelSceneTransition(firstSubsection->getChildren()[1], HighLevelSceneTransition::kTypeChangeToScene, false, false));
+			continue;
+		}
+
+		// The order of operations for dynamic object behaviors is:
+		// - Parent changes
+		// - Parent Enabled -> Clone for each cloned object
+		// - Show for each cloned object that is visible
+		// - Hide -> Kill -> Parent Disabled for each killed object
+		if (_pendingParentChanges.size() > 0) {
+			ObjectParentChange parentChange = _pendingParentChanges.remove_at(0);
+
+			RuntimeObject *obj = parentChange._object.lock().get();
+			RuntimeObject *newParent = parentChange._newParent.lock().get();
+
+			if (obj) {
+				if (newParent)
+					executeChangeObjectParent(obj, newParent);
+				else
+					warning("Object re-parenting failed, the new parent was invalid!");
+			}
+
+			continue;
+		}
+
+		if (_pendingClones.size() > 0) {
+			RuntimeObject *objectToClone = _pendingClones.remove_at(0).lock().get();
+
+			if (objectToClone)
+				executeCloneObject(objectToClone);
+
+			continue;
+		}
+
+		if (_pendingShowClonedObject.size() > 0) {
+			Structural *objectToShow = _pendingShowClonedObject.remove_at(0).lock().get();
+
+			if (objectToShow && objectToShow->isElement() && static_cast<Element *>(objectToShow)->isVisual() && static_cast<VisualElement *>(objectToShow)->isVisible()) {
+				Common::SharedPtr<MessageProperties> msgProps(new MessageProperties(Event(EventIDs::kElementShow, 0), DynamicValue(), objectToShow->getSelfReference()));
+				Common::SharedPtr<MessageDispatch> dispatch(new MessageDispatch(msgProps, objectToShow, false, true, false));
+				sendMessageOnVThread(dispatch);
+			}
+
+			continue;
+		}
+
+		if (_pendingKills.size() > 0) {
+			RuntimeObject *objectToKill = _pendingKills.remove_at(0).lock().get();
+
+			if (objectToKill)
+				executeKillObject(objectToKill);
+
 			continue;
 		}
 
@@ -4858,29 +5223,42 @@ Common::SharedPtr<Structural> Runtime::findDefaultSharedSceneForScene(Structural
 }
 
 void Runtime::executeTeardown(const Teardown &teardown) {
-	Common::SharedPtr<Structural> structural = teardown.structural.lock();
-	if (!structural)
-		return;	// Already gone
+	if (Common::SharedPtr<Structural> structural = teardown.structural.lock()) {
+		recursiveDeactivateStructural(structural.get());
 
-	recursiveDeactivateStructural(structural.get());
+		if (teardown.onlyRemoveChildren) {
+			structural->removeAllChildren();
+			structural->removeAllModifiers();
+			structural->removeAllAssets();
+		} else {
+			Structural *parent = structural->getParent();
 
-	if (teardown.onlyRemoveChildren) {
-		structural->removeAllChildren();
-		structural->removeAllModifiers();
-		structural->removeAllAssets();
-	} else {
-		Structural *parent = structural->getParent();
+			// Nothing should be holding strong references to structural objects after they're removed from the project
+			assert(parent != nullptr);
 
-		// Nothing should be holding strong references to structural objects after they're removed from the project
-		assert(parent != nullptr);
+			if (!parent) {
+				return; // Already unlinked but still alive somehow
+			}
 
-		if (!parent) {
-			return; // Already unlinked but still alive somehow
+			parent->removeChild(structural.get());
+
+			structural->setParent(nullptr);
+		}
+	}
+
+	if (Common::SharedPtr<Modifier> modifier = teardown.modifier.lock()) {
+		IModifierContainer *container = nullptr;
+		RuntimeObject *parent = modifier->getParent().lock().get();
+
+		if (parent) {
+			if (parent->isStructural())
+				container = static_cast<Structural *>(parent);
+			else if (parent->isModifier())
+				container = static_cast<Modifier *>(parent)->getChildContainer();
 		}
 
-		parent->removeChild(structural.get());
-
-		structural->setParent(nullptr);
+		if (container)
+			container->removeModifier(modifier.get());
 	}
 }
 
@@ -4930,6 +5308,190 @@ void Runtime::executeSceneChangeRecursiveVisibilityChange(Structural *structural
 		ApplyDefaultVisibilityTaskData *taskData = getVThread().pushTask("Runtime::applyDefaultVisibility", this, &Runtime::applyDefaultVisibility);
 		taskData->element = visual;
 		taskData->targetVisibility = showing;
+	}
+}
+
+void Runtime::executeChangeObjectParent(RuntimeObject *object, RuntimeObject *newParent) {
+	// TODO: Should do circularity checks
+
+	if (object->isModifier()) {
+		Common::SharedPtr<Modifier> modifier = object->getSelfReference().lock().staticCast<Modifier>();
+
+		IModifierContainer *oldParentContainer = nullptr;
+
+		RuntimeObject *oldParent = modifier->getParent().lock().get();
+
+		if (oldParent == newParent)
+			return;
+
+		if (oldParent->isStructural())
+			oldParentContainer = static_cast<Structural *>(oldParent);
+		else if (oldParent->isModifier())
+			oldParentContainer = static_cast<Modifier *>(oldParent)->getChildContainer();
+
+		IModifierContainer *newParentContainer = nullptr;
+		if (newParent->isStructural())
+			newParentContainer = static_cast<Structural *>(newParent);
+		else if (newParent->isModifier())
+			newParentContainer = static_cast<Modifier *>(newParent)->getChildContainer();
+
+		if (!newParentContainer) {
+			warning("Object re-parent failed, the new parent isn't a modifier container");
+			return;
+		}
+
+		oldParentContainer->removeModifier(modifier.get());
+		newParentContainer->appendModifier(modifier);
+
+		modifier->setParent(newParent->getSelfReference());
+
+		{
+			Common::SharedPtr<MessageProperties> msgProps(new MessageProperties(Event(EventIDs::kParentChanged, 0), DynamicValue(), modifier->getSelfReference()));
+			Common::SharedPtr<MessageDispatch> dispatch(new MessageDispatch(msgProps, modifier.get(), false, false, false));
+			sendMessageOnVThread(dispatch);
+		}
+	}
+
+	if (object->isStructural()) {
+		Common::SharedPtr<Structural> structural = object->getSelfReference().lock().staticCast<Structural>();
+
+		Structural *oldParent = structural->getParent();
+
+		if (oldParent == newParent)
+			return;
+
+		if (!newParent->isStructural()) {
+			warning("Object re-parent failed, the new parent isn't structural");
+			return;
+		}
+
+		Structural *newParentStructural = static_cast<Structural *>(newParent);
+
+		oldParent->removeChild(structural.get());
+		newParentStructural->addChild(structural);
+
+		{
+			Common::SharedPtr<MessageProperties> msgProps(new MessageProperties(Event(EventIDs::kParentChanged, 0), DynamicValue(), structural->getSelfReference()));
+			Common::SharedPtr<MessageDispatch> dispatch(new MessageDispatch(msgProps, structural.get(), false, true, false));
+			sendMessageOnVThread(dispatch);
+		}
+	}
+}
+
+void Runtime::executeCloneObject(RuntimeObject *object) {
+	Common::HashMap<RuntimeObject *, RuntimeObject *> objectRemaps;
+
+	if (object->isModifier()) {
+		Common::SharedPtr<Modifier> modifierRef = object->getSelfReference().lock().staticCast<Modifier>();
+		Common::WeakPtr<RuntimeObject> relinkParent = modifierRef->getParent();
+
+		ObjectCloner cloner(this, relinkParent, &objectRemaps);
+		cloner.visitChildModifierRef(modifierRef);
+
+		ObjectRefRemapper remapper(objectRemaps);
+		remapper.visitChildModifierRef(modifierRef);
+
+		IModifierContainer *container = nullptr;
+		Common::SharedPtr<RuntimeObject> parent = relinkParent.lock();
+		if (parent) {
+			if (parent->isStructural())
+				container = static_cast<Structural *>(parent.get());
+			else if (parent->isModifier())
+				container = static_cast<Modifier *>(parent.get())->getChildContainer();
+		}
+
+		if (container)
+			container->appendModifier(modifierRef);
+		else
+			error("Internal error: Cloned a modifier, but the parent isn't a modifeir container");
+
+		{
+			Common::SharedPtr<MessageProperties> msgProps(new MessageProperties(Event(EventIDs::kClone, 0), DynamicValue(), modifierRef));
+			Common::SharedPtr<MessageDispatch> dispatch(new MessageDispatch(msgProps, modifierRef.get(), true, true, false));
+			sendMessageOnVThread(dispatch);
+		}
+
+		{
+			Common::SharedPtr<MessageProperties> msgProps(new MessageProperties(Event(EventIDs::kParentEnabled, 0), DynamicValue(), modifierRef));
+			Common::SharedPtr<MessageDispatch> dispatch(new MessageDispatch(msgProps, modifierRef.get(), true, true, false));
+			sendMessageOnVThread(dispatch);
+		}
+	} else if (object->isStructural()) {
+		Common::SharedPtr<Structural> structuralRef = object->getSelfReference().lock().staticCast<Structural>();
+		Common::WeakPtr<RuntimeObject> relinkParent = structuralRef->getParent()->getSelfReference();
+
+		ObjectCloner cloner(this, relinkParent, &objectRemaps);
+		cloner.visitChildStructuralRef(structuralRef);
+
+		ObjectRefRemapper remapper(objectRemaps);
+		remapper.visitChildStructuralRef(structuralRef);
+
+		structuralRef->getParent()->addChild(structuralRef);
+
+		_pendingPostCloneShowChecks.push_back(structuralRef);
+
+		{
+			Common::SharedPtr<MessageProperties> msgProps(new MessageProperties(Event(EventIDs::kClone, 0), DynamicValue(), structuralRef));
+			Common::SharedPtr<MessageDispatch> dispatch(new MessageDispatch(msgProps, structuralRef.get(), true, true, false));
+			sendMessageOnVThread(dispatch);
+		}
+
+		{
+			Common::SharedPtr<MessageProperties> msgProps(new MessageProperties(Event(EventIDs::kParentEnabled, 0), DynamicValue(), structuralRef));
+			Common::SharedPtr<MessageDispatch> dispatch(new MessageDispatch(msgProps, structuralRef.get(), true, true, false));
+			sendMessageOnVThread(dispatch);
+		}
+	} else
+		error("Internal error: Cloned something unusual");
+}
+
+void Runtime::executeKillObject(RuntimeObject *object) {
+	// TODO: Should do circularity checks
+
+	if (object->isModifier()) {
+		Modifier *modifier = static_cast<Modifier *>(object);
+
+		{
+			Common::SharedPtr<MessageProperties> msgProps(new MessageProperties(Event(EventIDs::kParentDisabled, 0), DynamicValue(), modifier->getSelfReference()));
+			Common::SharedPtr<MessageDispatch> dispatch(new MessageDispatch(msgProps, modifier, true, true, false));
+			sendMessageOnVThread(dispatch);
+		}
+
+		{
+			Common::SharedPtr<MessageProperties> msgProps(new MessageProperties(Event(EventIDs::kKill, 0), DynamicValue(), modifier->getSelfReference()));
+			Common::SharedPtr<MessageDispatch> dispatch(new MessageDispatch(msgProps, modifier, true, true, false));
+			sendMessageOnVThread(dispatch);
+		}
+
+		Teardown teardown;
+		teardown.modifier = modifier->getSelfReference().lock().staticCast<Modifier>();
+
+		_pendingTeardowns.push_back(teardown);
+	}
+
+	if (object->isStructural()) {
+		Structural *structural = static_cast<Structural *>(object);
+
+		// Task order is LIFO, so order is Hide -> Kill -> Parent Disabled
+		{
+			Common::SharedPtr<MessageProperties> msgProps(new MessageProperties(Event(EventIDs::kParentDisabled, 0), DynamicValue(), structural->getSelfReference()));
+			Common::SharedPtr<MessageDispatch> dispatch(new MessageDispatch(msgProps, structural, true, true, false));
+			sendMessageOnVThread(dispatch);
+		}
+
+		{
+			Common::SharedPtr<MessageProperties> msgProps(new MessageProperties(Event(EventIDs::kKill, 0), DynamicValue(), structural->getSelfReference()));
+			Common::SharedPtr<MessageDispatch> dispatch(new MessageDispatch(msgProps, structural, true, true, false));
+			sendMessageOnVThread(dispatch);
+		}
+
+		if (structural->isElement() && static_cast<Element *>(structural)->isVisual())
+			static_cast<VisualElement *>(structural)->pushVisibilityChangeTask(this, false);
+
+		Teardown teardown;
+		teardown.structural = structural->getSelfReference().lock().staticCast<Structural>();
+
+		_pendingTeardowns.push_back(teardown);
 	}
 }
 
@@ -5163,6 +5725,11 @@ void Runtime::executeHighLevelSceneTransition(const HighLevelSceneTransition &tr
 			}
 
 			_sharedSceneWasSetExplicitly = true;
+		} break;
+	case HighLevelSceneTransition::kTypeForceLoadScene: {
+			_pendingLowLevelTransitions.push_back(LowLevelSceneStateTransitionAction(transition.scene, LowLevelSceneStateTransitionAction::kLoad));
+			queueEventAsLowLevelSceneStateTransitionAction(Event(EventIDs::kParentEnabled, 0), transition.scene.get(), true, true);
+			queueEventAsLowLevelSceneStateTransitionAction(Event(EventIDs::kSceneStarted, 0), transition.scene.get(), true, true);
 		} break;
 	default:
 		error("Unknown high-level scene transition type");
@@ -6573,6 +7140,21 @@ bool Runtime::isIdle() const {
 	if (_pendingLowLevelTransitions.size() > 0)
 		return false;
 
+	if (_pendingClones.size() > 0)
+		return false;
+
+	if (_pendingPostCloneShowChecks.size() > 0)
+		return false;
+
+	if (_pendingShowClonedObject.size() > 0)
+		return false;
+
+	if (_pendingParentChanges.size() > 0)
+		return false;
+
+	if (_pendingKills.size() > 0)
+		return false;
+
 	if (_messageQueue.size() > 0)
 		return false;
 
@@ -6587,6 +7169,31 @@ bool Runtime::isIdle() const {
 
 const Common::SharedPtr<SubtitleRenderer> &Runtime::getSubtitleRenderer() const {
 	return _subtitleRenderer;
+}
+
+void Runtime::queueCloneObject(const Common::WeakPtr<RuntimeObject> &obj) {
+	Common::SharedPtr<RuntimeObject> ptr = obj.lock();
+
+	// Cloning the same object multiple times doesn't work
+	for (const Common::WeakPtr<RuntimeObject> &candidate : _pendingClones)
+		if (candidate.lock() == ptr)
+			return;
+
+	_pendingClones.push_back(obj);
+}
+
+void Runtime::queueKillObject(const Common::WeakPtr<RuntimeObject> &obj) {
+	Common::SharedPtr<RuntimeObject> ptr = obj.lock();
+
+	for (const Common::WeakPtr<RuntimeObject> &candidate : _pendingKills)
+		if (candidate.lock() == ptr)
+			return;
+
+	_pendingKills.push_back(obj);
+}
+
+void Runtime::queueChangeObjectParent(const Common::WeakPtr<RuntimeObject> &obj, const Common::WeakPtr<RuntimeObject> &newParent) {
+	_pendingParentChanges.push_back(ObjectParentChange(obj, newParent));
 }
 
 void Runtime::ensureMainWindowExists() {
@@ -7015,7 +7622,7 @@ Project::AssetDesc::AssetDesc() : typeCode(0), id(0), streamID(0), filePosition(
 Project::Project(Runtime *runtime)
 	: Structural(runtime), _projectFormat(Data::kProjectFormatUnknown),
 	  _haveGlobalObjectInfo(false), _haveProjectStructuralDef(false), _playMediaSignaller(new PlayMediaSignaller()),
-	  _keyboardEventSignaller(new KeyboardEventSignaller()), _guessedVersion(MTropolisVersions::kMTropolisVersion1_0),
+	  _keyboardEventSignaller(new KeyboardEventSignaller()),
 	  _platform(kProjectPlatformUnknown), _rootArchive(nullptr), _runtimeVersion(kRuntimeVersion100) {
 }
 
@@ -7609,12 +8216,21 @@ const SubtitleTables &Project::getSubtitles() const {
 	return _subtitles;
 }
 
-MTropolisVersions::MTropolisVersion Project::guessVersion() const {
-	return _guessedVersion;
+RuntimeVersion Project::getRuntimeVersion() const {
+	return _runtimeVersion;
 }
 
 ProjectPlatform Project::getPlatform() const {
 	return _platform;
+}
+
+void Project::visitInternalReferences(IStructuralReferenceVisitor *visitor) {
+	error("Cloning a project is not supported");
+}
+
+Common::SharedPtr<Structural> Project::shallowClone() const {
+	error("Cloning a project is not supported");
+	return nullptr;
 }
 
 void Project::loadPresentationSettings(const Data::PresentationSettings &presentationSettings) {
@@ -7667,14 +8283,6 @@ void Project::loadAssetCatalog(const Data::AssetCatalog &assetCatalog) {
 				_assetNameToID[assetDesc.name] = assetDesc.id;
 		}
 	}
-
-	if (assetCatalog.getRevision() <= 2)
-		_guessedVersion = MTropolisVersions::kMTropolisVersion1_0;
-	else if (assetCatalog.getRevision() <= 4)
-		_guessedVersion = MTropolisVersions::kMTropolisVersion1_1;
-	else
-		_guessedVersion = MTropolisVersions::kMTropolisVersion2_0;
-
 }
 
 void Project::loadGlobalObjectInfo(ChildLoaderStack &loaderStack, const Data::GlobalObjectInfo& globalObjectInfo) {
@@ -8059,6 +8667,15 @@ bool Section::isSection() const {
 	return true;
 }
 
+Common::SharedPtr<Structural> Section::shallowClone() const {
+	error("Cloning sections is not supported");
+	return nullptr;
+}
+
+void Section::visitInternalReferences(IStructuralReferenceVisitor *visitor) {
+	error("Cloning sections is not supported");
+}
+
 ObjectLinkingScope *Section::getPersistentStructuralScope() {
 	return &_structuralScope;
 }
@@ -8082,6 +8699,15 @@ bool Subsection::isSubsection() const {
 	return true;
 }
 
+Common::SharedPtr<Structural> Subsection::shallowClone() const {
+	error("Cloning subsections is not supported");
+	return nullptr;
+}
+
+void Subsection::visitInternalReferences(IStructuralReferenceVisitor *visitor) {
+	error("Cloning subsections is not supported");
+}
+
 ObjectLinkingScope *Subsection::getSceneLoadMaterializeScope() {
 	return getPersistentStructuralScope();
 }
@@ -8095,6 +8721,12 @@ ObjectLinkingScope *Subsection::getPersistentModifierScope() {
 }
 
 Element::Element() : _streamLocator(0), _sectionID(0), _haveCheckedAutoPlay(false) {
+}
+
+Element::Element(const Element &other)
+	: Structural(other), _streamLocator(other._streamLocator), _sectionID(other._sectionID)
+	// Don't copy checked autoplay or mediacues lists
+	, _haveCheckedAutoPlay(false), _mediaCues() {
 }
 
 bool Element::canAutoPlay() const {
@@ -8141,6 +8773,10 @@ void Element::triggerAutoPlay(Runtime *runtime) {
 
 bool Element::resolveMediaMarkerLabel(const Label& label, int32 &outResolution) const {
 	return false;
+}
+
+void Element::visitInternalReferences(IStructuralReferenceVisitor *visitor) {
+	Structural::visitInternalReferences(visitor);
 }
 
 VisualElementTransitionProperties::VisualElementTransitionProperties() : _isDirty(true), _alpha(255) {
@@ -8277,6 +8913,14 @@ VisualElementRenderProperties &VisualElementRenderProperties::operator=(const Vi
 VisualElement::VisualElement()
 	: _rect(0, 0, 0, 0), _cachedAbsoluteOrigin(Common::Point(0, 0)), _contentsDirty(true), _directToScreen(false), _visible(false), _visibleByDefault(true), _layer(0),
 	  _topLeftBevelShading(0), _bottomRightBevelShading(0), _interiorShading(0), _bevelSize(0) {
+}
+
+VisualElement::VisualElement(const VisualElement &other)
+	: Element(other), _directToScreen(other._directToScreen), _visible(other._visible), _visibleByDefault(other._visibleByDefault)
+	, _rect(other._rect), _cachedAbsoluteOrigin(other._cachedAbsoluteOrigin), _layer(other._layer), _topLeftBevelShading(other._topLeftBevelShading)
+	, _bottomRightBevelShading(other._bottomRightBevelShading), _interiorShading(other._interiorShading), _bevelSize(other._bevelSize)
+	, _dragProps(nullptr), _renderProps(other._renderProps), _primaryGraphicModifier(nullptr), _transitionProps(other._transitionProps)
+	, _palette(other._palette), _prevRect(other._prevRect), _contentsDirty(true) {
 }
 
 bool VisualElement::isVisual() const {
@@ -8571,6 +9215,12 @@ MiniscriptInstructionOutcome VisualElement::writeRefAttribute(MiniscriptThread *
 		// Not sure what this does, MTI uses it frequently
 		DynamicValueWriteDiscardHelper::create(writeProxy);
 		return kMiniscriptInstructionOutcomeContinue;
+	} else if (attrib == "unload") {
+		if (getRuntime()->getHacks().ignoreSceneUnloads) {
+			DynamicValueWriteDiscardHelper::create(writeProxy);
+			return kMiniscriptInstructionOutcomeContinue;
+		} else
+			return kMiniscriptInstructionOutcomeFailed;
 	}
 
 	return Element::writeRefAttribute(thread, writeProxy, attrib);
@@ -8725,6 +9375,17 @@ void VisualElement::setPalette(const Common::SharedPtr<Palette> &palette) {
 
 const Common::SharedPtr<Palette> &VisualElement::getPalette() const {
 	return _palette;
+}
+
+void VisualElement::visitInternalReferences(IStructuralReferenceVisitor *visitor) {
+	Element::visitInternalReferences(visitor);
+}
+
+
+void VisualElement::pushVisibilityChangeTask(Runtime * runtime, bool desiredVisibility) {
+	ChangeFlagTaskData *changeVisibilityTask = runtime->getVThread().pushTask("VisualElement::changeVisibilityTask", this, &VisualElement::changeVisibilityTask);
+	changeVisibilityTask->desiredFlag = true;
+	changeVisibilityTask->runtime = runtime;
 }
 
 #ifdef MTROPOLIS_DEBUG_ENABLE
@@ -9369,10 +10030,10 @@ void Modifier::materialize(Runtime *runtime, ObjectLinkingScope *outerScope) {
 	ObjectLinkingScope innerScope;
 	innerScope.setParent(outerScope);
 
-	ModifierInnerScopeBuilder innerScopeBuilder(&innerScope);
+	ModifierInnerScopeBuilder innerScopeBuilder(runtime, this, &innerScope);
 	this->visitInternalReferences(&innerScopeBuilder);
 
-	ModifierChildMaterializer childMaterializer(runtime, this, &innerScope);
+	ModifierChildMaterializer childMaterializer(runtime, &innerScope);
 	this->visitInternalReferences(&childMaterializer);
 
 	linkInternalReferences(outerScope);

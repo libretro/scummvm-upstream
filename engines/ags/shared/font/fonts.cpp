@@ -19,9 +19,9 @@
  *
  */
 
-#include "ags/lib/std/algorithm.h"
+#include "common/std/algorithm.h"
 #include "ags/lib/alfont/alfont.h"
-#include "ags/lib/std/vector.h"
+#include "common/std/vector.h"
 #include "ags/shared/ac/common.h" // set_our_eip
 #include "ags/shared/ac/game_struct_defines.h"
 #include "ags/shared/font/fonts.h"

@@ -167,6 +167,8 @@ void Window::playTransition(uint frame, RenderMode mode, uint16 transDuration, u
 	t.chunkSize = MAX<uint>(1, transChunkSize);
 	t.area = MAX<uint>(0, transArea);
 
+	debugC(2, kDebugImages, "Window::playTransition(): Playing transition %d", t.type);
+
 	// If we requested fast transitions, speed everything up
 	if (debugChannelSet(-1, kDebugFast))
 		t.duration = 250;
@@ -231,13 +233,12 @@ void Window::playTransition(uint frame, RenderMode mode, uint16 transDuration, u
 
 	Common::Rect rfrom, rto;
 
-	uint32 transStartTime = g_system->getMillis();
-	debugC(2, kDebugImages, "Window::playTransition(): Playing transition %d", t.type);
-
 	initTransParams(t, clipRect);
 
 	Graphics::ManagedSurface *blitFrom;
 	bool fullredraw = false;
+
+	uint32 transStartTime = g_system->getMillis();
 
 	debugC(2, kDebugImages, "Window::playTransition(): type: %d, duration: %d, area: %d, chunkSize: %d, steps: %d, stepDuration: %d, xpos: %d, ypos: %d, xStepSize: %d, yStepSize: %d, stripSize: %d, clipRect: %d %d %d %d", t.type, t.duration, t.area, t.chunkSize, t.steps, t.stepDuration, t.xpos, t.ypos, t.xStepSize, t.yStepSize, t.stripSize, clipRect.left, clipRect.top, clipRect.right, clipRect.bottom);
 
@@ -574,8 +575,9 @@ void Window::playTransition(uint frame, RenderMode mode, uint16 transDuration, u
 		}
 
 		uint32 endTime = g_system->getMillis();
-		int diff = (int)t.stepDuration - (int)(endTime - startTime);
-		g_director->delayMillis(MAX(0, diff));
+		int diff = MAX(0, (int)t.stepDuration - (int)(endTime - startTime));
+		debugC(6, kDebugImages, "Window::playTransition(): delaying for %d", diff);
+		g_director->delayMillis(diff);
 
 		g_lingo->executePerFrameHook(t.frame, i);
 	}
@@ -744,10 +746,18 @@ void Window::dissolveTrans(TransParams &t, Common::Rect &clipRect, Graphics::Man
 						x += clipRect.left;
 						y += clipRect.top;
 
-						byte *dst = (byte *)_composeSurface->getBasePtr(x, y);
-						byte *src = (byte *)nextFrame->getBasePtr(x, y);
+						if (g_director->_pixelformat.bytesPerPixel == 1) {
+							byte *dst = (byte *)_composeSurface->getBasePtr(x, y);
+							byte *src = (byte *)nextFrame->getBasePtr(x, y);
 
-						*dst = ((*dst & ~mask) | (*src & mask)) & 0xff;
+							*dst = ((*dst & ~mask) | (*src & mask)) & 0xff;
+						} else {
+							uint32 *dst = (uint32 *)_composeSurface->getBasePtr(x, y);
+							uint32 *src = (uint32 *)nextFrame->getBasePtr(x, y);
+
+							*dst = ((*dst & ~mask) | (*src & mask)) & 0xff;
+
+						}
 					}
 				}
 
@@ -770,8 +780,9 @@ void Window::dissolveTrans(TransParams &t, Common::Rect &clipRect, Graphics::Man
 		}
 
 		uint32 endTime = g_system->getMillis();
-		int diff = (int)t.stepDuration - (int)(endTime - startTime);
-		g_director->delayMillis(MAX(0, diff));
+		int diff = MAX(0, (int)t.stepDuration - (int)(endTime - startTime));
+		debugC(6, kDebugImages, "Window::dissolveTrans(): delaying for %d", diff);
+		g_director->delayMillis(diff);
 	}
 }
 
@@ -850,18 +861,36 @@ void Window::dissolvePatternsTrans(TransParams &t, Common::Rect &clipRect, Graph
 		uint32 startTime = g_system->getMillis();
 		for (int y = clipRect.top; y < clipRect.bottom; y++) {
 			byte pat = dissolvePatterns[patternIndex][y % 8];
-			byte *dst = (byte *)_composeSurface->getBasePtr(clipRect.left, y);
-			byte *src = (byte *)nextFrame->getBasePtr(clipRect.left, y);
+			if (g_director->_pixelformat.bytesPerPixel == 1) {
 
-			for (int x = clipRect.left; x < clipRect.right;) {
-				byte mask = 0x80;
-				for (int b = 0; b < 8 && x < clipRect.right; b++, x++) {
-					if (pat & mask)
-						*dst = *src;
+				byte *dst = (byte *)_composeSurface->getBasePtr(clipRect.left, y);
+				byte *src = (byte *)nextFrame->getBasePtr(clipRect.left, y);
 
-					dst++;
-					src++;
-					mask >>= 1;
+				for (int x = clipRect.left; x < clipRect.right;) {
+					byte mask = 0x80;
+					for (int b = 0; b < 8 && x < clipRect.right; b++, x++) {
+						if (pat & mask)
+							*dst = *src;
+
+						dst++;
+						src++;
+						mask >>= 1;
+					}
+				}
+			} else {
+				uint32 *dst = (uint32 *)_composeSurface->getBasePtr(clipRect.left, y);
+				uint32 *src = (uint32 *)nextFrame->getBasePtr(clipRect.left, y);
+
+				for (int x = clipRect.left; x < clipRect.right;) {
+					byte mask = 0x80;
+					for (int b = 0; b < 8 && x < clipRect.right; b++, x++) {
+						if (pat & mask)
+							*dst = *src;
+
+						dst++;
+						src++;
+						mask >>= 1;
+					}
 				}
 			}
 		}
@@ -876,8 +905,9 @@ void Window::dissolvePatternsTrans(TransParams &t, Common::Rect &clipRect, Graph
 		}
 
 		uint32 endTime = g_system->getMillis();
-		int diff = (int)t.stepDuration - (int)(endTime - startTime);
-		g_director->delayMillis(MAX(0, diff));
+		int diff = MAX(0, (int)t.stepDuration - (int)(endTime - startTime));
+		debugC(6, kDebugImages, "Window::dissolvePatternsTrans(): delaying for %d", diff);
+		g_director->delayMillis(diff);
 	}
 }
 
@@ -1049,8 +1079,9 @@ void Window::transMultiPass(TransParams &t, Common::Rect &clipRect, Graphics::Ma
 		g_lingo->executePerFrameHook(t.frame, i);
 
 		uint32 endTime = g_system->getMillis();
-		int diff = (int)t.stepDuration - (int)(endTime - startTime);
-		g_director->delayMillis(MAX(0, diff));
+		int diff = MAX(0, (int)t.stepDuration - (int)(endTime - startTime));
+		debugC(6, kDebugImages, "Window::transMultiPass(): delaying for %d", diff);
+		g_director->delayMillis(diff);
 
 		if (_vm->processEvents(true)) {
 			exitTransition(t, nextFrame, clipRect);
@@ -1111,8 +1142,9 @@ void Window::transZoom(TransParams &t, Common::Rect &clipRect, Graphics::Managed
 		stepTransition(t, i);
 
 		uint32 endTime = g_system->getMillis();
-		int diff = (int)t.stepDuration - (int)(endTime - startTime);
-		g_director->delayMillis(MAX(0, diff));
+		int diff = MAX(0, (int)t.stepDuration - (int)(endTime - startTime));
+		debugC(6, kDebugImages, "Window::transZoom(): delaying for %d", diff);
+		g_director->delayMillis(diff);
 
 		g_lingo->executePerFrameHook(t.frame, i);
 	}

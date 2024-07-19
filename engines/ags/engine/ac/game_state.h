@@ -22,8 +22,8 @@
 #ifndef AGS_ENGINE_AC_GAME_STATE_H
 #define AGS_ENGINE_AC_GAME_STATE_H
 
-#include "ags/lib/std/memory.h"
-#include "ags/lib/std/vector.h"
+#include "common/std/memory.h"
+#include "common/std/vector.h"
 #include "ags/shared/ac/character_info.h"
 #include "ags/shared/ac/keycode.h"
 #include "ags/engine/ac/runtime_defines.h"

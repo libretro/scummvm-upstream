@@ -34,8 +34,8 @@
 #ifndef AGS_ENGINE_GFX_ALI_3D_SCUMMVM_H
 #define AGS_ENGINE_GFX_ALI_3D_SCUMMVM_H
 
-#include "ags/lib/std/memory.h"
-#include "ags/lib/std/vector.h"
+#include "common/std/memory.h"
+#include "common/std/vector.h"
 #include "ags/shared/core/platform.h"
 #include "ags/shared/gfx/bitmap.h"
 #include "ags/engine/gfx/ddb.h"

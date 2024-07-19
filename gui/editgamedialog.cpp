@@ -36,6 +36,7 @@
 #include "gui/recorderdialog.h"
 #include "gui/EventRecorder.h"
 #endif
+#include "gui/integrity-dialog.h"
 #include "gui/widgets/edittext.h"
 #include "gui/widgets/tab.h"
 #include "gui/widgets/popup.h"
@@ -76,6 +77,7 @@ enum {
 	kCmdGameBrowser = 'PGME',
 	kCmdSaveBrowser = 'PSAV',
 	kCmdSavePathClear = 'PSAC',
+	kCmdCheckIntegrity = 'PCHI',
 
 	kGraphicsTabContainerReflowCmd = 'gtcr'
 };
@@ -99,16 +101,17 @@ EditGameDialog::EditGameDialog(const Common::String &domain)
 
 	// Retrieve the plugin, since we need to access the engine's MetaEngine
 	// implementation.
-	const Plugin *metaEnginePlugin = nullptr;
 	const Plugin *enginePlugin = nullptr;
-	QualifiedGameDescriptor qgd = EngineMan.findTarget(domain, &metaEnginePlugin);
-	if (!metaEnginePlugin) {
-		warning("MetaEnginePlugin for target \"%s\" not found!", domain.c_str());
-	} else {
-		enginePlugin = PluginMan.getEngineFromMetaEngine(metaEnginePlugin);
-		if (!enginePlugin) {
-			warning("Engine Plugin for target \"%s\" not found! Game specific settings might be missing.", domain.c_str());
-		}
+	QualifiedGameDescriptor qgd = EngineMan.findTarget(domain);
+
+#if defined(UNCACHED_PLUGINS) && defined(DYNAMIC_MODULES) && !defined(DETECTION_STATIC)
+	// Unload all MetaEnginesDetection if we're using uncached plugins to save extra memory.
+	PluginMan.unloadDetectionPlugin();
+#endif
+
+	enginePlugin = PluginMan.findEnginePlugin(qgd.engineId);
+	if (!enginePlugin) {
+		warning("Engine Plugin for target \"%s\" not found! Game specific settings might be missing.", domain.c_str());
 	}
 
 	// GAME: Path to game data (r/o), extra data (r/o), and save data (r/w)
@@ -136,47 +139,11 @@ EditGameDialog::EditGameDialog(const Common::String &domain)
 	//
 	tab->addTab(_("Game"), "GameOptions_Game");
 
-	// GUI:  Label & edit widget for the game ID
-	if (!g_gui.useLowResGUI())
-		new StaticTextWidget(tab, "GameOptions_Game.Id", _("ID:"), _("Short game identifier used for referring to saved games and running the game from the command line"));
-	else
-		new StaticTextWidget(tab, "GameOptions_Game.Id", _c("ID:", "lowres"), _("Short game identifier used for referring to saved games and running the game from the command line"));
-	_domainWidget = new DomainEditTextWidget(tab, "GameOptions_Game.Domain", _domain, _("Short game identifier used for referring to saved games and running the game from the command line"));
+	_gameContainer = new ScrollContainerWidget(tab, "GameOptions_Game.Container", "GameOptions_Game_Container");
+	_gameContainer->setBackgroundType(ThemeEngine::kWidgetBackgroundNo);
+	_gameContainer->setTarget(this);
 
-	// GUI:  Label & edit widget for the description
-	if (!g_gui.useLowResGUI())
-		new StaticTextWidget(tab, "GameOptions_Game.Name", _("Name:"), _("Full title of the game"));
-	else
-		new StaticTextWidget(tab, "GameOptions_Game.Name", _c("Name:", "lowres"), _("Full title of the game"));
-	_descriptionWidget = new EditTextWidget(tab, "GameOptions_Game.Desc", description, _("Full title of the game"));
-
-	// Language popup
-	_langPopUpDesc = nullptr;
-	_langPopUp = nullptr;
-	if (!_guioptions.contains(GUIO_NOLANG)) {
-		_langPopUpDesc = new StaticTextWidget(tab, "GameOptions_Game.LangPopupDesc", _("Language:"), _("Language of the game. This will not turn your Spanish game version into English"));
-		_langPopUp = new PopUpWidget(tab, "GameOptions_Game.LangPopup", _("Language of the game. This will not turn your Spanish game version into English"));
-		_langPopUp->appendEntry(_("<default>"), (uint32)Common::UNK_LANG);
-		_langPopUp->appendEntry("", (uint32)Common::UNK_LANG);
-		const Common::LanguageDescription *l = Common::g_languages;
-		for (; l->code; ++l) {
-			if (checkGameGUIOptionLanguage(l->id, _guioptionsString))
-				_langPopUp->appendEntry(l->description, l->id);
-		}
-	}
-
-	// Platform popup
-	if (!g_gui.useLowResGUI())
-		_platformPopUpDesc = new StaticTextWidget(tab, "GameOptions_Game.PlatformPopupDesc", _("Platform:"), _("Platform the game was originally designed for"));
-	else
-		_platformPopUpDesc = new StaticTextWidget(tab, "GameOptions_Game.PlatformPopupDesc", _c("Platform:", "lowres"), _("Platform the game was originally designed for"));
-	_platformPopUp = new PopUpWidget(tab, "GameOptions_Game.PlatformPopup", _("Platform the game was originally designed for"));
-	_platformPopUp->appendEntry(_("<default>"));
-	_platformPopUp->appendEntry("");
-	const Common::PlatformDescription *p = Common::g_platforms;
-	for (; p->code; ++p) {
-		_platformPopUp->appendEntry(p->description, p->id);
-	}
+	addGameControls(_gameContainer, "GameOptions_Game_Container.", description);
 
 	//
 	// 2) The engine's game settings (shown only if the engine implements one or there are custom engine options)
@@ -184,7 +151,7 @@ EditGameDialog::EditGameDialog(const Common::String &domain)
 
 	if (enginePlugin) {
 		enginePlugin->get<MetaEngine>().registerDefaultSettings(_domain);
-		_engineOptions = enginePlugin->get<MetaEngine>().buildEngineOptionsWidget(tab, "GameOptions_Game.Container", _domain);
+		_engineOptions = enginePlugin->get<MetaEngine>().buildEngineOptionsWidget(_gameContainer, "GameOptions_Game_Container.Container", _domain);
 
 		if (_engineOptions) {
 			_engineOptions->setParentDialog(this);
@@ -194,7 +161,7 @@ EditGameDialog::EditGameDialog(const Common::String &domain)
 	//
 	// 3) The graphics tab
 	//
-	_graphicsTabId = tab->addTab(g_gui.useLowResGUI() ? _("GFX") : _("Graphics"), "GameOptions_Graphics", false);
+	_graphicsTabId = tab->addTab(g_gui.useLowResGUI() ? _("GFX") : _("Graphics"), "GameOptions_Graphics");
 	ScrollContainerWidget *graphicsContainer = new ScrollContainerWidget(tab, "GameOptions_Graphics.Container", "GameOptions_Graphics_Container", kGraphicsTabContainerReflowCmd);
 	graphicsContainer->setBackgroundType(ThemeEngine::kWidgetBackgroundNo);
 	graphicsContainer->setTarget(this);
@@ -215,14 +182,19 @@ EditGameDialog::EditGameDialog(const Common::String &domain)
 	}
 
 	if (!keymaps.empty()) {
-		tab->addTab(_("Keymaps"), "GameOptions_KeyMapper", false);
-		addKeyMapperControls(tab, "GameOptions_KeyMapper.", keymaps, domain);
+		tab->addTab(_("Keymaps"), "GameOptions_KeyMapper");
+
+		ScrollContainerWidget *keymapContainer = new ScrollContainerWidget(tab, "GameOptions_KeyMapper.Container", "GameOptions_KeyMapper_Container");
+		keymapContainer->setBackgroundType(ThemeEngine::kWidgetBackgroundNo);
+		keymapContainer->setTarget(this);
+
+		addKeyMapperControls(keymapContainer, "GameOptions_KeyMapper_Container.", keymaps, domain);
 	}
 
 	//
 	// The backend tab (shown only if the backend implements one)
 	//
-	int backendTabId = tab->addTab(_("Backend"), "GameOptions_Backend", false);
+	int backendTabId = tab->addTab(_("Backend"), "GameOptions_Backend");
 
 	ScrollContainerWidget *backendContainer = new ScrollContainerWidget(tab, "GameOptions_Backend.Container", "GameOptions_Backend_Container");
 	backendContainer->setBackgroundType(ThemeEngine::kWidgetBackgroundNo);
@@ -313,6 +285,12 @@ EditGameDialog::EditGameDialog(const Common::String &domain)
 	// These buttons have to be extra wide, or the text will be truncated
 	// in the small version of the GUI.
 
+#ifdef USE_LIBCURL
+	// GUI: Check integrity button
+	if (ConfMan.hasKey("enable_integrity_checking", Common::ConfigManager::kApplicationDomain))
+		new ButtonWidget(tab, "GameOptions_Paths.Checkintegrity", _("Check Integrity"), _("Perform integrity check for all game files"), kCmdCheckIntegrity);
+#endif
+
 	// GUI:  Button + Label for the game path
 	if (!g_gui.useLowResGUI())
 		new ButtonWidget(tab, "GameOptions_Paths.Gamepath", _("Game Path:"), Common::U32String(), kCmdGameBrowser);
@@ -345,11 +323,11 @@ EditGameDialog::EditGameDialog(const Common::String &domain)
 		const MetaEngine &metaEngine = enginePlugin->get<MetaEngine>();
 		AchMan.setActiveDomain(metaEngine.getAchievementsInfo(domain));
 		if (AchMan.getAchievementCount()) {
-			tab->addTab(_("Achievements"), "GameOptions_Achievements", false);
+			tab->addTab(_("Achievements"), "GameOptions_Achievements");
 			addAchievementsControls(tab, "GameOptions_Achievements.");
 		}
 		if (AchMan.getStatCount()) {
-			tab->addTab(_("Statistics"), "GameOptions_Achievements", false);
+			tab->addTab(_("Statistics"), "GameOptions_Achievements");
 			addStatisticsControls(tab, "GameOptions_Achievements.");
 		}
 	}
@@ -361,6 +339,50 @@ EditGameDialog::EditGameDialog(const Common::String &domain)
 	// Add OK & Cancel buttons
 	new ButtonWidget(this, "GameOptions.Cancel", _("Cancel"), Common::U32String(), kCloseCmd);
 	new ButtonWidget(this, "GameOptions.Ok", _("OK"), Common::U32String(), kOKCmd);
+}
+
+void EditGameDialog::addGameControls(GuiObject *boss, const Common::String &prefix, const Common::String &description) {
+	// GUI:  Label & edit widget for the game ID
+	if (!g_gui.useLowResGUI())
+		new StaticTextWidget(boss, prefix + "Id", _("ID:"), _("Short game identifier used for referring to saved games and running the game from the command line"));
+	else
+		new StaticTextWidget(boss, prefix + "Id", _c("ID:", "lowres"), _("Short game identifier used for referring to saved games and running the game from the command line"));
+	_domainWidget = new DomainEditTextWidget(boss, prefix + "Domain", _domain, _("Short game identifier used for referring to saved games and running the game from the command line"));
+
+	// GUI:  Label & edit widget for the description
+	if (!g_gui.useLowResGUI())
+		new StaticTextWidget(boss, prefix + "Name", _("Name:"), _("Full title of the game"));
+	else
+		new StaticTextWidget(boss, prefix + "Name", _c("Name:", "lowres"), _("Full title of the game"));
+	_descriptionWidget = new EditTextWidget(boss, prefix + "Desc", description, _("Full title of the game"));
+
+	// Language popup
+	_langPopUpDesc = nullptr;
+	_langPopUp = nullptr;
+	if (!_guioptions.contains(GUIO_NOLANG)) {
+		_langPopUpDesc = new StaticTextWidget(boss, prefix + "LangPopupDesc", _("Language:"), _("Language of the game. This will not turn your Spanish game version into English"));
+		_langPopUp = new PopUpWidget(boss, prefix + "LangPopup", _("Language of the game. This will not turn your Spanish game version into English"));
+		_langPopUp->appendEntry(_("<default>"), (uint32)Common::UNK_LANG);
+		_langPopUp->appendEntry("", (uint32)Common::UNK_LANG);
+		const Common::LanguageDescription *l = Common::g_languages;
+		for (; l->code; ++l) {
+			if (checkGameGUIOptionLanguage(l->id, _guioptionsString))
+				_langPopUp->appendEntry(l->description, l->id);
+		}
+	}
+
+	// Platform popup
+	if (!g_gui.useLowResGUI())
+		_platformPopUpDesc = new StaticTextWidget(boss, prefix + "PlatformPopupDesc", _("Platform:"), _("Platform the game was originally designed for"));
+	else
+		_platformPopUpDesc = new StaticTextWidget(boss, prefix + "PlatformPopupDesc", _c("Platform:", "lowres"), _("Platform the game was originally designed for"));
+	_platformPopUp = new PopUpWidget(boss, prefix + "PlatformPopup", _("Platform the game was originally designed for"));
+	_platformPopUp->appendEntry(_("<default>"));
+	_platformPopUp->appendEntry("");
+	const Common::PlatformDescription *p = Common::g_platforms;
+	for (; p->code; ++p) {
+		_platformPopUp->appendEntry(p->description, p->id);
+	}
 }
 
 void EditGameDialog::setupGraphicsTab() {
@@ -447,6 +469,19 @@ void EditGameDialog::open() {
 			sel = i + 2;
 	}
 	_platformPopUp->setSelected(sel);
+}
+
+void EditGameDialog::close() {
+	OptionsDialog::close();
+
+	// Cleanup engine widgets before unloading its plugin
+	if (_engineOptions) {
+		// Remove the widget from the container before deleting the widget
+		_gameContainer->removeWidget(_engineOptions);
+		delete _engineOptions;
+	}
+
+	PluginMan.loadDetectionPlugin(); // only for uncached manager
 }
 
 void EditGameDialog::apply() {
@@ -600,6 +635,14 @@ void EditGameDialog::handleCommand(CommandSender *sender, uint32 cmd, uint32 dat
 	case kCmdSavePathClear:
 		_savePathWidget->setLabel(Common::Path());
 		break;
+
+#ifdef USE_LIBCURL
+	case kCmdCheckIntegrity: {
+		IntegrityDialog wizard("http://gamesdb.sev.zone/endpoints/validate.php", _domain);
+		wizard.runModal();
+		break;
+	}
+#endif
 
 	case kOKCmd:
 	{

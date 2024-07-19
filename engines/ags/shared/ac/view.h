@@ -22,7 +22,7 @@
 #ifndef AGS_SHARED_AC_VIEW_H
 #define AGS_SHARED_AC_VIEW_H
 
-#include "ags/lib/std/vector.h"
+#include "common/std/vector.h"
 #include "ags/shared/core/types.h"
 
 namespace AGS3 {

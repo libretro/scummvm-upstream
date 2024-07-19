@@ -22,9 +22,9 @@
 #ifndef AGS_ENGINE_AC_DYNOBJ_CC_MANAGED_OBJECT_POOL_H
 #define AGS_ENGINE_AC_DYNOBJ_CC_MANAGED_OBJECT_POOL_H
 
-#include "ags/lib/std/vector.h"
-#include "ags/lib/std/queue.h"
-#include "ags/lib/std/map.h"
+#include "common/std/vector.h"
+#include "common/std/queue.h"
+#include "common/std/map.h"
 
 #include "ags/shared/core/platform.h"
 #include "ags/engine/script/runtime_script_value.h"

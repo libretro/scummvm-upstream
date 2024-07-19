@@ -88,7 +88,7 @@ public:
 	virtual void setViewport(const Common::Rect &rect) override;
 	virtual Common::Point nativeResolution() override;
 	virtual void positionCamera(const Math::Vector3d &pos, const Math::Vector3d &interest) override;
-	virtual void updateProjectionMatrix(float fov, float nearClipPlane, float farClipPlane) override;
+	virtual void updateProjectionMatrix(float fov, float yminValue, float ymaxValue, float nearClipPlane, float farClipPlane) override;
 
 	virtual void useColor(uint8 r, uint8 g, uint8 b) override;
 	virtual void polygonOffset(bool enabled) override;
@@ -133,26 +133,26 @@ public:
 		{ 1.0, 0.0, 0.0 }
 	};
 
-	GLfloat _skyUvs[16][3] = {
+	GLfloat _skyUvs[16][2] = {
 		{ 0.0f, 0.0f }, //1
 		{ 0.0f, 2.0f }, //2
-		{ 1.0f, 2.0f }, //3
-		{ 1.0f, 0.0f }, //front //4
+		{ 2.5f, 2.0f }, //3
+		{ 2.5f, 0.0f }, //front //4
 
-		{ 1.0f, 0.0f }, //1
-		{ 0.0f, 0.0f }, //2
-		{ 0.0f, 2.0f }, //back //3
-		{ 1.0f, 2.0f }, //4
+		{ 0.0f, 2.0f }, //back //1
+		{ 2.5f, 2.0f }, //2
+		{ 2.5f, 0.0f }, //3
+		{ 0.0f, 0.0f }, //4
 
 		{ 0.0f, 0.0f }, //left //1
-		{ 1.0f, 0.0f }, //2
-		{ 1.0f, 2.0f }, //3
+		{ 2.5f, 0.0f }, //2
+		{ 2.5f, 2.0f }, //3
 		{ 0.0f, 2.0f }, //4
 
-		{ 1.0f, 0.0f }, //right //1
+		{ 2.5f, 0.0f }, //right //1
 		{ 0.0f, 0.0f }, //2
 		{ 0.0f, 2.0f }, //3
-		{ 1.0f, 2.0f }, //4
+		{ 2.5f, 2.0f }, //4
 	};
 
 	GLfloat _skyVertices[16][3] = {
@@ -161,10 +161,10 @@ public:
 		{ 81280.0,  -8128.0, 81280.0 },	//3	// Vertex #2
 		{ 81280.0,  8128.0, 81280.0 },		//4	// Vertex #3
 
-		{ 81280.0f, -8128.0f, -81280.0f }, //back //1
-		{ -81280.0f, -8128.0f, -81280.0f }, //2
-		{ -81280.0f,  8128.0f, -81280.0f }, //3
-		{ 81280.0f,  8128.0f, -81280.0f }, //4
+		{ 81280.0f, -8128.0f, -81280.0f }, // 1
+		{ -81280.0f, -8128.0f, -81280.0f }, // 2
+		{ -81280.0f, 8128.0f, -81280.0f }, // 3
+		{ 81280.0f, 8128.0f, -81280.0f }, // 4
 
 		{ -81280.0f,  8128.0f,  81280.0f }, //left //1
 		{ -81280.0f,  8128.0f, -81280.0f }, //2

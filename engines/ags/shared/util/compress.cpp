@@ -20,7 +20,7 @@
  */
 
 #include "ags/shared/util/compress.h"
-#include "ags/lib/std/vector.h"
+#include "common/std/vector.h"
 #include "ags/shared/ac/common.h"   // quit, update_polled_stuff
 #include "ags/shared/gfx/bitmap.h"
 #include "ags/shared/util/file.h"

@@ -22,7 +22,7 @@
 #ifndef AGS_SHARED_GUI_GUI_MAIN_H
 #define AGS_SHARED_GUI_GUI_MAIN_H
 
-#include "ags/lib/std/vector.h"
+#include "common/std/vector.h"
 #include "ags/engine/ac/draw.h"
 #include "ags/shared/ac/common.h"
 #include "ags/shared/ac/common_defines.h" // TODO: split out gui drawing helpers

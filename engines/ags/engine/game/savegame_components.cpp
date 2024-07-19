@@ -19,7 +19,7 @@
  *
  */
 
-#include "ags/lib/std/map.h"
+#include "common/std/map.h"
 #include "ags/engine/game/savegame_components.h"
 #include "ags/shared/ac/audio_clip_type.h"
 #include "ags/shared/ac/common.h"

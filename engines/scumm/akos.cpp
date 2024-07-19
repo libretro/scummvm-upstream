@@ -418,7 +418,7 @@ byte AkosRenderer::drawLimb(const Actor *a, int limb) {
 			// and an horizontal line at the bottom, causing this line to appear at the bottom of the screen.
 			// We draw the whole frame one pixel down so it does not appear on screen.
 			if (_vm->_game.id == GID_FREDDI3 && _vm->_language == Common::EN_USA && a->_costume == 258 && (code & AKC_CelMask) == 35 && _vm->enhancementEnabled(kEnhVisualChanges))
-				yMoveCur += 1;
+				_clipOverride.bottom -= 2;
 
 			if (i == extra - 1) {
 				_xMove += lastDx;
@@ -846,9 +846,11 @@ byte AkosRenderer::paintCelByleRLE(int xMoveCur, int yMoveCur) {
 	compData.skipWidth = _width;
 	compData.scaleXStep = _mirror ? 1 : -1;
 
-	if (_vm->_game.heversion >= 71 && !actorIsScaled) {
+	if (_vm->_game.heversion >= 71) {
 		if (_clipOverride.right > _clipOverride.left && _clipOverride.bottom > _clipOverride.top) {
 			compData.boundsRect = _clipOverride;
+			compData.boundsRect.right += 1;
+			compData.boundsRect.bottom += 1;
 		}
 	}
 

@@ -90,7 +90,7 @@ void EclipseEngine::loadAssetsDOSFullGame() {
 		if (!file.isOpen())
 			error("Failed to open TOTEE.EXE");
 
-		loadMessagesFixedSize(&file, 0x710f, 16, 17);
+		loadMessagesFixedSize(&file, 0x710f, 16, 20);
 		loadSoundsFx(&file, 0xd670, 1);
 		loadSpeakerFxDOS(&file, 0x7396 + 0x200, 0x72a1 + 0x200);
 		loadFonts(&file, 0xd403, _font);
@@ -120,7 +120,7 @@ void EclipseEngine::loadAssetsDOSFullGame() {
 		if (!file.isOpen())
 			error("Failed to open TOTEC.EXE");
 
-		loadMessagesFixedSize(&file, 0x594f, 16, 17);
+		loadMessagesFixedSize(&file, 0x594f, 16, 20);
 		load1bPCM(&file, 0xd038 - 4);
 		loadFonts(&file, 0xb785, _font);
 		load8bitBinary(&file, 0x2530, 4);
@@ -171,7 +171,7 @@ void EclipseEngine::drawDOSUI(Graphics::Surface *surface) {
 	Common::String shieldStr = Common::String::format("%d", shield);
 	drawStringInSurface(shieldStr, x, 162, black, redish, surface);
 
-	drawStringInSurface(Common::String('0' + _angleRotationIndex - 3), 79, 135, black, yellow, surface, 'Z' - '$' + 1);
+	drawStringInSurface(Common::String('0' - _angleRotationIndex), 79, 135, black, yellow, surface, 'Z' - '$' + 1);
 	drawStringInSurface(Common::String('3' - _playerStepIndex), 63, 135, black, yellow, surface, 'Z' - '$' + 1);
 	drawStringInSurface(Common::String('7' - _playerHeightNumber), 240, 135, black, yellow, surface, 'Z' - '$' + 1);
 
@@ -189,6 +189,8 @@ void EclipseEngine::drawDOSUI(Graphics::Surface *surface) {
 
 	drawIndicator(surface, 41, 4, 16);
 	drawEclipseIndicator(surface, 228, 0, yellow, green);
+	surface->fillRect(Common::Rect(225, 168, 235, 187), white);
+	drawCompass(surface, 229, 177, _yaw, 10, black);
 }
 
 soundFx *EclipseEngine::load1bPCM(Common::SeekableReadStream *file, int offset) {

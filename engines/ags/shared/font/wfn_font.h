@@ -45,7 +45,7 @@
 #ifndef AGS_SHARED_FONT_WFN_FONT_H
 #define AGS_SHARED_FONT_WFN_FONT_H
 
-#include "ags/lib/std/vector.h"
+#include "common/std/vector.h"
 #include "ags/shared/core/types.h"
 
 namespace AGS3 {

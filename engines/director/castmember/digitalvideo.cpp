@@ -287,7 +287,13 @@ Graphics::MacWidget *DigitalVideoCastMember::createWidget(Common::Rect &bbox, Ch
 		}
 
 		if (frame->getPixels()) {
-			_lastFrame = frame->convertTo(g_director->_pixelformat, g_director->getPalette());
+			if (g_director->_pixelformat.bytesPerPixel == 1) {
+				// Video should have the dithering palette set, decode using whatever palette we have now
+				_lastFrame = frame->convertTo(g_director->_pixelformat, g_director->getPalette());
+			} else {
+				// 32-bit mode, use the palette bundled with the movie
+				_lastFrame = frame->convertTo(g_director->_pixelformat, _video->getPalette());
+			}
 		} else {
 			warning("DigitalVideoCastMember::createWidget(): frame has no pixel data");
 		}
@@ -368,8 +374,14 @@ void DigitalVideoCastMember::setMovieRate(double rate) {
 
 	if (rate < 0.0)
 		warning("STUB: DigitalVideoCastMember::setMovieRate(%g)", rate);
-	else
+	else {
+		if (_getFirstFrame && rate != 0.0) {
+			// playback got started before we rendered the first
+			// frame in pause mode, keep going
+			_getFirstFrame = false;
+		}
 		_video->setRate(Common::Rational((int)(rate * 100.0), 100));
+	}
 
 	if (_video->endOfVideo())
 		_video->rewind();

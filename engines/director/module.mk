@@ -65,6 +65,7 @@ MODULE_OBJS = \
 	lingo/xlibs/backdrop.o \
 	lingo/xlibs/barakeobj.o \
 	lingo/xlibs/batqt.o \
+	lingo/xlibs/bimxobj.o \
 	lingo/xlibs/blitpict.o \
 	lingo/xlibs/cdromxobj.o \
 	lingo/xlibs/closebleedwindowxcmd.o \
@@ -96,10 +97,13 @@ MODULE_OBJS = \
 	lingo/xlibs/findwin.o \
 	lingo/xlibs/flushxobj.o \
 	lingo/xlibs/fplayxobj.o \
+	lingo/xlibs/genutils.o \
 	lingo/xlibs/getscreenrectsxfcn.o \
 	lingo/xlibs/getscreensizexfcn.o \
 	lingo/xlibs/gpid.o \
+	lingo/xlibs/henry.o \
 	lingo/xlibs/hitmap.o \
+	lingo/xlibs/inixobj.o \
 	lingo/xlibs/instobj.o \
 	lingo/xlibs/iscd.o \
 	lingo/xlibs/ispippin.o \
@@ -115,9 +119,11 @@ MODULE_OBJS = \
 	lingo/xlibs/mmaskxobj.o \
 	lingo/xlibs/mmovie.o \
 	lingo/xlibs/moovxobj.o \
+	lingo/xlibs/movemousejp.o \
 	lingo/xlibs/movemousexobj.o \
 	lingo/xlibs/movieidxxobj.o \
 	lingo/xlibs/movutils.o \
+	lingo/xlibs/mystisle.o \
 	lingo/xlibs/openbleedwindowxcmd.o \
 	lingo/xlibs/orthoplayxobj.o \
 	lingo/xlibs/paco.o \
@@ -139,6 +145,7 @@ MODULE_OBJS = \
 	lingo/xlibs/soundjam.o \
 	lingo/xlibs/spacemgr.o \
 	lingo/xlibs/stagetc.o \
+	lingo/xlibs/syscolor.o \
 	lingo/xlibs/unittest.o \
 	lingo/xlibs/valkyrie.o \
 	lingo/xlibs/videodiscxobj.o \
@@ -154,7 +161,12 @@ MODULE_OBJS = \
 	lingo/xlibs/xsoundxfcn.o \
 	lingo/xlibs/xwin.o \
 	lingo/xlibs/yasix.o \
-	lingo/xtras/scrnutil.o
+	lingo/xtras/directsound.o \
+	lingo/xtras/keypoll.o \
+	lingo/xtras/qtvrxtra.o \
+	lingo/xtras/scrnutil.o \
+	lingo/xtras/timextra.o
+
 
 ifdef USE_IMGUI
 MODULE_OBJS += \

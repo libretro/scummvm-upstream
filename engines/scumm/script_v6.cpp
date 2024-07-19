@@ -25,6 +25,7 @@
 #include "scumm/actor.h"
 #include "scumm/charset.h"
 #include "scumm/file.h"
+#include "scumm/he/intern_he.h"
 #include "scumm/imuse/imuse.h"
 #include "scumm/imuse_digi/dimuse_engine.h"
 #include "scumm/insane/insane.h"
@@ -345,7 +346,7 @@ void ScummEngine_v6::nukeArray(int a) {
 	data = readVar(a);
 
 	if (_game.heversion >= 80)
-		data &= ~0x33539000;
+		data &= ~MAGIC_ARRAY_NUMBER;
 
 	if (data)
 		_res->nukeResource(rtString, data);
@@ -506,21 +507,21 @@ void ScummEngine_v6::o6_pushWordVar() {
 			int sprintGain = vm.localvar[_currentScript][4];
 			int playerSpeed = vm.localvar[_currentScript][5];
 			if (offset == 42273) {
-				if (sprintCounter >= 11) {
-					if (playerSpeed == 12 || playerSpeed == 11 || playerSpeed == 10) {
+				if (sprintCounter >= 21) {
+					if (playerSpeed >= 8) {
 						sprintGain = 2;
-					} else if (playerSpeed == 9) {
+					} else if (playerSpeed == 6 || playerSpeed == 7) {
 						sprintGain = 3;
 					} else {
 						sprintGain = 4;
 					}
-				} else if (sprintCounter >= 9) {
-					if (playerSpeed == 12 || playerSpeed == 11 || playerSpeed == 10) {
+				} else if (sprintCounter >= 15) {
+					if (playerSpeed >= 6) {
 						sprintGain = 2;
 					} else {
 						sprintGain = 3;
 					}
-				} else if (sprintCounter >= 7) {
+				} else if (sprintCounter >= 9) {
 						sprintGain = 2;
 				} else {
 					sprintGain = 1;
@@ -539,18 +540,18 @@ void ScummEngine_v6::o6_pushWordVar() {
 			if (offset == 102789 && (readVar(387) == 1||readVar(387) == 2)) {
 				// Checks if the current pitch type is the same as that of the "remembered" pitch type
 				if (readArray(346, 0, 0) == readArray(346, 1, 0)) {
-					// Checks if the current pitch is either a Heat or a Fireball. The reason it adds less than the other pitches
-					// is because in the actual calculation it adds 5 to these two anyway, so this should also balance them out.
+					// Checks if the current pitch is either a Heat or a Fireball. The reason it adds 0 instead of 5 is because
+					// in the actual calculation it adds 5 to these two anyway, so this should help balance them out.
 					if (pitchSelected == 14 || pitchSelected == 21) {
-						powerAdjustment = powerAdjustment + 15;
+						powerAdjustment = powerAdjustment + 0;
 					} else {
-						powerAdjustment = powerAdjustment + 20;
+						powerAdjustment = powerAdjustment + 5;
 					}
 				}
 				// Checks if the zone location is the same as that of the previous one. This should slightly reduce the amount of pitching to the exact same location.
 				// Can also be adjusted later if necessary.
 				if (readArray(346, 0, 1) == readArray(346, 1, 1)) {
-					powerAdjustment = powerAdjustment + 20;
+					powerAdjustment = powerAdjustment + 15;
 				}
 				// write the power adjustment to the result
 				writeVar(0x4000 + 4, powerAdjustment);
@@ -3505,15 +3506,21 @@ void ScummEngine_v6::o6_findAllObjects() {
 	push(readVar(0));
 }
 
-void ScummEngine_v6::shuffleArray(int num, int minIdx, int maxIdx) {
+void ScummEngine_v6::shuffleArray(int num, int minIdx, int maxIdx) {	
+	int rand1, rand2;
 	int range = maxIdx - minIdx;
 	int count = range * 2;
 
 	// Shuffle the array 'num'
 	while (count--) {
 		// Determine two random elements...
-		int rand1 = _rnd.getRandomNumber(range) + minIdx;
-		int rand2 = _rnd.getRandomNumber(range) + minIdx;
+		if (_game.heversion >= 72) {
+			rand1 = VAR(VAR_RANDOM_NR) = _rnd.getRandomNumberRng(minIdx, maxIdx);
+			rand2 = VAR(VAR_RANDOM_NR) = _rnd.getRandomNumberRng(minIdx, maxIdx);
+		} else {
+			rand1 = _rnd.getRandomNumber(range) + minIdx;
+			rand2 = _rnd.getRandomNumber(range) + minIdx;
+		}
 
 		// ...and swap them
 		int val1 = readArray(num, 0, rand1);

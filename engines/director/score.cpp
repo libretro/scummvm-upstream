@@ -47,6 +47,7 @@
 #include "director/sprite.h"
 #include "director/window.h"
 #include "director/castmember/castmember.h"
+#include "director/castmember/filmloop.h"
 #include "director/castmember/transition.h"
 
 namespace Director {
@@ -131,22 +132,51 @@ bool Score::processImmediateFrameScript(Common::String s, int id) {
 	return false;
 }
 
-bool Score::processFrozenScripts() {
+bool Score::processFrozenScripts(bool recursion, int count) {
+	// Unfreeze the play script if the special flag is set
+	if (g_lingo->_playDone) {
+		g_lingo->_playDone = false;
+		if (_window->thawLingoPlayState()) {
+			Symbol currentScript = _window->getLingoState()->callstack.front()->sp;
+			g_lingo->switchStateFromWindow();
+			bool completed = g_lingo->execute();
+			if (!completed) {
+				debugC(3, kDebugLingoExec, "Score::processFrozenScripts(): State froze again mid-thaw, interrupting");
+				return false;
+			} else if (currentScript == g_lingo->_currentInputEvent) {
+				// script that just completed was the current input event, clear the flag
+				debugC(3, kDebugEvents, "Score::processFrozenScripts(): Input event completed");
+				g_lingo->_currentInputEvent = Symbol();
+			}
+		}
+	}
+
 	// Unfreeze any in-progress scripts and attempt to run them
 	// to completion.
-	while (uint32 count = _window->frozenLingoStateCount()) {
+	bool limit = count != 0;
+	uint32 remainCount = recursion ? _window->frozenLingoRecursionCount() : _window->frozenLingoStateCount();
+	while (remainCount && (limit ? count > 0 : true)) {
 		_window->thawLingoState();
-		Symbol currentScript = _window->getLingoState()->callstack.front()->sp;
+		LingoState *state = _window->getLingoState();
+		Symbol currentScript = state->callstack.front()->sp;
 		g_lingo->switchStateFromWindow();
 		bool completed = g_lingo->execute();
-		if (!completed || _window->frozenLingoStateCount() >= count) {
+		if (!completed || (recursion ? _window->frozenLingoRecursionCount() : _window->frozenLingoStateCount()) >= remainCount) {
 			debugC(3, kDebugLingoExec, "Score::processFrozenScripts(): State froze again mid-thaw, interrupting");
+			// Workaround for if a state gets moved to to the play state
+			if (currentScript == g_lingo->_currentInputEvent && state == _window->getLingoPlayState()) {
+				debugC(3, kDebugEvents, "Score::processFrozenScripts(): Input event got moved to the play state, clearing block");
+				g_lingo->_currentInputEvent = Symbol();
+			}
+
 			return false;
 		} else if (currentScript == g_lingo->_currentInputEvent) {
 			// script that just completed was the current input event, clear the flag
 			debugC(3, kDebugEvents, "Score::processFrozenScripts(): Input event completed");
 			g_lingo->_currentInputEvent = Symbol();
 		}
+		remainCount = recursion ? _window->frozenLingoRecursionCount() : _window->frozenLingoStateCount();
+		count -= 1;
 	}
 	return true;
 }
@@ -310,7 +340,7 @@ void Score::step() {
 	if (_playState == kPlayStopped)
 		return;
 
-	if (!_movie->_inputEventQueue.empty()) {
+	if (!_movie->_inputEventQueue.empty() && !_window->frozenLingoStateCount()) {
 		_lingo->processEvents(_movie->_inputEventQueue, true);
 	}
 	if (_vm->getVersion() >= 300 && !_window->_newMovieStarted && _playState != kPlayStopped) {
@@ -568,7 +598,6 @@ void Score::update() {
 
 	// the exitFrame event handler may have stopped this movie
 	if (_playState == kPlayStopped) {
-		processFrozenScripts();
 		return;
 	}
 
@@ -601,25 +630,16 @@ void Score::update() {
 	if (_window->frozenLingoStateCount() > count)
 		return;
 
-	// check to see if we've hit the recursion limit
-	if (_vm->getVersion() >= 400 && _window->frozenLingoStateCount() >= 2) {
-		debugC(1, kDebugEvents, "Score::update(): hitting depth limit for D4 scripts, defrosting");
-		processFrozenScripts();
-		return;
+	// Check to see if we've hit the recursion limit
+	if (_vm->getVersion() >= 400 && _window->frozenLingoRecursionCount() >= 2) {
+		debugC(1, kDebugEvents, "Score::update(): hitting D4 recursion depth limit, defrosting");
+		processFrozenScripts(true);
+		// keep plowing on
 	} else if (_window->frozenLingoStateCount() >= 64) {
 		warning("Score::update(): Stopping runaway script recursion. By this point D3 will have run out of stack space");
 		processFrozenScripts();
 		return;
 	}
-
-	// then call the stepMovie hook (if one exists)
-	// skip the first frame
-	count = _window->frozenLingoStateCount();
-	if (!_window->_newMovieStarted && !_vm->_playbackPaused) {
-		_movie->processEvent(kEventStepMovie);
-	}
-	if (_window->frozenLingoStateCount() > count)
-		return;
 
 	if (_vm->getVersion() >= 600) {
 		// _movie->processEvent(kEventBeginSprite);
@@ -631,6 +651,17 @@ void Score::update() {
 	// Window is drawn between the prepareFrame and enterFrame events (Lingo in a Nutshell, p.100)
 	renderFrame(_curFrameNumber);
 	_window->_newMovieStarted = false;
+
+	// then call the stepMovie hook (if one exists)
+	// D4 and above only call it if _allowOutdatedLingo is enabled.
+	count = _window->frozenLingoStateCount();
+	if (!_vm->_playbackPaused && (_vm->getVersion() < 400 || _movie->_allowOutdatedLingo)) {
+		_movie->processEvent(kEventStepMovie);
+	}
+	// If this stepMovie call is frozen, drop the next enterFrame event
+	if (_window->frozenLingoStateCount() > count)
+		return;
+
 
 	// then call the enterFrame hook (if one exists)
 	count = _window->frozenLingoStateCount();
@@ -652,7 +683,7 @@ void Score::update() {
 	// Attempt to thaw and continue any frozen execution after startMovie and enterFrame.
 	// If they don't complete (i.e. another freezing event like a "go to frame"),
 	// force another cycle of Score::update().
-	if (!processFrozenScripts())
+	if (!_nextFrame && !processFrozenScripts())
 		return;
 
 	if (!_vm->_playbackPaused) {
@@ -676,21 +707,24 @@ void Score::renderFrame(uint16 frameId, RenderMode mode) {
 	if (_window->_newMovieStarted)
 		renderCursor(_movie->getWindow()->getMousePos(), true);
 
+
 	if (_skipTransition) {
+		incrementFilmLoops();
 		_window->render();
 		_skipTransition = false;
 	} else if (g_director->_playbackPaused) {
 		updateSprites(mode);
+		incrementFilmLoops();
 		_window->render();
 	} else if (!renderTransition(frameId, mode)) {
 		bool skip = renderPrePaletteCycle(mode);
 		setLastPalette();
 		updateSprites(mode);
+		incrementFilmLoops();
 		_window->render();
 		if (!skip)
 			renderPaletteCycle(mode);
 	}
-
 
 	playSoundChannel(false);
 	playQueuedSound(); // this is currently only used in FPlayXObj
@@ -727,6 +761,21 @@ bool Score::renderTransition(uint16 frameId, RenderMode mode) {
 		}
 	}
 	return false;
+}
+
+void Score::incrementFilmLoops() {
+	for (auto &it : _channels) {
+		if (it->_sprite->_cast && it->_sprite->_cast->_type == kCastFilmLoop) {
+			FilmLoopCastMember *fl = ((FilmLoopCastMember *)it->_sprite->_cast);
+			if (!fl->_frames.empty()) {
+				// increment the film loop counter
+				it->_filmLoopFrame += 1;
+				it->_filmLoopFrame %= fl->_frames.size();
+			} else {
+				warning("Score::updateFilmLoops(): invalid film loop in castId %s", it->_sprite->_castId.asString().c_str());
+			}
+		}
+	}
 }
 
 void Score::updateSprites(RenderMode mode) {
@@ -919,15 +968,22 @@ void Score::setLastPalette() {
 
 	bool isCachedPalette = false;
 	CastMemberID currentPalette = _currentFrame->_mainChannels.palette.paletteId;
+	// Director allows you to use palette IDs for cast members
+	// that have long since been erased. Check all of them.
+	if (!g_director->hasPalette(currentPalette))
+		currentPalette = CastMemberID();
 	// Palette not specified in the frame
 	if (currentPalette.isNull()) {
 		// Use the score cached palette ID
 		isCachedPalette = true;
 		currentPalette = _currentFrame->_mainChannels.scoreCachedPaletteId;
+		if (!g_director->hasPalette(currentPalette))
+			currentPalette = CastMemberID();
 		// The cached ID is created before the cast gets loaded; if it's zero,
 		// this corresponds to the movie default palette.
-		if (currentPalette.isNull())
-			currentPalette = g_director->getCurrentMovie()->getCast()->_defaultPalette;
+		if (currentPalette.isNull()) {
+			currentPalette = g_director->getCurrentMovie()->_defaultPalette;
+		}
 		// If for whatever reason this doesn't resolve, abort.
 		if (currentPalette.isNull())
 			return;
@@ -1608,9 +1664,7 @@ void Score::loadFrames(Common::SeekableReadStreamEndian &stream, uint16 version)
 	// Calculate number of frames and their positions
 	// numOfFrames in the header is often incorrect
 	for (_numFrames = 1; loadFrame(_numFrames, false); _numFrames++) {
-		if (debugChannelSet(-1, kDebugImGui)) {
-			_scoreCache.push_back(new Frame(*_currentFrame));
-		}
+		_scoreCache.push_back(new Frame(*_currentFrame));
 	}
 
 	debugC(1, kDebugLoading, "Score::loadFrames(): Calculated, total number of frames %d!", _numFrames);
@@ -1855,7 +1909,7 @@ void Score::loadActions(Common::SeekableReadStreamEndian &stream) {
 Common::String Score::formatChannelInfo() {
 	Frame &frame = *_currentFrame;
 	Common::String result;
-	CastMemberID defaultPalette = g_director->getCurrentMovie()->getCast()->_defaultPalette;
+	CastMemberID defaultPalette = g_director->getCurrentMovie()->_defaultPalette;
 	result += Common::String::format("TMPO:   tempo: %d, skipFrameFlag: %d, blend: %d, currentFPS: %d\n",
 		frame._mainChannels.tempo, frame._mainChannels.skipFrameFlag, frame._mainChannels.blend, _currentFrameRate);
 	if (!frame._mainChannels.palette.paletteId.isNull()) {
@@ -1877,13 +1931,13 @@ Common::String Score::formatChannelInfo() {
 		Sprite &sprite = *channel._sprite;
 		Common::Point position = channel.getPosition();
 		if (sprite._castId.member) {
-			result += Common::String::format("CH: %-3d castId: %s, visible: %d, [inkData: 0x%02x [ink: %d, trails: %d, stretch: %d, line: %d], %dx%d@%d,%d type: %d (%s) fg: %d bg: %d], script: %s, colorcode: 0x%x, blendAmount: 0x%x, unk3: 0x%x, constraint: %d, puppet: %d, moveable: %d, movieRate: %f, movieTime: %d (%f)\n",
+			result += Common::String::format("CH: %-3d castId: %s, visible: %d, [inkData: 0x%02x [ink: %d, trails: %d, stretch: %d, line: %d], %dx%d@%d,%d type: %d (%s) fg: %d bg: %d], script: %s, colorcode: 0x%x, blendAmount: 0x%x, unk3: 0x%x, constraint: %d, puppet: %d, moveable: %d, movieRate: %f, movieTime: %d (%f), filmLoopFrame: %d\n",
 				i + 1, sprite._castId.asString().c_str(), channel._visible, sprite._inkData,
 				sprite._ink, sprite._trails, sprite._stretch, sprite._thickness,
 				channel.getWidth(), channel.getHeight(), position.x, position.y,
 				sprite._spriteType, spriteType2str(sprite._spriteType), sprite._foreColor, sprite._backColor,
 				sprite._scriptId.asString().c_str(), sprite._colorcode, sprite._blendAmount, sprite._unk3,
-				channel._constraint, sprite._puppet, sprite._moveable, channel._movieRate, channel._movieTime, (float)(channel._movieTime/60.0f));
+				channel._constraint, sprite._puppet, sprite._moveable, channel._movieRate, channel._movieTime, (float)(channel._movieTime/60.0f), channel._filmLoopFrame);
 		} else {
 			result += Common::String::format("CH: %-3d castId: 000\n", i + 1);
 		}

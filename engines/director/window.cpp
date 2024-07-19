@@ -49,6 +49,7 @@ Window::Window(int id, bool scrollable, bool resizable, bool editable, Graphics:
 	_puppetTransition = nullptr;
 	_soundManager = new DirectorSound(this);
 	_lingoState = new LingoState;
+	_lingoPlayState = nullptr;
 
 	_currentMovie = nullptr;
 	_mainArchive = nullptr;
@@ -68,6 +69,8 @@ Window::Window(int id, bool scrollable, bool resizable, bool editable, Graphics:
 
 Window::~Window() {
 	delete _lingoState;
+	if (_lingoPlayState)
+		delete _lingoPlayState;
 	delete _soundManager;
 	delete _currentMovie;
 	for (uint i = 0; i < _frozenLingoStates.size(); i++)
@@ -113,7 +116,7 @@ void Window::invertChannel(Channel *channel, const Common::Rect &destRect) {
 
 		for (int i = 0; i < srcRect.height(); i++) {
 			uint32 *src = (uint32 *)_composeSurface->getBasePtr(srcRect.left, srcRect.top + i);
-			const uint32 *msk = mask ? (const uint32 *)mask->getBasePtr(xoff, yoff + i) : nullptr;
+			const byte *msk = mask ? (const byte *)mask->getBasePtr(xoff, yoff + i) : nullptr;
 
 			for (int j = 0; j < srcRect.width(); j++, src++)
 				if (!mask || (msk && (*msk++)))
@@ -211,8 +214,8 @@ bool Window::render(bool forceRedraw, Graphics::ManagedSurface *blitTo) {
 				Common::Rect bbox = channel->getBbox();
 				blitTo->frameRect(bbox, g_director->_wm->_colorWhite);
 
-				font->drawString(blitTo, Common::String::format("m: %d, ch: %d", channel->_sprite->_castId.member, i), bbox.left + 3, bbox.top + 3, 128, g_director->_wm->_colorBlack);
-				font->drawString(blitTo, Common::String::format("m: %d, ch: %d", channel->_sprite->_castId.member, i), bbox.left + 2, bbox.top + 2, 128, g_director->_wm->_colorWhite);
+				font->drawString(blitTo, Common::String::format("m: %d, ch: %d, fr: %d", channel->_sprite->_castId.member, i, channel->_filmLoopFrame ? channel->_filmLoopFrame : channel->_movieTime), bbox.left + 3, bbox.top + 3, 128, g_director->_wm->_colorBlack);
+				font->drawString(blitTo, Common::String::format("m: %d, ch: %d, fr: %d", channel->_sprite->_castId.member, i, channel->_filmLoopFrame ? channel->_filmLoopFrame : channel->_movieTime), bbox.left + 2, bbox.top + 2, 128, g_director->_wm->_colorWhite);
 			}
 		}
 	}
@@ -313,7 +316,7 @@ void Window::inkBlitFrom(Channel *channel, Common::Rect destRect, Graphics::Mana
 	} else if (pd.srf) {
 		pd.inkBlitSurface(srcRect, channel->getMask());
 	} else {
-		if (debugChannelSet(kDebugImages, 4)) {
+		if (debugChannelSet(4, kDebugImages)) {
 			CastType castType = channel->_sprite->_cast ? channel->_sprite->_cast->_type : kCastTypeNull;
 			warning("Window::inkBlitFrom(): No source surface: spriteType: %d (%s), castType: %d (%s), castId: %s",
 				channel->_sprite->_spriteType, spriteType2str(channel->_sprite->_spriteType), castType, castType2str(castType),
@@ -618,7 +621,7 @@ Common::Path Window::getSharedCastPath() {
 void Window::freezeLingoState() {
 	_frozenLingoStates.push_back(_lingoState);
 	_lingoState = new LingoState;
-	debugC(kDebugLingoExec, 3, "Freezing Lingo state, depth %d", _frozenLingoStates.size());
+	debugC(3, kDebugLingoExec, "Freezing Lingo state, depth %d", _frozenLingoStates.size());
 }
 
 void Window::thawLingoState() {
@@ -631,24 +634,60 @@ void Window::thawLingoState() {
 		return;
 	}
 	delete _lingoState;
-	debugC(kDebugLingoExec, 3, "Thawing Lingo state, depth %d", _frozenLingoStates.size());
+	debugC(3, kDebugLingoExec, "Thawing Lingo state, depth %d", _frozenLingoStates.size());
 	_lingoState = _frozenLingoStates.back();
 	_frozenLingoStates.pop_back();
 }
 
-// Check how many times previous enterFrame is called recursively, D4 will only process recursive enterFrame handlers to a depth of 2.
-// Therefore look into frozen lingo states and count previous pending enterFrame calls
-// eg. in a movie, frame 1 has an enterFrame handler that calls go(2), frame 2 has an enterFrame handler that calls go(3), now after
-// each frame is processed and it encounters a frame jump instruction (like go, open), it freezes the lingo state and then processes
-// the next frame. How do we know number of times enterFrame is called? Simple look into frozen lingo states for enterFrame calls.
-int Window::recursiveEnterFrameCount() {
-	int count = 0;
+void Window::freezeLingoPlayState() {
+	if (_lingoPlayState) {
+		warning("FIXME: Just clobbered the play state");
+		delete _lingoPlayState;
+	}
+	_lingoPlayState = _lingoState;
+	_lingoState = new LingoState;
+	debugC(3, kDebugLingoExec, "Freezing Lingo play state");
+}
 
-	for (int i = _frozenLingoStates.size() - 1; i >= 0; i--) {
+bool Window::thawLingoPlayState() {
+	if (!_lingoPlayState) {
+		warning("Tried to thaw when there's no frozen play state, ignoring");
+		return false;
+	}
+	if (!_lingoState->callstack.empty()) {
+		warning("Can't thaw a Lingo state in mid-execution, ignoring");
+		return false;
+	}
+	delete _lingoState;
+	debugC(3, kDebugLingoExec, "Thawing Lingo play state");
+	_lingoState = _lingoPlayState;
+	_lingoPlayState = nullptr;
+	return true;
+}
+
+
+// Check how many times enterFrame/stepMovie have been called recursively.
+// When Lingo encounters a go() call, it freezes the execution state and starts
+// processing the next frame. In the case of enterFrame/stepMovie, it is possible
+// to keep recursing without reaching a point where the frozen contexts are finished.
+// D4 and higher will only process recursive handlers to a depth of 2.
+// e.g. in a movie:
+// - frame 1 has an enterFrame handler that calls go(2)
+// - frame 2 has an enterFrame handler that calls go(3)
+// - frame 3 has an enterFrame handler that calls go(4)
+// The third enterFrame handler will be eaten and not called.
+// We can count the number of frozen states which started from enterFrame/stepMovie.
+uint32 Window::frozenLingoRecursionCount() {
+	uint32 count = 0;
+
+	for (int i = (int)_frozenLingoStates.size() - 1; i >= 0; i--) {
 		LingoState *state = _frozenLingoStates[i];
-		CFrame *frame = state->callstack.back();
-		if (frame->sp.name->equalsIgnoreCase("enterFrame")) {
+		CFrame *frame = state->callstack.front();
+		if (frame->sp.name->equalsIgnoreCase("enterFrame") ||
+				frame->sp.name->equalsIgnoreCase("stepMovie")) {
 			count++;
+		} else {
+			break;
 		}
 	}
 

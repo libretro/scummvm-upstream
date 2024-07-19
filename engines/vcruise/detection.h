@@ -47,6 +47,8 @@ enum VCruiseGameFlag {
 };
 
 struct VCruiseGameDescription {
+	AD_GAME_DESCRIPTION_HELPERS(desc);
+
 	ADGameDescription desc;
 
 	VCruiseGameID gameID;
@@ -62,6 +64,7 @@ struct VCruiseGameDescription {
 #define GAMEOPTION_SKIP_MENU					GUIO_GAMEOPTIONS3
 #define GAMEOPTION_INCREASE_DRAG_DISTANCE		GUIO_GAMEOPTIONS4
 #define GAMEOPTION_USE_4BIT_GRAPHICS			GUIO_GAMEOPTIONS5
+#define GAMEOPTION_PRELOAD_SOUNDS				GUIO_GAMEOPTIONS6
 
 
 } // End of namespace VCruise

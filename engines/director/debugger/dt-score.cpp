@@ -61,13 +61,13 @@ static void displayScoreChannel(int ch, int mode, int modeSel) {
 	{
 		ImGui::TableNextColumn();
 
-		float indentSize = 17.0;
+		float indentSize = 17.0f;
 
 		if (mode < kChTempo && modeSel == kModeExtended)
-			indentSize = 10.0;
+			indentSize = 10.0f;
 
 		if (modeSel == kModeExtended && mode == kModeExtended)
-			indentSize = 0.1;
+			indentSize = 0.1f;
 
 		ImGui::Indent(indentSize);
 
@@ -223,7 +223,7 @@ void showScore() {
 			ImGui::BeginChild("Image", ImVec2(200.0f, 70.0f));
 
 			if (castMember || shape) {
-				ImGuiImage imgID;
+				ImGuiImage imgID = {};
 
 				if (castMember)
 					imgID = getImageID(castMember);
@@ -526,7 +526,7 @@ void showChannels() {
 		Score *score = g_director->getCurrentMovie()->getScore();
 		Frame &frame = *score->_currentFrame;
 
-		CastMemberID defaultPalette = g_director->getCurrentMovie()->getCast()->_defaultPalette;
+		CastMemberID defaultPalette = g_director->getCurrentMovie()->_defaultPalette;
 		ImGui::Text("TMPO:   tempo: %d, skipFrameFlag: %d, blend: %d, currentFPS: %d",
 			frame._mainChannels.tempo, frame._mainChannels.skipFrameFlag, frame._mainChannels.blend, score->_currentFrameRate);
 		if (!frame._mainChannels.palette.paletteId.isNull()) {

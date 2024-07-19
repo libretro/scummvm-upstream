@@ -35,6 +35,8 @@ class SeekableWriteStream;
 
 namespace Scumm {
 
+#define MAGIC_ARRAY_NUMBER 0x33539000
+
 class ActorHE;
 class ResExtractor;
 #ifdef ENABLE_HE
@@ -377,18 +379,21 @@ protected:
 		SO_RANGE_ARRAY_ASSIGNMENT = 128,
 		SO_COMPLEX_ARRAY_MATH_OPERATION = 138,
 		SO_FORMATTED_STRING = 194,
+		SO_REC = 195,
+		SO_BAK = 199,
+		SO_BAKREC = 200,
 		SO_UNDIM_ARRAY = 204,
 	};
 
 #include "common/pack-start.h"	// START STRUCT PACKING
 
 	struct ArrayHeader {
-		int32 type;      //0
-		int32 dim1start; //4
-		int32 dim1end;   //8
-		int32 dim2start; //0C
-		int32 dim2end;   //10
-		byte data[1];    //14
+		int32 type;
+		int32 acrossMin;
+		int32 acrossMax;
+		int32 downMin;
+		int32 downMax;
+		byte data[1];
 	} PACKED_STRUCT;
 
 #include "common/pack-end.h"	// END STRUCT PACKING
@@ -421,17 +426,22 @@ protected:
 	void redrawBGAreas() override;
 	void checkExecVerbs() override;
 
-	byte *defineArray(int array, int type, int dim2start, int dim2end, int dim1start, int dim1end, bool newArray = false, int *newid = NULL);
+	byte *defineArray(int array, int type, int downMin, int downMax, int acrossMin, int acrossMax, bool newArray = false, int *newid = NULL);
 	int readArray(int array, int idx2, int idx1) override;
 	void writeArray(int array, int idx2, int idx1, int value) override;
 	void redimArray(int arrayId, int newDim2start, int newDim2end,
 					int newDim1start, int newDim1end, int type);
-	void checkArrayLimits(int array, int dim2start, int dim2end, int dim1start, int dim1end);
+	void checkArrayLimits(int array, int downMin, int downMax, int acrossMin, int acrossMax);
 	void copyArray(int array1, int a1_dim2start, int a1_dim2end, int a1_dim1start, int a1_dim1end,
 					int array2, int a2_dim2start, int a2_dim2end, int a2_dim1start, int a2_dim1end);
-	void copyArrayHelper(ArrayHeader *ah, int idx2, int idx1, int len1, byte **data, int *size, int *num);
+	void getArrayDataPtrAndDataSize(ArrayHeader *ah, int idx2, int idx1, int len1, byte **data, int *size, int *num);
 	int readFileToArray(int slot, int32 size);
 	void writeFileFromArray(int slot, int32 resID);
+	void arrayBlockOperation(
+		int dstVariable, int dstDownMin, int dstDownMax, int dstAcrossMin, int dstAcrossMax,
+		int a2Variable, int a2DownMin, int a2DownMax, int a2AcrossMin, int a2AcrossMax,
+		int a1Variable, int a1DownMin, int a1DownMax, int a1AcrossMin, int a1AcrossMax,
+		int (*op)(int a2, int a1));
 
 	void decodeParseString(int a, int b) override;
 	void decodeScriptString(byte *dst, bool scriptString = false);
@@ -639,11 +649,8 @@ protected:
 		SO_FONT_RENDER = 143,
 		SO_CLOSE = 165,
 		SO_RENDER_ELLIPSE = 189,
-		SO_REC = 195,
 		SO_FONT_END = 196,
-		SO_ACTOR_VARIABLE = 198,
-		SO_BAK = 199,
-		SO_BAKREC = 200
+		SO_ACTOR_VARIABLE = 198
 	};
 
 	struct VideoParameters {
@@ -709,8 +716,8 @@ protected:
 	bool heAuxProcessFileRelativeBlock(HEAnimAuxData *auxInfoPtr, const byte *dataBlockPtr);
 	bool heAuxProcessDisplacedBlock(HEAnimAuxData *auxInfoPtr, const byte *displacedBlockPtr);
 
-	void getArrayDim(int array, int *dim2start, int *dim2end, int *dim1start, int *dim1end);
-	void sortArray(int array, int dim2start, int dim2end, int dim1start, int dim1end, int sortOrder);
+	void getArrayDim(int array, int *downMin, int *downMax, int *acrossMin, int *acrossMax);
+	void sortArray(int array, int downMin, int downMax, int acrossMin, int acrossMax, int sortOrder);
 
 public:
 	int getGroupSpriteArray(int spriteGroupId);

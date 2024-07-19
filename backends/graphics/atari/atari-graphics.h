@@ -26,24 +26,20 @@
 #include "common/events.h"
 
 #include <mint/osbind.h>
-#include <mint/ostruct.h>
-#include <unordered_set>
 
 #include "common/rect.h"
 #include "graphics/surface.h"
 
-template<>
-struct std::hash<Common::Rect>
-{
-	std::size_t operator()(Common::Rect const& rect) const noexcept
-	{
-		return 31 * (31 * (31 * rect.left + rect.top) + rect.right) + rect.bottom;
-	}
-};
+#include "atari-cursor.h"
+#include "atari-screen.h"
 
-///////////////////////////////////////////////////////////////////////////////
+#define MAX_HZ_SHAKE 16 // Falcon only
+#define MAX_V_SHAKE  16
 
 class AtariGraphicsManager : public GraphicsManager, Common::EventObserver {
+	friend class Cursor;
+	friend class Screen;
+
 public:
 	AtariGraphicsManager();
 	virtual ~AtariGraphicsManager();
@@ -102,7 +98,7 @@ public:
 						bool dontScale = false, const Graphics::PixelFormat *format = NULL, const byte *mask = NULL) override;
 	void setCursorPalette(const byte *colors, uint start, uint num) override;
 
-	Common::Point getMousePosition() const { return _cursor.getPosition(); }
+	Common::Point getMousePosition() const { return _workScreen->cursor.getPosition(); }
 	void updateMousePosition(int deltaX, int deltaY);
 
 	bool notifyEvent(const Common::Event &event) override;
@@ -115,46 +111,26 @@ protected:
 	void allocateSurfaces();
 	void freeSurfaces();
 
+private:
 	enum class GraphicsMode : int {
+		Unknown			= -1,
 		DirectRendering = 0,
 		SingleBuffering = 1,
 		TripleBuffering = 3
 	};
 
-	struct GraphicsState {
-		GraphicsState(GraphicsMode mode_)
-			: mode(mode_)
-			, width(0)
-			, height(0) {
-		}
-
-		GraphicsMode mode;
-		int width;
-		int height;
-		Graphics::PixelFormat format;
-	};
-	GraphicsState _pendingState{ (GraphicsMode)getDefaultGraphicsMode() };
-
-private:
-	using DirtyRects = std::unordered_set<Common::Rect>;
-
 	enum CustomEventAction {
 		kActionToggleAspectRatioCorrection = 100,
 	};
 
-	enum SteTtRezValue {
-		kRezValueSTLow  = 0,	// 320x200@4bpp, ST palette
-		kRezValueSTMid  = 1,	// 640x200@2bpp, ST palette
-		kRezValueSTHigh = 2,	// 640x400@1bpp, ST palette
-		kRezValueTTLow  = 7,	// 320x480@8bpp, TT palette
-		kRezValueTTMid  = 4,	// 640x480@4bpp, TT palette
-		kRezValueTTHigh = 6		// 1280x960@1bpp, TT palette
-	};
-
+#ifndef DISABLE_FANCY_THEMES
 	int16 getMaximumScreenHeight() const { return 480; }
 	int16 getMaximumScreenWidth() const { return _tt ? 320 : (_vgaMonitor ? 640 : 640*1.2); }
+#else
+	int16 getMaximumScreenHeight() const { return _tt ? 480 : 240; }
+	int16 getMaximumScreenWidth() const { return _tt ? 320 : (_vgaMonitor ? 320 : 320*1.2); }
+#endif
 
-	template <bool directRendering>
 	bool updateScreenInternal(const Graphics::Surface &srcSurface);
 
 	void copyRectToScreenInternal(const void *buf, int pitch, int x, int y, int w, int h,
@@ -188,39 +164,6 @@ private:
 		return alignRect(rect.left, rect.top, rect.width(), rect.height());
 	}
 
-	void cursorPositionChanged() {
-		if (_overlayVisible) {
-			_screen[OVERLAY_BUFFER]->cursorPositionChanged = true;
-		} else {
-			_screen[FRONT_BUFFER]->cursorPositionChanged
-				= _screen[BACK_BUFFER1]->cursorPositionChanged
-				= _screen[BACK_BUFFER2]->cursorPositionChanged
-				= true;
-		}
-	}
-
-	void cursorSurfaceChanged() {
-		if (_overlayVisible) {
-			_screen[OVERLAY_BUFFER]->cursorSurfaceChanged = true;
-		} else {
-			_screen[FRONT_BUFFER]->cursorSurfaceChanged
-				= _screen[BACK_BUFFER1]->cursorSurfaceChanged
-				= _screen[BACK_BUFFER2]->cursorSurfaceChanged
-				= true;
-		}
-	}
-
-	void cursorVisibilityChanged() {
-		if (_overlayVisible) {
-			_screen[OVERLAY_BUFFER]->cursorVisibilityChanged = true;
-		} else {
-			_screen[FRONT_BUFFER]->cursorVisibilityChanged
-				= _screen[BACK_BUFFER1]->cursorVisibilityChanged
-				= _screen[BACK_BUFFER2]->cursorVisibilityChanged
-				= true;
-		}
-	}
-
 	int getOverlayPaletteSize() const {
 #ifndef DISABLE_FANCY_THEMES
 		return _tt ? 16 : 256;
@@ -231,19 +174,28 @@ private:
 
 	bool _vgaMonitor = true;
 	bool _tt = false;
-	bool _aspectRatioCorrection = false;
-	bool _oldAspectRatioCorrection = false;
 	bool _checkUnalignedPitch = false;
 
-	GraphicsState _currentState{ (GraphicsMode)getDefaultGraphicsMode() };
+	struct GraphicsState {
+		GraphicsMode mode = GraphicsMode::Unknown;
+		int width = 0;
+		int height = 0;
+		Graphics::PixelFormat format;
+		bool aspectRatioCorrection = false;
 
-	enum PendingScreenChange {
-		kPendingScreenChangeNone	= 0,
-		kPendingScreenChangeMode	= 1<<0,
-		kPendingScreenChangeScreen	= 1<<1,
-		kPendingScreenChangePalette	= 1<<2
+		enum PendingScreenChange {
+			kNone					= 0,
+			kVideoMode				= 1<<0,
+			kScreenAddress			= 1<<1,
+			kPalette				= 1<<2,
+			kAspectRatioCorrection	= 1<<3,
+			kShakeScreen            = 1<<4,
+			kAll					= kVideoMode | kScreenAddress | kPalette | kAspectRatioCorrection | kShakeScreen,
+		};
+		int change = kNone;
 	};
-	int _pendingScreenChange = kPendingScreenChangeNone;
+	GraphicsState _pendingState;
+	GraphicsState _currentState;
 
 	enum {
 		FRONT_BUFFER,
@@ -252,131 +204,16 @@ private:
 		OVERLAY_BUFFER,
 		BUFFER_COUNT
 	};
-
-	class Palette {
-	public:
-		void clear() {
-			memset(data, 0, sizeof(data));
-		}
-
-		uint16 *const tt = reinterpret_cast<uint16*>(data);
-		_RGB *const falcon = reinterpret_cast<_RGB*>(data);
-
-	private:
-		byte data[256*4] = {};
-	};
-
-	struct Screen {
-		Screen(AtariGraphicsManager *manager, int width, int height, const Graphics::PixelFormat &format, const Palette *palette);
-		~Screen();
-
-		void reset(int width, int height, int bitsPerPixel);
-		// must be called before any rectangle drawing
-		void addDirtyRect(const Graphics::Surface &srcSurface, const Common::Rect &rect, bool directRendering);
-
-		void clearDirtyRects() {
-			dirtyRects.clear();
-			fullRedraw = false;
-		}
-
-		void storeBackground(const Common::Rect &rect);
-		void restoreBackground(const Common::Rect &rect);
-
-		Graphics::Surface surf;
-		const Palette *palette;
-		bool cursorPositionChanged = true;
-		bool cursorSurfaceChanged = true;
-		bool cursorVisibilityChanged = false;
-		DirtyRects dirtyRects;
-		bool fullRedraw = false;
-		Common::Rect oldCursorRect;
-		int rez = -1;
-		int mode = -1;
-		Graphics::Surface *const offsettedSurf = &_offsettedSurf;
-
-		int oldScreenSurfaceWidth = -1;
-		int oldScreenSurfaceHeight = -1;
-		int oldScreenSurfacePitch = -1;
-		int oldOffsettedSurfaceWidth = -1;
-		int oldOffsettedSurfaceHeight = -1;
-
-	private:
-		static constexpr size_t ALIGN = 16;	// 16 bytes
-
-		const AtariGraphicsManager *_manager;
-
-		Graphics::Surface _offsettedSurf;
-		// used by direct rendering
-		Graphics::Surface _cursorBackgroundSurf;
-	};
 	Screen *_screen[BUFFER_COUNT] = {};
 	Screen *_workScreen = nullptr;
 	Screen *_oldWorkScreen = nullptr;	// used in hideOverlay()
 
 	Graphics::Surface _chunkySurface;
 
-	bool _overlayVisible = false;
+	bool _overlayVisible = true;
+	bool _overlayPending = true;
+	bool _ignoreHideOverlay = true;
 	Graphics::Surface _overlaySurface;
-
-	struct Cursor {
-		void update(const Graphics::Surface &screen, bool isModified);
-
-		bool visible = false;
-
-		// position
-		Common::Point getPosition() const {
-			return Common::Point(_x, _y);
-		}
-		void setPosition(int x, int y) {
-			_x = x;
-			_y = y;
-		}
-		void updatePosition(int deltaX, int deltaY, const Graphics::Surface &screen);
-		void swap() {
-			const int tmpX = _oldX;
-			const int tmpY = _oldY;
-
-			_oldX = _x;
-			_oldY = _y;
-
-			_x = tmpX;
-			_y = tmpY;
-		}
-
-		// surface
-		void setSurface(const void *buf, int w, int h, int hotspotX, int hotspotY, uint32 keycolor);
-		template <bool isClut8>
-		void convertTo(const Graphics::PixelFormat &format);
-		Graphics::Surface surface;
-		Graphics::Surface surfaceMask;
-
-		// rects (valid only if !outOfScreen)
-		bool isClipped() const {
-			return outOfScreen ? false : _width != srcRect.width();
-		}
-		bool outOfScreen = true;
-		Common::Rect srcRect;
-		Common::Rect dstRect;
-
-		// palette (only used for the overlay)
-		byte palette[256*3] = {};
-
-	private:
-		int _x = -1, _y = -1;
-		int _oldX = -1, _oldY = -1;
-
-		// related to 'surface'
-		const byte *_buf = nullptr;
-		int _width;
-		int _height;
-		int _hotspotX;
-		int _hotspotY;
-		uint32 _keycolor;
-
-		int _rShift, _gShift, _bShift;
-		int _rMask, _gMask, _bMask;
-	};
-	Cursor _cursor;
 
 	Palette _palette;
 	Palette _overlayPalette;

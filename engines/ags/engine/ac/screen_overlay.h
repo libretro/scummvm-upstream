@@ -27,7 +27,7 @@
 #ifndef AGS_ENGINE_AC_SCREEN_OVERLAY_H
 #define AGS_ENGINE_AC_SCREEN_OVERLAY_H
 
-#include "ags/lib/std/memory.h"
+#include "common/std/memory.h"
 #include "ags/shared/core/types.h"
 
 namespace AGS3 {

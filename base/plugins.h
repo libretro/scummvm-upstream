@@ -292,12 +292,12 @@ protected:
 
 	bool tryLoadPlugin(Plugin *plugin);
 	void addToPluginsInMemList(Plugin *plugin);
-	const Plugin *findEnginePlugin(const Common::String &engineId);
 	const Plugin *findLoadedPlugin(const Common::String &engineId);
 
 	static PluginManager *_instance;
 	PluginManager();
 
+	void unloadAllPlugins();
 public:
 	virtual ~PluginManager();
 
@@ -307,28 +307,13 @@ public:
 	void addPluginProvider(PluginProvider *pp);
 
 	/**
-	 * A method which takes in a plugin of type ENGINE,
-	 * and returns the appropriate & matching METAENGINE.
-	 * It uses the Engine plugin's getName method, which is an identifier,
-	 * and then tries to matches it with each plugin present in memory.
+	 * A method which finds the METAENGINE plugin for the provided engineId
 	 *
-	 * @param plugin A plugin of type ENGINE.
+	 * @param engineId The engine ID
 	 *
 	 * @return A plugin of type METAENGINE.
 	 */
-	const Plugin *getMetaEngineFromEngine(const Plugin *plugin);
-
-	/**
-	 * A method which takes in a plugin of type METAENGINE,
-	 * and returns the appropriate & matching ENGINE.
-	 * It uses the MetaEngine's getEngineID to reconstruct the name
-	 * of engine plugin, and then tries to matches it with each plugin in memory.
-	 *
-	 * @param A plugin of type METAENGINE.
-	 *
-	 * @return A plugin of type ENGINE.
-	 */
-	const Plugin *getEngineFromMetaEngine(const Plugin *plugin);
+	const Plugin *findEnginePlugin(const Common::String &engineId);
 
 	// Functions used by the uncached PluginManager
 	virtual void init()	{}
@@ -342,7 +327,6 @@ public:
 	// Functions used only by the cached PluginManager
 	virtual void loadAllPlugins();
 	virtual void loadAllPluginsOfType(PluginType type);
-	void unloadAllPlugins();
 
 	void unloadPluginsExcept(PluginType type, const Plugin *plugin, bool deletePlugin = true);
 
@@ -366,6 +350,7 @@ protected:
 	bool loadPluginByFileName(const Common::Path &filename);
 
 public:
+	virtual ~PluginManagerUncached();
 	void init() override;
 	void loadFirstPlugin() override;
 	bool loadNextPlugin() override;

@@ -36,6 +36,7 @@
 #include "common/stream.h"
 #include "common/rational.h"
 #include "common/types.h"
+#include "common/rect.h"
 
 namespace Common {
 	class MacResManager;
@@ -141,7 +142,129 @@ protected:
 		CODEC_TYPE_MOV_OTHER,
 		CODEC_TYPE_VIDEO,
 		CODEC_TYPE_AUDIO,
-		CODEC_TYPE_MIDI
+		CODEC_TYPE_MIDI,
+		CODEC_TYPE_PANO
+	};
+
+	enum class GraphicsMode {
+		COPY				 = 0x0,   // Directly copy the source image over the destination.
+		DITHER_COPY			 = 0x40,  // Dither the image (if needed), otherwise copy.
+		BLEND				 = 0x20,  // Blend source and destination pixel colors using opcolor values.
+		TRANSPARENT			 = 0x24,  // Replace destination with source if not equal to opcolor.
+		STRAIGHT_ALPHA  	 = 0x100, // Blend source and destination pixels, with the proportion controlled by the alpha channel.
+		PREMUL_WHITE_ALPHA   = 0x101, // Blend after removing pre-multiplied white from the source.
+		PREMUL_BLACK_ALPHA	 = 0x102, // Blend after removing pre-multiplied black from the source.
+		STRAIGHT_ALPHA_BLEND = 0x104, // Similar to straight alpha, but the alpha for each channel is combined with the corresponding opcolor channel.
+		COMPOSITION			 = 0x103  // Render offscreen and then dither-copy to the main screen (tracks only).
+	};
+
+	struct PanoramaNode {
+		uint32 nodeID;
+		uint32 timestamp;
+	};
+
+	struct PanoramaInformation {
+		String name;
+		uint32 defNodeID;
+		float defZoom;
+		Array<PanoramaNode> nodes;
+	};
+
+	struct PanoSampleHeader {
+		uint32 nodeID;
+
+		float defHPan;
+		float defVPan;
+		float defZoom;
+
+		// Constraints for this node; zero for default
+		float minHPan;
+		float minVPan;
+		float maxHPan;
+		float maxVPan;
+		float minZoom;
+
+		int32 nameStrOffset;
+		int32 commentStrOffset;
+	};
+
+	enum class HotSpotType {
+		undefined,
+		link,
+		navg
+	};
+
+	struct PanoHotSpot {
+		uint16 id;
+		HotSpotType type;
+		uint32 typeData; // for link and navg, the ID in the link and navg table
+
+		// Canonical view for this hotspot
+		float viewHPan;
+		float viewVPan;
+		float viewZoom;
+
+		Rect rect;
+
+		int32 mouseOverCursorID;
+		int32 mouseDownCursorID;
+		int32 mouseUpCursorID;
+
+		int32 nameStrOffset;
+		int32 commentStrOffset;
+	};
+
+	struct PanoHotSpotTable {
+		Array<PanoHotSpot> hotSpots;
+	};
+
+	struct PanoStringTable {
+		String strings;
+
+		String getString(int32 offset) const;
+	};
+
+	struct PanoLink {
+		uint16 id;
+		uint16 toNodeID;
+
+		// Values to set at the destination node
+		float toHPan;
+		float toVPan;
+		float toZoom;
+
+		int32 nameStrOffset;
+		int32 commentStrOffset;
+	};
+
+	struct PanoLinkTable {
+		Array<PanoLink> links;
+	};
+
+	struct PanoNavigation {
+		uint16 id;
+
+		uint32 hPan;
+		uint32 vPan;
+		uint32 zoom;
+
+		Rect rect; // Starting rect for zoom out transitions
+
+		// Values to set at the destination node
+		int32 nameStrOffset;
+		int32 commentStrOffset;
+	};
+
+	struct PanoNavigationTable {
+		Array<PanoNavigation> navs;
+	};
+
+	struct PanoTrackSample {
+		PanoSampleHeader hdr;
+		PanoHotSpotTable hotSpotTable;
+		PanoStringTable strTable;
+		PanoLinkTable linkTable;
+		PanoNavigationTable navTable;
 	};
 
 	struct Track {
@@ -181,6 +304,46 @@ protected:
 		Common::String directory;
 		int16 nlvlFrom;
 		int16 nlvlTo;
+
+		PanoramaInformation panoInfo;
+		Array<PanoTrackSample> panoSamples;
+
+		GraphicsMode graphicsMode; // Transfer mode
+		uint16 opcolor[3];         // RGB values used in the transfer mode specified by graphicsMode.
+
+		uint16 soundBalance; // Controls the sound mix between the computer's two speakers, usually set to 0.
+	};
+
+	enum class MovieType {
+		kStandardObject = 1,
+		kOldNavigableMovieScene,
+		kObjectInScene
+	};
+
+	struct Navigation {
+		uint16 columns;
+		uint16 rows;
+		uint16 loop_size;      // Number of frames shot at each position
+		uint16 frame_duration;
+
+		MovieType movie_type;
+
+		uint16 loop_ticks;	 // Number of ticks before next frame of loop is displayed
+
+		float field_of_view;
+
+		float startHPan;
+		float startVPan;
+		float endHPan;
+		float endVPan;
+		float initialHPan;
+		float initialVPan;
+	};
+
+	enum class QTVRType {
+		OTHER,
+		OBJECT,
+		PANORAMA
 	};
 
 	virtual SampleDesc *readSampleDesc(Track *track, uint32 format, uint32 descSize) = 0;
@@ -190,6 +353,10 @@ protected:
 	Rational _scaleFactorX;
 	Rational _scaleFactorY;
 	Array<Track *> _tracks;
+	Navigation _nav;
+	QTVRType _qtvrType;
+	uint16 _winX;
+	uint16 _winY;
 
 	void init();
 
@@ -211,7 +378,11 @@ private:
 	MacResManager *_resFork;
 	bool _foundMOOV;
 
+	Track *_panoTrack;
+
 	void initParseTable();
+
+	bool parsePanoramaAtoms();
 
 	int readDefault(Atom atom);
 	int readLeaf(Atom atom);
@@ -223,16 +394,29 @@ private:
 	int readMVHD(Atom atom);
 	int readTKHD(Atom atom);
 	int readTRAK(Atom atom);
+	int readSMHD(Atom atom);
 	int readSTCO(Atom atom);
 	int readSTSC(Atom atom);
 	int readSTSD(Atom atom);
 	int readSTSS(Atom atom);
 	int readSTSZ(Atom atom);
 	int readSTTS(Atom atom);
+	int readVMHD(Atom atom);
 	int readCMOV(Atom atom);
 	int readWAVE(Atom atom);
 	int readESDS(Atom atom);
 	int readSMI(Atom atom);
+	int readCTYP(Atom atom);
+	int readWLOC(Atom atom);
+	int readNAVG(Atom atom);
+	int readGMIN(Atom atom);
+	int readPINF(Atom atom);
+
+	int readPHDR(Atom atom);
+	int readPHOT(Atom atom);
+	int readSTRT(Atom atom);
+	int readPLNK(Atom atom);
+	int readPNAV(Atom atom);
 };
 
 /** @} */

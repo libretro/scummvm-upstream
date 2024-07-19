@@ -21,8 +21,8 @@
 
 #include "common/config-manager.h"
 #include "common/savefile.h"
-#include "ags/lib/std/algorithm.h"
-#include "ags/lib/std/set.h"
+#include "common/std/algorithm.h"
+#include "common/std/set.h"
 #include "ags/lib/allegro.h" // find files
 #include "ags/engine/ac/listbox.h"
 #include "ags/shared/ac/common.h"

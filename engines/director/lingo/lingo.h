@@ -167,7 +167,7 @@ struct Datum {	/* interpreter stack type */
 	double asFloat() const;
 	int asInt() const;
 	Common::String asString(bool printonly = false) const;
-	CastMemberID asMemberID(CastType castType = kCastTypeAny) const;
+	CastMemberID asMemberID(CastType castType = kCastTypeAny, int castLib = 0) const;
 	Common::Point asPoint() const;
 
 	bool isRef() const;
@@ -257,6 +257,7 @@ struct CFrame {	/* proc/func call stack frame */
 	bool			allowRetVal;		/* whether to allow a return value */
 	Datum			defaultRetVal;		/* default return value */
 	int				paramCount;			/* original number of arguments submitted */
+	Common::Array<Datum> paramList;		/* original argument list */
 };
 
 struct LingoEvent {
@@ -407,7 +408,8 @@ public:
 	bool execute();
 	void switchStateFromWindow();
 	void freezeState();
-	void pushContext(const Symbol funcSym, bool allowRetVal, Datum defaultRetVal, int paramCount);
+	void freezePlayState();
+	void pushContext(const Symbol funcSym, bool allowRetVal, Datum defaultRetVal, int paramCount, int nargs);
 	void popContext(bool aborting = false);
 	void cleanLocalVars();
 	void varAssign(const Datum &var, const Datum &value);
@@ -500,6 +502,8 @@ public:
 	int _currentChannelId;
 
 	bool _freezeState;
+	bool _freezePlay;
+	bool _playDone;
 	bool _abort;
 	bool _expectError;
 	bool _caughtError;
@@ -519,6 +523,7 @@ public:
 
 	OpenXLibsHash _openXLibs;
 	OpenXLibsStateHash _openXLibsState;
+	Common::StringArray _openXtras;
 
 	Common::String _floatPrecisionFormat;
 

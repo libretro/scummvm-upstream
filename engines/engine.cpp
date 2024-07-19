@@ -1007,19 +1007,6 @@ GUI::Debugger *Engine::getOrCreateDebugger() {
 	return _debugger;
 }
 
-/*
-EnginePlugin *Engine::getMetaEnginePlugin() const {
-	return EngineMan.findPlugin(ConfMan.get("engineid"));
-}
-
-*/
-
-MetaEngineDetection &Engine::getMetaEngineDetection() {
-	const Plugin *plugin = EngineMan.findPlugin(ConfMan.get("engineid"));
-	assert(plugin);
-	return plugin->get<MetaEngineDetection>();
-}
-
 PauseToken::PauseToken() : _engine(nullptr) {}
 
 PauseToken::PauseToken(Engine *engine) : _engine(engine) {}

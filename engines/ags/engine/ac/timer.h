@@ -22,9 +22,11 @@
 #ifndef AGS_ENGINE_AC_TIMER_H
 #define AGS_ENGINE_AC_TIMER_H
 
-#include "ags/lib/std/type_traits.h"
-#include "ags/lib/std/chrono.h"
-#include "ags/lib/std/xtr1common.h"
+#include "common/std/type_traits.h"
+#include "common/std/chrono.h"
+#include "common/std/xtr1common.h"
+
+#include "ags/lib/std.h"
 
 namespace AGS3 {
 

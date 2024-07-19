@@ -31,6 +31,8 @@
 #include "graphics/korfont.h"
 #include "graphics/pixelformat.h"
 
+#include "common/rendermode.h"
+
 namespace Sci {
 
 enum {
@@ -57,6 +59,8 @@ enum {
 	DITHERED_BG_COLORS_SIZE = 256
 };
 
+class GfxDriver;
+
 /**
  * Screen class, actually creates 3 (4) screens internally:
  * - visual/display (for the user),
@@ -67,7 +71,7 @@ enum {
  */
 class GfxScreen {
 public:
-	GfxScreen(ResourceManager *resMan);
+	GfxScreen(ResourceManager *resMan, Common::RenderMode renderMode);
 	~GfxScreen();
 
 	uint16 getWidth() { return _width; }
@@ -92,7 +96,7 @@ public:
 	void bakDiscard();
 
 	// video frame displaying
-	void copyVideoFrameToScreen(const byte *buffer, int pitch, const Common::Rect &rect, bool is8bit);
+	void copyVideoFrameToScreen(const byte *buffer, int pitch, const Common::Rect &rect);
 
 	// Vector drawing
 private:
@@ -157,6 +161,8 @@ public:
 	void setPaletteMods(const PaletteMod *mods, unsigned int count);
 	bool paletteModsEnabled() const { return _paletteModsEnabled; }
 
+	GfxDriver *gfxDriver() const { return _gfxDrv; }
+
 private:
 	uint16 _width;
 	uint16 _height;
@@ -166,8 +172,6 @@ private:
 	uint16 _displayWidth;
 	uint16 _displayHeight;
 	uint _displayPixels;
-
-	Graphics::PixelFormat _format;
 
 	byte _colorWhite;
 	byte _colorDefaultVectorData;
@@ -200,9 +204,11 @@ private:
 	byte *_displayScreen;
 	Graphics::Surface _displayScreenSurface;
 
-	// Screens for RGB mode support
-	byte *_displayedScreen;
-	byte *_rgbScreen;
+	/**
+	 * Support for CGA and Hercules and other graphic modes that the original
+	 * interpreters allowed. It also performs the rgb rendering if needed.
+	 */
+	GfxDriver *_gfxDrv;
 
 	// For RGB per-view/pic palette mods
 	byte *_paletteMapScreen;
@@ -212,10 +218,7 @@ private:
 
 	byte *_backupScreen; // for bak* functions
 
-	void convertToRGB(const Common::Rect &rect);
-	void displayRectRGB(const Common::Rect &rect, int x, int y);
 	void displayRect(const Common::Rect &rect, int x, int y);
-	byte *_palette;
 
 	ResourceManager *_resMan;
 

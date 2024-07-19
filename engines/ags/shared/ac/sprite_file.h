@@ -32,8 +32,8 @@
 #define AGS_SHARED_AC_SPRITE_FILE_H
 
 #include "ags/shared/core/types.h"
-#include "ags/lib/std/memory.h"
-#include "ags/lib/std/vector.h"
+#include "common/std/memory.h"
+#include "common/std/vector.h"
 #include "ags/shared/util/stream.h"
 #include "ags/globals.h"
 

@@ -28,7 +28,7 @@
 #include "common/system.h"
 #include "ags/shared/core/platform.h"
 #include "ags/shared/util/stream.h"
-#include "ags/lib/std/algorithm.h"
+#include "common/std/algorithm.h"
 #include "ags/shared/ac/sprite_cache.h"
 #include "ags/shared/ac/game_struct_defines.h"
 #include "ags/shared/debugging/out.h"

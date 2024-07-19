@@ -24,7 +24,7 @@
 
 #include "ags/plugins/ags_sprite_font/sprite_font.h"
 #include "ags/plugins/ags_plugin.h"
-#include "ags/lib/std/vector.h"
+#include "common/std/vector.h"
 
 namespace AGS3 {
 namespace Plugins {

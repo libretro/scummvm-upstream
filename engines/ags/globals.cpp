@@ -93,7 +93,7 @@
 #include "ags/engine/script/non_blocking_script_function.h"
 #include "ags/engine/script/script.h"
 #include "ags/engine/script/system_imports.h"
-#include "ags/lib/std/limits.h"
+#include "common/std/limits.h"
 #include "ags/plugins/ags_plugin.h"
 #include "ags/plugins/plugin_object_reader.h"
 #include "ags/plugins/core/core.h"

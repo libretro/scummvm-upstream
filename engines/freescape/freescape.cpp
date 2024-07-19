@@ -113,6 +113,7 @@ FreescapeEngine::FreescapeEngine(OSystem *syst, const ADGameDescription *gd)
 	_syncSound = false;
 	_firstSound = false;
 	_playerHeightNumber = 1;
+	_playerHeightMaxNumber = 1;
 	_angleRotationIndex = 0;
 
 	// TODO: this is not the same for every game
@@ -138,6 +139,8 @@ FreescapeEngine::FreescapeEngine(OSystem *syst, const ADGameDescription *gd)
 	_lastFrame = 0;
 	_nearClipPlane = 2;
 	_farClipPlane = 8192 + 1802; // Added some extra distance to avoid flickering
+	_yminValue = -0.625;
+	_ymaxValue = 0.625;
 
 	// These depends on the specific game
 	_playerHeight = 0;
@@ -163,6 +166,7 @@ FreescapeEngine::FreescapeEngine(OSystem *syst, const ADGameDescription *gd)
 	_lastMinute = -1;
 	_frameLimiter = nullptr;
 	_vsyncEnabled = false;
+	_executingGlobalCode = false;
 
 	_underFireFrames = 0;
 	_shootingFrames = 0;
@@ -374,8 +378,7 @@ void FreescapeEngine::drawBackground() {
 	clearBackground();
 	_gfx->drawBackground(_currentArea->_skyColor);
 
-	if (isCastle()) {
-		assert(_background);
+	if (isCastle() && _background) {
 		if (!_skyTexture)
 			_skyTexture = _gfx->createTexture(_background);
 		_gfx->drawSkybox(_skyTexture, _position);
@@ -387,7 +390,7 @@ void FreescapeEngine::drawFrame() {
 	if (_currentArea->isOutside())
 		farClipPlane *= 100;
 
-	_gfx->updateProjectionMatrix(90.0, _nearClipPlane, farClipPlane);
+	_gfx->updateProjectionMatrix(90.0, _yminValue, _ymaxValue, _nearClipPlane, farClipPlane);
 	_gfx->positionCamera(_position, _position + _cameraFront);
 
 	if (_underFireFrames > 0) {
@@ -936,6 +939,7 @@ void FreescapeEngine::drawStringInSurface(const Common::String &str, int x, int 
 	if (!_fontLoaded)
 		return;
 	Common::String ustr = str;
+	uint32 transparent = _gfx->_texturePixelFormat.ARGBToColor(0, 0, 0, 0);
 	ustr.toUppercase();
 
 	int sizeX = 8;
@@ -948,9 +952,9 @@ void FreescapeEngine::drawStringInSurface(const Common::String &str, int x, int 
 		int position = sizeX * sizeY * (offset + ustr[c] - 32);
 		for (int j = 0; j < sizeY; j++) {
 			for (int i = 0; i < sizeX; i++) {
-				if (_font.get(position + additional + j * 8 + i))
+				if (_font.get(position + additional + j * 8 + i) && fontColor != transparent)
 					surface->setPixel(x + 8 - i + sep * c, y + j, fontColor);
-				else
+				else if (backColor != transparent)
 					surface->setPixel(x + 8 - i + sep * c, y + j, backColor);
 			}
 		}
@@ -1017,6 +1021,8 @@ Common::Error FreescapeEngine::loadGameStream(Common::SeekableReadStream *stream
 	_ticks = 0;
 	if (!_currentArea || _currentArea->getAreaID() != areaID)
 		gotoArea(areaID, -1); // Do not change position nor rotation
+
+	_playerHeight = 32 * (_playerHeightNumber + 1) - 16 / _currentArea->_scale;
 	return loadGameStreamExtended(stream);
 }
 

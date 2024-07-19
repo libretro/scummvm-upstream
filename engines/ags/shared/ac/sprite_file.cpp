@@ -20,7 +20,7 @@
  */
 
 #include "ags/shared/ac/sprite_file.h"
-#include "ags/lib/std/algorithm.h"
+#include "common/std/algorithm.h"
 #include "ags/shared/core/asset_manager.h"
 #include "ags/shared/gfx/bitmap.h"
 #include "ags/shared/util/compress.h"
