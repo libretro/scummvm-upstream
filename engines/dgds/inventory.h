@@ -57,6 +57,7 @@ public:
 
 	Common::Error syncState(Common::Serializer &s);
 
+	static const byte HOC_CHARACTER_QUALS[];
 private:
 	GameItem *itemUnderMouse(const Common::Point &pt);
 	bool isItemInInventory(GameItem &item);
@@ -75,6 +76,8 @@ private:
 	ButtonGadget *_clockSkipHrBtn;
 	ButtonGadget *_dropBtn;
 	ImageGadget *_itemArea;
+	ButtonGadget *_giveToBtn;
+	ButtonGadget *_changeCharBtn;
 
 	REQFileData _reqData;
 	int _highlightItemNo;	// -1 means no item highlighted.

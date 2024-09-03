@@ -152,20 +152,6 @@ void Digi::playFootsteps() {
 	}
 }
 
-Common::String Digi::expand_name_2_RAW(const Common::String &name, int32 room_num) {
-	Common::String tempName = f_extension_new(name, "RAW");
-
-	if (!_G(kernel).hag_mode) {
-		if (room_num == -1)
-			room_num = extract_room_num(name);
-
-		return Common::String::format("%d\\%s", room_num, tempName.c_str());
-
-	} else {
-		return tempName;
-	}
-}
-
 void Digi::stop(uint channel, bool calledFromUnload) {
 	assert(channel < 4);
 
@@ -235,6 +221,10 @@ int32 Digi::ticks_to_play(const char *name, int roomNum) {
 	return (int32)floor(size * 0.000090702946 * 60.0);
 }
 
+void Digi::change_panning(int val1, int val2) {
+	warning("TODO: digi_change_panning");
+}
+
 } // namespace Sound
 
 bool digi_preload(const Common::String &name, int roomNum) {
@@ -279,6 +269,10 @@ int digi_get_overall_volume() {
 
 int32 digi_ticks_to_play(const char *name, int roomNum) {
 	return _G(digi).ticks_to_play(name, roomNum);
+}
+
+void digi_change_panning(int val1, int val2) {
+	_G(digi).change_panning(val1, val2);
 }
 
 } // namespace M4

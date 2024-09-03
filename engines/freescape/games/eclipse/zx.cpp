@@ -31,11 +31,29 @@ void EclipseEngine::initZX() {
 	_viewArea = Common::Rect(56, 36, 265, 139);
 	_maxEnergy = 63;
 	_maxShield = 63;
+
+	_soundIndexShoot = 5;
+	_soundIndexCollide = -1;
+	_soundIndexFall = 3;
+	_soundIndexClimb = 4;
+	_soundIndexMenu = -1;
+	_soundIndexStart = 7;
+	_soundIndexAreaChange = 7;
+
+	_soundIndexStartFalling = 6;
+	_soundIndexEndFalling = 5;
+
+	_soundIndexNoShield = 8;
+	_soundIndexNoEnergy = -1;
+	_soundIndexFallen = 8;
+	_soundIndexTimeout = 8;
+	_soundIndexForceEndGame = 8;
+	_soundIndexCrushed = 8;
+	_soundIndexMissionComplete = 16;
 }
 
 void EclipseEngine::loadAssetsZXFullGame() {
 	Common::File file;
-	bool isTotalEclipse2 = _targetName.hasPrefix("totaleclipse2");
 
 	file.open("totaleclipse.zx.title");
 	if (file.isOpen()) {
@@ -55,7 +73,7 @@ void EclipseEngine::loadAssetsZXFullGame() {
 	if (!file.isOpen())
 		error("Failed to open totaleclipse.zx.data");
 
-	if (isTotalEclipse2) {
+	if (isEclipse2()) {
 		loadMessagesFixedSize(&file, 0x2ac, 16, 30);
 		loadFonts(&file, 0x61c3, _font);
 		loadSpeakerFxZX(&file, 0x8c6, 0x91a);
@@ -66,11 +84,7 @@ void EclipseEngine::loadAssetsZXFullGame() {
 		loadSpeakerFxZX(&file, 0x816, 0x86a);
 		load8bitBinary(&file, 0x635b, 4);
 
-		// These paper colors are invalid, probably to signal the use of floor/sky colors
-		_areaMap[1]->_paperColor = 1;
-		_areaMap[51]->_paperColor = 1;
-
-		// These paper colors are also invalid, but to signal the use of a special effect
+		// These paper colors are also invalid, but to signal the use of a special effect (only in zx release)
 		_areaMap[42]->_paperColor = 0;
 		_areaMap[42]->_underFireBackgroundColor = 0;
 	}
@@ -78,7 +92,7 @@ void EclipseEngine::loadAssetsZXFullGame() {
 	for (auto &it : _areaMap) {
 		it._value->addStructure(_areaMap[255]);
 
-		if (isTotalEclipse2 && it._value->getAreaID() == 1)
+		if (isEclipse2() && it._value->getAreaID() == 1)
 			continue;
 
 		if (isEclipse2() && it._value->getAreaID() == _startArea)
@@ -116,6 +130,7 @@ void EclipseEngine::loadAssetsZXDemo() {
 		error("Failed to open totaleclipse.zx.data");
 
 	if (_variant & GF_ZX_DEMO_MICROHOBBY) {
+		loadSpeakerFxZX(&file, 0x798, 0x7ec);
 		loadMessagesFixedSize(&file, 0x2ac, 16, 23);
 		loadMessagesFixedSize(&file, 0x56e6, 264, 1);
 		loadFonts(&file, 0x5f7b, _font);

@@ -116,6 +116,7 @@ struct EoBCharacter {
 	uint8 food;
 	uint8 level[3];
 	uint32 experience[3];
+	int16 hitPointsDividend;
 	const uint8 *faceShape;
 	const uint8 *nameShape;
 
@@ -397,7 +398,11 @@ protected:
 
 	// Characters
 	int getDexterityArmorClassModifier(int dexterity);
-	int generateCharacterHitpointsByLevel(int charIndex, int levelIndex);
+	int rollHitDie(int charIndex, int levelIndex);
+	bool shouldRollHitDieAtCurrentLevel(int charIndex, int levelIndex);
+	uint8 getStaticHitPointBonus(int charIndex, int levelIndex);
+	int generateCharacterHitpointsByLevel(int charIndex, int levelIndex, int hitDieRoll);
+	int incrCharacterHitPointsDividendByLevel(int charIndex, int levelIndex, int hitDieRoll);
 	int getClassAndConstHitpointsModifier(int cclass, int constitution);
 	int getCharacterClassType(int cclass, int levelIndex);
 	int getModifiedHpLimits(int hpModifier, int constModifier, int level, bool mode);
@@ -846,6 +851,7 @@ protected:
 	uint8 *_swapShape;
 	bool _configHpBarGraphs;
 	bool _configMouseBtSwap;
+	bool _configADDRuleEnhancements;
 
 	Graphics::Surface _thumbNail;
 

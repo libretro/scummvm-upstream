@@ -75,7 +75,8 @@ protected:
 	void loadCharset(int no) override;
 
 	void runInputScript(int clickArea, int val, int mode) override;
-	void runInventoryScript(int i) override;
+	void runInventoryScript(int) override;
+	void runInventoryScriptEx(int) override;
 
 	int getVar() override;
 
@@ -107,6 +108,7 @@ protected:
 
 	void setBuiltinCursor(int index) override;
 	void setSnailCursor() override;
+	void adaptCursorToVideoMode();
 
 	void drawPreposition(int index);
 

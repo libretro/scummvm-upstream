@@ -220,8 +220,8 @@ FontManager::FontType FontManager::fontTypeByName(const Common::String &filename
 	if (filename == "HOC.FNT") return kGameFont;
 	if (filename == "CHINA.FNT") return kGameDlgFont;
 	if (filename == "CHINESE.FNT") return kChinaFont;
-	if (filename == "WILLY.FNT") return kGameDlgFont;
-	if (filename == "COMIX_16.FNT") return kGameFont;
+	if (filename == "WILLY.FNT") return kGameFont;
+	if (filename == "COMIX_16.FNT") return kGameDlgFont;
 	if (filename == "WVCR.FNT") return kVCRFont;
 	if (filename == "EXIT.FNT") return kVCRFont;
 	if (filename == "SSM1_12.FNT") return kGameFont;
@@ -261,6 +261,12 @@ void FontManager::loadFonts(DgdsGameId gameId, ResourceManager *resMgr, Decompre
 			tryLoadFont("WILLY.FNT", resMgr, decomp);
 			tryLoadFont("WVCR.FNT", resMgr, decomp);
 			tryLoadFont("COMIX_16.FNT", resMgr, decomp);
+		} else if (gameId == GID_QUARKY) {
+			tryLoadFont("MRALLY.FNT", resMgr, decomp);
+			tryLoadFont("MVCR.FNT", resMgr, decomp);
+			tryLoadFont("RUDEFONT.FNT", resMgr, decomp);
+			_fonts.setVal(kDefaultFont, _fonts.getVal(k8x8Font));
+			return;
 		}
 	}
 

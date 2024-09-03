@@ -177,6 +177,18 @@ static const ADExtraGuiOptionsMap optionsList[] = {
 		}
 	},
 
+	{
+		GAMEOPTION_COPY_PROTECTION,
+		{
+			_s("Enable copy protection"),
+			_s("Enable any copy protection that would otherwise be bypassed by default."),
+			"copy_protection",
+			false,
+			0,
+			0
+		}
+	},
+
 	AD_EXTRA_GUI_OPTIONS_TERMINATOR
 };
 
@@ -234,6 +246,7 @@ Common::Error AgiMetaEngine::createInstance(OSystem *syst, Engine **engine, cons
 	case Agi::GType_V1:
 	case Agi::GType_V2:
 	case Agi::GType_V3:
+	case Agi::GType_A2:
 		*engine = new Agi::AgiEngine(syst, gd);
 		break;
 	default:

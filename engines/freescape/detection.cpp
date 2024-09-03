@@ -677,6 +677,7 @@ static const ADGameDescription gameDescriptions[] = {
 	},
 
 	// Castle Master
+	// Tape release
 	{
 		"castlemaster",
 		"",
@@ -684,7 +685,27 @@ static const ADGameDescription gameDescriptions[] = {
 		Common::EN_ANY,
 		Common::kPlatformZX,
 		ADGF_UNSTABLE,
-		GUIO2(GUIO_NOMIDI, GUIO_RENDERZX)
+		GUIO3(GUIO_NOMIDI, GAMEOPTION_TRAVEL_ROCK, GUIO_RENDERZX)
+	},
+	// Disc release
+	{
+		"castlemaster",
+		"",
+		AD_ENTRY1s("castlemaster.zx.data", "98513a4438ba93971d793a0fbc875b70", 36309),
+		Common::EN_ANY,
+		Common::kPlatformZX,
+		ADGF_UNSTABLE | GF_ZX_DISC,
+		GUIO3(GUIO_NOMIDI, GAMEOPTION_TRAVEL_ROCK, GUIO_RENDERZX)
+	},
+	// Spanish release was disc-only?
+	{
+		"castlemaster",
+		"",
+		AD_ENTRY1s("castlemaster.zx.data", "3e6f6b283fa00a3073edce2392950601", 36309),
+		Common::ES_ESP,
+		Common::kPlatformZX,
+		ADGF_UNSTABLE | GF_ZX_DISC,
+		GUIO3(GUIO_NOMIDI, GAMEOPTION_TRAVEL_ROCK, GUIO_RENDERZX)
 	},
 	{
 		"castlemaster",
@@ -698,7 +719,7 @@ static const ADGameDescription gameDescriptions[] = {
 		Common::EN_ANY,
 		Common::kPlatformDOS,
 		ADGF_UNSTABLE | ADGF_DEMO,
-		GUIO3(GUIO_NOMIDI, GUIO_RENDEREGA, GUIO_RENDERCGA)
+		GUIO4(GUIO_NOMIDI, GAMEOPTION_TRAVEL_ROCK, GUIO_RENDEREGA, GUIO_RENDERCGA)
 	},
 	{
 		"castlemaster",
@@ -711,7 +732,7 @@ static const ADGameDescription gameDescriptions[] = {
 		Common::EN_ANY,
 		Common::kPlatformAmiga,
 		ADGF_UNSTABLE | ADGF_DEMO,
-		GUIO2(GUIO_NOMIDI, GUIO_RENDERAMIGA)
+		GUIO3(GUIO_NOMIDI, GAMEOPTION_TRAVEL_ROCK, GUIO_RENDERAMIGA)
 	},
 	// Stampede Amiga, Issue 1, July 1990
 	{
@@ -725,7 +746,7 @@ static const ADGameDescription gameDescriptions[] = {
 		Common::EN_ANY,
 		Common::kPlatformAmiga,
 		ADGF_UNSTABLE | ADGF_DEMO,
-		GUIO2(GUIO_NOMIDI, GUIO_RENDERAMIGA)
+		GUIO3(GUIO_NOMIDI, GAMEOPTION_TRAVEL_ROCK, GUIO_RENDERAMIGA)
 	},
 	{
 		"castlemaster",
@@ -741,7 +762,7 @@ static const ADGameDescription gameDescriptions[] = {
 		Common::UNK_LANG,
 		Common::kPlatformDOS,
 		ADGF_UNSTABLE,
-		GUIO3(GUIO_NOMIDI, GUIO_RENDEREGA, GUIO_RENDERCGA)
+		GUIO4(GUIO_NOMIDI, GAMEOPTION_TRAVEL_ROCK, GUIO_RENDEREGA, GUIO_RENDERCGA)
 	},
 	{
 		"castlemaster",
@@ -757,7 +778,7 @@ static const ADGameDescription gameDescriptions[] = {
 		Common::EN_ANY,
 		Common::kPlatformDOS,
 		ADGF_UNSTABLE,
-		GUIO3(GUIO_NOMIDI, GUIO_RENDEREGA, GUIO_RENDERCGA)
+		GUIO4(GUIO_NOMIDI, GAMEOPTION_TRAVEL_ROCK, GUIO_RENDEREGA, GUIO_RENDERCGA)
 	},
 	{
 		"castlemaster",
@@ -773,7 +794,7 @@ static const ADGameDescription gameDescriptions[] = {
 		Common::EN_ANY,
 		Common::kPlatformDOS,
 		ADGF_UNSTABLE,
-		GUIO3(GUIO_NOMIDI, GUIO_RENDEREGA, GUIO_RENDERCGA)
+		GUIO4(GUIO_NOMIDI, GAMEOPTION_TRAVEL_ROCK, GUIO_RENDEREGA, GUIO_RENDERCGA)
 	},
 	{
 		"castlemaster",
@@ -789,7 +810,7 @@ static const ADGameDescription gameDescriptions[] = {
 		Common::ES_ESP,
 		Common::kPlatformDOS,
 		ADGF_UNSTABLE,
-		GUIO3(GUIO_NOMIDI, GUIO_RENDEREGA, GUIO_RENDERCGA)
+		GUIO4(GUIO_NOMIDI, GAMEOPTION_TRAVEL_ROCK, GUIO_RENDEREGA, GUIO_RENDERCGA)
 	},
 
 	// 3D Construction Kit games

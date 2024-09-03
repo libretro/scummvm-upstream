@@ -101,6 +101,8 @@ public:
 	virtual void toggle(bool enable) {}
 
 	bool containsPoint(const Common::Point &pt);
+	bool isVisible() const { return !(_flags3 & 0x40); }
+	void setVisible(bool visible);
 
 	Common::Point topLeft() const;
 	Common::Point midPoint() const;
@@ -111,6 +113,11 @@ class ButtonGadget : public Gadget {
 public:
 	void draw(Graphics::ManagedSurface *dst) const override;
 	void toggle(bool enable) override;
+private:
+	// Each of these return the text color
+	byte drawDragonBg(Graphics::ManagedSurface *dst, bool enabled) const;
+	byte drawChinaBg(Graphics::ManagedSurface *dst, bool enabled) const;
+	byte drawWillyBg(Graphics::ManagedSurface *dst, bool enabled) const;
 };
 
 // extended gadget type 1 is 62 (0x3e) bytes
@@ -198,7 +205,7 @@ public:
 
 	static void fillBackground(Graphics::ManagedSurface *dst, uint16 x, uint16 y, uint16 width, uint16 height, int16 startoffset);
 	static void drawCorners(Graphics::ManagedSurface *dst, uint16 startNum, uint16 x, uint16 y, uint16 width, uint16 height);
-	static void drawHeader(Graphics::ManagedSurface *dst, int16 x, int16 y, int16 width, int16 yoffset, const Common::String &header, byte fontCol, bool addBox);
+	static void drawHeader(Graphics::ManagedSurface *dst, int16 x, int16 y, int16 width, int16 yoffset, const Common::String &header, byte fontCol, bool drawBox, byte boxTopColor, byte boxBottomColor);
 	Gadget *findGadgetByNumWithFlags3Not0x40(int16 num);
 
 private:

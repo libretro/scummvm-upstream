@@ -58,6 +58,7 @@ class Menu;
 struct DgdsADS;
 class ADSInterpreter;
 class Globals;
+class ShellGame;
 
 const float MS_PER_FRAME = 16.6667f;
 
@@ -67,6 +68,7 @@ enum DgdsGameId {
 	GID_WILLY,
 	GID_SQ5DEMO,
 	GID_COMINGATTRACTIONS,
+	GID_QUARKY
 };
 
 enum DgdsDetailLevel {
@@ -94,6 +96,8 @@ public:
 	Sound *_soundPlayer;
 	Graphics::ManagedSurface _compositionBuffer;
 
+	static const byte HOC_CHAR_SWAP_ICONS[];
+
 private:
 	Console *_console;
 
@@ -112,6 +116,9 @@ private:
 	GamePalettes *_gamePals;
 	Globals *_gameGlobals;
 	Inventory *_inventory;
+
+	// HoC only
+	ShellGame *_shellGame;
 
 	FontManager *_fontManager;
 	Common::SharedPtr<Image> _corners;
@@ -138,6 +145,7 @@ private:
 	const char *_rstFileName;
 
 	bool _isDemo;
+	bool _flipMode;
 
 public:
 	DgdsEngine(OSystem *syst, const ADGameDescription *gameDesc);
@@ -209,6 +217,10 @@ public:
 	const Common::String &getBackgroundFile() const { return _backgroundFile; }
 	void setMenuToTrigger(MenuId menu) { _menuToTrigger = menu; }
 	bool isInvButtonVisible() const;
+	ShellGame *getShellGame() { return _shellGame; }
+
+	static DgdsEngine *getInstance() { return static_cast<DgdsEngine *>(g_engine); }
+	void setFlipMode(bool mode) { _flipMode = mode; }
 
 private:
 	Common::Error syncGame(Common::Serializer &s);

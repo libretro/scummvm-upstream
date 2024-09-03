@@ -44,6 +44,7 @@
  * Status of this engine: Supported
  *
  * Games using this engine:
+ * - Adi 1
  * - Adi 2
  * - Adi 4
  * - Adi 5
@@ -64,8 +65,10 @@
  * - Bargon Attack
  * - Le pays des Pierres Magiques
  * - Lost in Time
+ * - Nathan Vacances CM1/CE2
  * - The Bizarre Adventures of Woodruff and the Schnibble
  * - Fascination
+ * - Inca II: Nations of Immortality 
  * - Urban Runner
  * - Bambou le sauveur de la jungle
  * - Playtoons 1 Uncle Archibald
@@ -77,9 +80,12 @@
  * - Playtoons Construction Kit 2 Knights
  * - Playtoons Construction Kit 3 The Far West
  * - Geisha
+ * - Once Upon A Time: Abracadabra
+ * - Once Upon A Time: Baba Yaga
  * - Once Upon A Time: Little Red Riding Hood
  * - Croustibat
  */
+
 namespace Gob {
 
 class Game;

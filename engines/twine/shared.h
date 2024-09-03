@@ -24,7 +24,9 @@
 
 #include "common/scummsys.h"
 
-#define NUM_GAME_FLAGS 255
+// lba1 255 - lba2 256
+#define NUM_GAME_FLAGS 256
+#define NUM_GAME_FLAGS_LBA1 255
 
 /** Number of colors used in the game */
 #define NUMOFCOLORS 256
@@ -76,6 +78,11 @@
 #define GAMEFLAG_VIDEO_SENDEL 218
 // Twinsun explosion
 #define GAMEFLAG_VIDEO_EXPLODE2 219
+
+// lba2 Kashes or Zlitos
+#define GAMEFLAG_MONEY 8
+// FLAG_ARDOISE
+#define GAMEFLAG_ARDOISE 28
 
 #define OWN_ACTOR_SCENE_INDEX 0
 #define IS_HERO(x) ((x) == OWN_ACTOR_SCENE_INDEX)
@@ -731,6 +738,7 @@ inline int32 NormalizeAngle(int32 angle) {
  * @return The value as it is used at runtime
  */
 inline constexpr int32 ToAngle(int32 angle) {
+	// TODO: lba2 handling of factor 4
 	return angle;
 }
 
@@ -770,7 +778,8 @@ inline constexpr T bits(T value, uint8 offset, uint8 bits) {
 #define COLOR_48 48 // brown dark
 #define COLOR_63 63 // brown bright
 #define COLOR_64 64 // blue dark
-#define COLOR_68 68 // blue
+#define COLOR_SELECT_MENU 68 // blue
+// TODO #define COLOR_SELECT_MENU 166 // blue lba2
 #define COLOR_73 73 // blue
 #define COLOR_75 75
 #define COLOR_79 79 // blue bright

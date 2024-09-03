@@ -59,41 +59,20 @@ public:
 		return TeIntrusivePtr<T>();
 	}
 
-	template<class T> TeIntrusivePtr<T> getResource(const Common::FSNode &node) {
-		Common::Path path = node.getPath();
+	template<class T>
+	TeIntrusivePtr<T> getResource(const Common::Path &path) {
 		for (TeIntrusivePtr<TeResource> &resource : this->_resources) {
 			if (resource->getAccessName() == path) {
 				return TeIntrusivePtr<T>(dynamic_cast<T *>(resource.get()));
 			}
 		}
 
-		TeIntrusivePtr<T> retval;
-		retval = new T();
+		TeIntrusivePtr<T> retval = new T();
 
 		if (retval.get()) {
-			if (!node.isReadable())
-				warning("getResource: asked to fetch unreadable resource %s", node.getPath().toString(Common::Path::kNativeSeparator).c_str());
-			retval->load(node);
-			addResource(retval.get());
-		}
-		return retval;
-	}
-
-	template<class T> TeIntrusivePtr<T> getResourceOrMakeInstance(const Common::FSNode &node) {
-		Common::Path path = node.getPath();
-		for (TeIntrusivePtr<TeResource> &resource : this->_resources) {
-			if (resource->getAccessName() == path) {
-				return TeIntrusivePtr<T>(dynamic_cast<T *>(resource.get()));
-			}
-		}
-
-		TeIntrusivePtr<T> retval;
-		retval = T::makeInstance();
-
-		if (retval.get()) {
-			if (!node.isReadable())
-				warning("getResourceOrMakeInstance: asked to fetch unreadable resource %s", node.getPath().toString(Common::Path::kNativeSeparator).c_str());
-			retval->load(node);
+			if (!Common::File::exists(path))
+				warning("getResource: asked to fetch unreadable resource %s", path.toString(Common::Path::kNativeSeparator).c_str());
+			retval->load(path);
 			addResource(retval.get());
 		}
 		return retval;

@@ -27,11 +27,10 @@
 
 /* Detection tables for Adi 5 / Addy 5 series. */
 /* This Game uses the DEV7 Engine, more Information can be found here: https://wiki.scummvm.org/index.php?title=DEV7_Information */
+/* These games are part of the Adi series. For more information, refer to our wiki: https://wiki.scummvm.org/index.php?title=Adi_Games */
 
 #ifndef GOB_DETECTION_TABLES_ADI5_H
 #define GOB_DETECTION_TABLES_ADI5_H
-
-//#include "common/translation.h"  // Make release checker happy
 
 // -- French: Adi 5 --
 
@@ -39,7 +38,7 @@
 	{ // Supplied by BJNFNE
 
 		"adi5",
-		_s("Missing game code"), // Adi 5 5.01 (Engine: DEV7 version unknown)
+		MetaEngineDetection::GAME_NOT_IMPLEMENTED, // Adi 5 5.01 (Engine: DEV7 version unknown)
 		AD_ENTRY1s("adi5.stk", "5de6b43725b47164e8b181de361d0693", 611309),
 		FR_FRA,
 		kPlatformWindows,
@@ -47,13 +46,13 @@
 		GUIO0()
 	},
 	kFeatures800x600,
-	0,0,0
+	"adi5.stk", "adi5.obc", 0
 },
 {
 	{ // Supplied by BJNFNE
 
 		"adi5",
-		_s("Missing game code"), // Adi 5 5.04 (Engine: DEV7 version 1.1.0.0)
+		MetaEngineDetection::GAME_NOT_IMPLEMENTED, // Adi 5 5.04 (Engine: DEV7 version 1.10a)
 		AD_ENTRY1s("adi5.stk", "17754a1b942c3af34e86820f19971895", 891549),
 		FR_FRA,
 		kPlatformWindows,
@@ -61,7 +60,7 @@
 		GUIO0()
 	},
 	kFeatures800x600,
-	0,0,0
+	"adi5.stk", "adi5.obc", 0
 },
 
 // -- German: Addy 5 --
@@ -70,7 +69,7 @@
 	{ // Supplied by laenion in Bugreport #14956
 
 		"adi5",
-		_s("Missing game code"), // Addy 5 5.01 (Engine: DEV7 version unknown)
+		MetaEngineDetection::GAME_NOT_IMPLEMENTED, // Addy 5 5.01 (Engine: DEV7 version unknown)
 		AD_ENTRY1s("adi5.stk", "ec2d6a05d13bec1b4dcfa18d88e317c6", 627942),
 		DE_DEU,
 		kPlatformWindows,
@@ -78,13 +77,13 @@
 		GUIO0()
 	},
 	kFeatures800x600,
-	0,0,0
+	"adi5.stk", "adi5.obc", 0
 },
 {
 	{ // Supplied by Indy4-Fan
 
 		"adi5",
-		_s("Missing game code"), // Addy 5 5.03 (Engine: DEV7 version 1.1.0.0)
+		MetaEngineDetection::GAME_NOT_IMPLEMENTED, // Addy 5 5.03 (Engine: DEV7 version 1.10a)
 		AD_ENTRY1s("adi5.stk", "b45a85ac21fccbb890edcbba36d11f42", 885616),
 		DE_DEU,
 		kPlatformWindows,
@@ -92,13 +91,13 @@
 		GUIO0()
 	},
 	kFeatures800x600,
-	0,0,0
+	"adi5.stk", "adi5.obc", 0
 },
 {
 	{ // Supplied by BJNFNE
 
 		"adi5",
-		_s("Missing game code"), // Addy 5 5.04 (Engine: DEV7 version 1.1.0.0)
+		MetaEngineDetection::GAME_NOT_IMPLEMENTED, // Addy 5 5.04 (Engine: DEV7 version 1.10a)
 		AD_ENTRY1s("adi5.stk", "7af169c901981f1fbf4535c194aa4cc0", 892359),
 		DE_DEU,
 		kPlatformWindows,
@@ -106,13 +105,16 @@
 		GUIO0()
 	},
 	kFeatures800x600,
-	0,0,0
+	"adi5.stk", "adi5.obc", 0
 },
+
+// -- Demos --
+
 {
 	{ // Supplied by BJNFNE
 
 		"adi5",
-		_s("Missing game code"), // Addy 5 Mathe Demo (Engine: DEV7 version unknown)
+		MetaEngineDetection::GAME_NOT_IMPLEMENTED, // Addy 5 Mathe Demo (Engine: DEV7 version unknown)
 		AD_ENTRY1s("adi5.stk", "72fb3c7807845e414d107aa4612f95df", 141858),
 		DE_DEU,
 		kPlatformWindows,
@@ -120,7 +122,7 @@
 		GUIO0()
 	},
 	kFeatures800x600,
-	0,0,0
+	"adi5.stk", "adi5.obc", 0
 },
 
 #endif // GOB_DETECTION_TABLES_ADI5_H

@@ -34,7 +34,7 @@
 namespace OPL {
 namespace RetroWaveOPL3 {
 
-class OPL : public ::OPL::RealOPL {
+class OPL : public ::OPL::OPL, public Audio::RealChip {
 private:
 	enum RWConnType {
 		RWCONNTYPE_POSIX_SERIAL,
@@ -60,7 +60,6 @@ public:
 	void reset() override;
 
 	void write(int portAddress, int value) override;
-	byte read(int portAddress) override;
 
 	void writeReg(int reg, int value) override;
 

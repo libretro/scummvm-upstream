@@ -20,7 +20,9 @@
  */
 
 #include "common/translation.h"
+#include "backends/keymapper/action.h"
 #include "backends/keymapper/keymap.h"
+#include "backends/keymapper/standard-actions.h"
 #include "graphics/thumbnail.h"
 #include "graphics/scaler.h"
 
@@ -122,6 +124,17 @@ static const ADExtraGuiOptionsMap optionsList[] = {
 			0
 		}
 	},
+	{
+		GAMEOPTION_TRAVEL_ROCK,
+		{
+			_s("Enable rock travel"),
+			_s("Enable traveling using a rock shoot at start"),
+			"rock_travel",
+			false,
+			0,
+			0
+		}
+	},
 	AD_EXTRA_GUI_OPTIONS_TERMINATOR
 };
 
@@ -156,11 +169,20 @@ Common::Error FreescapeMetaEngine::createInstance(OSystem *syst, Engine **engine
 }
 
 Common::KeymapArray FreescapeMetaEngine::initKeymaps(const char *target) const {
-	Freescape::FreescapeEngine *engine = (Freescape::FreescapeEngine *)g_engine;
+	using namespace Freescape;
+
+	FreescapeEngine *engine = (Freescape::FreescapeEngine *)g_engine;
 	Common::Keymap *engineKeyMap = new Common::Keymap(Common::Keymap::kKeymapTypeGame, "freescape", "Freescape game");
+	Common::Keymap *infoScreenKeyMap = new Common::Keymap(Common::Keymap::kKeymapTypeGame, "infoscreen-keymap", "Information screen keymapping");
+
 	if (engine)
-		engine->initKeymaps(engineKeyMap, target);
-	return Common::Keymap::arrayOf(engineKeyMap);
+		engine->initKeymaps(engineKeyMap, infoScreenKeyMap, target);
+
+	Common::KeymapArray keymaps(2);
+	keymaps[0] = engineKeyMap;
+	keymaps[1] = infoScreenKeyMap;
+
+	return keymaps;
 }
 
 void FreescapeMetaEngine::getSavegameThumbnail(Graphics::Surface &thumb) {

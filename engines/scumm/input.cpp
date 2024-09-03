@@ -235,10 +235,10 @@ void ScummEngine::parseEvent(Common::Event event) {
 			_mouse.x >>= 1;
 			if (_game.version < 3) {
 				// MM/ZAK v1/v2
-				if (_mouse.y >= _virtscr[kMainVirtScreen].topline)
-					_mouse.y = _mouse.y / 2 + _virtscr[kMainVirtScreen].topline / 2;
-				if (_mouse.y > _virtscr[kVerbVirtScreen].topline)
-					_mouse.y += (_mouse.y - _virtscr[kVerbVirtScreen].topline);
+				if (_mouse.y >= (_virtscr[kVerbVirtScreen].topline - _virtscr[kMainVirtScreen].topline) * 2 + _virtscr[kMainVirtScreen].topline)
+					_mouse.y -= (_virtscr[kVerbVirtScreen].topline - _virtscr[kMainVirtScreen].topline);
+				else if (_mouse.y >= _virtscr[kMainVirtScreen].topline)
+					_mouse.y = (_mouse.y - _virtscr[kMainVirtScreen].topline) / 2 + _virtscr[kMainVirtScreen].topline;
 			} else {
 				// MI1
 				_mouse.y = _mouse.y * 4 / 7;
@@ -604,7 +604,7 @@ void ScummEngine::waitForBannerInput(int32 waitTime, Common::KeyState &ks, bool 
 
 	if (waitTime && waitTime != -1) {
 		uint32 millis = _system->getMillis();
-		while (((_system->getMillis() - millis) * (_timerFrequency / 4) / 1000) < waitTime) {
+		while (((_system->getMillis() - millis) * (getTimerFrequency() / 4) / 1000) < waitTime) {
 			waitForTimer(1); // Allow the engine to update the screen and fetch new inputs...
 
 			if (_game.version < 7 && (_guiCursorAnimCounter++ & 16)) {

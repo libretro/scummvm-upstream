@@ -97,7 +97,7 @@ Common::String SceneConditions::dump(const Common::String &indent) const {
 
 Common::String HotArea::dump(const Common::String &indent) const {
 	Common::String str = Common::String::format("%sHotArea<%s num %d cursor %d unk1 %d unk2 %d",
-			indent.c_str(), _rect.dump("").c_str(), _num, _cursorNum, _unk1, _unk2);
+			indent.c_str(), _rect.dump("").c_str(), _num, _cursorNum, _otherCursorNum, _objInteractionListFlag);
 	str += _dumpStructList(indent, "enableConditions", enableConditions);
 	str += _dumpStructList(indent, "onRClickOps", onRClickOps);
 	str += _dumpStructList(indent, "onLDownOps", onLDownOps);
@@ -137,19 +137,48 @@ static Common::String _sceneOpCodeName(SceneOpCode code) {
 	case kSceneOpFreeDDSData: 	return "sceneOpFreeDDSData";
 	case kSceneOpFreeTalkData: 	return "sceneOpFreeTalkData";
 
-	// Dragon-specific
-	case kSceneOpPasscode:		return "passcode";
-	case kSceneOpMeanwhile:   	return "meanwhile";
-	case kSceneOpOpenGameOverMenu: return "openGameOverMenu";
-	case kSceneOpTiredDialog:	return "openTiredDialog";
-	case kSceneOpArcadeTick: 	return "sceneOpArcadeTick";
-	case kSceneOpDrawDragonCountdown1: 	return "drawDragonCountdown1";
-	case kSceneOpDrawDragonCountdown2:	return "drawDragonCountdown2";
-	case kSceneOpOpenPlaySkipIntroMenu: return "openPlaySkipIntroMovie";
-	case kSceneOpOpenBetterSaveGameMenu: return "openBetterSaveGameMenu";
 	default:
-		return Common::String::format("sceneOp%d", (int)code);
+		break;
 	}
+
+	if (DgdsEngine::getInstance()->getGameId() == GID_DRAGON) {
+		switch (code) {
+		case kSceneOpPasscode:		return "passcode";
+		case kSceneOpMeanwhile:   	return "meanwhile";
+		case kSceneOpOpenGameOverMenu: return "openGameOverMenu";
+		case kSceneOpTiredDialog:	return "openTiredDialog";
+		case kSceneOpArcadeTick: 	return "sceneOpArcadeTick";
+		case kSceneOpDrawDragonCountdown1: 	return "drawDragonCountdown1";
+		case kSceneOpDrawDragonCountdown2:	return "drawDragonCountdown2";
+		case kSceneOpOpenPlaySkipIntroMenu: return "openPlaySkipIntroMovie";
+		case kSceneOpOpenBetterSaveGameMenu: return "openBetterSaveGameMenu";
+		default:
+			break;
+		}
+	} else if (DgdsEngine::getInstance()->getGameId() == GID_HOC) {
+		switch (code) {
+		case kSceneOpOpenChinaTankMenu:		return "openTankMenu";
+		case kSceneOpShellGameEnd:			return "shellGameEnd";
+		case kSceneOpShellGameTick:			return "shellGameTick";
+		case kSceneOpOpenChinaTrainMenu:	return "trainMenu";
+		case kSceneOpOpenChinaOpenGameOverMenu: return "gameOverMenu";
+		case kSceneOpOpenChinaOpenSkipCreditsMenu: return "skipCreditsMenu";
+		case kSceneOpOpenChinaStartIntro:	return "startIntro";
+		case kSceneOpChina117:				return "hocSceneOp117";
+		case kSceneOpChina118:  			return "hocSceneOp118";
+		default:
+			break;
+		}
+	} else if (DgdsEngine::getInstance()->getGameId() == GID_WILLY) {
+		switch (code) {
+		case kSceneOpOpenBeamishGameOverMenu: return "openGameOverMenu";
+		case kSceneOpOpenBeamishOpenSkipCreditsMenu: return "skipCreditsMenu";
+		default:
+			break;
+		}
+	}
+
+	return Common::String::format("sceneOp%d", (int)code);
 }
 
 Common::String SceneOp::dump(const Common::String &indent) const {
@@ -181,7 +210,7 @@ Common::String GameItem::dump(const Common::String &indent) const {
 			indent.c_str(), super.c_str(), indent.c_str(), _altCursor,
 			_iconNum, _inSceneNum, _flags, _quality);
 	str += _dumpStructList(indent, "onDragFinishedOps", onDragFinishedOps);
-	str += _dumpStructList(indent, "opList5", opList5);
+	str += _dumpStructList(indent, "onBothButtonsOps", onBothButtonsOps);
 	str += "\n";
 	str += indent + ">";
 	return str;
@@ -264,17 +293,17 @@ bool Scene::readHotArea(Common::SeekableReadStream *s, HotArea &dst) const {
 	dst._num = s->readUint16LE();
 	dst._cursorNum = s->readUint16LE();
 	if (isVersionOver(" 1.217"))
-		dst._unk1 = s->readUint16LE();
+		dst._otherCursorNum = s->readUint16LE();
 	else
-		dst._unk1 = 0;
+		dst._otherCursorNum = 0;
 
 	if (isVersionOver(" 1.218")) {
-		dst._unk2 = s->readUint16LE();
-		if (dst._unk2) {
+		dst._objInteractionListFlag = s->readUint16LE();
+		if (dst._objInteractionListFlag) {
 			dst._rect = DgdsRect();
 		}
 	} else {
-		dst._unk2 = 0;
+		dst._objInteractionListFlag = 0;
 	}
 	readConditionList(s, dst.enableConditions);
 	readOpList(s, dst.onRClickOps);
@@ -313,7 +342,7 @@ bool Scene::readGameItemList(Common::SeekableReadStream *s, Common::Array<GameIt
 		if (!isVersionUnder(" 1.204")) {
 			dst._altCursor = s->readUint16LE();
 			readOpList(s, dst.onDragFinishedOps);
-			readOpList(s, dst.opList5);
+			readOpList(s, dst.onBothButtonsOps);
 		}
 	}
 	return !s->err();
@@ -502,7 +531,7 @@ void Scene::setItemAttrOp(const Common::Array<uint16> &args) {
 	if (args.size() < 3)
 		error("Expect 3 args for item attr opcode.");
 
-	DgdsEngine *engine = static_cast<DgdsEngine *>(g_engine);
+	DgdsEngine *engine = DgdsEngine::getInstance();
 	for (auto &item : engine->getGDSScene()->getGameItems()) {
 		if (item._num != args[0])
 			continue;
@@ -520,7 +549,7 @@ void Scene::setItemAttrOp(const Common::Array<uint16> &args) {
 }
 
 void Scene::setDragItemOp(const Common::Array<uint16> &args) {
-	DgdsEngine *engine = static_cast<DgdsEngine *>(g_engine);
+	DgdsEngine *engine = DgdsEngine::getInstance();
 
 	for (auto &item : engine->getGDSScene()->getGameItems()) {
 		if (item._num != args[0])
@@ -539,7 +568,7 @@ void Scene::setDragItemOp(const Common::Array<uint16> &args) {
 }
 
 void Scene::segmentStateOps(const Common::Array<uint16> &args) {
-	ADSInterpreter *interp = static_cast<DgdsEngine *>(g_engine)->adsInterpreter();
+	ADSInterpreter *interp = DgdsEngine::getInstance()->adsInterpreter();
 
 	for (uint i = 0; i < args.size(); i += 2) {
 		uint16 subop = args[i];
@@ -582,7 +611,7 @@ void Scene::segmentStateOps(const Common::Array<uint16> &args) {
 }
 
 static void _drawDragonCountdown(FontManager::FontType fontType, int16 x, int16 y) {
-	DgdsEngine *engine = static_cast<DgdsEngine *>(g_engine);
+	DgdsEngine *engine = DgdsEngine::getInstance();
 	int16 countdownEnd = engine->getGameGlobals()->getGlobal(0x22);
 	int16 currentMins = engine->getClock().getMins();
 	const DgdsFont *fnt = engine->getFontMan()->getFont(fontType);
@@ -592,7 +621,7 @@ static void _drawDragonCountdown(FontManager::FontType fontType, int16 x, int16 
 
 
 bool Scene::runSceneOp(const SceneOp &op) {
-	DgdsEngine *engine = static_cast<DgdsEngine *>(g_engine);
+	DgdsEngine *engine = DgdsEngine::getInstance();
 	switch (op._opCode) {
 	case kSceneOpChangeScene:
 		if (engine->changeScene(op._args[0]))
@@ -703,7 +732,7 @@ bool Scene::runSceneOp(const SceneOp &op) {
 }
 
 bool Scene::runDragonOp(const SceneOp &op) {
-	DgdsEngine *engine = static_cast<DgdsEngine *>(g_engine);
+	DgdsEngine *engine = DgdsEngine::getInstance();
 	switch (op._opCode) {
 	case kSceneOpPasscode:
 		engine->getScene()->sceneOpUpdatePasscodeGlobal();
@@ -711,7 +740,7 @@ bool Scene::runDragonOp(const SceneOp &op) {
 	case kSceneOpMeanwhile:
 		// TODO: Should we draw "meanwhile" like the original? it just gets overwritten with the image anyway.
 		// Probably need to do something here to avoid flashing..
-		//engine->_compositionBuffer.fillRect(Common::Rect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT), 0);
+		//engine->_compositionBuffer.fillRect(Common::Rect(SCREEN_WIDTH, SCREEN_HEIGHT), 0);
 		break;
 	case kSceneOpOpenGameOverMenu:
 		engine->setMenuToTrigger(kMenuGameOver);
@@ -746,8 +775,9 @@ bool Scene::runDragonOp(const SceneOp &op) {
 	return true;
 }
 
+
 bool Scene::runChinaOp(const SceneOp &op) {
-	DgdsEngine *engine = static_cast<DgdsEngine *>(g_engine);
+	DgdsEngine *engine = DgdsEngine::getInstance();
 	switch (op._opCode) {
 	case kSceneOpOpenChinaOpenGameOverMenu:
 		engine->setMenuToTrigger(kMenuGameOver);
@@ -759,14 +789,11 @@ bool Scene::runChinaOp(const SceneOp &op) {
 	case kSceneOpOpenChinaTrainMenu:
 		engine->setMenuToTrigger(kMenuSkipArcade);
 		break;
-	case kSceneOpShellGame:
-		// TODO: Shell game in scene 81 (accessible from scene 16)
-		// We set a high number of sheckels for now
-		engine->getGDSScene()->setGlobal(0x2C, 400);
-		// We clear the gambler's talk data, as it's not cleared
-		// by the game scripts
-		engine->getScene()->freeTalkData(8);
-		warning("TODO: Implement shell game");
+	case kSceneOpShellGameTick:
+		engine->getShellGame()->shellGameTick();
+		break;
+	case kSceneOpShellGameEnd:
+		engine->getShellGame()->shellGameEnd();
 		break;
 	case kSceneOpOpenChinaStartIntro:
 		// The game first jumps to scene 100, and then to 98
@@ -780,7 +807,7 @@ bool Scene::runChinaOp(const SceneOp &op) {
 }
 
 bool Scene::runBeamishOp(const SceneOp &op) {
-	DgdsEngine *engine = static_cast<DgdsEngine *>(g_engine);
+	DgdsEngine *engine = DgdsEngine::getInstance();
 	if (op._opCode & 0x8000) {
 		uint16 opcode = op._opCode & 0x7fff;
 		for (const ConditionalSceneOp &cop : _conditionalOps) {
@@ -792,8 +819,11 @@ bool Scene::runBeamishOp(const SceneOp &op) {
 		return true;
 	}
 	switch (op._opCode) {
+	case kSceneOpOpenBeamishGameOverMenu:
+		engine->setMenuToTrigger(kMenuGameOver);
+		break;
 	case kSceneOpOpenBeamishOpenSkipCreditsMenu:
-		engine->setMenuToTrigger(kMenuBeamishSkipCredits);
+		engine->setMenuToTrigger(kMenuSkipPlayIntro);
 		break;
 	default:
 		warning("TODO: Implement beamish-specific scene opcode %d", op._opCode);
@@ -803,7 +833,7 @@ bool Scene::runBeamishOp(const SceneOp &op) {
 }
 
 bool Scene::runOps(const Common::Array<SceneOp> &ops, int16 addMinuites /* = 0 */) {
-	DgdsEngine *engine = static_cast<DgdsEngine *>(g_engine);
+	DgdsEngine *engine = DgdsEngine::getInstance();
 	for (const SceneOp &op : ops) {
 		if (!checkConditions(op._conditionList))
 			continue;
@@ -838,7 +868,7 @@ bool Scene::runOps(const Common::Array<SceneOp> &ops, int16 addMinuites /* = 0 *
 }
 
 bool Scene::checkConditions(const Common::Array<SceneConditions> &conds) const {
-	DgdsEngine *engine = static_cast<DgdsEngine *>(g_engine);
+	DgdsEngine *engine = DgdsEngine::getInstance();
 
 	uint cnum = 0;
 	while (cnum < conds.size()) {
@@ -900,10 +930,10 @@ bool Scene::checkConditions(const Common::Array<SceneConditions> &conds) const {
 }
 
 
-bool SDSScene::_dlgWithFlagLo8IsClosing = false;;
+bool SDSScene::_dlgWithFlagLo8IsClosing = false;
 DialogFlags SDSScene::_sceneDialogFlags = kDlgFlagNone;
 
-SDSScene::SDSScene() : _num(-1), _dragItem(nullptr), _shouldClearDlg(false), _ignoreMouseUp(false), _field6_0x14(0) {
+SDSScene::SDSScene() : _num(-1), _dragItem(nullptr), _shouldClearDlg(false), _ignoreMouseUp(false), _field6_0x14(0), _rbuttonDown(false) {
 }
 
 bool SDSScene::load(const Common::String &filename, ResourceManager *resourceManager, Decompressor *decompressor) {
@@ -982,6 +1012,7 @@ void SDSScene::unload() {
 	_objInteractions2.clear();
 	_dialogs.clear();
 	_triggers.clear();
+	_talkData.clear();
 	_sceneDialogFlags = kDlgFlagNone;
 }
 
@@ -1061,7 +1092,7 @@ Dialog *SDSScene::loadDialogData(uint16 num) {
 			return &dlg;
 
 	const Common::String filename = Common::String::format("D%d.DDS", num);
-	DgdsEngine *engine = static_cast<DgdsEngine *>(g_engine);
+	DgdsEngine *engine = DgdsEngine::getInstance();
 	ResourceManager *resourceManager = engine->getResourceManager();
 	Common::SeekableReadStream *dlgFile = resourceManager->getResource(filename);
 	if (!dlgFile)
@@ -1158,7 +1189,7 @@ bool SDSScene::loadTalkData(uint16 num) {
 	}
 
 	const Common::String filename = Common::String::format("T%d.TDS", num);
-	DgdsEngine *engine = static_cast<DgdsEngine *>(g_engine);
+	DgdsEngine *engine = DgdsEngine::getInstance();
 	ResourceManager *resourceManager = engine->getResourceManager();
 	Common::SeekableReadStream *dlgFile = resourceManager->getResource(filename);
 	if (!dlgFile)
@@ -1369,8 +1400,8 @@ static uint16 passcodeVal3 = 0;
 static uint16 passcodeVal4 = 0;
 
 void SDSScene::sceneOpUpdatePasscodeGlobal() {
-	DgdsEngine *engine = static_cast<DgdsEngine *>(g_engine);
-	int16 globalval = engine->getGDSScene()->getGlobal(0x20);
+	GDSScene *gdsScene = DgdsEngine::getInstance()->getGDSScene();
+	int16 globalval = gdsScene->getGlobal(0x20);
 
 	if (globalval > 34)
 		return;
@@ -1430,7 +1461,7 @@ void SDSScene::sceneOpUpdatePasscodeGlobal() {
 		}
 	}
 
-	engine->getGDSScene()->setGlobal(0x20, globalval);
+	gdsScene->setGlobal(0x20, globalval);
 }
 
 void SDSScene::showDialog(uint16 fileNum, uint16 dlgNum) {
@@ -1624,18 +1655,24 @@ bool SDSScene::drawAndUpdateDialogs(Graphics::ManagedSurface *dst) {
 
 void SDSScene::globalOps(const Common::Array<uint16> &args) {
 	// The globals are held by the GDS scene
-	static_cast<DgdsEngine *>(g_engine)->getGDSScene()->globalOps(args);
+	DgdsEngine::getInstance()->getGDSScene()->globalOps(args);
 }
 
 void SDSScene::mouseMoved(const Common::Point &pt) {
 	Dialog *dlg = getVisibleDialog();
 	const HotArea *area = findAreaUnderMouse(pt);
+	DgdsEngine *engine = DgdsEngine::getInstance();
 
 	int16 cursorNum = (!dlg && area) ? area->_cursorNum : 0;
-	if (_dragItem)
+	if (_dragItem) {
 		cursorNum = _dragItem->_iconNum;
+	} else if (_rbuttonDown) {
+		GameItem *activeItem = engine->getGDSScene()->getActiveItem();
+		if (activeItem)
+			cursorNum = activeItem->_altCursor;
+	}
 
-	static_cast<DgdsEngine *>(g_engine)->setMouseCursor(cursorNum);
+	engine->setMouseCursor(cursorNum);
 }
 
 void SDSScene::mouseLDown(const Common::Point &pt) {
@@ -1653,7 +1690,7 @@ void SDSScene::mouseLDown(const Common::Point &pt) {
 	debug(9, "Mouse LDown on area %d (%d,%d,%d,%d) cursor %d", area->_num, area->_rect.x, area->_rect.y,
 			area->_rect.width, area->_rect.height, area->_cursorNum);
 
-	DgdsEngine *engine = static_cast<DgdsEngine *>(g_engine);
+	DgdsEngine *engine = DgdsEngine::getInstance();
 	int16 addmins = engine->getGameGlobals()->getGameMinsToAddOnStartDrag();
 	runOps(area->onLDownOps, addmins);
 	GameItem *item = dynamic_cast<GameItem *>(area);
@@ -1662,6 +1699,20 @@ void SDSScene::mouseLDown(const Common::Point &pt) {
 		if (item->_iconNum)
 			engine->setMouseCursor(item->_iconNum);
 	}
+}
+
+static bool _isInRect(const Common::Point &pt, const DgdsRect rect) {
+	return rect.x <= pt.x && (rect.x + rect.width) > pt.x
+			&& rect.y <= pt.y && (rect.y + rect.height) > pt.y;
+}
+
+static const ObjectInteraction * _findInteraction(const Common::Array<ObjectInteraction> &interList, int16 droppedNum, uint16 targetNum) {
+	for (const auto &i : interList) {
+		if (i.matches(droppedNum, targetNum)) {
+			return &i;
+		}
+	}
+	return nullptr;
 }
 
 void SDSScene::mouseLUp(const Common::Point &pt) {
@@ -1683,15 +1734,17 @@ void SDSScene::mouseLUp(const Common::Point &pt) {
 	debug(9, "Mouse LUp on area %d (%d,%d,%d,%d) cursor %d", area->_num, area->_rect.x, area->_rect.y,
 			area->_rect.width, area->_rect.height, area->_cursorNum);
 
-	DgdsEngine *engine = static_cast<DgdsEngine *>(g_engine);
-	engine->setMouseCursor(area->_cursorNum);
+	DgdsEngine *engine = DgdsEngine::getInstance();
+	if (!_rbuttonDown)
+		engine->setMouseCursor(area->_cursorNum);
+
+	GDSScene *gds = engine->getGDSScene();
 
 	if (area && area->_num == 0) {
 		debug("Mouseup on inventory.");
 		engine->getInventory()->open();
 	} else if (area && area->_num == 0xffff) {
 		debug("Mouseup on swap characters.");
-		GDSScene *gds = engine->getGDSScene();
 		bool haveInvBtn = _hotAreaList.size() && _hotAreaList.front()._num == 0;
 		if (haveInvBtn)
 			removeInvButtonFromHotAreaList();
@@ -1701,24 +1754,34 @@ void SDSScene::mouseLUp(const Common::Point &pt) {
 		if (haveInvBtn)
 			addInvButtonToHotAreaList();
 	} else {
-		debug(" --> exec %d click ops for area %d", area->onLClickOps.size(), area->_num);
-		if ((area->_num == 58 || area->_num == 62) && engine->getScene()->getNum() == 53 && engine->getGameId() == GID_HOC) {
-			// FIXME: Handle gun (crosshair icon, action on snakes)
-			warning("HACK for the snake scene");
-			GDSScene *gds = engine->getGDSScene();
-			gds->setGlobal(126, 1);		// kill left snake
-			gds->setGlobal(132, 1);		// kill right snake
-			gds->setGlobal(110, 86);	// save Kate and open balcony door
-			return;
+		if (_rbuttonDown) {
+			debug(" --> exec %d both-button click ops for area %d", area->onLClickOps.size(), area->_num);
+			// A both-button-click event, find the interaction list.
+			const GameItem *activeItem = engine->getGDSScene()->getActiveItem();
+			if (activeItem) {
+				if (!runOps(activeItem->onBothButtonsOps))
+					return;
+				if (area) {
+					const GameItem *destItem = dynamic_cast<const GameItem *>(area);
+					const ObjectInteraction *i;
+					if (destItem) {
+						i =_findInteraction(gds->getObjInteractions2(), activeItem->_num, area->_num);
+					} else {
+						i = _findInteraction(_objInteractions2, activeItem->_num, area->_num);
+					}
+					if (i) {
+						debug(" --> exec %d both-click ops for item combo %d", i->opList.size(), activeItem->_num);
+						if (!runOps(i->opList, engine->getGameGlobals()->getGameMinsToAddOnObjInteraction()))
+							return;
+					}
+				}
+			}
+		} else {
+			debug(" --> exec %d click ops for area %d", area->onLClickOps.size(), area->_num);
+			int16 addmins = engine->getGameGlobals()->getGameMinsToAddOnLClick();
+			runOps(area->onLClickOps, addmins);
 		}
-		int16 addmins = engine->getGameGlobals()->getGameMinsToAddOnLClick();
-		runOps(area->onLClickOps, addmins);
 	}
-}
-
-static bool _isInRect(const Common::Point &pt, const DgdsRect rect) {
-	return rect.x <= pt.x && (rect.x + rect.width) > pt.x
-			&& rect.y <= pt.y && (rect.y + rect.height) > pt.y;
 }
 
 void SDSScene::onDragFinish(const Common::Point &pt) {
@@ -1730,7 +1793,7 @@ void SDSScene::onDragFinish(const Common::Point &pt) {
 
 	GameItem *dragItem = _dragItem;
 
-	DgdsEngine *engine = static_cast<DgdsEngine *>(g_engine);
+	DgdsEngine *engine = DgdsEngine::getInstance();
 	const Globals *globals = engine->getGameGlobals();
 	GDSScene *gdsScene = engine->getGDSScene();
 
@@ -1741,17 +1804,16 @@ void SDSScene::onDragFinish(const Common::Point &pt) {
 	for (const auto &item : gdsScene->getGameItems()) {
 		if (item._inSceneNum == _num && _isInRect(pt, item._rect)) {
 			debug("Dragged item %d onto item %d @ (%d, %d)", dragItem->_num, item._num, pt.x, pt.y);
-			for (const auto &i : gdsScene->getObjInteractions2()) {
-				if (i.matches(dragItem->_num, item._num)) {
-					debug(" --> exec %d drag ops for item %d", i.opList.size(), item._num);
-					if (!runOps(i.opList, globals->getGameMinsToAddOnObjInteraction()))
-						return;
-					break;
-				}
+			const ObjectInteraction *i = _findInteraction(gdsScene->getObjInteractions1(), dragItem->_num, item._num);
+			if (i) {
+				debug(" --> exec %d drag ops for item %d", i->opList.size(), item._num);
+				if (!runOps(i->opList, globals->getGameMinsToAddOnObjInteraction()))
+					return;
 			}
 		}
 	}
 
+	SDSScene *scene = engine->getScene();
 	for (const auto &area : _hotAreaList) {
 		if (!_isInRect(pt, area._rect))
 			continue;
@@ -1759,35 +1821,53 @@ void SDSScene::onDragFinish(const Common::Point &pt) {
 		if (area._num == 0) {
 			debug("Item %d dropped on inventory.", dragItem->_num);
 			dragItem->_inSceneNum = 2;
-			if (engine->getGameId() == GID_HOC) {
-				// FIXME: This is copied in inventory too
-				static const byte HOC_CHARACTER_QUALS[] = {0, 9, 7, 8};
-				dragItem->_quality = HOC_CHARACTER_QUALS[gdsScene->getGlobal(0x33)];
+			if (engine->getGameId() == GID_HOC)
+				dragItem->_quality = Inventory::HOC_CHARACTER_QUALS[gdsScene->getGlobal(0x33)];
+
+			const ObjectInteraction *i = _findInteraction(gdsScene->getObjInteractions1(), dragItem->_num, 0xffff);
+			if (i) {
+				debug(" --> exec %d drag ops for area %d", i->opList.size(), 0xffff);
+				if (!runOps(i->opList, globals->getGameMinsToAddOnObjInteraction()))
+					return;
+			}
+		} else if (area._num == 0xffff) {
+			debug("Item %d dropped on other character button.", dragItem->_num);
+			dragItem->_inSceneNum = 2;
+			if (engine->getGameId() == GID_HOC)
+				dragItem->_quality = Inventory::HOC_CHARACTER_QUALS[gdsScene->getGlobal(0x34)];
+
+			const ObjectInteraction *i = _findInteraction(gdsScene->getObjInteractions1(), dragItem->_num, 0xffff);
+			if (i) {
+				debug(" --> exec %d drag ops for area %d", i->opList.size(), 0xffff);
+				if (!runOps(i->opList, globals->getGameMinsToAddOnObjInteraction()))
+					return;
 			}
 		} else {
 			debug("Dragged item %d onto area %d @ (%d, %d)", dragItem->_num, area._num, pt.x, pt.y);
-			for (const auto &i : engine->getScene()->getObjInteractions1()) {
-				if (i.matches(dragItem->_num, area._num)) {
-					debug(" --> exec %d drag ops for area %d", i.opList.size(), area._num);
-					if (engine->getGameId() == GID_HOC && dragItem->_num == 98 && area._num == 25 && gdsScene->getGlobal(355) == 0) {
-						// FIXME: Why is that not executed by the runOps() call below?
-						warning("HACK for giving money to the ticket agent");
-						gdsScene->setGlobal(355, 1);
-					}
-					if (!runOps(i.opList, globals->getGameMinsToAddOnObjInteraction()))
-						return;
-					break;
+			const ObjectInteraction *i = _findInteraction(scene->getObjInteractions1(), dragItem->_num, area._num);
+			if (i) {
+				debug(" --> exec %d drag ops for area %d", i->opList.size(), area._num);
+				if (engine->getGameId() == GID_HOC && dragItem->_num == 98 && area._num == 25 && gdsScene->getGlobal(355) == 0) {
+					// FIXME: Why is that not executed by the runOps() call below?
+					warning("HACK for giving money to the ticket agent");
+					gdsScene->setGlobal(355, 1);
 				}
+				if (!runOps(i->opList, globals->getGameMinsToAddOnObjInteraction()))
+					return;
 			}
 		}
 	}
 
-	engine->setMouseCursor(0);
+	engine->setMouseCursor(gdsScene->getDefaultMouseCursor());
 	_dragItem = nullptr;
 }
 
+void SDSScene::mouseRDown(const Common::Point &pt) {
+	_rbuttonDown = true;
+}
 
 void SDSScene::mouseRUp(const Common::Point &pt) {
+	_rbuttonDown = false;
 	Dialog *dlg = getVisibleDialog();
 	if (dlg) {
 		// HACK: Check for dialog action selection! for now, just close
@@ -1796,28 +1876,30 @@ void SDSScene::mouseRUp(const Common::Point &pt) {
 		return;
 	}
 
+	// Update the cursor..
+	mouseMoved(pt);
+
 	const HotArea *area = findAreaUnderMouse(pt);
 	if (!area)
 		return;
 
-	DgdsEngine *engine = static_cast<DgdsEngine *>(g_engine);
+	DgdsEngine *engine = DgdsEngine::getInstance();
 
 	if (area->_num == 0) {
-		debug("Right mouseup on inventory.");
+		debug("Mouse RUp on inventory.");
 		engine->getInventory()->setShowZoomBox(true);
 		engine->getInventory()->open();
-		return;
 	} else if (area->_num == 0xffff) {
-		debug("Right mouseup on character swap.");
+		debug("Mouse RUp on character swap.");
 		int16 swapDlgFile = engine->getGDSScene()->getGlobal(0x36);
 		int16 swapDlgNum = engine->getGDSScene()->getGlobal(0x35);
 		if (swapDlgFile && swapDlgNum)
 			showDialog(swapDlgFile, swapDlgNum);
-		return;
+	} else {
+		int16 addmins = engine->getGameGlobals()->getGameMinsToAddOnLClick();
+		debug("Mouse RUp on area %d, run %d ops (+%d mins)", area->_num, area->onRClickOps.size(), addmins);
+		runOps(area->onRClickOps, addmins);
 	}
-
-	int16 addmins = engine->getGameGlobals()->getGameMinsToAddOnLClick();
-	runOps(area->onRClickOps, addmins);
 }
 
 Dialog *SDSScene::getVisibleDialog() {
@@ -1843,9 +1925,7 @@ bool SDSScene::hasVisibleOrOpeningDialog() const {
 }
 
 HotArea *SDSScene::findAreaUnderMouse(const Common::Point &pt) {
-	DgdsEngine *engine = static_cast<DgdsEngine *>(g_engine);
-
-	for (auto &item : engine->getGDSScene()->getGameItems()) {
+	for (auto &item : DgdsEngine::getInstance()->getGDSScene()->getGameItems()) {
 		if (item._inSceneNum == _num && checkConditions(item.enableConditions)
 			&& _isInRect(pt, item._rect)) {
 			return &item;
@@ -1861,7 +1941,7 @@ HotArea *SDSScene::findAreaUnderMouse(const Common::Point &pt) {
 }
 
 void SDSScene::addInvButtonToHotAreaList() {
-	DgdsEngine *engine = static_cast<DgdsEngine *>(g_engine);
+	DgdsEngine *engine = DgdsEngine::getInstance();
 	const Common::Array<MouseCursor> &cursors = engine->getGDSScene()->getCursorList();
 	const Common::SharedPtr<Image> &icons = engine->getIcons();
 
@@ -1871,7 +1951,7 @@ void SDSScene::addInvButtonToHotAreaList() {
 	if (_hotAreaList.size() && _hotAreaList.front()._num == 0)
 		return;
 
-	int16 invButtonIcon = 2;
+	int16 invButtonIcon = engine->getGDSScene()->getInvIconNum();
 	if (engine->getGameId() == GID_HOC) {
 		static const byte HOC_INV_ICONS[] = { 0, 2, 18, 19 };
 		invButtonIcon = HOC_INV_ICONS[engine->getGDSScene()->getGlobal(0x33)];
@@ -1879,20 +1959,18 @@ void SDSScene::addInvButtonToHotAreaList() {
 
 	HotArea area;
 	area._num = 0;
-	area._cursorNum = 0;
+	area._cursorNum = engine->getGDSScene()->getInvIconMouseCursor();
 	area._rect.width = icons->width(invButtonIcon);
 	area._rect.height = icons->height(invButtonIcon);
 	area._rect.x = SCREEN_WIDTH - area._rect.width;
 	area._rect.y = SCREEN_HEIGHT - area._rect.height;
-	area._unk1 = 0;
-	area._unk2 = 0;
+	area._otherCursorNum = 0;
+	area._objInteractionListFlag = 0;
 
 	// Add swap character button for HoC
 	if (engine->getGameId() == GID_HOC && engine->getGDSScene()->getGlobal(0x34) != 0) {
-		static const byte HOC_CHAR_SWAP_ICONS[] = { 0, 20, 21, 22 };
 		int16 charNum = engine->getGDSScene()->getGlobal(0x34);
-		assert(charNum < ARRAYSIZE(HOC_CHAR_SWAP_ICONS));
-		int16 iconNum = HOC_CHAR_SWAP_ICONS[charNum];
+		int16 iconNum = DgdsEngine::HOC_CHAR_SWAP_ICONS[charNum];
 		HotArea area2;
 		area2._num = 0xffff;
 		area2._cursorNum = 0;
@@ -1900,8 +1978,8 @@ void SDSScene::addInvButtonToHotAreaList() {
 		area2._rect.height = icons->height(iconNum);
 		area2._rect.x = 5;
 		area2._rect.y = SCREEN_HEIGHT - area2._rect.height - 5;
-		area2._unk1 = 0;
-		area2._unk2 = 0;
+		area2._otherCursorNum = 0;
+		area2._objInteractionListFlag = 0;
 
 		_hotAreaList.push_front(area2);
 	}
@@ -1922,7 +2000,7 @@ Common::Error SDSScene::syncState(Common::Serializer &s) {
 	// at this point we are already loaded.
 	assert(_num);
 
-	// The dialogs and triggers are stateful, everthing else is stateless.
+	// The dialogs and triggers are stateful, everything else is stateless.
 	uint16 ndlgs = _dialogs.size();
 	s.syncAsUint16LE(ndlgs);
 	if (_dialogs.size() && ndlgs != _dialogs.size()) {
@@ -1973,7 +2051,7 @@ void SDSScene::activateChoice() {
 }
 
 
-GDSScene::GDSScene() : _field38(0), _field3a(0), _field3c(0), _field3e(0), _field40(0) {
+GDSScene::GDSScene() : _defaultMouseCursor(0), _field3a(0), _invIconNum(0), _invIconMouseCursor(0), _field40(0) {
 }
 
 bool GDSScene::load(const Common::String &filename, ResourceManager *resourceManager, Decompressor *decompressor) {
@@ -2061,7 +2139,7 @@ bool GDSScene::loadRestart(const Common::String &filename, ResourceManager *reso
 
 	/*uint32 unk = */ file->readUint32LE();
 
-	DgdsEngine *engine = static_cast<DgdsEngine *>(g_engine);
+	DgdsEngine *engine = DgdsEngine::getInstance();
 	Common::Array<Global *> &globs = engine->getGameGlobals()->getAllGlobals();
 
 	if (globs.size() > 50)
@@ -2083,7 +2161,7 @@ bool GDSScene::loadRestart(const Common::String &filename, ResourceManager *reso
 		triggers[i] = file->readUint16LE();
 	}
 
-	engine->_compositionBuffer.fillRect(Common::Rect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT), 0);
+	engine->_compositionBuffer.fillRect(Common::Rect(SCREEN_WIDTH, SCREEN_HEIGHT), 0);
 	// TODO: FIXME: What should this scene num be? For now hacked to work with Dragon.
 	engine->changeScene(3);
 	SDSScene *scene = engine->getScene();
@@ -2099,8 +2177,7 @@ bool GDSScene::loadRestart(const Common::String &filename, ResourceManager *reso
 }
 
 void GDSScene::initIconSizes() {
-	DgdsEngine *engine = static_cast<DgdsEngine *>(g_engine);
-	const Common::SharedPtr<Image> icons = engine->getIcons();
+	const Common::SharedPtr<Image> icons = DgdsEngine::getInstance()->getIcons();
 	uint16 nicons = icons ? icons->getFrames().size() : 0;
 	for (GameItem &item : _gameItems) {
 		if (item._iconNum < nicons) {
@@ -2143,21 +2220,21 @@ bool GDSScene::parse(Common::SeekableReadStream *stream) {
 	_iconFile = stream->readString();
 	readMouseHotspotList(stream, _cursorList);
 	readGameItemList(stream, _gameItems);
-	readObjInteractionList(stream, _objInteractions2);
+	readObjInteractionList(stream, _objInteractions1);
 	if (isVersionOver(" 1.205"))
-		readObjInteractionList(stream, _objInteractions1);
+		readObjInteractionList(stream, _objInteractions2);
 
 	if (isVersionOver(" 1.218")) {
-		_field38 = stream->readUint16LE();
+		_defaultMouseCursor = stream->readUint16LE();
 		_field3a = stream->readUint16LE();
-		_field3c = stream->readUint16LE();
-		_field3e = stream->readUint16LE();
+		_invIconNum = stream->readUint16LE();
+		_invIconMouseCursor = stream->readUint16LE();
 		_field40 = stream->readUint16LE();
 	} else {
-		_field38 = 0;
+		_defaultMouseCursor = 0;
 		_field3a = 1;
-		_field3c = 2;
-		_field3e = 0;
+		_invIconNum = 2;
+		_invIconMouseCursor = 0;
 		_field40 = 6;
 	}
 
@@ -2220,7 +2297,7 @@ void GDSScene::globalOps(const Common::Array<uint16> &args) {
 }
 
 int16 GDSScene::getGlobal(uint16 num) {
-	DgdsEngine *engine = static_cast<DgdsEngine *>(g_engine);
+	DgdsEngine *engine = DgdsEngine::getInstance();
 	int curSceneNum = engine->getScene()->getNum();
 	DgdsGameId gameId = engine->getGameId();
 
@@ -2242,7 +2319,7 @@ int16 GDSScene::getGlobal(uint16 num) {
 }
 
 int16 GDSScene::setGlobal(uint16 num, int16 val) {
-	DgdsEngine *engine = static_cast<DgdsEngine *>(g_engine);
+	DgdsEngine *engine = DgdsEngine::getInstance();
 	int curSceneNum = engine->getScene()->getNum();
 	for (auto &global : _perSceneGlobals) {
 		if (global.matches(num, curSceneNum)) {
@@ -2260,7 +2337,7 @@ int16 GDSScene::setGlobal(uint16 num, int16 val) {
 }
 
 void GDSScene::drawItems(Graphics::ManagedSurface &surf) {
-	DgdsEngine *engine = static_cast<DgdsEngine *>(g_engine);
+	DgdsEngine *engine = DgdsEngine::getInstance();
 	const Common::SharedPtr<Image> &icons = engine->getIcons();
 	int currentScene = engine->getScene()->getNum();
 	if (!icons || icons->loadedFrameCount() < 3)
@@ -2302,6 +2379,17 @@ int GDSScene::countItemsInScene2() const {
 			result++;
 	}
 	return result;
+}
+
+GameItem *GDSScene::getActiveItem() {
+	int16 itemNum = getGlobal(0x60);
+	if (!itemNum)
+		return nullptr;
+	for (auto &item : _gameItems) {
+		if (item._num == itemNum)
+			return &item;
+	}
+	return nullptr;
 }
 
 Common::Error GDSScene::syncState(Common::Serializer &s) {

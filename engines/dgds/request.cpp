@@ -37,7 +37,7 @@ namespace Dgds {
 
 // TODO: The following colors are from Rise of the Dragon.  Will need to check
 // if the same ones are hard-coded in the other games.
-static const byte ButtonColors[] = {
+static const byte DragonButtonColors[] = {
 	0x73, 0xF0, 0x7B, 0xDF, 0x5F, 0x5F, 0x7E, 0x27, 0x16, 0x73, 0x27, 0x16, 0xDF
 };
 
@@ -45,6 +45,9 @@ static const byte SliderColors[] = {
 	0x7B, 0x4D, 0xF4, 0x54, 0xDF, 0x74, 0x58
 };
 
+static const byte DragonHeaderTxtColor = 0;
+static const byte DragonHeaderTopColor = 0;
+static const byte DragonHeaderBottomColor = 15;
 static const byte DragonFallbackColors[] = {
 	0x7, 0x7, 0x8, 0x7, 0x0, 0xF, 0x7, 0xC,
 	0x4, 0x0, 0xF, 0xF, 0xC, 0x4, 0x7, 0xF,
@@ -52,9 +55,17 @@ static const byte DragonFallbackColors[] = {
 };
 
 static const byte ChinaBackgroundColor = 23;
+static const byte ChinaHeaderTxtColor = 25;
+static const byte ChinaHeaderTopColor = 16;
+static const byte ChinaHeaderBottomColor = 20;
+static const byte ChinaButtonColorsOn[] = {
+	0x10, 0x11, 0x10, 0x10, 0x10, 0x06, 0x14, 0x1A,
+};
+static const byte ChinaButtonColorsOff[] = {
+	0x10, 0x14, 0x06, 0x18, 0x10, 0x11, 0x14, 0x13,
+};
 
-// TODO: Work out correct fill color for willy beamish
-static const byte WillyBackgroundColor = 23;
+static const byte WillyBackgroundColor = 16;
 
 static const byte MenuBackgroundColors[] {
 	0x71, 0x71, 0x71, 0x71, 0x71, 0x7B, 0x71, 0x7B, 0x7B, 0x7B, 0x7B, 0x7B,
@@ -319,50 +330,116 @@ bool Gadget::containsPoint(const Common::Point &pt) {
 	return gadgetRect.contains(pt);
 }
 
-void ButtonGadget::draw(Graphics::ManagedSurface *dst) const {
-	// TODO: Bounds calculation here might depend on parent.
+void Gadget::setVisible(bool visible) {
+	if (visible)
+		_flags3 &= ~0x40;
+	else
+		_flags3 |= 0x40;
+}
 
-	int16 x = _x + _parentX;
-	int16 y = _y + _parentY;
+byte ButtonGadget::drawDragonBg(Graphics::ManagedSurface *dst, bool enabled) const {
+	Common::Point pt = topLeft();
+	int16 x = pt.x;
+	int16 y = pt.y;
 
 	int16 right = x + _width;
 	int16 x2 = right - 1;
 	int16 bottom = (y + _height) - 1;
 
-	byte fill = ButtonColors[0];
+	byte fill = DragonButtonColors[0];
 	dst->drawLine(x, y, x2, y, fill);
 	dst->drawLine(x + 2, y + 2, right - 3, y + 2, fill);
 	dst->drawLine(x + 1, bottom - 2, x + 1, bottom - 2, fill);
 	dst->drawLine(right - 2, bottom - 2, right - 2, bottom - 2, fill);
 	dst->drawLine(x + 1, bottom - 1, right - 2, bottom - 1, fill);
 
-	fill = ButtonColors[1];
+	fill = DragonButtonColors[1];
 	dst->drawLine(x, y + 1, x, bottom, fill);
 	dst->drawLine(x2, y + 1, x2, bottom, fill);
 	dst->drawLine(x + 2, y + 3, x + 2, bottom - 2, fill);
 	dst->drawLine(right - 3, y + 3, right - 3, bottom - 2, fill);
 	dst->drawLine(x + 3,bottom - 2, right - 4, bottom - 2, fill);
 
-	fill = ButtonColors[2];
+	fill = DragonButtonColors[2];
 	dst->drawLine(x + 1, y + 2, x + 1, bottom - 3, fill);
 	dst->drawLine(right - 2, y + 2, right - 2, bottom - 3, fill);
-	dst->drawLine(x + 1, bottom, right - 2, bottom, ButtonColors[3]);
-	dst->drawLine(x + 1, y + 1, right - 2, y + 1, ButtonColors[4]);
+	dst->drawLine(x + 1, bottom, right - 2, bottom, DragonButtonColors[3]);
+	dst->drawLine(x + 1, y + 1, right - 2, y + 1, DragonButtonColors[4]);
 
-	bool enabled = !(_flags3 & 9);
 	int colOffset;
-	if (!enabled) {
-		colOffset = 9;
-	}  else {
+	if (enabled) {
 		colOffset = 5;
+	}  else {
+		colOffset = 9;
 	}
 
-	dst->drawLine(x + 3, y + 3, right - 4, y + 3, ButtonColors[colOffset + 1]);
+	dst->drawLine(x + 3, y + 3, right - 4, y + 3, DragonButtonColors[colOffset + 1]);
 
 	// TODO: This is done with a different call in the game.. is there some reason for that?
-	dst->fillRect(Common::Rect(x + 3, y + 4, x + 3 + _width - 6, y + 4 + _height - 8), ButtonColors[colOffset + 2]);
+	dst->fillRect(Common::Rect(x + 3, y + 4, x + 3 + _width - 6, y + 4 + _height - 8), DragonButtonColors[colOffset + 2]);
 
-	dst->drawLine(x + 3, bottom - 3, right - 4, bottom - 3, ButtonColors[colOffset + 3]);
+	dst->drawLine(x + 3, bottom - 3, right - 4, bottom - 3, DragonButtonColors[colOffset + 3]);
+
+	return DragonButtonColors[colOffset];
+}
+
+byte ButtonGadget::drawChinaBg(Graphics::ManagedSurface *dst, bool enabled) const {
+	Common::Point pt = topLeft();
+	int16 x = pt.x;
+	int16 x2 = x + _width - 1;
+	int16 y = pt.y;
+	int16 y2 = y + _height - 1;
+	int cnum = 0;
+	const byte *colors = (enabled ? ChinaButtonColorsOn : ChinaButtonColorsOff);
+
+	for (int i = 0; i < 7; i++) {
+		byte drawCol = colors[cnum];
+		cnum++;
+		if (i < 3) {
+			dst->drawLine(x + i + 1, y + i, x2 - i, y + i, drawCol);
+			dst->drawLine(x2 - i, y + i + 1, x2 - i, y2 - i, drawCol);
+		} else if (i < 4) {
+			int16 rheight, rwidth;
+			if (_height + -6 < 3)
+				rheight = 2;
+			else
+				rheight = _height + -6;
+
+			if (_width + -6 < 3)
+				rwidth = 2;
+			else
+				rwidth = _width + -6;
+
+			dst->fillRect(Common::Rect(Common::Point(x + 3, y + 3), rwidth, rheight), drawCol);
+		} else {
+			int16 x2_ = 6 - i;
+			dst->drawLine(x + x2_, y + x2_, x + x2_, y2 - x2_, drawCol);
+			dst->drawLine(x + x2_, y2 - x2_, (x2 - x2_) + -1, y2 - x2_, drawCol);
+		}
+    }
+    return colors[7];
+}
+
+byte ButtonGadget::drawWillyBg(Graphics::ManagedSurface *dst, bool enabled) const {
+	// TODO: Write code to draw Willy Beamish type buttons..
+	return drawChinaBg(dst, enabled);
+}
+
+void ButtonGadget::draw(Graphics::ManagedSurface *dst) const {
+	DgdsGameId gameId = DgdsEngine::getInstance()->getGameId();
+	bool enabled = !(_flags3 & 9);
+
+	byte textCol;
+	if (gameId == GID_DRAGON)
+		textCol = drawDragonBg(dst, enabled);
+	else if (gameId == GID_HOC)
+		textCol = drawChinaBg(dst, enabled);
+	else
+		textCol = drawWillyBg(dst, enabled);
+
+	Common::Point pt = topLeft();
+	int16 x = pt.x;
+	int16 y = pt.y;
 
 	if (!_buttonName.empty()) {
 		const DgdsFont *font = RequestData::getMenuFont();
@@ -387,11 +464,11 @@ void ButtonGadget::draw(Graphics::ManagedSurface *dst) const {
 
 		yoffset = y + yoffset / 2;
 		int lineWidth = font->getStringWidth(line1);
-		font->drawString(dst, line1, x + (_width - lineWidth) / 2 + 1, yoffset + 2, lineWidth, ButtonColors[colOffset]);
+		font->drawString(dst, line1, x + (_width - lineWidth) / 2 + 1, yoffset + 2, lineWidth, textCol);
 
 		if (linebreak != Common::String::npos) {
 			lineWidth = font->getStringWidth(line2);
-			font->drawString(dst, line2, x + (_width - lineWidth) / 2 + 1, yoffset + fontHeight, lineWidth, ButtonColors[colOffset]);
+			font->drawString(dst, line2, x + (_width - lineWidth) / 2 + 1, yoffset + fontHeight, lineWidth, textCol);
 		}
 	}
 
@@ -588,8 +665,11 @@ void ImageGadget::draw(Graphics::ManagedSurface *dst) const {
 	// Note: not quite the same as the original logic here, but gets the same result.
 	_drawFrame(dst, xoff, yoff, _width, _height, _sval1I, _sval1I);
 
-	// NOTE: This only get done in inventory in original?
-	RequestData::drawCorners(dst, 19, xoff - 2, yoff - 2, _width + 4, _height + 4);
+	// NOTE: This only done in inventory in originals
+	if (DgdsEngine::getInstance()->getGameId() == GID_DRAGON)
+		RequestData::drawCorners(dst, 19, xoff - 2, yoff - 2, _width + 4, _height + 4);
+	else
+		RequestData::drawCorners(dst, 19, xoff - 4, yoff - 4, _width + 8, _height + 8);
 }
 
 Common::String RequestData::dump() const {
@@ -656,12 +736,12 @@ void RequestData::drawInvType(Graphics::ManagedSurface *dst) {
 
 /*static*/
 const DgdsFont *RequestData::getMenuFont() {
-	return static_cast<DgdsEngine *>(g_engine)->getFontMan()->getFont(FontManager::kGameFont);
+	return DgdsEngine::getInstance()->getFontMan()->getFont(FontManager::kGameFont);
 }
 
 /*static*/
 const Image *RequestData::getCorners() {
-	return static_cast<DgdsEngine *>(g_engine)->getUICorners().get();
+	return DgdsEngine::getInstance()->getUICorners().get();
 }
 
 /*static*/
@@ -692,7 +772,7 @@ void RequestData::drawCorners(Graphics::ManagedSurface *dst, uint16 startNum, ui
 }
 
 /*static*/
-void RequestData::drawHeader(Graphics::ManagedSurface *dst, int16 x, int16 y, int16 width, int16 yoffset, const Common::String &header, byte fontCol, bool addBox) {
+void RequestData::drawHeader(Graphics::ManagedSurface *dst, int16 x, int16 y, int16 width, int16 yoffset, const Common::String &header, byte fontCol, bool drawBox, byte boxTopColor, byte boxBottomColor) {
 	if (!header.empty()) {
 		const DgdsFont *font = getMenuFont();
 		int hwidth = font->getStringWidth(header);
@@ -703,11 +783,11 @@ void RequestData::drawHeader(Graphics::ManagedSurface *dst, int16 x, int16 y, in
 		int hbottom = htop + hheight;
 
 		font->drawString(dst, header, hleft + 1, htop + 2, hwidth, fontCol);
-		if (addBox) {
-			dst->drawLine(hleft - 3, htop, hright, htop, 0);
-			dst->drawLine(hright, htop + 1, hright, hbottom, 0);
-			dst->drawLine(hleft - 3, htop + 1, hleft - 3, hbottom, 15);
-			dst->drawLine(hleft - 2, hbottom, hleft + hwidth, hbottom, 15);
+		if (drawBox) {
+			dst->drawLine(hleft - 3, htop, hright, htop, boxTopColor);
+			dst->drawLine(hright, htop + 1, hright, hbottom, boxTopColor);
+			dst->drawLine(hleft - 3, htop + 1, hleft - 3, hbottom, boxBottomColor);
+			dst->drawLine(hleft - 2, hbottom, hleft + hwidth + 2, hbottom, boxBottomColor);
 		}
 	}
 }
@@ -752,14 +832,15 @@ void RequestData::drawBackgroundWithSliderArea(Graphics::ManagedSurface *dst, in
 	dst->transBlitFrom(*corners[9], Common::Point(x, (y + sliderBgHeight) - corners[9]->h));
 	dst->transBlitFrom(*corners[10], Common::Point((x + width) - corners[10]->w, (y + sliderBgHeight) - corners[10]->h));
 
-	drawHeader(dst, x, y, width, 9, header, 0,
-		static_cast<DgdsEngine *>(g_engine)->getGameId() == GID_DRAGON);
+	if (DgdsEngine::getInstance()->getGameId() == GID_DRAGON)
+		drawHeader(dst, x, y, width, 9, header, DragonHeaderTxtColor, true, DragonHeaderTopColor, DragonHeaderBottomColor);
+	else
+		drawHeader(dst, x, y + 4, width, 9, header, ChinaHeaderTxtColor, true, ChinaHeaderTopColor, ChinaHeaderBottomColor);
 }
 
 
 void RequestData::drawBackgroundNoSliders(Graphics::ManagedSurface *dst, const Common::String &header) const {
-	DgdsEngine *engine = static_cast<DgdsEngine *>(g_engine);
-	DgdsGameId gameId = engine->getGameId();
+	DgdsGameId gameId = DgdsEngine::getInstance()->getGameId();
 
 	if (_rect.width == 0 || _rect.height == 0) {
 		warning("drawBackgroundNoSliders: empty rect");
@@ -772,12 +853,15 @@ void RequestData::drawBackgroundNoSliders(Graphics::ManagedSurface *dst, const C
 		fillBackground(dst, _rect.x + 5, _rect.y + 5, _rect.width - 10, _rect.height - 10, 0);
 	uint16 cornerOffset = (gameId == GID_DRAGON ? 11 : (gameId == GID_HOC ? 1 : 0));
 	drawCorners(dst, cornerOffset, _rect.x, _rect.y, _rect.width, _rect.height);
-	drawHeader(dst, _rect.x, _rect.y, _rect.width, 4, header, 0, gameId == GID_DRAGON);
+	if (gameId == GID_DRAGON)
+		drawHeader(dst, _rect.x, _rect.y, _rect.width, 4, header, DragonHeaderTxtColor, true, DragonHeaderTopColor, DragonHeaderBottomColor);
+	else
+		drawHeader(dst, _rect.x, _rect.y + 4, _rect.width, 4, header, ChinaHeaderTxtColor, true, ChinaHeaderTopColor, ChinaHeaderBottomColor);
 }
 
 /*static*/
 void RequestData::fillBackground(Graphics::ManagedSurface *dst, uint16 x, uint16 y, uint16 width, uint16 height, int16 startoffset) {
-	DgdsEngine *engine = static_cast<DgdsEngine *>(g_engine);
+	DgdsEngine *engine = DgdsEngine::getInstance();
 
 	if (engine->getGameId() == GID_DRAGON && engine->getDetailLevel() == kDgdsDetailHigh) {
 		Graphics::Surface area = dst->getSubArea(Common::Rect(Common::Point(x, y), width, height));

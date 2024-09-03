@@ -64,7 +64,6 @@ private:
 
 	int32 play(const Common::String &name, uint channel, int32 vol, int32 trigger,
 		int32 room_num, bool loop);
-	Common::String expand_name_2_RAW(const Common::String &name, int32 room_num);
 
 public:
 	Digi(Audio::Mixer *mixer) : _mixer(mixer) {}
@@ -105,6 +104,7 @@ public:
 	void set_overall_volume(int vol);
 	int get_overall_volume();
 	int32 ticks_to_play(const char *name, int roomNum = -1);
+	void change_panning(int val1, int val2);
 };
 
 } // namespace Sound
@@ -122,6 +122,7 @@ void digi_change_volume(int channel, int vol);
 void digi_set_overall_volume(int vol);
 int digi_get_overall_volume();
 int32 digi_ticks_to_play(const char *name, int roomNum = -1);
+void digi_change_panning(int val1, int val2);
 
 } // namespace M4
 

@@ -19,6 +19,8 @@
  *
  */
 
+#include "common/file.h"
+
 #include "tetraedge/tetraedge.h"
 #include "tetraedge/te/te_core.h"
 #include "tetraedge/te/te_matrix4x4.h"
@@ -80,23 +82,28 @@ bool TeSpriteLayout::load(const Common::Path &path) {
 	}
 
 	TeCore *core = g_engine->getCore();
-	Common::FSNode node = core->findFile(path);
-	if (!load(node, &path))
-		return false;
-	return true;
-}
+	Common::FSNode spriteNode = core->getFSNode(path);
+	Common::Path spritePath(path);
 
-bool TeSpriteLayout::load(const Common::FSNode &node, const Common::Path *forcePath) {
-	if (!node.exists()) {
-		_tiledSurfacePtr->unload();
-		return false;
+	// The path can point to a single file, or a folder with files
+	if (spriteNode.isDirectory()) {
+		if (!spriteNode.exists()) {
+			_tiledSurfacePtr->unload();
+			return false;
+		}
+	} else {
+		spritePath = core->findFile(path);
+		if (!Common::File::exists(spritePath)) {
+			_tiledSurfacePtr->unload();
+			return false;
+		}
 	}
 
 	stop();
 	unload();
 
-	_tiledSurfacePtr->setLoadedPath(forcePath ? *forcePath : Common::Path());
-	if (_tiledSurfacePtr->load(node)) {
+	_tiledSurfacePtr->setLoadedPath(path);
+	if (_tiledSurfacePtr->load(spritePath)) {
 		const TeVector2s32 texSize = _tiledSurfacePtr->tiledTexture()->totalSize();
 		if (texSize._y <= 0) {
 			setRatio(1.0);
@@ -108,7 +115,7 @@ bool TeSpriteLayout::load(const Common::FSNode &node, const Common::Path *forceP
 		}
 		updateMesh();
 	} else {
-		debug("Failed to load TeSpriteLayout %s", node.getPath().toString(Common::Path::kNativeSeparator).c_str());
+		debug("Failed to load TeSpriteLayout %s", path.toString(Common::Path::kNativeSeparator).c_str());
 		_tiledSurfacePtr->setLoadedPath("");
 	}
 	return true;

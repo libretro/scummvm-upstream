@@ -120,8 +120,9 @@ bool AdlEngine::pollEvent(Common::Event &event) const {
 	return false;
 }
 
-Common::String AdlEngine::readString(Common::ReadStream &stream, byte until) const {
+Common::String AdlEngine::readString(Common::ReadStream &stream, byte until, const char *key) const {
 	Common::String str;
+	int keyLength = strlen(key);
 
 	while (1) {
 		byte b = stream.readByte();
@@ -132,8 +133,11 @@ Common::String AdlEngine::readString(Common::ReadStream &stream, byte until) con
 		if (b == until)
 			break;
 
+		if (keyLength)
+			b ^= key[str.size() % keyLength];
+
 		str += b;
-	};
+	}
 
 	return str;
 }
@@ -532,11 +536,13 @@ void AdlEngine::loadDroppedItemOffsets(Common::ReadStream &stream, byte count) {
 }
 
 void AdlEngine::drawPic(byte pic, Common::Point pos) const {
-	if (_roomData.pictures.contains(pic))
-		_graphics->drawPic(*_roomData.pictures[pic]->createReadStream(), pos);
-	else if (_pictures.contains(pic))
-		_graphics->drawPic(*_pictures[pic]->createReadStream(), pos);
-	else
+	if (_roomData.pictures.contains(pic)) {
+		Common::StreamPtr stream(_roomData.pictures[pic]->createReadStream());
+		_graphics->drawPic(*stream, pos);
+	} else if (_pictures.contains(pic)) {
+		Common::StreamPtr stream(_pictures[pic]->createReadStream());
+		_graphics->drawPic(*stream, pos);
+	} else
 		error("Picture %d not found", pic);
 }
 

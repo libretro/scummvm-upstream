@@ -22,6 +22,7 @@
 #include "common/tokenizer.h"
 #include "common/events.h"
 #include "graphics/cursorman.h"
+#include "graphics/framelimiter.h"
 
 #include "hypno/grammar.h"
 #include "hypno/hypno.h"
@@ -230,7 +231,14 @@ void HypnoEngine::runArcade(ArcadeShooting *arc) {
 		error("Invalid or missing mouse box");
 
 	Common::Point offset;
-	_background = new MVideo(arc->backgroundVideo, offset, false, false, false);
+	Common::Point anchor = arc->anchor;
+	anchor.x = 0;	// This is almost always zero, except when the screen starts at the middle
+					// We don't really need it
+	anchor.y = MAX(0, anchor.y - arc->mouseBox.bottom);
+
+	// Correct mouseBox
+	arc->mouseBox.moveTo(anchor.x, anchor.y);
+	_background = new MVideo(arc->backgroundVideo, anchor, false, false, false);
 
 	drawCursorArcade(mousePos);
 	playVideo(*_background);
@@ -271,7 +279,15 @@ void HypnoEngine::runArcade(ArcadeShooting *arc) {
 	_objMissesAllowed[0] = arc->objMissesAllowed[0];
 	_objMissesAllowed[1] = arc->objMissesAllowed[1];
 
+	bool vsync = g_system->getFeatureState(OSystem::kFeatureVSync);
+	// Disable vsync for arcade sequences, since these require a fixed frame rate
+	g_system->beginGFXTransaction();
+	g_system->setFeatureState(OSystem::kFeatureVSync, false);
+	g_system->endGFXTransaction();
+
 	debugC(1, kHypnoDebugArcade, "Using frame delay: %d", arc->frameDelay);
+	Graphics::FrameLimiter limiter(g_system, 1000.0 / arc->frameDelay);
+	limiter.startFrame();
 
 	Common::Event event;
 	while (!shouldQuit()) {
@@ -319,6 +335,8 @@ void HypnoEngine::runArcade(ArcadeShooting *arc) {
 				drawCursorArcade(mousePos);
 				if (mousePos.x >= arc->mouseBox.right-1) {
 					g_system->warpMouse(arc->mouseBox.right-1, mousePos.y);
+				} else if (mousePos.y < arc->mouseBox.top) { // Usually top is zero
+					g_system->warpMouse(mousePos.x, arc->mouseBox.top + 1);
 				} else if (mousePos.y >= arc->mouseBox.bottom-1) {
 					g_system->warpMouse(mousePos.x, arc->mouseBox.bottom-1);
 				} else if (mousePos.x <= 40 && offset.x < 0) {
@@ -336,7 +354,7 @@ void HypnoEngine::runArcade(ArcadeShooting *arc) {
 					offset.x = offset.x - 1;
 					needsUpdate = true;
 				}
-				_background->position = offset;
+				_background->position.x = offset.x;
 				break;
 
 			default:
@@ -546,8 +564,15 @@ void HypnoEngine::runArcade(ArcadeShooting *arc) {
 			drawAmmo();
 		}
 
-		g_system->delayMillis(arc->frameDelay);
+		limiter.delayBeforeSwap();
+		drawScreen();
+		limiter.startFrame();
 	}
+
+	g_system->beginGFXTransaction();
+	// Restore vsync state
+	g_system->setFeatureState(OSystem::kFeatureVSync, vsync);
+	g_system->endGFXTransaction();
 
 	// Deallocate shoots
 	for (Shoots::iterator it = _shoots.begin(); it != _shoots.end(); ++it) {
@@ -622,7 +647,6 @@ void HypnoEngine::drawCursorArcade(const Common::Point &mousePos) {
 	else
 		changeCursor("arcade");
 
-	g_system->copyRectToScreen(_compositeSurface->getPixels(), _compositeSurface->pitch, 0, 0, _screenW, _screenH);
 }
 
 bool HypnoEngine::clickedPrimaryShoot(const Common::Point &mousePos) { return true; }

@@ -117,14 +117,15 @@ bool StyledTTFont::loadFont(const Common::String &fontName, int32 point, uint st
 
 	bool sharp = (_style & TTF_STYLE_SHARP) == TTF_STYLE_SHARP;
 
-	Common::File file;
+	Common::File *file = new Common::File();
 	Graphics::Font *newFont;
-	if (!file.open(Common::Path(newFontName)) && !_engine->getSearchManager()->openFile(file, Common::Path(newFontName)) &&
-		!file.open(Common::Path(liberationFontName)) && !_engine->getSearchManager()->openFile(file, Common::Path(liberationFontName)) &&
-		!file.open(Common::Path(freeFontName)) && !_engine->getSearchManager()->openFile(file, Common::Path(freeFontName))) {
+	if (!file->open(Common::Path(newFontName)) && !_engine->getSearchManager()->openFile(*file, Common::Path(newFontName)) &&
+		!file->open(Common::Path(liberationFontName)) && !_engine->getSearchManager()->openFile(*file, Common::Path(liberationFontName)) &&
+		!file->open(Common::Path(freeFontName)) && !_engine->getSearchManager()->openFile(*file, Common::Path(freeFontName))) {
 		newFont = Graphics::loadTTFFontFromArchive(liberationFontName, point, Graphics::kTTFSizeModeCell, 0, 0, (sharp ? Graphics::kTTFRenderModeMonochrome : Graphics::kTTFRenderModeNormal));
+		delete file;
 	} else {
-		newFont = Graphics::loadTTFFont(file, point, Graphics::kTTFSizeModeCell, 0, 0, (sharp ? Graphics::kTTFRenderModeMonochrome : Graphics::kTTFRenderModeNormal));
+		newFont = Graphics::loadTTFFont(file, DisposeAfterUse::YES, point, Graphics::kTTFSizeModeCell, 0, 0, (sharp ? Graphics::kTTFRenderModeMonochrome : Graphics::kTTFRenderModeNormal));
 	}
 
 	if (newFont == nullptr) {
@@ -154,7 +155,7 @@ int StyledTTFont::getMaxCharWidth() {
 	return 0;
 }
 
-int StyledTTFont::getCharWidth(byte chr) {
+int StyledTTFont::getCharWidth(uint16 chr) {
 	if (_font)
 		return _font->getCharWidth(chr);
 
@@ -168,7 +169,7 @@ int StyledTTFont::getKerningOffset(byte left, byte right) {
 	return 0;
 }
 
-void StyledTTFont::drawChar(Graphics::Surface *dst, byte chr, int x, int y, uint32 color) {
+void StyledTTFont::drawChar(Graphics::Surface *dst, uint16 chr, int x, int y, uint32 color) {
 	if (_font) {
 		_font->drawChar(dst, chr, x, y, color);
 		if (_style & TTF_STYLE_UNDERLINE) {

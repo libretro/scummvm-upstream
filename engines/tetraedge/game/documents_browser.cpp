@@ -123,9 +123,9 @@ void DocumentsBrowser::loadZoomed() {
 }
 
 void DocumentsBrowser::loadXMLFile(const Common::Path &path) {
-	Common::FSNode node = g_engine->getCore()->findFile(path);
+	Common::Path xmlPath = g_engine->getCore()->findFile(path);
 	Common::File xmlfile;
-	xmlfile.open(node);
+	xmlfile.open(xmlPath);
 	int64 fileLen = xmlfile.size();
 	char *buf = new char[fileLen + 1];
 	buf[fileLen] = '\0';
@@ -306,12 +306,10 @@ void DocumentsBrowser::showDocument(const Common::String &docName, int startPage
 	TeCore *core = g_engine->getCore();
 	const char *pathPattern = g_engine->gameIsAmerzone() ? "DocumentsBrowser/Documents/%s_zoomed_%d" : "DocumentsBrowser/Documents/Documents/%s_zoomed_%d";
 	const Common::Path docPathBase(Common::String::format(pathPattern, docName.c_str(), (int)startPage));
-	Common::Path docPath = docPathBase.append(".png");
-	Common::FSNode docNode = core->findFile(docPath);
-	if (!docNode.exists()) {
-		docPath = docPathBase.append(".jpg");
-		docNode = core->findFile(docPath);
-		if (!docNode.exists()) {
+	Common::Path docPath = core->findFile(docPathBase.append(".png"));
+	if (!Common::File::exists(docPath)) {
+		docPath = core->findFile(docPathBase.append(".jpg"));
+		if (!Common::File::exists(docPath)) {
 			// Probably the end of the doc
 			if (startPage == 0)
 				warning("Can't find first page of doc named %s", docName.c_str());
@@ -322,12 +320,12 @@ void DocumentsBrowser::showDocument(const Common::String &docName, int startPage
 	Application *app = g_engine->getApplication();
 	app->captureFade();
 	TeSpriteLayout *sprite = _gui.spriteLayoutChecked("zoomedSprite");
-	sprite->load(docNode);
+	sprite->load(docPath);
 	TeVector2s32 spriteSize = sprite->_tiledSurfacePtr->tiledTexture()->totalSize();
 
-	Common::FSNode luaNode = core->findFile(docPathBase.append(".lua"));
-	if (luaNode.exists()) {
-		_zoomedDocGui.load(luaNode);
+	Common::Path luaPath = core->findFile(docPathBase.append(".lua"));
+	if (Common::File::exists(luaPath)) {
+		_zoomedDocGui.load(luaPath);
 		sprite->addChild(_zoomedDocGui.layoutChecked("root"));
 
 		TeButtonLayout *btn;

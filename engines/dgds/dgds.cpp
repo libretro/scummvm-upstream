@@ -73,12 +73,16 @@
 
 namespace Dgds {
 
+/*static*/
+const byte DgdsEngine::HOC_CHAR_SWAP_ICONS[] = { 0, 20, 21, 22 };
+
+
 DgdsEngine::DgdsEngine(OSystem *syst, const ADGameDescription *gameDesc)
 	: Engine(syst), _fontManager(nullptr), _console(nullptr), _inventory(nullptr),
-	_soundPlayer(nullptr), _decompressor(nullptr), _scene(nullptr),
+	_soundPlayer(nullptr), _decompressor(nullptr), _scene(nullptr), _shellGame(nullptr),
 	_gdsScene(nullptr), _resource(nullptr), _gamePals(nullptr), _gameGlobals(nullptr),
 	_detailLevel(kDgdsDetailHigh), _textSpeed(1), _justChangedScene1(false), _justChangedScene2(false),
-	_random("dgds"), _currentCursor(-1), _menuToTrigger(kMenuNone), _isLoading(true),
+	_random("dgds"), _currentCursor(-1), _menuToTrigger(kMenuNone), _isLoading(true), _flipMode(false),
 	_rstFileName(nullptr), _difficulty(1), _menu(nullptr), _adsInterp(nullptr), _isDemo(false) {
 	syncSoundSettings();
 
@@ -91,6 +95,8 @@ DgdsEngine::DgdsEngine(OSystem *syst, const ADGameDescription *gameDesc)
 	} else if (!strcmp(gameDesc->gameId, "beamish")) {
 		_isDemo = (gameDesc->flags & ADGF_DEMO);
 		_gameId = GID_WILLY;
+	} else if (!strcmp(gameDesc->gameId, "quarky")) {
+		_gameId = GID_QUARKY;
 	} else if (!strcmp(gameDesc->gameId, "sq5demo")) {
 		_isDemo = true;
 		_gameId = GID_SQ5DEMO;
@@ -117,6 +123,7 @@ DgdsEngine::~DgdsEngine() {
 	delete _fontManager;
 	delete _menu;
 	delete _inventory;
+	delete _shellGame;
 
 	_icons.reset();
 	_corners.reset();
@@ -158,17 +165,22 @@ bool DgdsEngine::changeScene(int sceneNum) {
 
 	const Common::String sceneFile = Common::String::format("S%d.SDS", sceneNum);
 	if (!_resource->hasResource(sceneFile)) {
-		warning("Tried to switch to non-existant scene %d", sceneNum);
+		warning("Tried to switch to non-existent scene %d", sceneNum);
 		return false;
 	}
 
 	_gameGlobals->setLastSceneNum(sceneNum);
 
-	// Save the current foreground if we are going to the inventory, clear it otherwise.
-	if (sceneNum == 2)
+	// Save the current foreground if we are going to the inventory,
+	// *except* for HoC zoomed inventory - that also clears background
+	// because it uses a different palette for the zoomed item view.
+	if (sceneNum == 2 && (!(getGameId() == GID_HOC && _inventory->isZoomVisible()))) {
+		// Force-draw the inv button here to keep it in background
+		checkDrawInventoryButton();
 		_backgroundBuffer.blitFrom(_compositionBuffer);
-	else
+	} else {
 		_backgroundBuffer.fillRect(Common::Rect(SCREEN_WIDTH, SCREEN_HEIGHT), 0);
+	}
 
 	_scene->runLeaveSceneOps();
 
@@ -184,7 +196,7 @@ bool DgdsEngine::changeScene(int sceneNum) {
 	_gdsScene->runChangeSceneOps();
 
 	if (!_scene->getDragItem())
-		setMouseCursor(0);
+		setMouseCursor(_gdsScene->getDefaultMouseCursor());
 
 	_storedAreaBuffer.fillRect(Common::Rect(SCREEN_WIDTH, SCREEN_HEIGHT), 0);
 
@@ -273,7 +285,6 @@ void DgdsEngine::checkDrawInventoryButton() {
 		int16 otherChar = _gdsScene->getGlobal(0x34);
 		if (otherChar) {
 			// FIXME: This list repeated in scene too
-			static const byte HOC_CHAR_SWAP_ICONS[] = { 0, 20, 21, 22 };
 			int16 swapCharIcon = HOC_CHAR_SWAP_ICONS[otherChar];
 			int sy = SCREEN_HEIGHT - _icons->height(swapCharIcon) - 5;
 			_icons->drawBitmap(swapCharIcon, 5, sy, drawWin, _compositionBuffer);
@@ -315,6 +326,8 @@ void DgdsEngine::init(bool restarting) {
 	_menu = new Menu();
 	_adsInterp = new ADSInterpreter(this);
 	_inventory = new Inventory();
+	if (_gameId == GID_HOC)
+		_shellGame = new ShellGame();
 
 	_backgroundBuffer.create(SCREEN_WIDTH, SCREEN_HEIGHT, Graphics::PixelFormat::createFormatCLUT8());
 	_storedAreaBuffer.create(SCREEN_WIDTH, SCREEN_HEIGHT, Graphics::PixelFormat::createFormatCLUT8());
@@ -376,6 +389,17 @@ void DgdsEngine::loadGameFiles() {
 		reqParser.parse(&vcrRequestData, "WVCR.REQ");
 
 		break;
+	case GID_QUARKY:
+		_gameGlobals = new Globals(_clock);
+		_gamePals->loadPalette("MRALLY.PAL");
+		_gdsScene->load("MRALLY.GDS", _resource, _decompressor);
+
+		debug("%s", _gdsScene->dump("").c_str());
+
+		loadCorners("MCORNERS.BMP");
+		reqParser.parse(&invRequestData, "TOOLINFO.REQ");
+		reqParser.parse(&vcrRequestData, "MVCR.REQ");
+		break;
 	case GID_SQ5DEMO:
 		_gameGlobals = new Globals(_clock);
 		_gamePals->loadPalette("NORMAL.PAL");
@@ -395,7 +419,7 @@ void DgdsEngine::loadGameFiles() {
 	_gdsScene->runStartGameOps();
 	loadIcons();
 	_gdsScene->initIconSizes();
-	setMouseCursor(0);
+	setMouseCursor(_gdsScene->getDefaultMouseCursor());
 
 	_inventory->setRequestData(invRequestData);
 	_menu->setRequestData(vcrRequestData);
@@ -410,6 +434,23 @@ void DgdsEngine::loadRestartFile() {
 
 	_gdsScene->loadRestart(_rstFileName, _resource, _decompressor);
 }
+
+static void _dumpFrame(const Graphics::ManagedSurface &surf, const char *name) {
+#ifdef DUMP_FRAME_DATA
+	/* For debugging, dump the frame contents.. */
+	Common::DumpFile outf;
+	uint32 now = g_engine->getTotalPlayTime();
+
+	byte palbuf[768];
+	g_system->getPaletteManager()->grabPalette(palbuf, 0, 256);
+
+	outf.open(Common::Path(Common::String::format("/tmp/%07d-%s.png", now, name)));
+	// Operator magic - convert ManagedSurface reg to Surface ref.
+	::Image::writePNG(outf, *(&surf), palbuf);
+	outf.close();
+#endif
+}
+
 
 Common::Error DgdsEngine::run() {
 	_isLoading = true;
@@ -486,7 +527,8 @@ Common::Error DgdsEngine::run() {
 					break;
 				}
 			} else if (ev.type == Common::EVENT_LBUTTONDOWN || ev.type == Common::EVENT_LBUTTONUP
-					|| ev.type == Common::EVENT_RBUTTONUP || ev.type == Common::EVENT_MOUSEMOVE) {
+					|| ev.type == Common::EVENT_RBUTTONDOWN || ev.type == Common::EVENT_RBUTTONUP
+					|| ev.type == Common::EVENT_MOUSEMOVE) {
 				mouseEvent = ev.type;
 				_lastMouse = ev.mouse;
 			}
@@ -499,7 +541,7 @@ Common::Error DgdsEngine::run() {
 				_menu->setScreenBuffer();
 				// force mouse on
 				CursorMan.showMouse(true);
-				setMouseCursor(0);
+				setMouseCursor(_gdsScene->getDefaultMouseCursor());
 				_menu->drawMenu(_menuToTrigger);
 			} else {
 				_menu->hideMenu();
@@ -576,6 +618,9 @@ Common::Error DgdsEngine::run() {
 				case Common::EVENT_LBUTTONUP:
 					_scene->mouseLUp(_lastMouse);
 					break;
+				case Common::EVENT_RBUTTONDOWN:
+					_scene->mouseRDown(_lastMouse);
+					break;
 				case Common::EVENT_RBUTTONUP:
 					_scene->mouseRUp(_lastMouse);
 					break;
@@ -592,28 +637,9 @@ Common::Error DgdsEngine::run() {
 		_scene->runPostTickOps();
 		_scene->checkTriggers();
 
-#ifdef DUMP_FRAME_DATA
-		/* For debugging, dump the frame contents.. */
-		{
-			Common::DumpFile outf;
-			uint32 now = g_engine->getTotalPlayTime();
-
-			byte palbuf[768];
-			g_system->getPaletteManager()->grabPalette(palbuf, 0, 256);
-
-			outf.open(Common::Path(Common::String::format("/tmp/%07d-back.png", now)));
-			::Image::writePNG(outf, *_backgroundBuffer.surfacePtr(), palbuf);
-			outf.close();
-
-			outf.open(Common::Path(Common::String::format("/tmp/%07d-stor.png", now)));
-			::Image::writePNG(outf, *_storedAreaBuffer.surfacePtr(), palbuf);
-			outf.close();
-
-			outf.open(Common::Path(Common::String::format("/tmp/%07d-comp.png", now)));
-			::Image::writePNG(outf, *_compositionBuffer.surfacePtr(), palbuf);
-			outf.close();
-		}
-#endif
+		_dumpFrame(_backgroundBuffer, "back");
+		_dumpFrame(_storedAreaBuffer, "stor");
+		_dumpFrame(_compositionBuffer, "comp");
 
 		if (!_inventory->isOpen()) {
 			_gdsScene->drawItems(_compositionBuffer);
@@ -627,6 +653,8 @@ Common::Error DgdsEngine::run() {
 
 		_scene->drawAndUpdateDialogs(&_compositionBuffer);
 		_scene->drawVisibleHeads(&_compositionBuffer);
+
+		_dumpFrame(_compositionBuffer, "comp-with-dlg");
 
 		bool gameRunning = (!haveActiveDialog && _gameGlobals->getGlobal(0x57) /* TODO: && _dragItem == nullptr*/);
 		_clock.update(gameRunning);
@@ -697,7 +725,7 @@ Common::Error DgdsEngine::syncGame(Common::Serializer &s) {
 		// load and prepare scene data before syncing the rest of the state
 		const Common::String sceneFile = Common::String::format("S%d.SDS", sceneNum);
 		if (!_resource->hasResource(sceneFile))
-			error("Game references non-existant scene %d", sceneNum);
+			error("Game references non-existent scene %d", sceneNum);
 
 		_soundPlayer->unloadMusic();
 		_soundPlayer->stopAllSfx();
@@ -748,6 +776,7 @@ Common::Error DgdsEngine::syncGame(Common::Serializer &s) {
 		_storedAreaBuffer.fillRect(Common::Rect(SCREEN_WIDTH, SCREEN_HEIGHT), 0);
 	}
 
+	debug("%s", _scene->dump("").c_str());
 	_scene->runEnterSceneOps();
 
 	return Common::kNoError;

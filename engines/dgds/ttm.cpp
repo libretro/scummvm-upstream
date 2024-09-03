@@ -33,6 +33,7 @@
 #include "dgds/image.h"
 #include "dgds/sound.h"
 #include "dgds/font.h"
+#include "dgds/sound_raw.h"
 
 
 namespace Dgds {
@@ -43,7 +44,7 @@ void GetPutRegion::reset() {
 }
 
 Common::Error TTMEnviro::syncState(Common::Serializer &s) {
-	DgdsEngine *engine = static_cast<DgdsEngine *>(g_engine);
+	DgdsEngine *engine = DgdsEngine::getInstance();
 	for (auto &shape : _scriptShapes) {
 		bool hasShape = shape.get() != nullptr;
 		s.syncAsByte(hasShape);
@@ -158,16 +159,19 @@ static const char *ttmOpName(uint16 op) {
 	case 0x2000: return "SET DRAW COLORS";
 	case 0x2010: return "SET FRAME";
 	case 0x2020: return "SET RANDOM DELAY";
+	case 0x2030: return "SET SCROLL OFFSET";
 	case 0x2300: return "PAL SET BLOCK SWAP 0";
 	case 0x2310: return "PAL SET BLOCK SWAP 1";
 	case 0x2320: return "PAL SET BLOCK SWAP 2";
 	case 0x2400: return "PAL DO BLOCK SWAP";
 	case 0x3000: return "GOSUB";
+	case 0x3100: return "SCROLL 3100??";
 	case 0x4000: return "SET CLIP WINDOW";
 	case 0x4110: return "FADE OUT";
 	case 0x4120: return "FADE IN";
 	case 0x4200: return "STORE AREA";
 	case 0x4210: return "SAVE GETPUT REGION";
+
 	case 0xa000: return "DRAW PIXEL";
 	case 0xa010: return "WIPE DISSOLVE";
 	case 0xa020: return "WIPE 20?";
@@ -199,6 +203,7 @@ static const char *ttmOpName(uint16 op) {
 	case 0xa520: return "DRAW SPRITE FLIPH";
 	case 0xa530: return "DRAW SPRITE FLIPHV";
 	case 0xa600: return "DRAW GETPUT";
+	case 0xa700: return "DRAW A700??";
 	case 0xaf00: return "DRAW FLOOD FILL";
 	case 0xaf10: return "DRAW EMPTY POLY";
 	case 0xaf20: return "DRAW FILLED POLY";
@@ -211,6 +216,7 @@ static const char *ttmOpName(uint16 op) {
 	case 0xf040: return "LOAD FONT";
 	case 0xf050: return "LOAD PAL";
 	case 0xf060: return "LOAD SONG";
+	case 0xf080: return "LOAD SCROLL";
 	case 0xf100: return "SET STRING 0";
 	case 0xf110: return "SET STRING 1";
 	case 0xf120: return "SET STRING 2";
@@ -226,14 +232,25 @@ static const char *ttmOpName(uint16 op) {
 	case 0x00C0: return "FREE BACKGROUND";
 	case 0x0230: return "reset current music?";
 	case 0x1310: return "STOP SFX";
-	case 0xc020: return "LOAD_SAMPLE";
-	case 0xc030: return "SELECT_SAMPLE";
-	case 0xc040: return "DESELECT_SAMPLE";
-	case 0xc050: return "PLAY_SAMPLE";
-	case 0xc060: return "STOP_SAMPLE";
+
+	case 0xc020: return "LOAD SAMPLE";
+	case 0xc030: return "SELECT SAMPLE";
+	case 0xc040: return "DESELECT SAMPLE";
+	case 0xc050: return "PLAY SAMPLE";
+	case 0xc060: return "STOP SAMPLE";
+	case 0xc070: return "PAUSE SAMPLE";
+	case 0xc080: return "UNPAUSE SAMPLE";
+	case 0xc090: return "MUTE SAMPLE";
+	case 0xc0a0: return "UNMUTE SAMPLE";
+	case 0xc0b0: return "SAMPLE PRIORITY";
+	case 0xc0c0: return "SAMPLE HOLD";
+	case 0xc0d0: return "SAMPLE BEND";
 	case 0xc0e0: return "FADE SONG";
+	case 0xc0f0: return "SONG CONTROLLER??";
+	case 0xc100: return "SAMPLE VOL";
 	case 0xc210: return "LOAD RAW SFX";
 	case 0xc220: return "PLAY RAW SFX ??";
+	case 0xcf10: return "SFX MASTER VOL";
 
 	default: return "UNKNOWN!!";
 	}
@@ -267,6 +284,36 @@ static void _copyRectToScreen(const Graphics::ManagedSurface &src, const Common:
 	g_system->unlockScreen();
 }
 
+static void _dissolveToScreen(const Graphics::ManagedSurface &src, const Common::Rect &r) {
+	if (r.isEmpty())
+		return;
+
+	// This is basically copied from SCI - it seems to be the same algo in DGDS?
+	uint16 mask = 0x40, stepNr = 0;
+	Common::Rect pixelRect;
+
+	Graphics::Surface *surf = g_system->lockScreen();
+
+	do {
+		mask = (mask & 1) ? (mask >> 1) ^ 0xB400 : mask >> 1;
+		if (mask >= SCREEN_WIDTH * SCREEN_HEIGHT)
+			continue;
+		pixelRect.left = mask % SCREEN_WIDTH; pixelRect.right = pixelRect.left + 1;
+		pixelRect.top = mask / SCREEN_WIDTH;  pixelRect.bottom = pixelRect.top + 1;
+		pixelRect.clip(r);
+		if (!pixelRect.isEmpty())
+			surf->copyRectToSurface(src.rawSurface(), pixelRect.left, pixelRect.top, pixelRect);
+		if ((stepNr & 0x3FF) == 0) {
+			g_system->unlockScreen();
+			g_system->updateScreen();
+			surf = g_system->lockScreen();
+		}
+		stepNr++;
+	} while (mask != 0x40);
+
+	g_system->unlockScreen();
+}
+
 
 void TTMInterpreter::doWipeOp(uint16 code, TTMEnviro &env, TTMSeq &seq, const Common::Rect &r) {
 	//
@@ -285,8 +332,7 @@ void TTMInterpreter::doWipeOp(uint16 code, TTMEnviro &env, TTMSeq &seq, const Co
 	switch(code) {
 	case 0xa010:
 		warning("TODO: Implement TTM 0xa010 wipe (dissolve) op");
-		_copyRectToScreen(_vm->_compositionBuffer, r);
-		g_system->updateScreen();
+		_dissolveToScreen(_vm->_compositionBuffer, r);
 		break;
 
 	case 0xa020:
@@ -527,6 +573,12 @@ void TTMInterpreter::handleOperation(TTMEnviro &env, TTMSeq &seq, uint16 op, byt
 			break;
 		warning("TODO: 0x0400 Reset palette");
 		break;
+	case 0x0500: // FLIP MODE ON
+		DgdsEngine::getInstance()->setFlipMode(true);
+		break;
+	case 0x0510: // FLIP MODE OFF
+		DgdsEngine::getInstance()->setFlipMode(false);
+		break;
 	case 0x0ff0: // REFRESH:	void
 		break;
 	case 0x1020: // SET DELAY:	    i:int   [0..n]
@@ -589,6 +641,29 @@ void TTMInterpreter::handleOperation(TTMEnviro &env, TTMSeq &seq, uint16 op, byt
 		_vm->adsInterpreter()->setScriptDelay((int)(sleep * MS_PER_FRAME));
 		break;
 	}
+	case 0x2030: { // SET SCROLL mode,val: int
+		if (seq._executed) // this is a one-shot op.
+			break;
+
+		// mode chooses x/y and +/- for scroll offset.
+		switch(ivals[0]) {
+		case 0:
+			env._yScroll -= ivals[1];
+			break;
+		case 1:
+			env._yScroll += ivals[1];
+			break;
+		case 2:
+			env._xScroll -= ivals[1];
+			break;
+		case 3:
+			env._xScroll += ivals[1];
+			break;
+		default:
+			error("TTM 0x2030 Invalid scroll mode %d (should be 0-3)", ivals[0]);
+		}
+		break;
+	}
 	case 0x2300:
 	case 0x2310:
 	case 0x2320: {
@@ -603,7 +678,7 @@ void TTMInterpreter::handleOperation(TTMEnviro &env, TTMSeq &seq, uint16 op, byt
 			break;
 		warning("TODO: 0x%04x Palette do block swaps 0x%x, 0x%x", op, ivals[0], ivals[1]);
 		break;
-	case 0x3000: {
+	case 0x3000: { // GOSUB ??,??,frame
 		_stackDepth++;
 		bool prevHitOp0110Val = _vm->adsInterpreter()->getHitTTMOp0110();
 		int32 target = findGOTOTarget(env, seq, ivals[2]);
@@ -612,8 +687,8 @@ void TTMInterpreter::handleOperation(TTMEnviro &env, TTMSeq &seq, uint16 op, byt
 		int64 prevPos = env.scr->pos();
 		env.scr->seek(env._frameOffsets[target]);
 
-		// TODO: Set some other render-related globals here
-		warning("TODO: TTM 0x3000 GOSUB %d %d, use other args", ivals[0], ivals[1]);
+		env._xOff = ivals[0];
+		env._yOff = ivals[1];
 
 		run(env, seq);
 		env.scr->seek(prevPos);
@@ -622,6 +697,12 @@ void TTMInterpreter::handleOperation(TTMEnviro &env, TTMSeq &seq, uint16 op, byt
 			_vm->adsInterpreter()->setHitTTMOp0110(false);
 
 		_stackDepth--;
+		break;
+	}
+	case 0x3100: { // SCROLL ??,??,??
+		if (seq._executed) // this is a one-shot op.
+			break;
+		warning("TODO: TTM 0x3100 SCROLL %d %d %d", ivals[0], ivals[1], ivals[2]);
 		break;
 	}
 	case 0x4000: // SET CLIP WINDOW x,y,x2,y2:int	[0..320,0..200]
@@ -696,7 +777,8 @@ void TTMInterpreter::handleOperation(TTMEnviro &env, TTMSeq &seq, uint16 op, byt
 		break;
 	}
 	case 0xa000: // DRAW PIXEL x,y:int
-		_vm->_compositionBuffer.setPixel(ivals[0], ivals[1], seq._drawColFG);
+		if (seq._drawWin.contains(ivals[0], ivals[1]))
+			_vm->_compositionBuffer.setPixel(ivals[0], ivals[1], seq._drawColFG);
 		break;
 	case 0xa010:
 	case 0xa020:
@@ -788,7 +870,8 @@ void TTMInterpreter::handleOperation(TTMEnviro &env, TTMSeq &seq, uint16 op, byt
 
 		Common::SharedPtr<Image> img = env._scriptShapes[bmpNo];
 		if (img)
-			img->drawBitmap(frameno, ivals[0], ivals[1], seq._drawWin, _vm->_compositionBuffer, flipMode, dstWidth, dstHeight);
+			img->drawBitmap(frameno, env._xOff + ivals[0], env._yOff + ivals[1],
+					seq._drawWin, _vm->_compositionBuffer, flipMode, dstWidth, dstHeight);
 		else
 			warning("Trying to draw image %d in env %d which is not loaded", bmpNo, env._enviro);
 		break;
@@ -807,10 +890,20 @@ void TTMInterpreter::handleOperation(TTMEnviro &env, TTMSeq &seq, uint16 op, byt
 						Common::Point(r.left, r.top));
 		break;
 	}
+	case 0xa700: { // DRAW scrollshape? x,y,w,h??
+		if (!env._scrollShape) {
+			warning("Trying to draw scroll with no scrollshape loaded");
+		} else {
+			env._scrollShape->drawScrollBitmap(ivals[0], ivals[1], ivals[2], ivals[3],
+						env._xScroll, env._yScroll, seq._drawWin, _vm->_compositionBuffer);
+		}
+		break;
+	}
 	case 0xaf00: { // FLOOD FILL x,y
 		Graphics::FloodFill f(_vm->_compositionBuffer.surfacePtr(), 0, seq._drawColFG);
 		f.addSeed(ivals[0], ivals[1]);
 		f.fill();
+		break;
 	}
 	case 0xaf10: { // DRAW EMPTY POLY
 		ClipSurface clipSurf(seq._drawWin, _vm->_compositionBuffer.surfacePtr());
@@ -882,6 +975,22 @@ void TTMInterpreter::handleOperation(TTMEnviro &env, TTMSeq &seq, uint16 op, byt
 		_vm->_soundPlayer->playMusic(ivals[0]);
 		break;
 	}
+	case 0xc210: {  // LOAD RAW SFX filename:str
+		if (seq._executed) // this is a one-shot op
+			break;
+		SoundRaw *snd = new SoundRaw(_vm->getResourceManager(), _vm->getDecompressor());
+		snd->load(sval);
+		env._soundRaw.reset(snd);
+		break;
+	}
+	case 0xc220: {	// PLAY RAW SFX
+		if (seq._executed) // this is a one-shot op
+			break;
+		if (!env._soundRaw)
+			warning("TODO: Trying to play raw SFX but nothing loaded");
+		env._soundRaw->play();
+		break;
+	}
 	case 0xf010: { // LOAD SCR:	filename:str
 		if (seq._executed) // this is a one-shot op
 			break;
@@ -927,6 +1036,15 @@ void TTMInterpreter::handleOperation(TTMEnviro &env, TTMSeq &seq, uint16 op, byt
 			_vm->_soundPlayer->playMusic(seq._currentSongId);
 		}
 		break;
+	case 0xf080: { // LOAD SCROLL: filename:str
+		if (seq._executed) // this is a one-shot op
+			break;
+		env._scrollShape.reset(new Image(_vm->getResourceManager(), _vm->getDecompressor()));
+		env._scrollShape->loadBitmap(sval);
+		env._xScroll = 0;
+		env._yScroll = 0;
+		break;
+	}
 	case 0xf100: // 0xf1n0 - SET STRING n: s:str - set the nth string in the table
 	case 0xf110:
 	case 0xf120:

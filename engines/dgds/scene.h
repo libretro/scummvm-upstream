@@ -28,6 +28,7 @@
 
 #include "dgds/dialog.h"
 #include "dgds/dgds_rect.h"
+#include "dgds/shell_game.h"
 
 namespace Dgds {
 
@@ -69,8 +70,8 @@ public:
 	uint16 _cursorNum;
 
 	// Used in Willy Beamish
-	uint16 _unk1;
-	uint16 _unk2;
+	uint16 _otherCursorNum;
+	uint16 _objInteractionListFlag;
 
 	Common::Array<SceneConditions> enableConditions;
 	Common::Array<SceneOp> onRClickOps;
@@ -125,7 +126,8 @@ enum SceneOpCode {
 
 	// China-specific opcodes
 	kSceneOpOpenChinaTankMenu = 102,
-	kSceneOpShellGame = 110,
+	kSceneOpShellGameEnd = 109,
+	kSceneOpShellGameTick = 110,
 	kSceneOpOpenChinaTrainMenu = 113,
 	kSceneOpOpenChinaOpenGameOverMenu = 114,	// args: none.
 	kSceneOpOpenChinaOpenSkipCreditsMenu = 115,	// args: none.
@@ -134,6 +136,7 @@ enum SceneOpCode {
 	kSceneOpChina118 = 118,	// args: none. ??
 
 	// Beamish-specific opcodes
+	kSceneOpOpenBeamishGameOverMenu = 100,
 	kSceneOpOpenBeamishOpenSkipCreditsMenu = 101,
 
 	kSceneOpMaxCode = 255, // for checking file load
@@ -160,7 +163,7 @@ public:
 class GameItem : public HotArea {
 public:
 	Common::Array<SceneOp> onDragFinishedOps;
-	Common::Array<SceneOp> opList5;
+	Common::Array<SceneOp> onBothButtonsOps;
 	uint16 _altCursor;
 	uint16 _iconNum;
 
@@ -377,6 +380,11 @@ public:
 
 	Common::Error syncState(Common::Serializer &s) override;
 	void initIconSizes();
+	GameItem *getActiveItem();
+
+	uint16 getDefaultMouseCursor() const { return _defaultMouseCursor; }
+	uint16 getInvIconNum() const { return _invIconNum; }
+	uint16 getInvIconMouseCursor() const { return _invIconMouseCursor; }
 
 private:
 	Common::String _iconFile;
@@ -386,14 +394,14 @@ private:
 	Common::Array<SceneOp> _onChangeSceneOps;
 	Common::Array<MouseCursor> _cursorList;
 	Common::Array<PerSceneGlobal> _perSceneGlobals;
-	Common::Array<ObjectInteraction> _objInteractions1;
 	Common::Array<ObjectInteraction> _objInteractions2;
+	Common::Array<ObjectInteraction> _objInteractions1;
 
 	// Additional fields that appear in Willy Beamish (unused in others)
-	uint16 _field38;
+	uint16 _defaultMouseCursor;
 	uint16 _field3a;
-	uint16 _field3c;
-	uint16 _field3e;
+	uint16 _invIconNum;
+	uint16 _invIconMouseCursor;
 	uint16 _field40;
 };
 
@@ -423,6 +431,7 @@ public:
 	void mouseMoved(const Common::Point &pt);
 	void mouseLDown(const Common::Point &pt);
 	void mouseLUp(const Common::Point &pt);
+	void mouseRDown(const Common::Point &pt);
 	void mouseRUp(const Common::Point &pt);
 
 	void addInvButtonToHotAreaList();
@@ -497,6 +506,7 @@ private:
 	GameItem *_dragItem;
 	bool _shouldClearDlg;
 	bool _ignoreMouseUp;
+	bool _rbuttonDown;
 
 	static bool _dlgWithFlagLo8IsClosing;
 	static DialogFlags _sceneDialogFlags;

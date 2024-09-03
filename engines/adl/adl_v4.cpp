@@ -175,14 +175,12 @@ void AdlEngine_v4::saveState(Common::WriteStream &stream) {
 }
 
 Common::String AdlEngine_v4::loadMessage(uint idx) const {
-	Common::String str = AdlEngine_v3::loadMessage(idx);
-
-	for (uint i = 0; i < str.size(); ++i) {
-		const char *xorStr = "AVISDURGAN";
-		str.setChar(str[i] ^ xorStr[i % strlen(xorStr)], i);
+	if (_messages[idx]) {
+		Common::StreamPtr strStream(_messages[idx]->createReadStream());
+		return readString(*strStream, 0xff, "AVISDURGAN");
 	}
 
-	return str;
+	return Common::String();
 }
 
 Common::String AdlEngine_v4::getItemDescription(const Item &item) const {
@@ -295,7 +293,7 @@ void AdlEngine_v4::loadRegion(byte region) {
 	fixupDiskOffset(track, sector);
 
 	for (uint block = 0; block < 7; ++block) {
-		StreamPtr stream(_disk->createReadStream(track, sector, offset, 1));
+		Common::StreamPtr stream(_disk->createReadStream(track, sector, offset, 1));
 
 		uint16 addr = stream->readUint16LE();
 		uint16 size = stream->readUint16LE();

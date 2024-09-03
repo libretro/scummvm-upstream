@@ -155,19 +155,20 @@ static const char *const selectorNameTable[] = {
 	"fade",         // Longbow, Shivers
 	"enable",       // Longbow, SQ6
 	"alterEgo",     // LSL5
+	"normalize",    // Pepper, GK1, QFG4
 	"delete",       // EcoQuest 1
 	"size",         // EcoQuest 1
 	"signal",       // EcoQuest 1, GK1
 	"obstacles",    // EcoQuest 1, QFG4
 	"handleEvent",  // EcoQuest 2, Shivers
 	"view",         // King's Quest 4, RAMA benchmarking, GK1, QFG4
+	"tWindow",      // Camelot
 #ifdef ENABLE_SCI32
 	"newWith",      // SCI2 array script
 	"posn",         // GK1, Phant2, QFG4
 	"printLang",    // GK2
 	"test",         // Torin
 	"get",          // Torin, GK1
-	"normalize",    // GK1
 	"setReal",      // GK1
 	"set",          // Torin
 	"clear",        // Torin
@@ -297,12 +298,14 @@ enum ScriptPatcherSelectors {
 	SELECTOR_fade,
 	SELECTOR_enable,
 	SELECTOR_alterEgo,
+	SELECTOR_normalize,
 	SELECTOR_delete,
 	SELECTOR_size,
 	SELECTOR_signal,
 	SELECTOR_obstacles,
 	SELECTOR_handleEvent,
-	SELECTOR_view
+	SELECTOR_view,
+	SELECTOR_tWindow
 #ifdef ENABLE_SCI32
 	,
 	SELECTOR_newWith,
@@ -310,7 +313,6 @@ enum ScriptPatcherSelectors {
 	SELECTOR_printLang,
 	SELECTOR_test,
 	SELECTOR_get,
-	SELECTOR_normalize,
 	SELECTOR_setReal,
 	SELECTOR_set,
 	SELECTOR_clear,
@@ -1170,10 +1172,95 @@ static const uint16 camelotPatchSwordEvents[] = {
 	PATCH_END
 };
 
+// After viewing the purse with "count money" or several other commands, the game
+//  always displays a message saying that the purse is empty, even when it isn't.
+//  ARTHUR:handleEvent incorrectly tests the return value of the purse function
+//  instead of also testing the three money globals.
+//
+// We fix this by only displaying the empty-purse message when all of the money
+//  globals are zero.
+//
+// Applies to: All versions
+// Responsible method: ARTHUR:handleEvent
+// Fixes bug: #15288
+static const uint16 camelotSignaturePurseMessages[] = {
+	0x18,                               // not
+	0x30, SIG_UINT16(0x0014),           // bnt 0014 [ selected money ]
+	0x7a,                               // push2
+	0x38, SIG_UINT16(0x0320),           // pushi 0320
+	0x7a,                               // push2
+	SIG_MAGICDWORD,
+	0x39, 0x1d,                         // pushi 1d
+	0x39, 0x22,                         // pushi 22
+	0x43, 0x40, 0x04,                   // callk Random 04
+	0x36,                               // push
+	0x47, 0xff, 0x00, 0x04,             // calle Print [ empty-purse message ]
+	0x32, SIG_UINT16(0x0011),           // jmp 0011    [ cleanup ]
+	SIG_ADDTOOFFSET(+9),
+	0x43, 0x40, 0x04,                   // callk Random 04
+	SIG_END
+};
+
+static const uint16 camelotPatchPurseMessages[] = {
+	0x2f, 0x16,                         // bt 16  [ selected money ]
+	0x89, 0x7a,                         // lsg 7a [ gold ]
+	0x81, 0x79,                         // lag 79 [ silver ]
+	0x14,                               // or
+	0x89, 0x78,                         // lsg 78 [ copper ]
+	0x14,                               // or
+	0x2f, 0x1d,                         // bt 1d  [ skip empty-purse message ]
+	PATCH_GETORIGINALBYTES(4, 9),       // [ prepare empty-purse message ]
+	0x32, PATCH_UINT16(0x0009),         // jmp 0009 [ callk Random / calle Print ]
+	PATCH_END
+};
+
+// When returning to the Jaffa Gate after falling through the trap door in
+//  Fatima's house, the guards use the wrong text window. Instead they use
+//  the con man Yasser's text window and caption. tObj:tWindow is initialized
+//  to conWindow by the room, but script 207 forgot to change this default.
+//
+// We fix this by setting tObj:tWindow to guardWindow during this scene.
+//
+// Applies to: All versions
+// Responsible method: walkThruGates:changeState
+// Fixes bug: #14811
+static const uint16 camelotSignatureGuardMessages[] = {
+	0x72, SIG_UINT16(0xff1e),           // lofsa guardWindow
+	SIG_ADDTOOFFSET(+0x9f),
+	0x30, SIG_UINT16(0x0032),           // bnt 0032 [ state 1 ]
+	SIG_ADDTOOFFSET(+0x2f),
+	0x32, SIG_UINT16(0x006f),           // jmp 006f [ toss, ret ]
+	SIG_ADDTOOFFSET(+4),
+	0x30, SIG_UINT16(0x0023),           // bnt 0023 [ state 2 ]
+	SIG_ADDTOOFFSET(+0xe),
+	SIG_MAGICDWORD,
+	0x81, 0x6f,                         // lag 6f  [ tObj ]
+	0x4a, 0x06,                         // send 06 [ tObj talkCue: self ]
+	SIG_ADDTOOFFSET(+0xe),
+	0x32,                               // jmp     [ toss, ret ]
+	SIG_END
+};
+
+static const uint16 camelotPatchGuardMessages[] = {
+	PATCH_ADDTOOFFSET(+0xa2),
+	0x30, PATCH_UINT16(0x002f),         // bnt 002f [ state 1 ]
+	PATCH_ADDTOOFFSET(+0x2f),
+	PATCH_GETORIGINALBYTES(0xd7, 4),
+	0x31, 0x27,                         // bnt 27 [ state 2 ]
+	PATCH_GETORIGINALBYTES(0xde, 0x10),
+	0x38, PATCH_SELECTOR16(tWindow),    // pushi tWindow
+	0x78,                               // push1
+	0x74, PATCH_UINT16(0xfe30),         // lofsa guardWindow
+	0x4a, 0x0c,                         // send 0c [ tObj talkCue: self, tWindow: guardWindow ]
+	PATCH_GETORIGINALBYTES(0xf0, 0xe),
+	PATCH_END
+};
+
 //         script, description,                                       signature                             patch
 static const SciScriptPatcherEntry camelotSignatures[] = {
 	{ true,     0, "fix sword sheathing",                          1, camelotSignatureSwordSheathing,       camelotPatchSwordSheathing },
 	{ true,     0, "fix sword events",                             1, camelotSignatureSwordEvents,          camelotPatchSwordEvents },
+	{ true,     0, "fix purse messages",                           1, camelotSignaturePurseMessages,        camelotPatchPurseMessages },
 	{ true,    11, "fix hunter missing points",                    1, camelotSignatureHunterMissingPoints,  camelotPatchHunterMissingPoints },
 	{ true,    62, "fix peepingTom Sierra bug",                    1, camelotSignaturePeepingTom,           camelotPatchPeepingTom },
 	{ true,    64, "fix Fatima room messages",                     2, camelotSignatureFatimaRoomMessages,   camelotPatchFatimaRoomMessages },
@@ -1182,6 +1269,7 @@ static const SciScriptPatcherEntry camelotSignatures[] = {
 	{ true,   158, "fix give mule message",                        1, camelotSignatureGiveMuleMessage,      camelotPatchGiveMuleMessage },
 	{ true,   169, "fix relic merchant lockup (1/2)",              1, camelotSignatureRelicMerchantLockup1, camelotPatchRelicMerchantLockup1 },
 	{ true,   169, "fix relic merchant lockup (2/2)",              1, camelotSignatureRelicMerchantLockup2, camelotPatchRelicMerchantLockup2 },
+	{ true,   207, "fix guard messages",                           1, camelotSignatureGuardMessages,        camelotPatchGuardMessages },
 	SCI_SIGNATUREENTRY_TERMINATOR
 };
 
@@ -4300,7 +4388,9 @@ static const uint16 gk1EndGameFontPatch[] = {
 //  to kDisposeTextBitmap. By patching just the callk instructions, the Destroy
 //  subop (1) on the stack becomes the new parameter count. The old parameter
 //  count (2) remains on the stack until the next ret instruction. This allows
-//  one patch to work on all calls.
+//  one patch to work on all calls. This patch is hard-coded to little endian
+//  bytecode so that it it is not applied to the Macintosh version, as that
+//  version does use a SCI2.1 interpreter.
 //
 // Applies to: Italian fan translation, PC CD version
 // Responsible methods: DEdit:hilite, DText:dispose, DText:draw, DSelector:dispose, 
@@ -4308,12 +4398,12 @@ static const uint16 gk1EndGameFontPatch[] = {
 //                      TellerButton:hilite, TopicButton:hilite
 static const uint16 gk1ItalianTranslationSignature[] = {
 	SIG_MAGICDWORD,
-	0x43, 0x91, SIG_UINT16(0x0004),     // callk 91 0004 [ SCI2: invalid, SCI2.1: kBitmap ]
+	0x43, 0x91, 0x04, 0x00,             // callk 91 0004 [ SCI2: invalid, SCI2.1: kBitmap ]
 	SIG_END
 };
 
 static const uint16 gk1ItalianTranslationPatch[] = {
-	0x43, 0x2e, PATCH_UINT16(0x0002),   // callk 2e 0002 [ kDisposeTextBitmap ]
+	0x43, 0x2e, 0x02, 0x00,             // callk 2e 0002 [ kDisposeTextBitmap ]
 	PATCH_END
 };
 
@@ -9269,10 +9359,37 @@ static const uint16 larry5PatchRoom500PaletteAnimation[] = {
 	PATCH_END
 };
 
+// The poker jackpot is incorrectly reset to zero when restarting the game.
+//  When starting a new game by starting the program, the jackpot's global
+//  is initialized from the password file MEMORY.DRV with a default value
+//  of one thousand. But when restarting, the password prompt is skipped,
+//  and the jackpot global is left with its initial heap value of zero.
+//
+// We fix this by setting the jackpot's initial heap value to one thousand.
+//
+// Applies to: All versions
+// Responsible method: heap in script 0
+static const uint16 larry5SignaturePokerJackpotInit[] = {
+	SIG_MAGICDWORD,
+	SIG_UINT16(0x03e7),                // global 20 = 999
+	SIG_UINT16(0x0014),                // global 21 = 20
+	SIG_UINT16(0x0001),                // global 22 = 1
+	SIG_ADDTOOFFSET(+0x118),
+	SIG_UINT16(0x0000),                // global 163 = 0 [ jackpot ]
+	SIG_END
+};
+
+static const uint16 larry5PatchPokerJackpotInit[] = {
+	PATCH_ADDTOOFFSET(+0x011e),
+	PATCH_UINT16(0x03e8),              // global 163 = 1000 [ jackpot ]
+	PATCH_END
+};
+
 //          script, description,                                      signature                               patch
 static const SciScriptPatcherEntry larry5Signatures[] = {
 	{  true,     0, "update stopGroop client",                     1, larry5SignatureUpdateStopGroopClient,   larry5PatchUpdateStopGroopClient },
 	{  true,     0, "TPrint uninit parameter",                     1, larry5SignatureHTPrintUninitParameter,  larry5PatchTPrintUninitParameter },
+	{  true,     0, "poker jackpot init",                          1, larry5SignaturePokerJackpotInit,        larry5PatchPokerJackpotInit },
 	{  true,   130, "speed up palette animation",                  1, larry5SignatureMrBiggPaletteAnimation,  larry5PatchMrBiggPaletteAnimation },
 	{  true,   190, "hollywood sign",                              1, larry5SignatureHollywoodSign,           larry5PatchHollywoodSign },
 	{  true,   280, "English-only: fix green card limo bug",       1, larry5SignatureGreenCardLimoBug,        larry5PatchGreenCardLimoBug },
@@ -13365,9 +13482,49 @@ static const uint16 pepperPatchMustyMessage[] = {
 	PATCH_END
 };
 
+// In Act 6, exiting the Penn Mansion kitchen and re-entering while the butler
+//  is standing guard can lockup the game. This also occurs in the original.
+//  The bug can be triggered by clicking Walk on the kitchen when the speed
+//  slider is set to slow, or by first clicking the Truth icon on the kitchen.
+//
+// When clicking Walk on the kitchen, ego starts turning and a 3 cycle timer is
+//  set. When the timer cues, sCaughtGoToKitchen:changeState(0) calls handsOff
+//  and sets ego's motion to zero. But if ego is in the middle of turning, the
+//  turn will complete and ego will then begin walking. This cannot be seen,
+//  because the script hides ego so that the butler's view can contain Pepper.
+//  When the scene completes, ego suddenly appears in an unexpected location,
+//  causing ego's final motion to fail to reach the new-room trigger.
+//
+// We fix this by calling pepper:normalize instead of pepper:setMotion(0) in
+//  sCaughtGoToKitchen:changeState(0). This stops ego's turn in addition to
+//  their motion. The setMotion call is redundant because it is preceded
+//  by a handsOff call that also calls setMotion(0).
+//
+// Applies to: All versions
+// Responsible method: sCaughtGoToKitchen:changeState(0)
+// Fixes bug: #15263
+static const uint16 pepperSignatureKitchenLockup[] = {
+	0x38, SIG_SELECTOR16(setMotion),     // pushi setMotion
+	0x78,                                // push1
+	0x76,                                // push0
+	0x81, 0x00,                          // lag 00
+	0x4a, SIG_MAGICDWORD, 0x06,          // send 06 [ pepper setMotion: 0 ]
+	0x38, SIG_SELECTOR16(stop),          // pushi stop
+	SIG_END
+};
+
+static const uint16 pepperPatchKitchenLockup[] = {
+	0x38, PATCH_SELECTOR16(normalize),  // pushi normalize
+	0x39, 0x00,                         // pushi 00
+	PATCH_ADDTOOFFSET(+2),
+	0x4a, 0x04,                         // send 04 [ pepper normalize: ]
+	PATCH_END
+};
+
 //          script, description,                                         signature                            patch
 static const SciScriptPatcherEntry pepperSignatures[] = {
 	{  true,   116, "puzzle box fix",                                 1, pepperSignaturePuzzleBox,            pepperPatchPuzzleBox },
+	{  true,   380, "kitchen lockup fix",                             1, pepperSignatureKitchenLockup,        pepperPatchKitchenLockup },
 	{  true,   400, "musty message fix",                              1, pepperSignatureMustyMessage,         pepperPatchMustyMessage },
 	{  true,   894, "glass jar fix",                                  1, pepperSignatureGlassJar,             pepperPatchGlassJar },
 	{  true,   928, "Narrator lockup fix",                            1, sciNarratorLockupSignature,          sciNarratorLockupPatch },

@@ -865,6 +865,10 @@ static const WMEGameDescription gameDescriptions[] = {
 		WME_ENTRY2s("actors.dcp", "170c7ade10edd7ff6d24b16f2eecd818", 453328582,
 					"stageplay.dcp", "ed67b4d6e35c19597241eb1d863aa315", 226453373), Common::EN_ANY, ADGF_UNSTABLE | GF_3D, WME_1_8_10),
 
+	WME_WINENTRY("darkfallls", "",
+		WME_ENTRY2s("actors.dcp", "17df9d381d49100d2bd79c5f3eefe53c", 454049405,
+					"stageplay.dcp", "037dcab0c7204a8c09f12aec4c4dd5e7", 198193043), Common::DE_DEU, ADGF_UNSTABLE | GF_3D, WME_1_8_10),
+
 	// Twilight: Dark Summer (Ario) (Persian)
 	WME_WINENTRY("darksummer", "",
 		WME_ENTRY1s("data.dcp", "da1142983240a5bb62c32f79a863eac5", 1030873185), Common::FA_IRN, ADGF_UNSTABLE | GF_3D, WME_1_9_3),
@@ -1397,10 +1401,16 @@ static const WMEGameDescription gameDescriptions[] = {
 		WME_ENTRY2s("english.dcp", "e21c7278071cd2ee216ae72d5a39de29", 12008908,
 					"data.dcp", "43ba03f37a0f97249c1e0c3cf7d6f9a9", 167980), Common::EN_ANY, ADGF_UNSTABLE, WME_1_8_0),
 
-	// Ghost in the Sheet (aka S.C.A.R.E.) (German)
+	// Ghost in the Sheet (aka S.C.A.R.E.) (2007) (German)
 	WME_WINENTRY("ghostsheet", "",
 		WME_ENTRY2s("german.dcp", "7fe6c0b28ebdfa55f432805ebc524cc3", 209496295,
 					"data.dcp", "4e4e5fdff0f7a5f4aa5db51c5c7e94d3", 3759113), Common::DE_DEU, ADGF_UNSTABLE, WME_1_8_0),
+
+	// Ghost in the Sheet (aka Mystery Places - Das Geheimnis von Sektor Omega) (2011) (German)
+	WME_WINENTRY("ghostsheet", "",
+		WME_ENTRY3s("german_2.dcp", "1b034ed144db60e46fcd5333b6da1948", 741394,
+					"german.dcp", "7fe6c0b28ebdfa55f432805ebc524cc3", 209496295,
+					"data.dcp", "4e4e5fdff0f7a5f4aa5db51c5c7e94d3", 3759113), Common::DE_DEU, ADGF_UNSTABLE, WME_1_9_2),
 
 	// Ghost in the Sheet (Italian)
 	WME_WINENTRY("ghostsheet", "",

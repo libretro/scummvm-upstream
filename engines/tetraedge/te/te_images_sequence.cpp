@@ -24,6 +24,8 @@
 #include "graphics/surface.h"
 #include "graphics/managed_surface.h"
 
+#include "tetraedge/tetraedge.h"
+#include "tetraedge/te/te_core.h"
 #include "tetraedge/te/te_images_sequence.h"
 
 namespace Tetraedge {
@@ -47,16 +49,18 @@ static bool compareNodes(const Common::FSNode &left, const Common::FSNode &right
 	return left.getPath().toString('/') < right.getPath().toString('/');
 }
 
-bool TeImagesSequence::load(const Common::FSNode &directory) {
-	const Common::String path = directory.getPath().toString('/');
-	if (!directory.isDirectory()) {
-		warning("TeImagesSequence::load:: not a directory %s", directory.getPath().toString(Common::Path::kNativeSeparator).c_str());
+bool TeImagesSequence::load(const Common::Path &directory) {
+	Common::FSNode dir = g_engine->getCore()->getFSNode(directory);
+
+	const Common::String path = directory.toString('/');
+	if (!dir.isDirectory()) {
+		warning("TeImagesSequence::load:: not a directory %s", directory.toString(Common::Path::kNativeSeparator).c_str());
 		return false;
 	}
 
 	Common::FSList children;
-	if (!directory.getChildren(children, Common::FSNode::kListFilesOnly) || children.empty()) {
-		warning("TeImagesSequence::load:: couldn't get children of %s", directory.getPath().toString(Common::Path::kNativeSeparator).c_str());
+	if (!dir.getChildren(children, Common::FSNode::kListFilesOnly) || children.empty()) {
+		warning("TeImagesSequence::load:: couldn't get children of %s", directory.toString(Common::Path::kNativeSeparator).c_str());
 		return false;
 	}
 

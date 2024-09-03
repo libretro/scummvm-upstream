@@ -181,11 +181,6 @@ void OPL::write(int portAddress, int value) {
 	}
 }
 
-byte OPL::read(int portAddress) {
-	// Reads are not supported by the RetroWave OPL3.
-	return 0;
-}
-
 void OPL::writeReg(int reg, int value) {
 	if (emulateDualOpl2OnOpl3(reg, value, _type)) {
 		writeReg(reg, value, false);
@@ -229,7 +224,7 @@ void OPL::onTimer() {
 		_rwMutex->unlock();
 	}
 
-	RealOPL::onTimer();
+	Audio::RealChip::onTimer();
 }
 
 OPL *create(Config::OplType type) {

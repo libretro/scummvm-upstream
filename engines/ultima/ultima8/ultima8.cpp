@@ -848,11 +848,11 @@ void Ultima8Engine::handleEvent(const Common::Event &event) {
 	}
 
 	case Common::EVENT_CUSTOM_ENGINE_ACTION_START:
-		MetaEngine::pressAction((KeybindingAction)event.customType);
+		handleActionDown((KeybindingAction)event.customType);
 		break;
 
 	case Common::EVENT_CUSTOM_ENGINE_ACTION_END:
-		MetaEngine::releaseAction((KeybindingAction)event.customType);
+		handleActionUp((KeybindingAction)event.customType);
 		break;
 
 	case Common::EVENT_QUIT:
@@ -869,6 +869,30 @@ void Ultima8Engine::handleDelayedEvents() {
 	//uint32 now = g_system->getMillis();
 
 	_mouse->handleDelayedEvents();
+}
+
+void Ultima8Engine::handleActionDown(KeybindingAction action) {
+	if (!isAvatarInStasis()) {
+		if (_avatarMoverProcess && _avatarMoverProcess->onActionDown(action)) {
+			moveKeyEvent();
+			return;
+		}
+	}
+
+	Common::String methodName = MetaEngine::getMethod(action, true);
+	if (!methodName.empty())
+		g_debugger->executeCommand(methodName);
+}
+
+void Ultima8Engine::handleActionUp(KeybindingAction action) {
+	if (_avatarMoverProcess && _avatarMoverProcess->onActionUp(action)) {
+		moveKeyEvent();
+		return;
+	}
+
+	Common::String methodName = MetaEngine::getMethod(action, false);
+	if (!methodName.empty())
+		g_debugger->executeCommand(methodName);
 }
 
 void Ultima8Engine::writeSaveInfo(Common::WriteStream *ws) {
@@ -920,7 +944,7 @@ Common::Error Ultima8Engine::loadGameState(int slot) {
 	if (result.getCode() == Common::kNoError)
 		ConfMan.setInt("lastSave", slot);
 	else
-		ConfMan.set("lastSave", "");
+		ConfMan.setInt("lastSave", -1);
 
 	ConfMan.flushToDisk();
 
@@ -934,7 +958,7 @@ Common::Error Ultima8Engine::saveGameState(int slot, const Common::String &desc,
 		if (result.getCode() == Common::kNoError)
 			ConfMan.setInt("lastSave", slot);
 		else
-			ConfMan.set("lastSave", "");
+			ConfMan.setInt("lastSave", -1);
 	}
 
 	ConfMan.flushToDisk();
@@ -1136,7 +1160,7 @@ bool Ultima8Engine::newGame(int saveSlot) {
 	_game->startInitialUsecode(saveSlot);
 
 	if (saveSlot == -1)
-		ConfMan.set("lastSave", "");
+		ConfMan.setInt("lastSave", -1);
 
 	return true;
 }
