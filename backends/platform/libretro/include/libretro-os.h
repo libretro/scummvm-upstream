@@ -95,7 +95,10 @@ public:
 
 #ifdef USE_OPENGL
 	void resetGraphicsContext(void);
+
+#if defined(USE_GLAD)
 	void *getOpenGLProcAddress(const char *name) const override;
+#endif
 #endif
 
 private:

@@ -37,6 +37,7 @@ DEBUG            ?= 0
 FORCE_OPENGL     ?= 0
 FORCE_OPENGLES2  ?= 0
 FORCE_OPENGLNONE ?= 0
+FORCE_GLAD_OFF   ?= 0
 
 DEBUG_ALLOW_DIRTY_SUBMODULES ?= 0
 
@@ -134,14 +135,27 @@ ifeq ($(or $(HAVE_OPENGL), $(HAVE_OPENGLES2)), 1)
    USE_OPENGL := 1
    USE_OPENGL_GAME := 1
    USE_OPENGL_SHADERS := 1
-   DEFINES += -DUSE_OPENGL -DUSE_GLAD -DUSE_OPENGL_GAME -DUSE_OPENGL_SHADERS
+   DEFINES += -DUSE_OPENGL -DUSE_OPENGL_GAME -DUSE_OPENGL_SHADERS
 ifeq ($(HAVE_OPENGL), 1)
    DEFINES += -DHAVE_OPENGL
+   GLES_MODE:= 0
+   GL_LIB_FLAGS ?= -lGL
    $(info Support for OpenGL requested)
 else
    DEFINES += -DHAVE_OPENGLES2
+   GLES_MODE:= 2
+   GL_LIB_FLAGS ?= -lGLESv2
    $(info Support for OpenGLES2 requested)
 endif
+
+ifneq ($(FORCE_GLAD_OFF), 1)
+    DEFINES += -DUSE_GLAD
+else
+    $(info Forced GLAD off)
+    DEFINES += -DUSE_GLES_MODE=$(GLES_MODE)
+    LDFLAGS += $(GL_LIB_FLAGS)
+endif
+
 else
    UNAVAILABLE_DEPS += opengl_game_shaders
    $(info No support for OpenGL/OpenGLES2 requested)

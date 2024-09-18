@@ -46,6 +46,15 @@ OBJS_DEPS += $(DEPS_PATH)/$(DEPS_FOLDER_libretro-common)/file/file_path_io.o \
 	$(DEPS_PATH)/$(DEPS_FOLDER_libretro-common)/streams/file_stream.o \
 	$(DEPS_PATH)/$(DEPS_FOLDER_libretro-common)/features/features_cpu.o
 
+ifeq ($(or $(HAVE_OPENGL), $(HAVE_OPENGLES2)), 1)
+ifneq ($(USE_GLAD), 1)
+ifeq ($(HAVE_OPENGL), 1)
+	OBJS_DEPS += $(DEPS_PATH)/$(DEPS_FOLDER_libretro-common)/glsym/glsym_gl.o
+else
+	OBJS_DEPS += $(DEPS_PATH)/$(DEPS_FOLDER_libretro-common)/glsym/glsym_es2.o
+endif
+endif
+endif
 
 ifeq ($(USE_LIBCO), 1)
 OBJS_DEPS += $(DEPS_PATH)/$(DEPS_FOLDER_libretro-common)/libco/libco.o

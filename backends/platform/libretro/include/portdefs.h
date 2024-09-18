@@ -57,3 +57,9 @@
 #define setjmp(a) (__builtin_setjmp(a))
 #define longjmp(a, b) (__builtin_longjmp(a, b))
 #endif
+
+#if defined(USE_OPENGL) && ! defined(USE_GLAD)
+#define GL_STACK_OVERFLOW_KHR GL_STACK_OVERFLOW
+#define GL_STACK_UNDERFLOW_KHR GL_STACK_UNDERFLOW
+#include "glsym/glsym.h"
+#endif

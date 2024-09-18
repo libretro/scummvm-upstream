@@ -181,10 +181,11 @@ void OSystem_libretro::refreshScreen(void) {
 }
 
 #ifdef USE_OPENGL
+#if defined(USE_GLAD)
 void *OSystem_libretro::getOpenGLProcAddress(const char *name) const {
 	return retro_get_proc_address(name);
 }
-
+#endif
 void OSystem_libretro::resetGraphicsContext(void) {
 	if ((retro_get_video_hw_mode() & VIDEO_GRAPHIC_MODE_REQUEST_HW) && (retro_get_video_hw_mode() & VIDEO_GRAPHIC_MODE_HAVE_OPENGL))
 		dynamic_cast<LibretroOpenGLGraphics *>(_graphicsManager)->resetContext(OpenGL::kContextGL);
