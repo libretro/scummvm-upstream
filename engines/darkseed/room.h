@@ -23,9 +23,10 @@
 #define DARKSEED_ROOM_H
 
 #include "common/rect.h"
+#include "darkseed/nsp.h"
 #include "darkseed/pal.h"
 #include "darkseed/pic.h"
-#include "darkseed/nsp.h"
+#include "sound.h"
 
 namespace Darkseed {
 
@@ -54,8 +55,8 @@ struct RoomObjElement {
 };
 
 class Room {
-private:
 	bool _palLoaded = false;
+
 public:
 	static constexpr int MAX_CONNECTORS = 12;
 	uint8 _roomNumber;
@@ -73,7 +74,6 @@ public:
 	uint16 _selectedObjIndex = 0;
 	int16 _collisionType = 0;
 
-public:
 	explicit Room(int roomNumber);
 
 	void initRoom();
@@ -95,7 +95,7 @@ public:
 	bool canWalkInLineToTarget(int x, int y, int targetX, int targetY);
 	void printRoomDescriptionText() const;
 	void calculateScaledSpriteDimensions(int width, int height, int curYPosition);
-	bool isOutside();
+	bool isOutside() const;
 	bool isGiger();
 	void runRoomObjects();
 	void removeObjectFromRoom(int16 objNum);
@@ -107,9 +107,12 @@ public:
 	void darkenSky();
 	void loadLocationSprites(const Common::Path &path);
 	Common::Point getExitPointForRoom(uint8 roomNumber);
+	static MusicId getMusicIdForRoom(uint8 roomNumber);
+	void loadRoomMusic();
+
 private:
 	bool load();
-	static Common::String stripSpaces(Common::String source);
+	static Common::String stripSpaces(const Common::String &source);
 	void drawTrunk();
 	void advanceLocAnimFrame(int roomObjIdx);
 };

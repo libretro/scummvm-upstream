@@ -69,6 +69,8 @@ void Cutscene::update() {
 	case 'Z' :
 		_movieStep = 9999;
 		break;
+	default:
+		break;
 	}
 
 	if (_movieStep == 9999) {
@@ -410,7 +412,7 @@ bool Cutscene::introScene() {
 	}
 	_movieStep++;
 	if (g_engine->_isLeftMouseClicked || g_engine->_isRightMouseClicked) {
-		g_engine->zeromousebuttons();
+		g_engine->zeroMouseButtons();
 		if (_movieStep < 51) {
 			_movieStep = 51;
 		}
@@ -463,7 +465,7 @@ bool Cutscene::embryoInsertedScene() {
 	case 9:
 		if (stepAnim()) {
 			if (g_engine->_isLeftMouseClicked || g_engine->_isRightMouseClicked) {
-				g_engine->zeromousebuttons();
+				g_engine->zeroMouseButtons();
 				if (_movieStep < 16) {
 					_movieStep = 16;
 				}
@@ -522,7 +524,7 @@ bool Cutscene::embryoInsertedScene() {
 	}
 	_movieStep++;
 	if (g_engine->_isLeftMouseClicked || g_engine->_isRightMouseClicked) {
-		g_engine->zeromousebuttons();
+		g_engine->zeroMouseButtons();
 		if (_movieStep < 16) {
 			_movieStep = 16;
 		}
@@ -1083,7 +1085,7 @@ void Cutscene::registTime() {
 	_startTime = g_system->getMillis();
 }
 
-bool Cutscene::waitTime(int16 duration) {
+bool Cutscene::waitTime(int16 duration) const {
 	return g_system->getMillis() < _startTime + (duration * 100);
 }
 

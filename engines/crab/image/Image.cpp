@@ -59,7 +59,8 @@ bool Image::load(Graphics::Surface *surface) {
 bool Image::load(Graphics::ManagedSurface *surface) {
 	deleteImage();
 
-	_texture = new Graphics::ManagedSurface(*surface);
+	_texture = new Graphics::ManagedSurface();
+	_texture->copyFrom(*surface);
 
 	_w = surface->w;
 	_h = surface->h;

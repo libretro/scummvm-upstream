@@ -58,6 +58,7 @@ struct SpriteVertexShader {
 };
 
 BaseRenderOpenGL3DShader::BaseRenderOpenGL3DShader(BaseGame *inGame) : BaseRenderer3D(inGame) {
+	_flatShadowMaskShader = nullptr;
 }
 
 BaseRenderOpenGL3DShader::~BaseRenderOpenGL3DShader() {
@@ -118,16 +119,13 @@ int BaseRenderOpenGL3DShader::getMaxActiveLights() {
 	return 8;
 }
 
-void BaseRenderOpenGL3DShader::enableLight(int index) {
+void BaseRenderOpenGL3DShader::lightEnable(int index, bool enable) {
 	_xmodelShader->use();
 	Common::String uniform = Common::String::format("lights[%i].enabled", index);
-	_xmodelShader->setUniform1f(uniform.c_str(), 1.0f);
-}
-
-void BaseRenderOpenGL3DShader::disableLight(int index) {
-	_xmodelShader->use();
-	Common::String uniform = Common::String::format("lights[%i].enabled", index);
-	_xmodelShader->setUniform1f(uniform.c_str(), -1.0f);
+	if (enable)
+		_xmodelShader->setUniform1f(uniform.c_str(), 1.0f);
+	else
+		_xmodelShader->setUniform1f(uniform.c_str(), -1.0f);
 }
 
 void BaseRenderOpenGL3DShader::setLightParameters(int index, const DXVector3 &position,
@@ -169,6 +167,7 @@ void BaseRenderOpenGL3DShader::setLightParameters(int index, const DXVector3 &po
 }
 
 void BaseRenderOpenGL3DShader::enableCulling() {
+	glFrontFace(GL_CW);
 	glEnable(GL_CULL_FACE);
 }
 
@@ -177,6 +176,7 @@ void BaseRenderOpenGL3DShader::disableCulling() {
 }
 
 bool BaseRenderOpenGL3DShader::enableShadows() {
+	return true; // TODO: reimplement. Shadows are broken for a while since it use not allowed binding to frame buffer
 	if (_flatShadowMaskShader == nullptr) {
 		_flatShadowColor = Math::Vector4d(0.0f, 0.0f, 0.0f, 0.5f);
 
@@ -259,6 +259,7 @@ bool BaseRenderOpenGL3DShader::disableShadows() {
 }
 
 void BaseRenderOpenGL3DShader::displayShadow(BaseObject *object, const DXVector3 *lightPos, bool lightPosRelative) {
+	return; // TODO: reimplement. Shadows are broken for a while since it use not allowed binding to frame buffer
 	if (_flatShadowMaskShader) {
 		if (object->_shadowType <= SHADOW_SIMPLE) {
 			// TODO: Display simple shadow here
@@ -343,7 +344,7 @@ void BaseRenderOpenGL3DShader::displayShadow(BaseObject *object, const DXVector3
 	}
 }
 
-bool BaseRenderOpenGL3DShader::usingStencilBuffer() {
+bool BaseRenderOpenGL3DShader::stencilSupported() {
 	// assume that we have a stencil buffer
 	return true;
 }
@@ -468,7 +469,7 @@ bool BaseRenderOpenGL3DShader::setProjection() {
 	int mtop = rc.top;
 	int mbottom = resHeight - viewportHeight - rc.top;
 
-	DXMatrixPerspectiveFovRH(&matProj, _fov, viewportWidth / viewportHeight, _nearClipPlane, _farClipPlane);
+	DXMatrixPerspectiveFovLH(&matProj, _fov, viewportWidth / viewportHeight, _nearClipPlane, _farClipPlane);
 
 	float scaleMod = resHeight / viewportHeight;
 	float scaleRatio = MAX(layerWidth / resWidth, layerHeight / resHeight) /** 1.05*/;
@@ -583,7 +584,7 @@ bool BaseRenderOpenGL3DShader::initRenderer(int width, int height, bool windowed
 
 	for (int i = 0; i < getMaxActiveLights(); ++i) {
 		setLightParameters(i, DXVector3(0, 0, 0), DXVector3(0, 0, 0), DXVector4(0, 0, 0, 0), false);
-		disableLight(i);
+		lightEnable(i, false);
 	}
 
 	_windowed = !ConfMan.getBool("fullscreen");
@@ -888,20 +889,20 @@ void BaseRenderOpenGL3DShader::renderShadowGeometry(const BaseArray<AdWalkplane 
 	// disable color write
 	glBlendFunc(GL_ZERO, GL_ONE);
 
-	glFrontFace(GL_CCW);
+	glFrontFace(GL_CW);
 	glBindTexture(GL_TEXTURE_2D, 0);
-
-	// render walk planes
-	for (uint i = 0; i < planes.size(); i++) {
-		if (planes[i]->_active && planes[i]->_receiveShadows) {
-			planes[i]->_mesh->render();
-		}
-	}
 
 	// render blocks
 	for (uint i = 0; i < blocks.size(); i++) {
 		if (blocks[i]->_active && blocks[i]->_receiveShadows) {
 			blocks[i]->_mesh->render();
+		}
+	}
+
+	// render walk planes
+	for (uint i = 0; i < planes.size(); i++) {
+		if (planes[i]->_active && planes[i]->_receiveShadows) {
+			planes[i]->_mesh->render();
 		}
 	}
 

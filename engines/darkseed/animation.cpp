@@ -60,7 +60,7 @@ void Animation::setupOtherNspAnimation(int nspAnimIdx, int animId) {
 		//			LoadModeSong(7);
 		//			PlaySound(0,6,-1);
 		//		}
-		_scaleSequence = 1;
+		_scaleSequence = true;
 		break;
 	case 4:
 	case 14:
@@ -196,7 +196,7 @@ void Animation::updateAnimation() {
 				if (g_engine->_room->isOutside() && g_engine->_currentTimeInSeconds > 61200) {
 					g_engine->_room->restorePalette();
 				}
-				g_engine->gotonextmorning();
+				g_engine->gotoNextMorning();
 				g_engine->playDayChangeCutscene();
 			}
 		}
@@ -236,7 +236,7 @@ void Animation::updateAnimation() {
 		if (!_objRestarted) {
 			_player->_frameIdx = _player->_animations.getAnimAt(1)._frameNo[_player->_animations.getAnimAt(1)._frameNo[_animIndexTbl[1]]];
 		} else {
-			g_engine->gotonextmorning(); // TODO there might be some extra logic required from original function
+			g_engine->gotoNextMorning(); // TODO there might be some extra logic required from original function
 			_player->_position.x = 242;
 			_player->_position.y = 187;
 			g_engine->playDayChangeCutscene();
@@ -265,7 +265,7 @@ void Animation::updateAnimation() {
 				g_engine->changeToRoom(5);
 			}
 			if (_player->_isAutoWalkingToBed) {
-				_player->setplayertowardsbedroom();
+				_player->setPlayerTowardsBedroom();
 			}
 		}
 		break;
@@ -352,7 +352,7 @@ void Animation::updateAnimation() {
 			_player->_walkTarget.y = 200;
 			_player->updateSprite();
 			if (_player->_isAutoWalkingToBed) {
-				_player->setplayertowardsbedroom();
+				_player->setPlayerTowardsBedroom();
 			}
 		}
 		break;
@@ -428,7 +428,7 @@ void Animation::updateAnimation() {
 		if (_objRestarted) {
 			_isPlayingAnimation_maybe = true;
 			_objectVar[46] = 2;
-			libanim(true);
+			libAnim(true);
 		}
 		break;
 	case 20: // receive card from delbert
@@ -470,10 +470,10 @@ void Animation::updateAnimation() {
 				// TODO
 				if (_objectVar.getObjectRunningCode(140) == 0 || g_engine->_room->_roomNumber != 6) {
 					g_engine->_previousRoomNumber = g_engine->_room->_roomNumber;
-					int newRoomNumber = g_engine->_previousRoomNumber;
+					int newRoomNumber;
 					if (g_engine->_room->_roomNumber == 6) {
 						if (_player->_isAutoWalkingToBed && _objectVar[137] == 2) {
-							g_engine->wongame();
+							g_engine->wonGame();
 						}
 						newRoomNumber = 10;
 					} else if (g_engine->_room->_roomNumber == 10) {
@@ -582,7 +582,7 @@ void Animation::updateAnimation() {
 			} else {
 				_objectVar[137] = 2;
 				_player->_isAutoWalkingToBed = true;
-				_player->setplayertowardsbedroom();
+				_player->setPlayerTowardsBedroom();
 			}
 		}
 		break;
@@ -725,6 +725,8 @@ void Animation::updateAnimation() {
 				_player->_direction = 2;
 				_player->updateSprite();
 				break;
+			default:
+				break;
 			}
 		}
 		if (_frameAdvanced && _animIndexTbl[0] == 1) {
@@ -866,7 +868,7 @@ static constexpr uint8 dcopList[100] = {
 	2, 3, 2, 1
 };
 
-void Animation::dcopanim() {
+void Animation::dCopAnim() {
 	_player->loadAnimations("dcopb.nsp");
 	g_engine->showFullscreenPic("dcopb.pic");
 	_animIndexTbl[0] = 0;
@@ -930,7 +932,7 @@ static constexpr uint8 sargoList[100] = {
 	3, 2, 1, 1
 };
 
-void Animation::sargoanim() {
+void Animation::sargoAnim() {
 	g_engine->_cursor.showCursor(false);
 	_player->loadAnimations("sargo.nsp");
 	g_engine->showFullscreenPic("sargo.pic");
@@ -1038,7 +1040,7 @@ static constexpr uint8 keeperList[250] = {
 	 0,  0
 };
 
-void Animation::keeperanim() {
+void Animation::keeperAdmin() {
 	g_engine->_cursor.showCursor(false);
 	_player->loadAnimations("keeper.nsp");
 	g_engine->showFullscreenPic("keeper.pic");
@@ -1146,7 +1148,7 @@ static constexpr uint8 libList[100] = {
 	9,  8, 7,  6
 };
 
-void Animation::libanim(bool pickingUpReservedBook) {
+void Animation::libAnim(bool pickingUpReservedBook) {
 	_player->loadAnimations("libparts.nsp");
 	g_engine->showFullscreenPic("libinlib.pic");
 

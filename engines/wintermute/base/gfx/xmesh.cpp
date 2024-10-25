@@ -86,29 +86,6 @@ bool XMesh::loadFromXData(const Common::String &filename, XFileData *xobj) {
 		BaseEngine::LOG(0, "Error loading skin mesh");
 		return false;
 	}
-
-	auto fvf = mesh->getFVF();
-	uint32 vertexSize = DXGetFVFVertexSize(fvf) / sizeof(float);
-	float *vertexBuffer = (float *)mesh->getVertexBuffer().ptr();
-	uint32 offset = 0, normalOffset = 0;
-
-	if (fvf & DXFVF_XYZ) {
-		offset += sizeof(DXVector3) / sizeof(float);
-	}
-	if (fvf & DXFVF_NORMAL) {
-		normalOffset = offset;
-	}
-
-	for (uint32 i = 0; i < mesh->getNumVertices(); ++i) {
-		// mirror z coordinate to change to OpenGL coordinate system
-		vertexBuffer[i * vertexSize + 2] *= -1.0f;
-
-		if (fvf & DXFVF_NORMAL) {
-			// mirror z coordinate to change to OpenGL coordinate system
-			vertexBuffer[i * vertexSize + normalOffset + 2] *= -1.0f;
-		}
-	}
-
 	_skinMesh = new SkinMeshHelper(mesh, skinInfo);
 
 	uint32 numBones = _skinMesh->getNumBones();
@@ -209,8 +186,6 @@ bool XMesh::update(FrameNode *parentFrame) {
 	if (!_blendedMesh)
 		return false;
 
-	bool res = false;
-
 	// update skinned mesh
 	if (_skinMesh) {
 		int numBones = _skinMesh->getNumBones();
@@ -222,13 +197,8 @@ bool XMesh::update(FrameNode *parentFrame) {
 		}
 
 		// generate skinned mesh
-		res = _skinMesh->updateSkinnedMesh(boneMatrices, _blendedMesh);
+		_skinMesh->updateSkinnedMesh(boneMatrices, _blendedMesh);
 		delete [] boneMatrices;
-
-		if (!res) {
-			BaseEngine::LOG(0, "Error updating skinned mesh");
-			return res;
-		}
 
 		// update mesh bounding box
 		byte *points = _blendedMesh->getVertexBuffer().ptr();
@@ -286,7 +256,7 @@ bool XMesh::update(FrameNode *parentFrame) {
 		// update bounding box
 		DXComputeBoundingBox((DXVector3 *)newPoints, _blendedMesh->getNumVertices(), DXGetFVFVertexSize(_blendedMesh->getFVF()), &_BBoxStart, &_BBoxEnd);
 	}
-	return res;
+	return true;
 }
 
 //////////////////////////////////////////////////////////////////////////

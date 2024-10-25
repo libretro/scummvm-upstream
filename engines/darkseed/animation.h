@@ -26,7 +26,6 @@
 namespace Darkseed {
 
 class Animation {
-private:
 	Player *_player = nullptr;
 	Objects &_objectVar;
 
@@ -47,11 +46,11 @@ public:
 
 	void advanceAnimationFrame(int nspAminIdx);
 
-	void dcopanim();
-	void sargoanim();
-	void keeperanim();
+	void dCopAnim();
+	void sargoAnim();
+	void keeperAdmin();
 	void stuffPlayer();
-	void libanim(bool pickingUpReservedBook);
+	void libAnim(bool pickingUpReservedBook);
 
 public:
 	explicit Animation(Player *player, Objects &objectVar) : _player(player), _objectVar(objectVar) {}

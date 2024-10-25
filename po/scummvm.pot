@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: ScummVM 2.9.0git\n"
 "Report-Msgid-Bugs-To: scummvm-devel@lists.scummvm.org\n"
-"POT-Creation-Date: 2024-10-21 00:15+0000\n"
+"POT-Creation-Date: 2024-10-25 18:27+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -246,7 +246,7 @@ msgstr ""
 #: engines/parallaction/metaengine.cpp:125
 #: engines/parallaction/saveload.cpp:193 engines/pegasus/pegasus.cpp:388
 #: engines/tinsel/metaengine.cpp:329 engines/trecision/saveload.cpp:253
-#: engines/tsage/scenes.cpp:638 engines/wage/saveload.cpp:736
+#: engines/tsage/scenes.cpp:639 engines/wage/saveload.cpp:736
 msgid "Load"
 msgstr ""
 
@@ -299,7 +299,7 @@ msgstr ""
 #: base/main.cpp:585 backends/events/default/default-events.cpp:193
 #: engines/buried/buried.cpp:590 engines/director/events.cpp:100
 #: engines/director/lingo/xlibs/jitdraw3.cpp:139 engines/grim/grim.cpp:366
-#: engines/kyra/gui/saveload_eob.cpp:601 engines/kyra/gui/saveload_eob.cpp:634
+#: engines/kyra/gui/saveload_eob.cpp:606 engines/kyra/gui/saveload_eob.cpp:639
 #: engines/parallaction/metaengine.cpp:143
 #: engines/sci/graphics/controls32.cpp:929 engines/scumm/scumm.cpp:4048
 #: engines/toon/toon.cpp:1543
@@ -312,7 +312,7 @@ msgstr ""
 #: gui/launcher.cpp:502 gui/options.cpp:3515 gui/options.cpp:3898
 #: engines/buried/buried.cpp:590 engines/director/events.cpp:100
 #: engines/director/lingo/xlibs/jitdraw3.cpp:139 engines/grim/grim.cpp:366
-#: engines/kyra/gui/saveload_eob.cpp:601 engines/kyra/gui/saveload_eob.cpp:634
+#: engines/kyra/gui/saveload_eob.cpp:606 engines/kyra/gui/saveload_eob.cpp:639
 #: engines/parallaction/metaengine.cpp:149
 #: engines/sci/graphics/controls32.cpp:929 engines/scumm/scumm.cpp:4048
 #: engines/toon/toon.cpp:1543
@@ -1365,7 +1365,7 @@ msgstr ""
 
 #: gui/launcher.cpp:317 engines/dialogs.cpp:94 engines/engine.cpp:948
 #: engines/mm/xeen/saves.cpp:259 engines/pegasus/pegasus.cpp:388
-#: engines/trecision/saveload.cpp:253 engines/tsage/scenes.cpp:638
+#: engines/trecision/saveload.cpp:253 engines/tsage/scenes.cpp:639
 #: engines/wage/saveload.cpp:736
 msgid "Load game:"
 msgstr ""
@@ -2550,7 +2550,7 @@ msgstr ""
 msgid "Playback"
 msgstr ""
 
-#: gui/recorderdialog.cpp:77 gui/widgets/grid.cpp:290
+#: gui/recorderdialog.cpp:77 gui/widgets/grid.cpp:291
 msgid "Edit"
 msgstr ""
 
@@ -2735,11 +2735,11 @@ msgstr ""
 msgid "Clear value"
 msgstr ""
 
-#: gui/widgets/grid.cpp:284
+#: gui/widgets/grid.cpp:285
 msgid "Play"
 msgstr ""
 
-#: gui/widgets/grid.cpp:287
+#: gui/widgets/grid.cpp:288
 msgid "Saves"
 msgstr ""
 
@@ -3230,7 +3230,7 @@ msgstr ""
 #: engines/sci/engine/kfile.cpp:1104 engines/sherlock/scalpel/scalpel.cpp:1249
 #: engines/sherlock/tattoo/widget_files.cpp:74 engines/startrek/saveload.cpp:42
 #: engines/toltecs/menu.cpp:302 engines/toon/toon.cpp:3813
-#: engines/trecision/saveload.cpp:67 engines/tsage/scenes.cpp:636
+#: engines/trecision/saveload.cpp:67 engines/tsage/scenes.cpp:637
 #: engines/wage/saveload.cpp:746 engines/zvision/file/save_manager.cpp:48
 msgid "Save game:"
 msgstr ""
@@ -3254,7 +3254,7 @@ msgstr ""
 #: engines/sherlock/tattoo/widget_files.cpp:74 engines/startrek/saveload.cpp:42
 #: engines/tinsel/metaengine.cpp:323 engines/toltecs/menu.cpp:302
 #: engines/toon/toon.cpp:3813 engines/trecision/saveload.cpp:67
-#: engines/tsage/scenes.cpp:636 engines/wage/saveload.cpp:746
+#: engines/tsage/scenes.cpp:637 engines/wage/saveload.cpp:746
 #: engines/zvision/file/save_manager.cpp:48 engines/zvision/metaengine.cpp:262
 msgid "Save"
 msgstr ""
@@ -3803,37 +3803,37 @@ msgstr ""
 msgid "Fit to window (4:3)"
 msgstr ""
 
-#: backends/graphics/openglsdl/openglsdl-graphics.cpp:797
+#: backends/graphics/openglsdl/openglsdl-graphics.cpp:800
 #, c-format
 msgid "Resolution: %dx%d"
 msgstr ""
 
-#: backends/graphics/openglsdl/openglsdl-graphics.cpp:841
+#: backends/graphics/openglsdl/openglsdl-graphics.cpp:844
 #: backends/graphics/surfacesdl/surfacesdl-graphics.cpp:2684
 msgid "Active graphics filter:"
 msgstr ""
 
-#: backends/graphics/openglsdl/openglsdl-graphics.cpp:862
+#: backends/graphics/openglsdl/openglsdl-graphics.cpp:865
 #: backends/graphics/surfacesdl/surfacesdl-graphics.cpp:2718
 msgid "Enabled aspect ratio correction"
 msgstr ""
 
-#: backends/graphics/openglsdl/openglsdl-graphics.cpp:864
+#: backends/graphics/openglsdl/openglsdl-graphics.cpp:867
 #: backends/graphics/surfacesdl/surfacesdl-graphics.cpp:2724
 msgid "Disabled aspect ratio correction"
 msgstr ""
 
-#: backends/graphics/openglsdl/openglsdl-graphics.cpp:877
+#: backends/graphics/openglsdl/openglsdl-graphics.cpp:880
 #: backends/graphics/surfacesdl/surfacesdl-graphics.cpp:2740
 msgid "Filtering enabled"
 msgstr ""
 
-#: backends/graphics/openglsdl/openglsdl-graphics.cpp:879
+#: backends/graphics/openglsdl/openglsdl-graphics.cpp:882
 #: backends/graphics/surfacesdl/surfacesdl-graphics.cpp:2742
 msgid "Filtering disabled"
 msgstr ""
 
-#: backends/graphics/openglsdl/openglsdl-graphics.cpp:905
+#: backends/graphics/openglsdl/openglsdl-graphics.cpp:908
 #: backends/graphics/surfacesdl/surfacesdl-graphics.cpp:2769
 msgid "Stretch mode"
 msgstr ""
@@ -4985,11 +4985,11 @@ msgstr ""
 msgid "Select Playlist directory"
 msgstr ""
 
-#: backends/platform/libretro/src/libretro-os-utils.cpp:173
+#: backends/platform/libretro/src/libretro-os-utils.cpp:233
 msgid "Libretro playlist"
 msgstr ""
 
-#: backends/platform/libretro/src/libretro-os-utils.cpp:176
+#: backends/platform/libretro/src/libretro-os-utils.cpp:236
 msgid ""
 "## Libretro playlists for ScummVM core\n"
 "Playlists used in Libretro frontends (e.g. Retroarch) are plain text lists "
@@ -6213,7 +6213,7 @@ msgstr ""
 #. SAVE GAME
 #: engines/bladerunner/metaengine.cpp:330
 #: engines/freescape/games/dark/dark.cpp:183
-#: engines/freescape/games/driller/driller.cpp:129
+#: engines/freescape/games/driller/driller.cpp:132
 #: engines/pegasus/pegasus.cpp:2825
 msgid "Save Game"
 msgstr ""
@@ -6224,7 +6224,7 @@ msgstr ""
 #. LOAD GAME
 #: engines/bladerunner/metaengine.cpp:339
 #: engines/freescape/games/dark/dark.cpp:188
-#: engines/freescape/games/driller/driller.cpp:134
+#: engines/freescape/games/driller/driller.cpp:137
 #: engines/pegasus/pegasus.cpp:2831
 msgid "Load Game"
 msgstr ""
@@ -6259,7 +6259,7 @@ msgstr ""
 #. QUIT GAME
 #: engines/bladerunner/metaengine.cpp:375 engines/dragons/metaengine.cpp:224
 #: engines/freescape/games/dark/dark.cpp:193
-#: engines/freescape/games/driller/driller.cpp:139
+#: engines/freescape/games/driller/driller.cpp:142
 msgid "Quit Game"
 msgstr ""
 
@@ -6851,39 +6851,39 @@ msgid "Info Menu"
 msgstr ""
 
 #: engines/freescape/games/dark/dark.cpp:203
-#: engines/freescape/games/driller/driller.cpp:147
+#: engines/freescape/games/driller/driller.cpp:150
 msgid "Toggle Sound"
 msgstr ""
 
 #: engines/freescape/games/dark/dark.cpp:209
-#: engines/freescape/games/driller/driller.cpp:153
+#: engines/freescape/games/driller/driller.cpp:156
 msgid "Rotate Left"
 msgstr ""
 
 #: engines/freescape/games/dark/dark.cpp:214
-#: engines/freescape/games/driller/driller.cpp:158
+#: engines/freescape/games/driller/driller.cpp:161
 msgid "Rotate Right"
 msgstr ""
 
 #. I18N: STEP SIZE: Measures the size of one movement in the direction you are facing (1-250 standard distance units (SDUs))
 #: engines/freescape/games/dark/dark.cpp:220
-#: engines/freescape/games/driller/driller.cpp:164
+#: engines/freescape/games/driller/driller.cpp:167
 msgid "Increase Step Size"
 msgstr ""
 
 #. I18N: STEP SIZE: Measures the size of one movement in the direction you are facing (1-250 standard distance units (SDUs))
 #: engines/freescape/games/dark/dark.cpp:226
-#: engines/freescape/games/driller/driller.cpp:170
+#: engines/freescape/games/driller/driller.cpp:173
 msgid "Decrease Step Size"
 msgstr ""
 
 #: engines/freescape/games/dark/dark.cpp:231
-#: engines/freescape/games/driller/driller.cpp:175
+#: engines/freescape/games/driller/driller.cpp:178
 msgid "Rise/Fly up"
 msgstr ""
 
 #: engines/freescape/games/dark/dark.cpp:237
-#: engines/freescape/games/driller/driller.cpp:181
+#: engines/freescape/games/driller/driller.cpp:184
 msgid "Lower/Fly down"
 msgstr ""
 
@@ -6892,12 +6892,12 @@ msgid "Enable/Disable Jetpack"
 msgstr ""
 
 #. I18N: drilling rig is an in game item
-#: engines/freescape/games/driller/driller.cpp:188
+#: engines/freescape/games/driller/driller.cpp:191
 msgid "Deploy drilling rig"
 msgstr ""
 
 #. I18N: drilling rig is an in game item
-#: engines/freescape/games/driller/driller.cpp:195
+#: engines/freescape/games/driller/driller.cpp:198
 msgid "Collect drilling rig"
 msgstr ""
 
@@ -7618,7 +7618,7 @@ msgstr ""
 msgid "Choose Spell"
 msgstr ""
 
-#: engines/kyra/gui/saveload_eob.cpp:601
+#: engines/kyra/gui/saveload_eob.cpp:606
 #, c-format
 msgid ""
 "The following original saved game file has been found in your game path:\n"
@@ -7629,14 +7629,14 @@ msgid ""
 "\n"
 msgstr ""
 
-#: engines/kyra/gui/saveload_eob.cpp:634
+#: engines/kyra/gui/saveload_eob.cpp:639
 #, c-format
 msgid ""
 "A saved game file was found in the specified slot %d. Overwrite?\n"
 "\n"
 msgstr ""
 
-#: engines/kyra/gui/saveload_eob.cpp:667
+#: engines/kyra/gui/saveload_eob.cpp:672
 #, c-format
 msgid ""
 "%d original saved games have been successfully imported into\n"

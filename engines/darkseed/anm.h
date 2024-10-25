@@ -24,6 +24,7 @@
 
 #include "common/array.h"
 #include "darkseed/img.h"
+
 namespace Darkseed {
 
 class Anm {
@@ -36,7 +37,7 @@ private:
 public:
 	bool load(const Common::Path &filename, int deltaOffset = 0);
 	bool getImg(uint16 index, Img &img, bool includesPosition = true);
-	int numImages();
+	int numImages() const;
 };
 
 } // namespace Darkseed

@@ -31,7 +31,7 @@ Player::Player() {
 	_connectorList.resize(Room::MAX_CONNECTORS);
 }
 
-const Sprite &Player::getSprite(int frameNo) {
+const Sprite &Player::getSprite(int frameNo) const {
 	if (g_engine->_room->isGiger()) {
 		return _gPlayerSprites.getSpriteAt(frameNo);
 	} else {
@@ -116,6 +116,8 @@ void Player::changeDirection(int16 oldDir, int16 newDir) {
 					_playerWalkFrameDeltaOffset = -1;
 				}
 				break;
+			default:
+				break;
 			}
 		}
 	}
@@ -186,7 +188,7 @@ void Player::calculateWalkTarget() {
 
 	if (!g_engine->_room->canWalkAtLocation(_walkTarget.x, _walkTarget.y)) {
 		int ty = _walkTarget.y;
-		for (; !g_engine->_room->canWalkAtLocation(_walkTarget.x, ty) && ty <= 233;) {
+		while (!g_engine->_room->canWalkAtLocation(_walkTarget.x, ty) && ty <= 233) {
 			ty += 4;
 		}
 		if (ty < 235) {
@@ -343,7 +345,7 @@ void Player::createConnectorPathToDest() {
 		reverseConnectorList();
 		_walkTarget = origWalkTarget;
 	}
-	OptimisePath();
+	optimisePath();
 	if (g_engine->_room->_roomNumber == 5 && _position.x < 321) {
 		_finalTarget = _walkTarget;
 	} else {
@@ -410,7 +412,7 @@ void Player::reverseConnectorList() {
 	}
 }
 
-void Player::OptimisePath() {
+void Player::optimisePath() {
 	if (g_engine->_room->_roomNumber != 7 && g_engine->_room->_roomNumber != 32) {
 		while (_numConnectorsInWalkPath > 1) {
 			if (g_engine->_room->canWalkInLineToTarget(_connectorList[_numConnectorsInWalkPath - 2].x, _connectorList[_numConnectorsInWalkPath - 2].y, _walkTarget.x, _walkTarget.y)) {
@@ -428,7 +430,7 @@ static constexpr uint8 _closerroom[10] = {
 	7, 6
 };
 
-void Player::setplayertowardsbedroom() {
+void Player::setPlayerTowardsBedroom() {
 	if (g_engine->_animation->_isPlayingAnimation_maybe) {
 		return;
 	}

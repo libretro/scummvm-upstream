@@ -262,7 +262,11 @@ Common::Error EoBCoreEngine::loadGameState(int slot) {
 			m->callBackIndex = in.readSByte();
 			m->curPos = in.readByte();
 			m->flags = in.readByte();
-			m->unused = in.readByte();
+			if (header.version >= 23) {
+				m->projectileWeapon = in.readSint16BE();
+			} else {
+				m->projectileWeapon = in.readByte();
+			}
 		}
 
 		for (int ii = 0; ii < 5; ii++) {
@@ -279,9 +283,10 @@ Common::Error EoBCoreEngine::loadGameState(int slot) {
 	_sceneUpdateRequired = true;
 	_screen->setFont(_conFont);
 
+	// This is not part of the original code. The original will not restore the true seeing spell effect when loading a game.
 	for (int i = 0; i < 6; i++) {
 		for (int ii = 0; ii < 10; ii++) {
-			if (_characters[i].events[ii] == -57)
+			if (_characters[i].events[ii] == -57 && _characters[i].timers[ii])
 				spellCallback_start_trueSeeing();
 		}
 	}
@@ -518,7 +523,7 @@ Common::Error EoBCoreEngine::saveGameStateIntern(int slot, const char *saveName,
 			out->writeSByte(m->callBackIndex);
 			out->writeByte(m->curPos);
 			out->writeByte(m->flags);
-			out->writeByte(m->unused);
+			out->writeSint16BE(m->projectileWeapon);
 		}
 
 		for (int ii = 0; ii < 5; ii++) {

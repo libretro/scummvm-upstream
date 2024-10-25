@@ -24,25 +24,45 @@
 
 #include "audio/mixer.h"
 #include "common/array.h"
-#include "common/serializer.h"
 #include "common/error.h"
+#include "common/serializer.h"
 
 namespace Darkseed {
+enum class MusicId : uint8 {
+	kNone = 0,
+	kLab,
+	kVictory,
+	kCemetry,
+	kLeech,
+	kExt,
+	kQuiet,
+	kPackage,
+	kDth,
+	kLibrary,
+	kRadio,
+	kOutdoor,
+	kTown,
+};
 
 class Sound {
-private:
 	Audio::Mixer *_mixer;
 	Audio::SoundHandle _speechHandle;
 	Common::Array<uint8> _didSpeech;
+	bool _isPlayingMusic = false;
+
 public:
 	explicit Sound(Audio::Mixer *mixer);
 
 	Common::Error sync(Common::Serializer &s);
 
 	void playTosSpeech(int tosIdx);
-	bool isPlayingSpeech();
+	bool isPlayingSpeech() const;
+	bool isPlayingMusic();
 	void waitForSpeech();
 	void resetSpeech();
+	void playMusic(MusicId musicId);
+	void playMusic(Common::String const &filename);
+	void stopMusic();
 };
 
 } // namespace Darkseed

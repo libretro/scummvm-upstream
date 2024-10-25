@@ -91,7 +91,6 @@ void Group::linkObject(Object *obj) {
 
 void Group::assemble(int index) {
 	GeometricObject *gobj = (GeometricObject *)_objects[index];
-	//gobj->makeVisible();
 	Math::Vector3d position = _operations[_step]->position;
 	Math::Vector3d offset = _origins[index] - _origins[0];
 	/*if (index == 0)
@@ -108,7 +107,7 @@ void Group::assemble(int index) {
 
 	debugC(1, kFreescapeDebugGroup, "Group %d: Assembling object %d originally at %f, %f, %f", _objectID, gobj->getObjectID(), gobj->getOrigin().x(), gobj->getOrigin().y(), gobj->getOrigin().z());
 	gobj->offsetOrigin(position + offset);
-	debugC(1, kFreescapeDebugGroup, "Group %d: Assembling object %d originally at %f, %f, %f", _objectID, gobj->getObjectID(), gobj->getOrigin().x(), gobj->getOrigin().y(), gobj->getOrigin().z());
+	debugC(1, kFreescapeDebugGroup, "Group %d: Assembling object %d moved to %f, %f, %f", _objectID, gobj->getObjectID(), gobj->getOrigin().x(), gobj->getOrigin().y(), gobj->getOrigin().z());
 }
 
 void Group::run() {
@@ -122,39 +121,48 @@ void Group::run() {
 		_active = true;
 		_step = -1;
 		//reset();
-	} else if (opcode == 0x01) {
+	}
+
+	if (opcode & 0x01) {
 		debugC(1, kFreescapeDebugGroup, "Executing group condition %s", _operations[_step]->conditionSource.c_str());
 		g_freescape->executeCode(_operations[_step]->condition, false, true, false, false);
-	} else if (opcode == 0x10) {
+	}
+
+	if (opcode & 0x10) {
 		uint32 groupSize = _objects.size();
 		for (uint32 i = 0; i < groupSize ; i++)
 			assemble(i);
 		_active = false;
 		_step++;
-	} else if (opcode == 0x0) {
+	}
+
+	if (opcode == 0x0) {
 		debugC(1, kFreescapeDebugGroup, "Executing group assemble");
 		uint32 groupSize = _objects.size();
 		for (uint32 i = 0; i < groupSize ; i++)
 			assemble(i);
-	} else {
+	}
+
+	if (opcode & 0x08) {
 		uint32 groupSize = _objects.size();
-		if (opcode & 0x08) {
+		for (uint32 i = 0; i < groupSize ; i++)
+			_objects[i]->makeVisible();
+
+		if (opcode & 0x20) {
 			for (uint32 i = 0; i < groupSize ; i++)
-				_objects[i]->makeVisible();
-
-			if (opcode & 0x20) {
-				for (uint32 i = 0; i < groupSize ; i++)
-					_objects[i]->makeInvisible();
-
-			}
-
-			if (opcode & 0x40) {
-				for (uint32 i = 0; i < groupSize ; i++)
-					_objects[i]->destroy();
-			}
+				_objects[i]->destroy();
 		}
 
+		if (opcode & 0x40) {
+			for (uint32 i = 0; i < groupSize ; i++)
+				_objects[i]->makeInvisible();
+		}
 	}
+}
+
+void Group::start() {
+	makeVisible();
+	_active = true;
 }
 
 void Group::reset() {
