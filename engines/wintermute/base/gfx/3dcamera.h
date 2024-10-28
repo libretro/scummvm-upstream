@@ -33,9 +33,6 @@
 #include "engines/wintermute/base/base_named_object.h"
 #include "engines/wintermute/base/gfx/xmath.h"
 
-#include "math/matrix4.h"
-#include "math/vector3d.h"
-
 namespace Wintermute {
 
 class Camera3D : public BaseNamedObject {
@@ -54,8 +51,6 @@ public:
 	float _origFov;
 	float _nearClipPlane;
 	float _farClipPlane;
-
-	bool loadFrom3DS(Common::MemoryReadStream &fileStream);
 };
 
 } // namespace Wintermute

@@ -43,6 +43,8 @@
 #include "dgds/image.h"
 #include "dgds/inventory.h"
 #include "dgds/dragon_arcade.h"
+#include "dgds/dragon_native.h"
+#include "dgds/hoc_intro.h"
 
 namespace Dgds {
 
@@ -164,9 +166,9 @@ static Common::String _sceneOpCodeName(SceneOpCode code) {
 		case kSceneOpOpenChinaTrainMenu:	return "trainMenu";
 		case kSceneOpOpenChinaOpenGameOverMenu: return "gameOverMenu";
 		case kSceneOpOpenChinaOpenSkipCreditsMenu: return "skipCreditsMenu";
-		case kSceneOpOpenChinaStartIntro:	return "startIntro";
-		case kSceneOpChina117:				return "hocSceneOp117";
-		case kSceneOpChina118:  			return "hocSceneOp118";
+		case kSceneOpChinaOnIntroInit:		return "chinaOnIntroInit";
+		case kSceneOpChinaOnIntroTick:		return "chinaOnIntroTick";
+		case kSceneOpChinaOnIntroLeave:  	return "chinaOnIntroLeave";
 		default:
 			break;
 		}
@@ -472,8 +474,6 @@ bool Scene::readDialogList(Common::SeekableReadStream *s, Common::Array<Dialog> 
 			else
 				dst._fontColor = dst._fontColor ^ 8;
 		}
-
-		dst.fixupStringAndActions();
 	}
 
 	return !s->err();
@@ -611,15 +611,6 @@ void Scene::segmentStateOps(const Common::Array<uint16> &args) {
 	}
 }
 
-static void _drawDragonCountdown(FontManager::FontType fontType, int16 x, int16 y) {
-	DgdsEngine *engine = DgdsEngine::getInstance();
-	int16 countdownEnd = engine->getGameGlobals()->getGlobal(0x22);
-	int16 currentMins = engine->getClock().getMins();
-	const DgdsFont *fnt = engine->getFontMan()->getFont(fontType);
-	Common::String str = Common::String::format("%d", countdownEnd - currentMins);
-	fnt->drawString(&engine->_compositionBuffer, str, x, y, 320 - x, 10);
-}
-
 
 bool Scene::runSceneOp(const SceneOp &op) {
 	DgdsEngine *engine = DgdsEngine::getInstance();
@@ -736,7 +727,7 @@ bool Scene::runDragonOp(const SceneOp &op) {
 	DgdsEngine *engine = DgdsEngine::getInstance();
 	switch (op._opCode) {
 	case kSceneOpPasscode:
-		engine->getScene()->sceneOpUpdatePasscodeGlobal();
+		DragonNative::updatePasscodeGlobal();
 		break;
 	case kSceneOpMeanwhile:
 		// TODO: Should we draw "meanwhile" like the original? it just gets overwritten with the image anyway.
@@ -757,10 +748,10 @@ bool Scene::runDragonOp(const SceneOp &op) {
 		engine->getDragonArcade()->arcadeTick();
 		break;
 	case kSceneOpDrawDragonCountdown1:
-		_drawDragonCountdown(FontManager::k4x5Font, 141, 56);
+		DragonNative::drawCountdown(FontManager::k4x5Font, 141, 56);
 		break;
 	case kSceneOpDrawDragonCountdown2:
-		_drawDragonCountdown(FontManager::k8x8Font, 250, 42);
+		DragonNative::drawCountdown(FontManager::k8x8Font, 250, 42);
 		break;
 	case kSceneOpOpenPlaySkipIntroMenu:
 		engine->setMenuToTrigger(kMenuSkipPlayIntro);
@@ -795,10 +786,15 @@ bool Scene::runChinaOp(const SceneOp &op) {
 	case kSceneOpShellGameEnd:
 		engine->getShellGame()->shellGameEnd();
 		break;
-	case kSceneOpOpenChinaStartIntro:
-		// The game first jumps to scene 100, and then to 98
-		engine->changeScene(98);
-		return true;
+	case kSceneOpChinaOnIntroInit:
+		engine->getHocIntro()->init();
+		break;
+	case kSceneOpChinaOnIntroTick:
+		engine->getHocIntro()->tick();
+		break;
+	case kSceneOpChinaOnIntroLeave:
+		engine->getHocIntro()->leave();
+		break;
 	default:
 		warning("TODO: Implement china-specific scene opcode %d", op._opCode);
 		break;
@@ -1405,86 +1401,6 @@ void SDSScene::addAndShowTiredDialog() {
 }
 
 
-// The first row of this array corresponds to the
-// positions of buttons in game passcode
-// RYP YWP YRPWRY PBW
-static const uint16 DRAGON_PASSCODE[] = {
-	1, 4, 3, 4, 0, 3, 4, 1, 3, 0, 1, 4, 3, 2, 0,
-	4, 4, 2, 3, 4, 0, 0, 4, 3, 2, 1, 1, 2, 4, 0,
-	4, 1, 3, 2, 0, 2, 1, 4, 3, 4, 1, 3, 2, 0, 1
-};
-
-static uint16 passcodeBlockNum = 0;
-static uint16 passcodeVal1 = 0;
-static uint16 passcodeVal2 = 0;
-static uint16 passcodeVal3 = 0;
-static uint16 passcodeVal4 = 0;
-
-void SDSScene::sceneOpUpdatePasscodeGlobal() {
-	GDSScene *gdsScene = DgdsEngine::getInstance()->getGDSScene();
-	int16 globalval = gdsScene->getGlobal(0x20);
-
-	if (globalval > 34)
-		return;
-
-	if (globalval >= 30) {
-		// One of the keypad buttons
-		if (DRAGON_PASSCODE[passcodeVal4 + passcodeBlockNum * 15] == globalval - 30) {
-			debug("sceneOpUpdatePasscodeGlobal CORRECT: variables %d %d %d %d block %d, curval %d",
-				passcodeVal1, passcodeVal2, passcodeVal3, passcodeVal4, passcodeBlockNum, globalval);
-
-			// Correct entry! Increment the expected button
-			passcodeVal4++;
-			if (passcodeVal4 < passcodeVal3) {
-				globalval = 0;
-			} else if (passcodeVal3 < 15) {
-				globalval = 5;
-			} else {
-				// Finished!
-				globalval = 6;
-			}
-		} else {
-			// Mistake
-			debug("sceneOpUpdatePasscodeGlobal WRONG: variables %d %d %d %d block %d, curval %d",
-				passcodeVal1, passcodeVal2, passcodeVal3, passcodeVal4, passcodeBlockNum, globalval);
-			passcodeVal1 = 0;
-			passcodeVal2 = 5;
-			globalval = 7;
-		}
-	} else {
-		if (globalval > 4 || globalval == 0)
-			return;
-
-		debug("sceneOpUpdatePasscodeGlobal OTHER: variables %d %d %d %d block %d, curval %d",
-				passcodeVal1, passcodeVal2, passcodeVal3, passcodeVal4, passcodeBlockNum, globalval);
-
-		if (globalval < 4) {
-			passcodeBlockNum = globalval - 1; // expect block globalval-1
-			passcodeVal1 = 5;
-			passcodeVal2 = 0;
-			passcodeVal3 = 15;	// 15 buttons expected
-			passcodeVal4 = 0;
-			return;
-		} else if (passcodeVal2 > passcodeVal1) {
-			passcodeVal1++;
-			globalval = DRAGON_PASSCODE[passcodeVal1 + passcodeBlockNum * 15] + 20;
-		} else if (passcodeVal2 > 14) {
-			passcodeVal1 = 0;
-			passcodeVal3 = passcodeVal2;
-			passcodeVal4 = 0;
-			globalval = 8;
-		} else {
-			passcodeVal1 = 0;
-			passcodeVal2 += 5;
-			passcodeVal3 = passcodeVal1;
-			passcodeVal4 = 0;
-			globalval = 8;
-		}
-	}
-
-	gdsScene->setGlobal(0x20, globalval);
-}
-
 void SDSScene::showDialog(uint16 fileNum, uint16 dlgNum) {
 	if (fileNum)
 		loadDialogData(fileNum);
@@ -1553,8 +1469,19 @@ bool SDSScene::checkDialogActive() {
 			if (action || dlg._action.empty()) {
 				dlg.setFlag(kDlgFlagHiFinished);
 				if (action) {
-					debug("Dialog closing: run action (%d ops)", action->sceneOpList.size());
+					// Take a copy of the dialog because the actions might change the scene
+					Dialog dlgCopy = dlg;
+					debug("Dialog %d closing: run action (%d ops)", dlg._num, action->sceneOpList.size());
 					if (!runOps(action->sceneOpList)) {
+						// HACK: the scene changed, but we haven't yet drawn the foreground for the
+						// dialog, this is our last chance so do it now.  The game does it in a
+						// different way that relies on delayed disposal of the dialog data.
+						if (dlgCopy.hasFlag(kDlgFlagVisible) && !dlgCopy.hasFlag(kDlgFlagOpening)) {
+							DgdsEngine *engine = DgdsEngine::getInstance();
+							dlgCopy.draw(&engine->_compositionBuffer, kDlgDrawFindSelectionPointXY);
+							dlgCopy.draw(&engine->_compositionBuffer, kDlgDrawFindSelectionTxtOffset);
+							dlgCopy.draw(&engine->_compositionBuffer, kDlgDrawStageForeground);
+						}
 						_dlgWithFlagLo8IsClosing = false;
 						return true;
 					}

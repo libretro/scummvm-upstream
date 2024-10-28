@@ -416,14 +416,10 @@ AgiEngine::AgiEngine(OSystem *syst, const AGIGameDescription *gameDesc) : AgiBas
 
 	memset(&_debug, 0, sizeof(struct AgiDebug));
 
-	_game.mouseEnabled = true;
-	_game.mouseHidden = false;
-	// don't check for Amiga, Amiga doesn't allow disabling mouse support. It's mandatory.
-	if (!ConfMan.getBool("mousesupport")) {
-		// we effectively disable the mouse for games, that explicitly do not want mouse support to be enabled
-		_game.mouseEnabled = false;
-		_game.mouseHidden = true;
-	}
+	_game.mouseEnabled = ConfMan.getBool("mousesupport");
+	_game.mouseHidden = !_game.mouseEnabled;
+
+	_game.predictiveDlgOnMouseClick = ConfMan.getBool("predictivedlgonmouseclick");
 
 	_game._vm = this;
 

@@ -24,6 +24,7 @@
 
 #include "freescape/freescape.h"
 #include "freescape/language/8bitDetokeniser.h"
+#include "freescape/sweepAABB.h"
 
 namespace Freescape {
 
@@ -150,7 +151,13 @@ bool FreescapeEngine::executeCode(FCLInstructionVector &code, bool shot, bool co
 	int conditionalDepth = 0;
 	bool executed = false;
 	int codeSize = code.size();
-	assert(codeSize > 0);
+
+	if (codeSize == 0) {
+		assert(isCastle()); // Only seems to happen in Castle Master (magister room)
+		debugC(1, kFreescapeDebugCode, "Code is empty!");
+		return false;
+	}
+
 	while (ip <= codeSize - 1) {
 		FCLInstruction &instruction = code[ip];
 		debugC(1, kFreescapeDebugCode, "Executing ip: %d with type %d in code with size: %d. Skip flag is: %d", ip, instruction.getType(), codeSize, skip);
@@ -261,7 +268,7 @@ bool FreescapeEngine::executeCode(FCLInstructionVector &code, bool shot, bool co
 			executeRedraw(instruction);
 			break;
 		case Token::EXECUTE:
-			executeExecute(instruction);
+			executeExecute(instruction, shot, collided, activated);
 			ip = codeSize;
 			break;
 		case Token::DELAY:
@@ -326,7 +333,7 @@ void FreescapeEngine::executeRedraw(FCLInstruction &instruction) {
 	}
 }
 
-void FreescapeEngine::executeExecute(FCLInstruction &instruction) {
+void FreescapeEngine::executeExecute(FCLInstruction &instruction, bool shot, bool collided, bool activated) {
 	uint16 objId = instruction._source;
 	debugC(1, kFreescapeDebugCode, "Executing instructions from object %d", objId);
 	Object *obj = _currentArea->objectWithID(objId);
@@ -339,7 +346,7 @@ void FreescapeEngine::executeExecute(FCLInstruction &instruction) {
 			return;
 		}
 	}
-	executeObjectConditions((GeometricObject *)obj, true, false, false);
+	executeObjectConditions((GeometricObject *)obj, shot, collided, activated);
 }
 
 void FreescapeEngine::executeSound(FCLInstruction &instruction) {
@@ -468,17 +475,21 @@ bool FreescapeEngine::checkConditional(FCLInstruction &instruction, bool shot, b
 }
 
 bool FreescapeEngine::checkIfGreaterOrEqual(FCLInstruction &instruction) {
+	assert(instruction._destination <= 128);
+
 	uint16 variable = instruction._source;
-	uint16 value = instruction._destination;
+	int8 value = instruction._destination;
 	debugC(1, kFreescapeDebugCode, "Check if variable %d is greater than equal to %d!", variable, value);
-	return (_gameStateVars[variable] >= value);
+	return ((int8)_gameStateVars[variable] >= value);
 }
 
 bool FreescapeEngine::checkIfLessOrEqual(FCLInstruction &instruction) {
+	assert(instruction._destination <= 128);
+
 	uint16 variable = instruction._source;
-	uint16 value = instruction._destination;
+	int8 value = instruction._destination;
 	debugC(1, kFreescapeDebugCode, "Check if variable %d is less than equal to %d!", variable, value);
-	return (_gameStateVars[variable] <= value);
+	return ((int8)_gameStateVars[variable] <= value);
 }
 
 
@@ -558,9 +569,6 @@ void FreescapeEngine::executeDestroy(FCLInstruction &instruction) {
 }
 
 void FreescapeEngine::executeMakeInvisible(FCLInstruction &instruction) {
-	// Castle uses their own implementation which is hard to
-	// integrate with this code without duplicating most of it
-	assert(!isCastle());
 	uint16 objectID = 0;
 	uint16 areaID = _currentArea->getAreaID();
 
@@ -581,8 +589,6 @@ void FreescapeEngine::executeMakeInvisible(FCLInstruction &instruction) {
 	}
 
 }
-
-extern Math::AABB createPlayerAABB(Math::Vector3d const position, int playerHeight);
 
 void FreescapeEngine::executeMakeVisible(FCLInstruction &instruction) {
 	uint16 objectID = 0;

@@ -51,7 +51,6 @@ AdObject3D::AdObject3D(BaseGame *inGame) : AdObject(inGame) {
 	_lastPosVector = DXVector3(0.0f, 0.0f, 0.0f);
 
 	_state = _nextState = STATE_READY;
-
 	_dropToFloor = true;
 	_shadowType = SHADOW_STENCIL;
 
@@ -84,7 +83,7 @@ void AdObject3D::clearIgnoredLights() {
 //////////////////////////////////////////////////////////////////////////
 bool AdObject3D::addIgnoredLight(char *lightName) {
 	for (uint32 i = 0; i < _ignoredLights.size(); i++) {
-		if (_ignoredLights[i] == lightName) {
+		if (scumm_stricmp(_ignoredLights[i], lightName) == 0) {
 			return true;
 		}
 	}
@@ -96,7 +95,8 @@ bool AdObject3D::addIgnoredLight(char *lightName) {
 //////////////////////////////////////////////////////////////////////////
 bool AdObject3D::removeIgnoredLight(char *lightName) {
 	for (uint32 i = 0; i < _ignoredLights.size(); i++) {
-		if (_ignoredLights[i] == lightName) {
+		if (scumm_stricmp(_ignoredLights[i], lightName) == 0) {
+			delete[] _ignoredLights[i];
 			_ignoredLights.remove_at(i);
 			return true;
 		}
@@ -133,7 +133,7 @@ bool AdObject3D::convert3DTo2D(DXMatrix *worldMat, int32 *posX, int32 *posY) {
 	_gameRef->_renderer3D->getViewTransform(&viewMat);
 	_gameRef->_renderer3D->getProjectionTransform(&projMat);
 
-	Rect32 viewport = _gameRef->_renderer3D->getViewPort();
+	DXViewport viewport = _gameRef->_renderer3D->getViewPort();
 
 	DXVec3Project(&vec2d, &origin, &viewport, &projMat, &viewMat, worldMat);
 
@@ -259,9 +259,7 @@ ScValue *AdObject3D::scGetProperty(const Common::String &name) {
 	// Angle
 	//////////////////////////////////////////////////////////////////////////
 	if (name == "Angle") {
-		float tmp = 0.0f;
-		_scValue->setFloat(tmp);
-		_angle = tmp;
+		_scValue->setFloat(_angle);
 		return _scValue;
 	}
 	//////////////////////////////////////////////////////////////////////////
@@ -602,7 +600,6 @@ bool AdObject3D::getBonePosition2D(const char *boneName, int32 *x, int32 *y) {
 	}
 
 	AdGame *adGame = (AdGame *)_gameRef;
-
 	if (!adGame->_scene || !adGame->_scene->_geom)
 		return false;
 

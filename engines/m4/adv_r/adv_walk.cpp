@@ -115,9 +115,6 @@ void ws_walk(machine *myWalker, int32 x, int32 y, GrBuff **, int16 trigger, int3
 	if (!myWalker || !myWalker->myAnim8)
 		error_show(FL, 'W:-(');
 
-	if (!_G(globals))
-		error_show(FL, 'OOM1');
-
 	// Get walker's current location
 	currX = myWalker->myAnim8->myRegs[IDX_X] >> 16;
 	currY = myWalker->myAnim8->myRegs[IDX_Y] >> 16;
@@ -266,7 +263,7 @@ void ws_demand_facing(machine *myWalker, int32 facing) {
 void ws_demand_location(machine *myWalker, int32 x, int32 y, int facing) {
 	frac16 s;
 
-	if (!myWalker || !myWalker->myAnim8 || !_G(globals)) {
+	if (!myWalker || !myWalker->myAnim8) {
 		term_message("demand locn, no walker");
 		return;
 	}
@@ -330,17 +327,6 @@ void ws_turn_to_face(machine *myWalker, int32 facing, int32 trigger) {
 	sendWSMessage(TURN_TO_FACE << 16, 0, myWalker, 0, nullptr, 1);
 }
 
-void ws_nosepick(machine *myWalker, int32 seriesHash) {
-	Anim8 *myAnim8;
-	if ((!myWalker) || (!myWalker->myAnim8)) {
-		error_show(FL, 'W:-(');
-		return;
-	}
-	myAnim8 = myWalker->myAnim8;
-	myAnim8->myRegs[IDX_CELS_HASH] = seriesHash << 16;
-	sendWSMessage(NOSEPICK << 16, 0, myWalker, 0, nullptr, 1);
-}
-
 void ws_demand_location(int32 x, int32 y, int facing) {
 	ws_demand_location(_G(my_walker), x, y, facing);
 }
@@ -373,10 +359,6 @@ void ws_turn_to_face(int32 facing, int32 trigger) {
 	ws_turn_to_face(_G(my_walker), facing, trigger);
 }
 
-void ws_nosepick(int32 seriesHash) {
-	ws_nosepick(_G(my_walker), seriesHash);
-}
-
 void ws_hide_walker() {
 	ws_hide_walker(_G(my_walker));
 }
@@ -393,7 +375,7 @@ void ws_get_walker_info(machine *myWalker, int32 *x, int32 *y, int32 *s, int32 *
 	Anim8 *myAnim8;
 	const int8 facings[10] = { 1, 2, 3, 4, 5, 7, 8, 9, 10, 11 };
 
-	if (!myWalker || !myWalker->myAnim8 || !_G(globals)) {
+	if (!myWalker || !myWalker->myAnim8) {
 		error_show(FL, 'W:-(');
 		return;
 	}

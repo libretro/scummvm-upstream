@@ -106,6 +106,7 @@ MODULE_OBJS := \
 	ext/wme_galaxy.o \
 	ext/wme_steam.o \
 	ext/wme_windowmode.o \
+	ext/wme_vlink.o \
 	debugger/breakpoint.o \
 	debugger/debugger_controller.o \
 	debugger/error.o \
@@ -161,9 +162,12 @@ MODULE_OBJS += \
 	ad/ad_waypoint_group3d.o \
 	base/gfx/3dcamera.o \
 	base/gfx/3dlight.o \
+	base/gfx/3dface.o \
 	base/gfx/3dloader_3ds.o \
 	base/gfx/3dmesh.o \
 	base/gfx/3dshadow_volume.o \
+	base/gfx/3dutils.o \
+	base/gfx/3dvertex.o \
 	base/gfx/base_renderer3d.o \
 	base/gfx/skin_mesh_helper.o \
 	base/gfx/xactive_animation.o \

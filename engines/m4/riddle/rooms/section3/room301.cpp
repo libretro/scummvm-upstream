@@ -979,16 +979,16 @@ void Room301::parser() {
 		if (_travelDest) {
 			switch (_travelDest) {
 			case 1:
-				_G(flags)[V129] = 0;
+				_G(flags)[kTravelDest] = 0;
 				break;
 			case 2:
-				_G(flags)[V129] = 2;
+				_G(flags)[kTravelDest] = 2;
 				break;
 			case 3:
-				_G(flags)[V129] = 3;
+				_G(flags)[kTravelDest] = 3;
 				break;
 			case 4:
-				_G(flags)[V129] = 4;
+				_G(flags)[kTravelDest] = 4;
 				break;
 			default:
 				break;
@@ -1040,7 +1040,7 @@ void Room301::conv301a() {
 	const char *sound = conv_sound_to_play();
 	int who = conv_whos_talking();
 	int node = conv_current_node();
-	warning("TRIGGER %d, WHO %d NODE %d", _G(kernel).trigger, who, node);
+
 	if (_G(kernel).trigger == 1) {
 		if (who <= 0) {
 			if (node != 3) {

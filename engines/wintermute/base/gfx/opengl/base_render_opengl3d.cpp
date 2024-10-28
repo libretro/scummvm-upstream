@@ -35,7 +35,7 @@
 
 #if defined(USE_OPENGL_GAME)
 
-#include "engines/wintermute/math/math_util.h"
+#include "engines/wintermute/base/gfx/3dutils.h"
 #include "engines/wintermute/base/gfx/opengl/base_render_opengl3d.h"
 #include "engines/wintermute/base/gfx/opengl/base_surface_opengl3d.h"
 #include "engines/wintermute/base/gfx/opengl/mesh3ds_opengl.h"
@@ -299,7 +299,21 @@ bool BaseRenderOpenGL3D::fill(byte r, byte g, byte b, Common::Rect *rect) {
 
 bool BaseRenderOpenGL3D::setViewport(int left, int top, int right, int bottom) {
 	_viewportRect.setRect(left, top, right, bottom);
+	_viewport._x = left;
+	_viewport._y = top;
+	_viewport._width = right - left;
+	_viewport._height = bottom - top;
+	_viewport._minZ = 0.0f;
+	_viewport._maxZ = 1.0f;
 	glViewport(left, _height - bottom, right - left, bottom - top);
+	glDepthRange(_viewport._minZ, _viewport._maxZ);
+	return true;
+}
+
+bool BaseRenderOpenGL3D::setViewport3D(DXViewport *viewport) {
+	_viewport = *viewport;
+	glViewport(_viewport._x, _height - _viewport._height, _viewport._width, _viewport._height);
+	glDepthRange(_viewport._minZ, _viewport._maxZ);
 	return true;
 }
 
@@ -770,24 +784,24 @@ void BaseRenderOpenGL3D::renderSceneGeometry(const BaseArray<AdWalkplane *> &pla
 		if (lights[i]->_active) {
 			glBegin(GL_LINES);
 			glColor3f(1.0f, 1.0f, 0.0f);
-			DXVector3 right = lights[i]->_position + DXVector3(1000.0f, 0.0f, 0.0f);
-			DXVector3 up = lights[i]->_position + DXVector3(0.0f, 1000.0f, 0.0f);
-			DXVector3 backward = lights[i]->_position + DXVector3(0.0f, 0.0f, 1000.0f);
-			DXVector3 left = lights[i]->_position + DXVector3(-1000.0f, 0.0f, 0.0f);
-			DXVector3 down = lights[i]->_position + DXVector3(0.0f, -1000.0f, 0.0f);
-			DXVector3 forward = lights[i]->_position + DXVector3(0.0f, 0.0f, -1000.0f);
+			DXVector3 right = lights[i]->_pos + DXVector3(1000.0f, 0.0f, 0.0f);
+			DXVector3 up = lights[i]->_pos + DXVector3(0.0f, 1000.0f, 0.0f);
+			DXVector3 backward = lights[i]->_pos + DXVector3(0.0f, 0.0f, 1000.0f);
+			DXVector3 left = lights[i]->_pos + DXVector3(-1000.0f, 0.0f, 0.0f);
+			DXVector3 down = lights[i]->_pos + DXVector3(0.0f, -1000.0f, 0.0f);
+			DXVector3 forward = lights[i]->_pos + DXVector3(0.0f, 0.0f, -1000.0f);
 
-			glVertex3fv(lights[i]->_position);
+			glVertex3fv(lights[i]->_pos);
 			glVertex3fv(right);
-			glVertex3fv(lights[i]->_position);
+			glVertex3fv(lights[i]->_pos);
 			glVertex3fv(up);
-			glVertex3fv(lights[i]->_position);
+			glVertex3fv(lights[i]->_pos);
 			glVertex3fv(backward);
-			glVertex3fv(lights[i]->_position);
+			glVertex3fv(lights[i]->_pos);
 			glVertex3fv(left);
-			glVertex3fv(lights[i]->_position);
+			glVertex3fv(lights[i]->_pos);
 			glVertex3fv(down);
-			glVertex3fv(lights[i]->_position);
+			glVertex3fv(lights[i]->_pos);
 			glVertex3fv(forward);
 			glEnd();
 		}
@@ -840,7 +854,7 @@ void BaseRenderOpenGL3D::renderShadowGeometry(const BaseArray<AdWalkplane *> &pl
 }
 
 Mesh3DS *BaseRenderOpenGL3D::createMesh3DS() {
-	return new Mesh3DSOpenGL();
+	return new Mesh3DSOpenGL(_gameRef);
 }
 
 XMesh *BaseRenderOpenGL3D::createXMesh() {

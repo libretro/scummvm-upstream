@@ -390,7 +390,7 @@ int EoBInfProcessor::oeob_movePartyOrObject(int8 *data) {
 		for (int i = 0; i < 30; i++) {
 			if (_vm->_monsters[i].block != c)
 				continue;
-			_vm->placeMonster(&_vm->_monsters[i], d, _vm->_monsters[i].pos);
+			_vm->placeMonster(&_vm->_monsters[i], d, _vm->_monsters[i].dir);
 		}
 		debugC(5, kDebugLevelScript, "         - move monsters on block '0x%.04X' to block '0x%.04X'", c, d);
 
@@ -1461,7 +1461,7 @@ int EoBInfProcessor::oeob_changeDirection(int8 *data) {
 
 	} else if (cmd == -11) {
 		for (int i = 0; i < 10; i++) {
-			if (_vm->_flyingObjects[i].enable)
+			if (_vm->_flyingObjects[i].enable && _vm->_flyingObjects[i].curBlock == _lastScriptFunc)
 				_vm->_flyingObjects[i].direction = (_vm->_flyingObjects[i].direction + dir) & 3;
 		}
 	}

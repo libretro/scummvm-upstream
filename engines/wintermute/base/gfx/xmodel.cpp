@@ -56,7 +56,7 @@ XModel::XModel(BaseGame *inGame, BaseObject *owner) : BaseObject(inGame) {
 
 	_rootFrame = nullptr;
 
-	_drawingViewport.setEmpty();
+	memset(&_drawingViewport, 0, sizeof(DXViewport));
 	DXMatrixIdentity(&_lastWorldMat);
 	DXMatrixIdentity(&_lastViewMat);
 	DXMatrixIdentity(&_lastProjMat);
@@ -232,6 +232,7 @@ bool XModel::mergeFromFile(const Common::String &filename) {
 bool XModel::loadAnimationSet(const Common::String &filename, XFileData *xobj) {
 	bool res = true;
 
+	// create the animation set object
 	AnimationSet *animSet = new AnimationSet(_gameRef, this);
 	res = loadName(animSet, xobj);
 	if (!res) {
@@ -557,8 +558,8 @@ bool XModel::isTransparentAt(int x, int y) {
 	bool customViewport;
 	_gameRef->_renderer3D->getProjectionParams(&resWidth, &resHeight, &layerWidth, &layerHeight, &modWidth, &modHeight, &customViewport);
 
-	x -= _drawingViewport.left + modWidth;
-	y -= _drawingViewport.top + modHeight;
+	x -= _drawingViewport._x + modWidth;
+	y -= _drawingViewport._y + modHeight;
 
 	if (customViewport) {
 		x += _gameRef->_renderer3D->_drawOffsetX;
@@ -570,8 +571,8 @@ bool XModel::isTransparentAt(int x, int y) {
 
 	// Compute the vector of the pick ray in screen space
 	DXVector3 vec;
-	vec._x =  (((2.0f * x) / (_drawingViewport.width())) - 1) / _lastProjMat.matrix._11;
-	vec._y = -(((2.0f * y) / (_drawingViewport.height())) - 1) / _lastProjMat.matrix._22;
+	vec._x =  (((2.0f * x) / (_drawingViewport._width)) - 1) / _lastProjMat.matrix._11;
+	vec._y = -(((2.0f * y) / (_drawingViewport._height)) - 1) / _lastProjMat.matrix._22;
 	vec._z =  1.0f;
 
 	// Get the inverse view matrix
@@ -746,8 +747,8 @@ bool XModel::parseAnim(byte *buffer) {
 //////////////////////////////////////////////////////////////////////////
 bool XModel::parseEvent(AnimationSet *anim, byte *buffer) {
 	TOKEN_TABLE_START(commands)
-	TOKEN_TABLE(NAME)
-	TOKEN_TABLE(FRAME)
+		TOKEN_TABLE(NAME)
+		TOKEN_TABLE(FRAME)
 	TOKEN_TABLE_END
 
 	byte *params;
@@ -831,7 +832,6 @@ bool XModel::setMaterialTheora(const char *materialName, const char *theoraFilen
 	}
 
 	VideoTheoraPlayer *theora = new VideoTheoraPlayer(_gameRef);
-
 	if (!theora || theora->initialize(theoraFilename)) {
 		delete theora;
 		return false;
@@ -890,7 +890,7 @@ bool XModel::persist(BasePersistenceManager *persistMgr) {
 	persistMgr->transferRect32(TMEMBER(_boundingRect));
 
 	if (!persistMgr->getIsSaving()) {
-		_drawingViewport.setEmpty();
+		memset(&_drawingViewport, 0, sizeof(DXViewport));
 	}
 
 	persistMgr->transferSint32(TMEMBER(_lastOffsetX));
@@ -908,7 +908,6 @@ bool XModel::persist(BasePersistenceManager *persistMgr) {
 		for (int i = 0; i < X_NUM_ANIMATION_CHANNELS; i++) {
 			_channels[i] = nullptr;
 		}
-
 		_rootFrame = nullptr;
 
 		if (getFilename()) {

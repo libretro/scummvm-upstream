@@ -49,12 +49,12 @@
 #include "engines/wintermute/base/gfx/opengl/base_render_opengl3d.h"
 #include "engines/wintermute/base/gfx/xmodel.h"
 #include "engines/wintermute/base/gfx/xmath.h"
+#include "engines/wintermute/base/gfx/3dutils.h"
 #include "engines/wintermute/base/particles/part_emitter.h"
 #include "engines/wintermute/base/scriptables/script.h"
 #include "engines/wintermute/base/scriptables/script_stack.h"
 #include "engines/wintermute/base/scriptables/script_value.h"
 #include "engines/wintermute/base/sound/base_sound.h"
-#include "engines/wintermute/math/math_util.h"
 #include "engines/wintermute/utils/path_util.h"
 #include "engines/wintermute/utils/utils.h"
 
@@ -282,6 +282,9 @@ bool AdActor3DX::update() {
 
 	//////////////////////////////////////////////////////////////////////////
 	case STATE_TALKING: {
+		if (!_sentence)
+			break;
+
 		_sentence->update();
 
 		if (_sentence->_currentSkelAnim) {
@@ -389,11 +392,11 @@ bool AdActor3DX::display() {
 		_gameRef->_renderer3D->setAmbientLightColor(_ambientLightColor);
 	}
 
-	TShadowType ShadowType = _gameRef->getMaxShadowType(this);
+	TShadowType shadowType = _gameRef->getMaxShadowType(this);
 
-	if (ShadowType == SHADOW_STENCIL) {
+	if (shadowType == SHADOW_STENCIL) {
 		displayShadowVolume();
-	} else if  (ShadowType > SHADOW_NONE) {
+	} else if (shadowType > SHADOW_NONE) {
 		DXVector3 lightPos = DXVector3(_shadowLightPos._x * _scale3D,
 									   _shadowLightPos._y * _scale3D,
 									   _shadowLightPos._z * _scale3D);
@@ -443,20 +446,15 @@ bool AdActor3DX::renderModel() {
 	}
 
 	_gameRef->_renderer3D->setWorldTransform(_worldMatrix);
-	bool res;
 
 	if (_shadowModel) {
-		res = _shadowModel->render();
+		_shadowModel->render();
 	} else {
-		res = _xmodel->render();
-	}
-
-	if (!res) {
-		return false;
+		_xmodel->render();
 	}
 
 	displayAttachments(false);
-	return res;
+	return true;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1527,7 +1525,7 @@ bool AdActor3DX::scCallMethod(ScScript *script, ScStack *stack, ScStack *thisSta
 		AdGame *adGame = (AdGame *)_gameRef;
 
 		if (isGoToNeeded(x, y)) {
-			if (adGame->_scene->_2DPathfinding) {
+			if (adGame->_scene && adGame->_scene->_2DPathfinding) {
 				goTo2D(x, y);
 
 				if (strcmp(name, "GoToAsync") != 0) {
@@ -1914,7 +1912,12 @@ bool AdActor3DX::scCallMethod(ScScript *script, ScStack *stack, ScStack *thisSta
 		/*const char *paramName =*/ stack->pop()->getString();
 		/*uint32 color =*/ stack->pop()->getInt();
 
-		// if (_xmodel && _xmodel->setMaterialEffectParam(materialName, paramName, DXVector4(r, g, b, a))) {
+		//float r = RGBCOLGetR(color) / 255.0f;
+		//float g = RGBCOLGetG(color) / 255.0f;
+		//float b = RGBCOLGetB(color) / 255.0f;
+		//float a = RGBCOLGetA(color) / 255.0f;
+
+		//if (_xmodel && _xmodel->setMaterialEffectParam(materialName, paramName, DXVector4(r, g, b, a))) {
 		warning("AdActor3DX::scCallMethod D3DX effects are not supported");
 		if (_xmodel) {
 			stack->pushBool(true);
@@ -1958,7 +1961,7 @@ bool AdActor3DX::scCallMethod(ScScript *script, ScStack *stack, ScStack *thisSta
 		bool found = false;
 		for (uint32 i = 0; i < _transitionTimes.size(); i++) {
 			BaseAnimationTransitionTime *trans = _transitionTimes[i];
-			if (trans->_animFrom == animFrom && trans->_animTo == animTo) {
+			if (!trans->_animFrom.empty() && !trans->_animTo.empty() && trans->_animFrom.compareToIgnoreCase(animFrom) == 0 && trans->_animTo.compareToIgnoreCase(animTo) == 0) {
 				found = true;
 				if (time < 0) {
 					delete trans;
@@ -1990,7 +1993,7 @@ bool AdActor3DX::scCallMethod(ScScript *script, ScStack *stack, ScStack *thisSta
 		for (uint32 i = 0; i < _transitionTimes.size(); i++) {
 			BaseAnimationTransitionTime *trans = _transitionTimes[i];
 
-			if (trans->_animFrom == animFrom && trans->_animTo == animTo) {
+			if (!trans->_animFrom.empty() && !trans->_animTo.empty() && trans->_animFrom.compareToIgnoreCase(animFrom) == 0 && trans->_animTo.compareToIgnoreCase(animTo) == 0) {
 				time = trans->_time;
 				break;
 			}
@@ -2155,9 +2158,9 @@ bool AdActor3DX::scSetProperty(const char *name, ScValue *value) {
 	//////////////////////////////////////////////////////////////////////////
 	else if (strcmp(name, "WalkAnimName") == 0) {
 		if (value->isNULL()) {
-			_talkAnimName = "walk";
+			_walkAnimName = "walk";
 		} else {
-			_talkAnimName = value->getString();
+			_walkAnimName = value->getString();
 		}
 		return true;
 	}
@@ -2353,13 +2356,11 @@ bool AdActor3DX::mergeAnimations(const char *filename) {
 		return res;
 	}
 
-	Common::String animExtFile = PathUtil::getFileNameWithoutExtension(filename);
-	animExtFile += ".anim";
+	AnsiString path = PathUtil::getDirectoryName(filename);
+	AnsiString name = PathUtil::getFileNameWithoutExtension(filename);
+	AnsiString animExtFile = PathUtil::combine(path, name + ".anim");
 
-	Common::SeekableReadStream *testFile = BaseFileManager::getEngineInstance()->openFile(animExtFile);
-
-	if (testFile) {
-		BaseFileManager::getEngineInstance()->closeFile(testFile);
+	if (BaseFileManager::getEngineInstance()->hasFile(animExtFile)) {
 		return mergeAnimations2(animExtFile.c_str());
 	} else {
 		return true;
@@ -2427,7 +2428,7 @@ bool AdActor3DX::isGoToNeeded(int x, int y) {
 uint32 AdActor3DX::getAnimTransitionTime(char *from, char *to) {
 	for (uint32 i = 0; i < _transitionTimes.size(); i++) {
 		BaseAnimationTransitionTime *trans = _transitionTimes[i];
-		if (trans->_animFrom == from && trans->_animTo == to) {
+		if (!trans->_animFrom.empty() && !trans->_animTo.empty() && trans->_animFrom.compareToIgnoreCase(from) == 0 && trans->_animTo.compareToIgnoreCase(to) == 0) {
 			return trans->_time;
 		}
 	}

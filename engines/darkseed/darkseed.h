@@ -151,6 +151,8 @@ public:
 
 	void wait();
 
+	void syncSoundSettings() override;
+
 public:
 	DarkseedEngine(OSystem *syst, const ADGameDescription *gameDesc);
 	~DarkseedEngine() override;
@@ -248,7 +250,6 @@ private:
 	void closeShops();
 	void initDelbertAtSide();
 	void movePlayerToDelbert();
-	void runDrekethSequence();
 	void delbertThrowStick(int16 spriteNum);
 	void leavePackage();
 };

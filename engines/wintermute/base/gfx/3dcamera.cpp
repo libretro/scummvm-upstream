@@ -27,7 +27,7 @@
 
 #include "engines/wintermute/base/gfx/3dcamera.h"
 #include "engines/wintermute/base/gfx/3dloader_3ds.h"
-#include "engines/wintermute/math/math_util.h"
+#include "engines/wintermute/base/gfx/3dutils.h"
 
 #include "math/angle.h"
 #include "math/glmath.h"
@@ -110,41 +110,6 @@ void Camera3D::move(float speed) {
 	_position._z += vector._z * speed; // Add our acceleration to our position's Z
 	_target._x += vector._x * speed;   // Add our acceleration to our view's X
 	_target._z += vector._z * speed;   // Add our acceleration to our view's Z
-}
-
-bool Camera3D::loadFrom3DS(Common::MemoryReadStream &fileStream) {
-	uint32 wholeChunkSize = fileStream.readUint32LE();
-	int32 end = fileStream.pos() + wholeChunkSize - 6;
-
-	_position._x = fileStream.readFloatLE();
-	_position._z = fileStream.readFloatLE();
-	_position._y = fileStream.readFloatLE();
-
-	_target._x = fileStream.readFloatLE();
-	_target._z = fileStream.readFloatLE();
-	_target._y = fileStream.readFloatLE();
-
-	_bank = fileStream.readFloatLE();
-
-	float lens = fileStream.readFloatLE();
-
-	if (lens > 0.0f) {
-		_fov = degToRad(1900.0f / lens);
-	} else {
-		_fov = degToRad(45.0f);
-	}
-
-	_origFov = _fov;
-
-	// discard all subchunks
-	while (fileStream.pos() < end) {
-		fileStream.readUint16LE(); // chunk id
-		uint32 chunkSize = fileStream.readUint32LE();
-
-		fileStream.seek(chunkSize - 6, SEEK_CUR);
-	}
-
-	return true;
 }
 
 } // namespace Wintermute

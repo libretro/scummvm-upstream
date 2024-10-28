@@ -660,7 +660,7 @@ void ScummEngine::drawStripToScreen(VirtScreen *vs, int x, int width, int top, i
 	if (width <= 0 || height <= 0)
 		return;
 
-	if (_macScreen) {
+	if (_macScreen && _game.version == 3) {
 		mac_drawStripToScreen(vs, top, x, y, width, height);
 		return;
 	}
@@ -800,8 +800,15 @@ void ScummEngine::drawStripToScreen(VirtScreen *vs, int x, int width, int top, i
 		}
 	}
 
-	// Finally blit the whole thing to the screen
-	_system->copyRectToScreen(src, pitch, x, y, width, height);
+	if (_macScreen && _game.platform == Common::kPlatformMacintosh && _game.version > 3) {
+		// Instead of using mac_drawStripToScreen(), we draw the entire already processed
+		// video buffer to screen with the following routine, because for newer games we
+		// need the text overlay to be already stamped on top of the buffer.
+		mac_drawBufferToScreen((const byte *)src, pitch, x, y, width, height);
+	} else {
+		// Finally blit the whole thing to the screen
+		_system->copyRectToScreen(src, pitch, x, y, width, height);
+	}
 }
 
 const byte *ScummEngine::postProcessDOSGraphics(VirtScreen *vs, int &pitch, int &x, int &y, int &width, int &height) const {
@@ -1236,7 +1243,7 @@ void ScummEngine::restoreBackground(Common::Rect rect, byte backColor) {
 			} else
 #endif
 			{
-				byte *mask = (byte *)_textSurface.getBasePtr(rect.left, rect.top - _screenTop - _screenDrawOffset);
+				byte *mask = (byte *)_textSurface.getBasePtr(rect.left, rect.top - _screenTop);
 				fill(mask, _textSurface.pitch, CHARSET_MASK_TRANSPARENCY, width * _textSurfaceMultiplier, height * _textSurfaceMultiplier, _textSurface.format.bytesPerPixel);
 			}
 		}
@@ -1263,7 +1270,7 @@ void ScummEngine::restoreBackground(Common::Rect rect, byte backColor) {
 
 void ScummEngine::restoreCharsetBg() {
 	_nextLeft = _string[0].xpos;
-	_nextTop = _string[0].ypos + _screenTop + _screenDrawOffset;
+	_nextTop = _string[0].ypos + _screenTop;
 
 	if (_charset->_hasMask || _postGUICharMask) {
 		_postGUICharMask = false;
@@ -1431,7 +1438,7 @@ void ScummEngine::drawBox(int x, int y, int x2, int y2, int color) {
 	VirtScreen *vs;
 	byte *backbuff, *bgbuff;
 
-	if ((vs = findVirtScreen(y + _screenDrawOffset)) == nullptr)
+	if ((vs = findVirtScreen(y)) == nullptr)
 		return;
 
 	if (_game.version == 8) {
@@ -1473,8 +1480,8 @@ void ScummEngine::drawBox(int x, int y, int x2, int y2, int color) {
 	y2++;
 
 	// Adjust for the topline of the VirtScreen
-	y -= vs->topline - _screenDrawOffset;
-	y2 -= vs->topline - _screenDrawOffset;
+	y -= vs->topline;
+	y2 -= vs->topline;
 
 	// Clip the coordinates
 	if (x < 0)
@@ -1627,7 +1634,8 @@ void ScummEngine::drawBox(int x, int y, int x2, int y2, int color) {
 }
 
 void ScummEngine::drawLine(int x1, int y1, int x2, int y2, int color) {
-	if (_game.platform == Common::kPlatformFMTowns && _game.version == 5) {
+	if ((_game.platform == Common::kPlatformFMTowns && _game.version == 5) ||
+		(_game.platform == Common::kPlatformMacintosh && _game.version > 3)) {
 		drawBox(x1, y1, x2, y2, color);
 		return;
 	}
@@ -1738,7 +1746,18 @@ void ScummEngine::moveScreen(int dx, int dy, int height) {
 	Graphics::Surface *screen = _system->lockScreen();
 	if (!screen)
 		return;
-	screen->move(dx, dy, height);
+
+
+	if (_macScreen) {
+		screen->move(dx, dy, height + _macScreenDrawOffset * 2);
+
+		// Mask the empty part of the screen
+		screen->fillRect(Common::Rect(0, 0, screen->pitch, _macScreenDrawOffset * 2), 0);
+		screen->fillRect(Common::Rect(0, screen->h - _macScreenDrawOffset * 2, screen->pitch, screen->h), 0);
+	} else {
+		screen->move(dx, dy, height);
+	}
+
 	_system->unlockScreen();
 }
 
@@ -4595,6 +4614,10 @@ void ScummEngine::transitionEffect(int a) {
  * dissolveEffect(virtsrc[0].width, 1) produces a line-by-line dissolve
  */
 void ScummEngine::dissolveEffect(int width, int height) {
+	// Apparently Mac versions discarded this effect
+	if (_macScreen)
+		return;
+
 	VirtScreen *vs = &_virtscr[kMainVirtScreen];
 	int *offsets;
 	int blitsBeforeRefresh, blits, blitsToFreeze;
@@ -4697,9 +4720,7 @@ void ScummEngine::dissolveEffect(int width, int height) {
 			towns_drawStripToScreen(vs, x, y + vs->topline, x, y, width, height);
 		else
 #endif
-		if (_macScreen)
-			mac_drawStripToScreen(vs, y, x, y + vs->topline, width, height);
-		else if (IS_ALIGNED(width, 4))
+		if (IS_ALIGNED(width, 4))
 			drawStripToScreen(vs, x, width, y, y + height);
 		else {
 			const byte *src = vs->getPixels(x, y);
@@ -4781,6 +4802,10 @@ void ScummEngine::scrollEffect(int dir) {
 
 	byte *src;
 	int m = _textSurfaceMultiplier;
+
+	if (m == 1 && _game.platform == Common::kPlatformMacintosh)
+		m = 2;
+
 	int vsPitch = vs->pitch;
 
 	switch (dir) {
@@ -4796,10 +4821,14 @@ void ScummEngine::scrollEffect(int dir) {
 #endif
 			{
 				src = vs->getPixels(0, y - step);
-				_system->copyRectToScreen(src,
-					vsPitch * m,
-					0, (vs->h - step) * m,
-					vs->w * m, step * m);
+				if (_macScreen) {
+					mac_drawBufferToScreen(src, vsPitch, 0, (vs->h - step), vs->w, step, false);
+				} else {
+					_system->copyRectToScreen(src,
+											  vsPitch * m,
+											  0, (vs->h - step) * m,
+											  vs->w * m, step * m);
+				}
 			}
 
 			waitForTimer(delay, true);
@@ -4818,10 +4847,15 @@ void ScummEngine::scrollEffect(int dir) {
 #endif
 			{
 				src = vs->getPixels(0, vs->h - y);
-				_system->copyRectToScreen(src,
-					vsPitch * m,
-					0, 0,
-					vs->w * m, step * m);
+
+				if (_macScreen) {
+					mac_drawBufferToScreen(src, vsPitch, 0, 0, vs->w, step, false);
+				} else {
+					_system->copyRectToScreen(src,
+											  vsPitch * m,
+											  0, 0,
+											  vs->w * m, step * m);
+				}
 			}
 
 			waitForTimer(delay, true);
@@ -4840,7 +4874,11 @@ void ScummEngine::scrollEffect(int dir) {
 #endif
 			{
 				src = vs->getPixels(x - step, 0);
-				_system->copyRectToScreen(src, vsPitch * m, (vs->w - step) * m, 0, step * m, vs->h * m);
+				if (_macScreen) {
+					mac_drawBufferToScreen(src, vsPitch, (vs->w - step), 0, step, vs->h, false);
+				} else {
+					_system->copyRectToScreen(src, vsPitch * m, (vs->w - step) * m, 0, step * m, vs->h * m);
+				}
 			}
 			waitForTimer(delay, true);
 			x += step;
@@ -4858,7 +4896,11 @@ void ScummEngine::scrollEffect(int dir) {
 #endif
 			{
 				src = vs->getPixels(vs->w - x, 0);
-				_system->copyRectToScreen(src, vsPitch * m, 0, 0, step * m, vs->h * m);
+				if (_macScreen) {
+					mac_drawBufferToScreen(src, vsPitch, 0, 0, step, vs->h, false);
+				} else {
+					_system->copyRectToScreen(src, vsPitch * m, 0, 0, step * m, vs->h * m);
+				}
 			}
 
 			waitForTimer(delay, true);
@@ -4872,12 +4914,19 @@ void ScummEngine::scrollEffect(int dir) {
 
 void ScummEngine::dissolveEffectSelector() {
 	// CD Loom (but not EGA Loom!) uses a more fine-grained dissolve
-	if (_game.id == GID_LOOM && _game.version == 4)
+	if (_game.id == GID_LOOM && _game.version == 4) {
 		dissolveEffect(1, 1);
-	else if (_game.id == GID_LOOM && _game.platform == Common::kPlatformPCEngine)
+	} else if (_game.id == GID_LOOM && _game.platform == Common::kPlatformPCEngine) {
 		dissolveEffect(8, 8);
-	else
+	} else if (_game.platform == Common::kPlatformMacintosh) {
+		if (_game.version == 3) {
+			transitionEffect(0);
+		} else {
+			return;
+		}
+	} else {
 		dissolveEffect(8, 4);
+	}
 }
 
 void ScummEngine::updateScreenShakeEffect() {

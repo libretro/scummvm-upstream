@@ -36,6 +36,7 @@ public:
 	~MacLoomGui();
 
 	const Common::String name() const override { return "Loom"; }
+	int getNumColors() const override { return 16; }
 
 	bool handleEvent(Common::Event event) override;
 
@@ -54,11 +55,7 @@ protected:
 	bool handleMenu(int id, Common::String &name) override;
 
 	void runAboutDialog() override;
-	bool runOpenDialog(int &saveSlotToHandle) override;
-	bool runSaveDialog(int &saveSlotToHandle, Common::String &name) override;
 	bool runOptionsDialog() override;
-
-	void readStrings() override;
 
 private:
 	Graphics::Surface *_practiceBox = nullptr;

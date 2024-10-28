@@ -52,11 +52,11 @@ struct EffectManagerData {
 
 struct MinigameData {
 	MinigameData();
-	int sequenceIndex_;
-	int lastScore_;
-	int lastTime_;
-	int bestTime_;
-	int bestScore_;
+	int _sequenceIndex;
+	int _lastScore;
+	int _lastTime;
+	int _bestTime;
+	int _bestScore;
 
 	void write(Common::WriteStream &out) const;
 	void read(Common::ReadStream &out);
@@ -74,15 +74,15 @@ struct GameInfo {
 		return 9;
 	}
 	bool empty() const {
-		return empty_ && game_.sequenceIndex_ < 0;
+		return _empty && _game._sequenceIndex < 0;
 	}
 
-	MinigameData game_;
-	bool empty_;
-	TimeManagerData timeManagerData_;
-	EffectManagerData effectManagerData_;
-	uint dataSize_;
-	void *gameData_;
+	MinigameData _game;
+	bool _empty;
+	TimeManagerData _timeManagerData;
+	EffectManagerData _effectManagerData;
+	uint _dataSize;
+	void *_gameData;
 };
 
 typedef MinigameInterface *(*MinigameConsCallback)();
@@ -98,40 +98,40 @@ public:
 	~MinigameManager();
 
 	// begin MiniGame virtual interface
-	bool init(const qdEngineInterface* engine_interface);
+	bool init(const qdEngineInterface *engine_interface);
 	bool quant(float dt);
 	bool finit();
 
-	bool new_game(const qdEngineInterface* engine);
-	int save_game(const qdEngineInterface* engine, const qdMinigameSceneInterface* scene, char* buffer, int buffer_size);
-	int load_game(const qdEngineInterface* engine, const qdMinigameSceneInterface* scene, const char* buffer, int buffer_size);
+	bool new_game(const qdEngineInterface *engine);
+	int save_game(const qdEngineInterface *engine, const qdMinigameSceneInterface *scene, char *buffer, int buffer_size);
+	int load_game(const qdEngineInterface *engine, const qdMinigameSceneInterface *scene, const char *buffer, int buffer_size);
 	// finish MiniGame virtual interface
 
 	// при необходимости заменяет на неизмененные предыдущим прохождением данные
 	bool processGameData(Common::SeekableReadStream &data);
 
 	mgVect2f mousePosition() const {
-		return mousePos_;
+		return _mousePos;
 	}
 	bool mouseLeftPressed() const;
 	bool mouseRightPressed() const;
 	bool keyPressed(int vKey, bool once = false) const;
 
 	mgVect2i screenSize() const {
-		return screenSize_;
+		return _screenSize;
 	}
 	float getTime() const {
-		return gameTime_;
+		return _gameTime;
 	}
 
 	const MinigameData *getScore(int level, int game) const;
 
 	bool debugMode() const {
-		return debugMode_;
+		return _debugMode;
 	}
 
 	TextManager &textManager() const {
-		return *textManager_;
+		return *_textManager;
 	}
 
 	void signal(SystemEvent id);
@@ -146,40 +146,40 @@ public:
 	void setGameHelpVariant(int idx);
 
 	// Возвращает параметр из прикрепленного к игре ini файла
-	const char *parameter(const char* name, bool required = true) const;
-	const char *parameter(const char* name, const char* def) const;
+	const char *parameter(const char *name, bool required = true) const;
+	const char *parameter(const char *name, const char *def) const;
 
 	// Пересчитывает из экранных координат UI игры в 3D координаты R() объекта на мире
-	mgVect3f game2world(const mgVect3i& coord) const;
-	mgVect3f game2world(const mgVect3f& coord) const;
-	mgVect3f game2world(const mgVect2i& coord, int depth = 0) const;
-	mgVect3f game2world(const mgVect2f& coord, int depth = 0) const;
+	mgVect3f game2world(const mgVect3i &coord) const;
+	mgVect3f game2world(const mgVect3f &coord) const;
+	mgVect3f game2world(const mgVect2i &coord, int depth = 0) const;
+	mgVect3f game2world(const mgVect2f &coord, int depth = 0) const;
 	// Пересчитывает из мировых координат R() в 2D UI координаты и глубину
 	mgVect2f world2game(const mgVect3f& pos) const;
-	mgVect3f world2game(qdMinigameObjectInterface* obj) const;
+	mgVect3f world2game(qdMinigameObjectInterface *obj) const;
 	// размер объекта
-	mgVect2f getSize(qdMinigameObjectInterface* obj) const;
+	mgVect2f getSize(qdMinigameObjectInterface *obj) const;
 
 	// Меняет глубину объекта, не меняя его 2D положения на экране
-	void setDepth(qdMinigameObjectInterface* obj, int depth) const;
+	void setDepth(qdMinigameObjectInterface *obj, int depth) const;
 	// Получает глубину объекта, чем меньше, тем ближе к игроку
-	float getDepth(qdMinigameObjectInterface* obj) const;
+	float getDepth(qdMinigameObjectInterface *obj) const;
 	// Получает глубину точки, чем меньше, тем ближе к игроку
 	float getDepth(const mgVect3f& pos) const;
 
 	// получает интерфейс к динамическому игровому объекту по имени
-	QDObject getObject(const char* name) const;
+	QDObject getObject(const char *name) const;
 	// проверяет существование динамического объекта в сцене
-	bool testObject(const char* name) const;
+	bool testObject(const char *name) const;
 	// освобождает интерфейс
 	void release(QDObject& obj);
 
 	// задать текст для контрола
-	void setText(const char* name, const char* text) const;
-	void setText(const char* name, int toText, const char* format = "%d") const;
+	void setText(const char *name, const char *text) const;
+	void setText(const char *name, int toText, const char *format = "%d") const;
 
 	// спрятать объект за пределами экрана
-	void hide(qdMinigameObjectInterface* obj) const;
+	void hide(qdMinigameObjectInterface *obj) const;
 
 	// случайное значение в диапазоне [min, max]
 	float rnd(float min, float max) const;
@@ -189,98 +189,98 @@ public:
 
 	// файл со списком игр по уровням
 	const char *gameListFileName() const {
-		return "resource//minigames.lst";
+		return "resource/minigames.lst";
 	}
 
 private:
-	MinigameInterface *game_;
+	MinigameInterface *_game;
 
 	// Вывод текста с помощью объектов
-	TextManager *textManager_;
+	TextManager *_textManager;
 	// Подсчет и визуализация времени
-	TimeManager *timeManager_;
+	TimeManager *_timeManager;
 	// Обработка событий игры
-	EventManager *eventManager_;
+	EventManager *_eventManager;
 	// выводимые эффекты
-	EffectManager *effectManager_;
+	EffectManager *_effectManager;
 
 	// Время в секундах с момента стара игры
-	float gameTime_;
+	float _gameTime;
 	// кеш проверенных на нажатие клавиш, для отслеживания непосредственно нажатия
-	mutable bool lastKeyChecked_[256];
+	mutable bool _lastKeyChecked[256];
 	// Размер играна
-	mgVect2i screenSize_;
+	mgVect2i _screenSize;
 	// текущее положение мыши
-	mgVect2f mousePos_;
+	mgVect2f _mousePos;
 	// подстройка мыши
-	mgVect2f mouseAdjast_;
+	mgVect2f _mouseAdjast;
 
 	// объект для передачи сигнала об окончании игры в триггеры
-	qdMinigameObjectInterface *state_flag_;
+	qdMinigameObjectInterface *_state_flag;
 	// объект для получения сигнала о постановке на паузу
-	qdMinigameObjectInterface *pause_flag_;
+	qdMinigameObjectInterface *_pause_flag;
 	// справка по победе
-	QDObject complete_help_;
-	QDObject complete_help_miniature_;
+	QDObject _complete_help;
+	QDObject _complete_help_miniature;
 	// текущее состояние для включения справки
-	Common::String complete_help_state_name_;
+	Common::String _complete_help_state_name;
 	// справка по игре
-	QDObject game_help_;
-	QDObject game_help_trigger_;
-	bool game_help_enabled_;
+	QDObject _game_help;
+	QDObject _game_help_trigger;
+	bool _game_help_enabled;
 	// текущее состояние для включения справки
-	Common::String game_help_state_name_;
+	Common::String _game_help_state_name;
 
 	// интерфейс к движку
-	const qdEngineInterface *engine_;
+	const qdEngineInterface *_engine;
 	// интерфейс к текущей сцене
-	qdMinigameSceneInterface *scene_;
+	qdMinigameSceneInterface *_scene;
 
 	// игра запущена для отладки
-	bool debugMode_;
+	bool _debugMode;
 	// rnd seed
-	int seed_;
+	int _seed;
 
 	// кнопки мыши инвертированы
-	bool invertMouseButtons_;
+	bool _invertMouseButtons;
 
 	// имя файла и информацией о минииграх
-	Common::String state_container_name_;
+	Common::String _state_container_name;
 	// количество пройденных игр на каждом уровне
 	typedef Common::HashMap<int, int> Counters;
-	Counters completeCounters_;
+	Counters _completeCounters;
 
 	struct GameInfoIndex {
-		GameInfoIndex(int idx, int level) : gameNum_(idx), gameLevel_(level) {}
-		int gameNum_;
-		int gameLevel_;
+		GameInfoIndex(int idx, int level) : _gameNum(idx), _gameLevel(level) {}
+		int _gameNum;
+		int _gameLevel;
 
 		void write(Common::WriteStream &out) const;
 		void read(Common::ReadStream &in);
 
 		bool operator< (const GameInfoIndex& rs) const {
-			return gameLevel_ == rs.gameLevel_ ? gameNum_ < rs.gameNum_ : gameLevel_ < rs.gameLevel_;
+			return _gameLevel == rs._gameLevel ? _gameNum < rs._gameNum : _gameLevel < rs._gameLevel;
 		}
 	};
 
 	struct GameInfoIndex_Hash {
 		uint operator()(const GameInfoIndex& x) const {
-			return (x.gameNum_ << 16) + x.gameLevel_;
+			return (x._gameNum << 16) + x._gameLevel;
 		}
 	};
 
 	struct GameInfoIndex_EqualTo {
 		uint operator()(const GameInfoIndex& x, const GameInfoIndex& y) const {
-			return x.gameNum_ == y.gameNum_ && x.gameLevel_ == y.gameLevel_;
+			return x._gameNum == y._gameNum && x._gameLevel == y._gameLevel;
 		}
 	};
 
 	// информация о пройденных играх
 	typedef Common::HashMap<GameInfoIndex, GameInfo, GameInfoIndex_Hash, GameInfoIndex_EqualTo> GameInfoMap;
-	GameInfoMap gameInfos_;
+	GameInfoMap _gameInfos;
 	// Информация о текущей игре, при выходе запишется
-	GameInfoIndex currentGameIndex_;
-	GameInfo *currentGameInfo_;
+	GameInfoIndex _currentGameIndex;
+	GameInfo *_currentGameInfo;
 
 	// проверить что все необходимые игры пройдены
 	bool testAllGamesWin();
@@ -296,7 +296,7 @@ private:
 	void saveState(bool force = false);
 
 	// Полуить объект-счетчик
-	QDCounter getCounter(const char* name);
+	QDCounter getCounter(const char *name);
 	// Освободить счетчик
 	void release(QDCounter& counter);
 

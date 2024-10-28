@@ -26,7 +26,7 @@
 
 namespace Dgds {
 
-/* Native code for the shell game from Heart of China. */
+/** Native code for the shell game from Heart of China. */
 class ShellGame {
 public:
 	ShellGame();

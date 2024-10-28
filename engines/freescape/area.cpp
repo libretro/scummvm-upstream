@@ -406,7 +406,7 @@ Object *Area::checkCollisionRay(const Math::Ray &ray, int raySize) {
 			GeometricObject *gobj = (GeometricObject *)obj;
 			Math::Vector3d collidedNormal;
 			float collidedDistance = sweepAABB(boundingBox, gobj->_boundingBox, raySize * ray.getDirection(), collidedNormal);
-			debugC(1, kFreescapeDebugMove, "shot obj id: %d with distance %f", obj->getObjectID(), collidedDistance);
+			debugC(1, kFreescapeDebugMove, "reached obj id: %d with distance %f", obj->getObjectID(), collidedDistance);
 			if (collidedDistance >= 1.0)
 				continue;
 
@@ -436,12 +436,20 @@ ObjectArray Area::checkCollisions(const Math::AABB &boundingBox) {
 	return collided;
 }
 
-extern Math::AABB createPlayerAABB(Math::Vector3d const position, int playerHeight);
-
 Math::Vector3d Area::resolveCollisions(const Math::Vector3d &lastPosition_, const Math::Vector3d &newPosition_, int playerHeight) {
 	Math::Vector3d position = newPosition_;
 	Math::Vector3d lastPosition = lastPosition_;
-	Math::AABB boundingBox = createPlayerAABB(lastPosition, playerHeight);
+
+	float reductionHeight = 0.0;
+	// Ugly hack to fix the collisions in tight spaces in the stores and junk room
+	// for Castle Master
+	if (_name == "    STORES     " && _areaID == 62) {
+		reductionHeight = 0.3f;
+	} else if (_name == "   JUNK ROOM   " && _areaID == 61) {
+		reductionHeight = 0.3f;
+	}
+
+	Math::AABB boundingBox = createPlayerAABB(lastPosition, playerHeight, reductionHeight);
 
 	float epsilon = 1.5;
 	int i = 0;
@@ -556,7 +564,8 @@ void Area::addGroupFromArea(int16 id, Area *global) {
 		if (!global->objectWithID(it))
 			continue;
 
-		addObjectFromArea(it, global);
+		if (!objectWithID(it))
+			addObjectFromArea(it, global);
 		group->linkObject(objectWithID(it));
 	}
 }

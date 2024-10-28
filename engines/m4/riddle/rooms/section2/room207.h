@@ -33,8 +33,66 @@ public:
 	Room207() : Room() {}
 	~Room207() override {}
 
+	void preload() override;
 	void init() override;
+	void pre_parser() override;
+	void parser() override;
 	void daemon() override;
+
+private:
+	int32 _field4C = 0;
+	int32 _field50 = 0;
+	int32 _field88 = 0;
+	KernelTriggerType _field89_triggerMode = KT_PARSE;
+	int32 _field8A = 0;
+	int32 _field8E = 0;
+	int32 _field92 = 0;
+	const char *_field96_digiName = nullptr;
+	int32 _field9A_triggerNum = 0;
+	int32 _field9E_triggerNum = 0;
+	int32 _fieldA2 = 0;
+	int32 _fieldA4 = 0;
+	int32 _fieldA6 = 0;
+	int32 _fieldA8 = 0;
+	int32 _fieldAA = 0;
+	int32 _fieldAC_ripForegroundFl = 0;
+	int32 _fieldAE = 0;
+	int32 _fieldB2 = 0;
+	int32 _fieldB6 = 0;
+	int32 _fieldBA = 0;
+	int32 _fieldBE = 0;
+	int32 _fieldC2 = 0;
+	int32 _fieldC6 = 0;
+	int32 _fieldCA = 0;
+
+	int32 _leadPipeSeries = 0;
+	int32 _metalRimSeries = 0;
+	int32 _oneFrameMoneySpriteSeries = 0;
+	int32 _peasant3ToSquatSeries = 0;
+	int32 _peasantSquatTo9Series = 0;
+	int32 _peskyBegLoopSeries = 0;
+	int32 _peskyPointsRipBackgroundSeries = 0;
+	int32 _peskyPointsRipForegroundSeries = 0;
+	int32 _peskyRockLoopSeries = 0;
+	int32 _ppShowsAmuletTakesMoneySeries = 0;
+	int32 _rebusAmuletSeries = 0;
+	int32 _sevenSpokesSeries = 0;
+	int32 _shadowPeskyFrom9ToSquatSeries = 0;
+	int32 _wheelSeries = 0;
+	int32 _withoutAmuletSeries = 0;
+	int32 _woodenRimSeries = 0;
+
+	machine *_leadPipeMach = nullptr;
+	machine *_metalRimMach = nullptr;
+	machine *_ppWalkerMach = nullptr;
+	machine *_rebusAmuletMach = nullptr;
+	machine *_sevenSpokesMach = nullptr;
+	machine *_wheelMach = nullptr;
+	machine *_ppSquatMach = nullptr;
+
+	machine *_field84 = nullptr;
+	machine *_field68 = nullptr;
+
 };
 
 } // namespace Rooms

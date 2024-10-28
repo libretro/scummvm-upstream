@@ -34,7 +34,7 @@ TextManager::TextManager() {
 
 	for (int idx = 0;; ++idx) {
 		snprintf(str_cache, 127, "register_font_%d", idx);
-		if (const char * descr = g_runtime->parameter(str_cache, false)) {
+		if (const char *descr = g_runtime->parameter(str_cache, false)) {
 			sscanf(descr, "%255s", str_cache);
 			Font digit;
 			if (!digit.pool.load(str_cache))
@@ -61,7 +61,7 @@ TextManager::TextManager() {
 
 	for (int idx = 0;; ++idx) {
 		snprintf(str_cache, 127, "register_particle_escape_%d", idx);
-		if (const char * descr = g_runtime->parameter(str_cache, false)) {
+		if (const char *descr = g_runtime->parameter(str_cache, false)) {
 			Escape escape;
 			int read = sscanf(descr, "%d (%f><%f, %f><%f) (%f><%f, %f><%f) %f '%15s",
 			                  &escape.depth,
@@ -96,8 +96,8 @@ TextManager::TextManager() {
 	_scoreUpdateTime = getParameter("score_update_time", 0.1f);
 }
 
-bool TextManager::getStaticPreset(StaticTextPreset& preset, const char* name) const {
-	if (const char * descr = g_runtime->parameter(name, false)) {
+bool TextManager::getStaticPreset(StaticTextPreset& preset, const char *name) const {
+	if (const char *descr = g_runtime->parameter(name, false)) {
 		int align = 0;
 		char str[64];
 		str[63] = 0;
@@ -155,7 +155,7 @@ TextManager::~TextManager() {
 }
 
 int TextManager::createStaticText(const mgVect3f& pos, int fontID, TextAlign align) {
-	assert(fontID >= 0 && fontID < _fonts.size());
+	assert(fontID >= 0 && fontID < (int)_fonts.size());
 
 	StaticMessage msg(&_fonts[fontID]);
 
@@ -167,15 +167,15 @@ int TextManager::createStaticText(const mgVect3f& pos, int fontID, TextAlign ali
 	return (int)_staticMsgs.size() - 1;
 }
 
-void TextManager::updateStaticText(int textID, const char* txt) {
-	assert(textID >= 0 && textID < _staticMsgs.size());
+void TextManager::updateStaticText(int textID, const char *txt) {
+	assert(textID >= 0 && textID < (int)_staticMsgs.size());
 
 	_staticMsgs[textID].setText(txt);
 }
 
-void TextManager::showText(const char* txt, const mgVect2f& pos, int fontID, int escapeID) {
-	assert(fontID >= 0 && fontID < _fonts.size());
-	assert(escapeID >= 0 && escapeID < _escapes.size());
+void TextManager::showText(const char *txt, const mgVect2f& pos, int fontID, int escapeID) {
+	assert(fontID >= 0 && fontID < (int)_fonts.size());
+	assert(escapeID >= 0 && escapeID < (int)_escapes.size());
 
 	Escape& es = _escapes[escapeID];
 
@@ -199,8 +199,8 @@ void TextManager::showText(const char* txt, const mgVect2f& pos, int fontID, int
 }
 
 void TextManager::showNumber(int num, const mgVect2f& pos, int fontID, int escapeID) {
-	assert(fontID >= 0 && fontID < _fonts.size());
-	assert(escapeID >= 0 && escapeID < _escapes.size());
+	assert(fontID >= 0 && fontID < (int)_fonts.size());
+	assert(escapeID >= 0 && escapeID < (int)_escapes.size());
 
 	char buf[16];
 	buf[15] = 0;
@@ -222,7 +222,7 @@ TextManager::StaticTextPreset::StaticTextPreset() {
 	textID = 0;
 }
 
-TextManager::StaticMessage::StaticMessage(Font* font, TextAlign align) {
+TextManager::StaticMessage::StaticMessage(Font *font, TextAlign align) {
 	_font = font;
 	_align = align;
 	_depth = 0.f;
@@ -235,7 +235,7 @@ void TextManager::StaticMessage::release() {
 	_objects.clear();
 }
 
-void TextManager::StaticMessage::setText(const char* str) {
+void TextManager::StaticMessage::setText(const char *str) {
 	assert(_font);
 
 	if (!str) {
@@ -245,10 +245,10 @@ void TextManager::StaticMessage::setText(const char* str) {
 
 	int len = (int)strlen(str);
 
-	if (_objects.size() < len)
+	if ((int)_objects.size() < len)
 		_objects.resize(len);
 	else
-		while (_objects.size() > len) {
+		while ((int)_objects.size() > len) {
 			if (_objects.back())
 				_font->pool.releaseObject(_objects.back());
 			_objects.pop_back();
@@ -304,7 +304,7 @@ void TextManager::StaticMessage::update() {
 	}
 }
 
-TextManager::Message::Message(Font* font)
+TextManager::Message::Message(Font *font)
 	: StaticMessage(font) {
 	_time = 0.f;
 }

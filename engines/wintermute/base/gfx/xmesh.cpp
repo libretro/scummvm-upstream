@@ -34,8 +34,8 @@
 #include "engines/wintermute/base/gfx/xmodel.h"
 #include "engines/wintermute/base/gfx/xbuffer.h"
 #include "engines/wintermute/base/gfx/xskinmesh.h"
+#include "engines/wintermute/base/gfx/3dutils.h"
 #include "engines/wintermute/base/base_engine.h"
-#include "engines/wintermute/math/math_util.h"
 #include "engines/wintermute/utils/path_util.h"
 
 namespace Wintermute {
@@ -121,6 +121,7 @@ bool XMesh::loadFromXData(const Common::String &filename, XFileData *xobj) {
 		mat->_material._diffuse.color._b = 0.5f;
 		mat->_material._specular = mat->_material._diffuse;
 		mat->_material._ambient = mat->_material._diffuse;
+
 		_materials.add(mat);
 	} else {
 		// load the materials
@@ -129,9 +130,11 @@ bool XMesh::loadFromXData(const Common::String &filename, XFileData *xobj) {
 			Material *mat = new Material(_gameRef);
 			mat->_material = fileMats[i];
 			mat->_material._ambient = mat->_material._diffuse;
+
 			if (fileMats[i]._textureFilename[0] != '\0') {
 				mat->setTexture(PathUtil::getDirectoryName(filename) + fileMats[i]._textureFilename, true);
 			}
+
 			_materials.add(mat);
 		}
 	}
@@ -198,7 +201,7 @@ bool XMesh::update(FrameNode *parentFrame) {
 
 		// generate skinned mesh
 		_skinMesh->updateSkinnedMesh(boneMatrices, _blendedMesh);
-		delete [] boneMatrices;
+		delete[] boneMatrices;
 
 		// update mesh bounding box
 		byte *points = _blendedMesh->getVertexBuffer().ptr();
@@ -293,7 +296,7 @@ bool XMesh::pickPoly(DXVector3 *pickRayOrig, DXVector3 *pickRayDir) {
 		if (isnan(v0._x))
 			continue;
 
-		found = intersectTriangle(*pickRayOrig, *pickRayDir, v0, v1, v2, &intersection._x, &intersection._y, &intersection._z) != false;
+		found = C3DUtils::intersectTriangle(*pickRayOrig, *pickRayDir, v0, v1, v2, &intersection._x, &intersection._y, &intersection._z) != false;
 		if (found)
 			break;
 	}
@@ -304,7 +307,7 @@ bool XMesh::pickPoly(DXVector3 *pickRayOrig, DXVector3 *pickRayDir) {
 ////////////////////////////////////////////////////////////////////////////
 bool XMesh::setMaterialSprite(const Common::String &matName, BaseSprite *sprite) {
 	for (uint32 i = 0; i < _materials.size(); i++) {
-		if (_materials[i]->getName() && _materials[i]->getName() == matName) {
+		if (_materials[i]->getName() && scumm_stricmp(_materials[i]->getName(),  matName.c_str()) == 0) {
 			_materials[i]->setSprite(sprite);
 		}
 	}
@@ -314,7 +317,7 @@ bool XMesh::setMaterialSprite(const Common::String &matName, BaseSprite *sprite)
 //////////////////////////////////////////////////////////////////////////
 bool XMesh::setMaterialTheora(const Common::String &matName, VideoTheoraPlayer *theora) {
 	for (uint32 i = 0; i < _materials.size(); i++) {
-		if (_materials[i]->getName() && _materials[i]->getName() == matName) {
+		if (_materials[i]->getName() && scumm_stricmp(_materials[i]->getName(),  matName.c_str()) == 0) {
 			_materials[i]->setTheora(theora);
 		}
 	}
