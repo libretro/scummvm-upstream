@@ -46,7 +46,9 @@ public:
 	BaseRenderOpenGL3DShader(BaseGame *inGame = nullptr);
 	~BaseRenderOpenGL3DShader() override;
 
-	void setSpriteBlendMode(Graphics::TSpriteBlendMode blendMode) override;
+	bool invalidateTexture(BaseSurfaceOpenGL3D *texture) override;
+
+	void setSpriteBlendMode(Graphics::TSpriteBlendMode blendMode, bool forceChange = false) override;
 
 	void setAmbientLightRenderState() override;
 
@@ -64,7 +66,6 @@ public:
 
 	void dumpData(const char *filename) override {}
 	BaseImage *takeScreenshot() override;
-	void setWindowed(bool windowed) override;
 	void fadeToColor(byte r, byte g, byte b, byte a) override;
 	bool fill(byte r, byte g, byte b, Common::Rect *rect = nullptr) override;
 
@@ -77,13 +78,7 @@ public:
 	bool setViewTransform(const DXMatrix &transform) override;
 	bool setProjectionTransform(const DXMatrix &transform) override;
 
-	bool windowedBlt() override;
-
-	void onWindowChange() override;
 	bool initRenderer(int width, int height, bool windowed) override;
-	bool flip() override;
-	bool indicatorFlip() override;
-	bool forcedFlip() override;
 	bool setup2D(bool force = false) override;
 	bool setup3D(Camera3D *camera, bool force = false) override;
 	bool setupLines() override;
@@ -107,14 +102,11 @@ public:
 
 	BaseSurface *createSurface() override;
 
-	bool startSpriteBatch() override {
-		return STATUS_OK;
-	};
-	bool endSpriteBatch() override {
-		return STATUS_OK;
-	};
+	bool startSpriteBatch() override;
+	bool endSpriteBatch() override;
+	bool commitSpriteBatch() override;
 
-	bool drawSpriteEx(BaseSurfaceOpenGL3D &tex, const Rect32 &rect, const Vector2 &pos, const Vector2 &rot, const Vector2 &scale,
+	bool drawSpriteEx(BaseSurface *texture, const Rect32 &rect, const Vector2 &pos, const Vector2 &rot, const Vector2 &scale,
 	                  float angle, uint32 color, bool alphaDisable, Graphics::TSpriteBlendMode blendMode, bool mirrorX, bool mirrorY) override;
 
 	void renderSceneGeometry(const BaseArray<AdWalkplane *> &planes, const BaseArray<AdBlock *> &blocks,
@@ -133,16 +125,10 @@ private:
 	Common::Array<DXMatrix> _transformStack;
 
 	Math::Vector4d _flatShadowColor;
-	int _shadowTextureWidth;
-	int _shadowTextureHeight;
 
 	GLuint _spriteVBO;
 	GLuint _fadeVBO;
 	GLuint _lineVBO;
-	GLuint _flatShadowMaskVBO;
-	GLuint _flatShadowFrameBuffer;
-	GLuint _flatShadowRenderTexture;
-	GLuint _flatShadowDepthBuffer;
 	OpenGL::Shader *_spriteShader;
 	OpenGL::Shader *_fadeShader;
 	OpenGL::Shader *_xmodelShader;
@@ -150,8 +136,6 @@ private:
 	OpenGL::Shader *_shadowVolumeShader;
 	OpenGL::Shader *_shadowMaskShader;
 	OpenGL::Shader *_lineShader;
-	OpenGL::Shader *_flatShadowXModelShader;
-	OpenGL::Shader *_flatShadowMaskShader;
 };
 
 } // namespace Wintermute

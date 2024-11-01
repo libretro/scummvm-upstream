@@ -229,13 +229,20 @@ void MacGuiImpl::initialize() {
 			Common::String string = menuDef->operator[](1);
 			int id = menu->addMenuItem(nullptr, name);
 
-			if ((_vm->_game.id == GID_MONKEY || _vm->_game.id == GID_MONKEY2) && id == 3) {
-				string += ";(-;Smooth Graphics/G";
-			}
+			// The CD version of Fate of Atlantis has a menu item
+			// for toggling graphics smoothing. We retroactively
+			// add that to the remaining V5 games, but not to
+			// Loom and Last Crusade.
 
-			// Floppy version
-			if (_vm->_game.id == GID_INDY4 && !string.contains("Smooth Graphics") && id == 3) {
-				string += ";(-;Smooth Graphics/G";
+			if (_vm->enhancementEnabled(kEnhUIUX)) {
+				if ((_vm->_game.id == GID_MONKEY || _vm->_game.id == GID_MONKEY2) && id == 3) {
+					string += ";(-;Smooth Graphics";
+				}
+
+				// Floppy version
+				if (_vm->_game.id == GID_INDY4 && !string.contains("Smooth Graphics") && id == 3) {
+					string += ";(-;Smooth Graphics";
+				}
 			}
 
 			menu->createSubMenuFromString(id, string.c_str(), 0);
@@ -325,12 +332,13 @@ bool MacGuiImpl::handleMenu(int id, Common::String &name) {
 		return true;
 
 	case 201:	// Save
+		_vm->beginTextInput();
 		if (runSaveDialog(saveSlotToHandle, savegameName)) {
 			if (saveSlotToHandle > -1) {
 				_vm->saveGameState(saveSlotToHandle, savegameName);
 			}
 		}
-
+		_vm->endTextInput();
 		return true;
 
 	case 202:	// Restart
@@ -358,43 +366,12 @@ bool MacGuiImpl::handleMenu(int id, Common::String &name) {
 	case 303:	// Paste
 	case 304:	// Clear
 		return true;
-
-	// Window menu
-	case 402: // Tiny
-	case 403: // Medium
-	case 404: // Large
-		return true;
-
-	case 405: // Graphics Smoothing
-		_vm->mac_toggleSmoothing();
-		return true;
-
-	case 500: // Voice Only
-		ConfMan.setBool("subtitles", false);
-		ConfMan.setBool("speech_mute", false);
-		ConfMan.flushToDisk();
-		_vm->syncSoundSettings();
-		return true;
-	case 501: // Text Only
-		ConfMan.setBool("subtitles", true);
-		ConfMan.setBool("speech_mute", true);
-		ConfMan.flushToDisk();
-		_vm->syncSoundSettings();
-		return true;
-	case 502: // Voice and Text
-		ConfMan.setBool("subtitles", true);
-		ConfMan.setBool("speech_mute", false);
-		ConfMan.flushToDisk();
-		_vm->syncSoundSettings();
-		return true;
 	}
 
 	return false;
 }
 
 void MacGuiImpl::updateWindowManager() {
-
-
 	Graphics::MacMenu *menu = _windowManager->getMenu();
 
 	if (!menu)
@@ -477,7 +454,8 @@ void MacGuiImpl::updateWindowManager() {
 		menu->getSubMenuItem(windowMenu, 4)->enabled = false;
 		menu->getSubMenuItem(windowMenu, 5)->enabled = false;
 
-		menu->getSubMenuItem(windowMenu, 7)->checked = _vm->_useMacGraphicsSmoothing;
+		if (menu->numberOfMenuItems(windowMenu) >= 8)
+			menu->getSubMenuItem(windowMenu, 7)->checked = _vm->_useMacGraphicsSmoothing;
 
 		Graphics::MacMenuItem *speechMenu = menu->getMenuItem("Speech");
 

@@ -39,11 +39,15 @@ BaseSurfaceOpenGL3D::BaseSurfaceOpenGL3D(BaseGame *game, BaseRenderer3D *rendere
 
 BaseSurfaceOpenGL3D::~BaseSurfaceOpenGL3D() {
 	glDeleteTextures(1, &_tex);
+	_renderer->invalidateTexture(this);
+	_tex = 0;
 	delete[] _imageData;
 }
 
 bool BaseSurfaceOpenGL3D::invalidate() {
 	glDeleteTextures(1, &_tex);
+	_renderer->invalidateTexture(this);
+	_tex = 0;
 	_imageData->free();
 	delete[] _imageData;
 	_imageData = nullptr;
@@ -67,21 +71,21 @@ bool BaseSurfaceOpenGL3D::isTransparentAt(int x, int y) {
 bool BaseSurfaceOpenGL3D::displayTransZoom(int x, int y, Rect32 rect, float zoomX, float zoomY, uint32 alpha, Graphics::TSpriteBlendMode blendMode, bool mirrorX, bool mirrorY) {
 	prepareToDraw();
 
-	_renderer->drawSprite(*this, rect, zoomX, zoomY, Vector2(x, y), alpha, false, blendMode, mirrorX, mirrorY);
+	_renderer->drawSprite(dynamic_cast<BaseSurface *>(this), rect, zoomX, zoomY, Vector2(x, y), alpha, false, blendMode, mirrorX, mirrorY);
 	return true;
 }
 
 bool BaseSurfaceOpenGL3D::displayTrans(int x, int y, Rect32 rect, uint32 alpha, Graphics::TSpriteBlendMode blendMode, bool mirrorX, bool mirrorY, int offsetX, int offsetY) {
 	prepareToDraw();
 
-	_renderer->drawSprite(*this, rect, 100, 100, Vector2(x + offsetX, y + offsetY), alpha, false, blendMode, mirrorX, mirrorY);
+	_renderer->drawSprite(dynamic_cast<BaseSurface *>(this), rect, 100, 100, Vector2(x + offsetX, y + offsetY), alpha, false, blendMode, mirrorX, mirrorY);
 	return true;
 }
 
 bool BaseSurfaceOpenGL3D::display(int x, int y, Rect32 rect, Graphics::TSpriteBlendMode blendMode, bool mirrorX, bool mirrorY) {
 	prepareToDraw();
 
-	_renderer->drawSprite(*this, rect, 100, 100, Vector2(x, y), 0xFFFFFFFF, true, blendMode, mirrorX, mirrorY);
+	_renderer->drawSprite(dynamic_cast<BaseSurface *>(this), rect, 100, 100, Vector2(x, y), 0xFFFFFFFF, true, blendMode, mirrorX, mirrorY);
 	return true;
 }
 
@@ -102,7 +106,7 @@ bool BaseSurfaceOpenGL3D::displayTransRotate(int x, int y, uint32 angle, int32 h
 	rotation.y = y + transform._hotspot.y * (transform._zoom.y / 100.0f);
 	Vector2 scale(transform._zoom.x / 100.0f, transform._zoom.y / 100.0f);
 
-	_renderer->drawSpriteEx(*this, rect, position, rotation, scale, transform._angle, transform._rgbaMod, transform._alphaDisable, transform._blendMode, transform.getMirrorX(), transform.getMirrorY());
+	_renderer->drawSpriteEx(dynamic_cast<BaseSurface *>(this), rect, position, rotation, scale, transform._angle, transform._rgbaMod, transform._alphaDisable, transform._blendMode, transform.getMirrorX(), transform.getMirrorY());
 	return true;
 }
 
@@ -110,7 +114,7 @@ bool BaseSurfaceOpenGL3D::displayTiled(int x, int y, Rect32 rect, int numTimesX,
 	prepareToDraw();
 
 	Vector2 scale(numTimesX, numTimesY);
-	_renderer->drawSpriteEx(*this, rect, Vector2(x, y), Vector2(0, 0), scale, 0, 0xFFFFFFFF, true, Graphics::BLEND_NORMAL, false, false);
+	_renderer->drawSpriteEx(dynamic_cast<BaseSurface *>(this), rect, Vector2(x, y), Vector2(0, 0), scale, 0, 0xFFFFFFFF, true, Graphics::BLEND_NORMAL, false, false);
 	return true;
 }
 
@@ -137,6 +141,16 @@ bool BaseSurfaceOpenGL3D::create(const Common::String &filename, bool defaultCK,
 		ckBlue = 255;
 	}
 
+	//
+	// ScummVM TGA decoder interpreting palette as RGB, but TGA data has as BGR
+	// swap R and B color components
+	//
+	if (img.getPaletteCount() != 0 && _filename.hasSuffix(".tga")) {
+		byte tmp = ckBlue;
+		ckBlue = ckRed;
+		ckRed = tmp;
+	}
+
 	_ckDefault = defaultCK;
 	_ckRed = ckRed;
 	_ckGreen = ckGreen;
@@ -151,9 +165,17 @@ bool BaseSurfaceOpenGL3D::create(const Common::String &filename, bool defaultCK,
 	}
 
 #ifdef SCUMM_BIG_ENDIAN
-	_imageData = img.getSurface()->convertTo(Graphics::PixelFormat(4, 8, 8, 8, 8, 24, 16, 8, 0), img.getPalette(), img.getPaletteCount());
+	if (img.getSurface()->format.bytesPerPixel == 1 && _filename.hasSuffix(".tga")) {
+		_imageData = img.getSurface()->convertTo(Graphics::PixelFormat(4, 8, 8, 8, 8, 24, 0, 8, 16), img.getPalette(), img.getPaletteCount());
+	} else {
+		_imageData = img.getSurface()->convertTo(Graphics::PixelFormat(4, 8, 8, 8, 8, 24, 16, 8, 0), img.getPalette(), img.getPaletteCount());
+	}
 #else
-	_imageData = img.getSurface()->convertTo(Graphics::PixelFormat(4, 8, 8, 8, 8, 0, 8, 16, 24), img.getPalette(), img.getPaletteCount());
+	if (img.getSurface()->format.bytesPerPixel == 1 && _filename.hasSuffix(".tga")) {
+		_imageData = img.getSurface()->convertTo(Graphics::PixelFormat(4, 8, 8, 8, 8, 16, 8, 0, 24), img.getPalette(), img.getPaletteCount());
+	} else {
+		_imageData = img.getSurface()->convertTo(Graphics::PixelFormat(4, 8, 8, 8, 8, 0, 8, 16, 24), img.getPalette(), img.getPaletteCount());
+	}
 #endif
 
 	if (BaseEngine::instance().getTargetExecutable() < WME_LITE) {

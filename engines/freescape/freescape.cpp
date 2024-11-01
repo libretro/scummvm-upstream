@@ -31,6 +31,7 @@
 #include "freescape/freescape.h"
 #include "freescape/language/8bitDetokeniser.h"
 #include "freescape/objects/sensor.h"
+#include "freescape/sweepAABB.h"
 
 namespace Freescape {
 
@@ -209,10 +210,6 @@ FreescapeEngine::FreescapeEngine(OSystem *syst, const ADGameDescription *gd)
 	ConfMan.setBool("gamepad_controller_minimal_layout", true, gameDomain);
 	ConfMan.setInt("gamepad_controller_directional_input", 1 /* kDirectionalInputDpad */, gameDomain);
 #endif
-
-	if (isCastle())
-		k8bitVariableShield = 29;
-
 	g_freescape = this;
 }
 
@@ -523,7 +520,7 @@ void FreescapeEngine::processInput() {
 
 		switch (event.type) {
 		case Common::EVENT_CUSTOM_ENGINE_ACTION_START:
-			if (_hasFallen)
+			if (_hasFallen || _playerWasCrushed)
 				break;
 			switch (event.customType) {
 			case kActionMoveUp:
@@ -584,14 +581,14 @@ void FreescapeEngine::processInput() {
 			}
 			break;
 		case Common::EVENT_KEYDOWN:
-			if (_hasFallen)
+			if (_hasFallen || _playerWasCrushed)
 				break;
 
 			pressedKey(event.kbd.keycode);
 			break;
 
 		case Common::EVENT_KEYUP:
-			if (_hasFallen)
+			if (_hasFallen || _playerWasCrushed)
 				break;
 
 			releasedKey(event.kbd.keycode);
@@ -608,7 +605,7 @@ void FreescapeEngine::processInput() {
 			break;
 
 		case Common::EVENT_MOUSEMOVE:
-			if (_hasFallen)
+			if (_hasFallen || _playerWasCrushed)
 				break;
 			mousePos = event.mouse;
 
@@ -636,7 +633,7 @@ void FreescapeEngine::processInput() {
 			break;
 
 		case Common::EVENT_LBUTTONDOWN:
-			if (_hasFallen)
+			if (_hasFallen || _playerWasCrushed)
 				break;
 			mousePos = event.mouse;
 			{
@@ -653,7 +650,7 @@ void FreescapeEngine::processInput() {
 			break;
 
 		case Common::EVENT_RBUTTONDOWN:
-			if (_hasFallen || !isCastle())
+			if (_hasFallen || _playerWasCrushed || !isCastle())
 				break;
 			activate();
 			break;
@@ -665,9 +662,24 @@ void FreescapeEngine::processInput() {
 }
 
 Common::Point FreescapeEngine::getNormalizedPosition(Common::Point position) {
+	// Retrieve the screen and viewport dimensions
 	Common::Point resolution(g_system->getWidth(), g_system->getHeight());
-	position.x = _screenW * position.x / resolution.x;
-	position.y = _screenH * position.y / resolution.y;
+
+	int32 viewportWidth = MIN<int32>(resolution.x, resolution.y * float(4) / 3);
+	int32 viewportHeight = MIN<int32>(resolution.y, resolution.x * float(3) / 4);
+
+	// Calculate pillarbox offset
+	int32 offsetX = (resolution.x - viewportWidth) / 2;
+	int32 offsetY = (resolution.y - viewportHeight) / 2;
+
+	// Adjust mouse position by removing the offset
+	position.x -= offsetX;
+	position.y -= offsetY;
+
+	// Scale position to match the 320x200 internal resolution
+	position.x = position.x * 320 / viewportWidth;
+	position.y = position.y * 200 / viewportHeight;
+
 	return position;
 }
 
@@ -748,6 +760,7 @@ Common::Error FreescapeEngine::run() {
 			generateDemoInput();
 
 		checkSensors();
+		checkIfPlayerWasCrushed();
 		drawFrame();
 
 		if (_shootingFrames == 0) {
@@ -877,6 +890,14 @@ bool FreescapeEngine::checkIfGameEnded() {
 		_gameStateControl = kFreescapeGameStateEnd;
 	}
 	return false;
+}
+
+void FreescapeEngine::checkIfPlayerWasCrushed() {
+	Math::AABB boundingBox = createPlayerAABB(_position, _playerHeight);
+	if (!_playerWasCrushed && _currentArea->checkIfPlayerWasCrushed(boundingBox)) {
+		_avoidRenderingFrames = 60 * 3;
+		_playerWasCrushed = true;
+	}
 }
 
 void FreescapeEngine::setGameBit(int index) {

@@ -64,6 +64,7 @@ public:
 	void drawOption();
 
 	void initZX();
+	void initDOS();
 
 	void drawDOSUI(Graphics::Surface *surface) override;
 	void drawZXUI(Graphics::Surface *surface) override;
@@ -116,6 +117,7 @@ public:
 
 	Graphics::ManagedSurface *_endGameThroneFrame;
 	Graphics::ManagedSurface *_endGameBackgroundFrame;
+	Graphics::ManagedSurface *_gameOverBackgroundFrame;
 
 	Common::Array<int> _keysCollected;
 	bool _useRockTravel;
@@ -132,9 +134,11 @@ private:
 	void loadDOSFonts(Common::SeekableReadStream *file, int pos);
 	void drawFullscreenRiddleAndWait(uint16 riddle);
 	void drawFullscreenEndGameAndWait();
+	void drawFullscreenGameOverAndWait();
 	void drawRiddle(uint16 riddle, uint32 front, uint32 back, Graphics::Surface *surface);
 	void tryToCollectKey();
 	void addGhosts();
+	bool ghostInArea();
 	Texture *_optionTexture;
 	Font _fontRiddle;
 };

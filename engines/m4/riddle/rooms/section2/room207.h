@@ -40,31 +40,30 @@ public:
 	void daemon() override;
 
 private:
-	int32 _field4C = 0;
-	int32 _field50 = 0;
-	int32 _field88 = 0;
-	KernelTriggerType _field89_triggerMode = KT_PARSE;
+	int32 _field88 = 0; // unused?
 	int32 _field8A = 0;
 	int32 _field8E = 0;
 	int32 _field92 = 0;
-	const char *_field96_digiName = nullptr;
-	int32 _field9A_triggerNum = 0;
-	int32 _field9E_triggerNum = 0;
-	int32 _fieldA2 = 0;
-	int32 _fieldA4 = 0;
-	int32 _fieldA6 = 0;
-	int32 _fieldA8 = 0;
-	int32 _fieldAA = 0;
-	int32 _fieldAC_ripForegroundFl = 0;
-	int32 _fieldAE = 0;
-	int32 _fieldB2 = 0;
-	int32 _fieldB6 = 0;
-	int32 _fieldBA = 0;
-	int32 _fieldBE = 0;
+	bool _fieldA4 = false; // always false??
+	int32 _fieldA8 = 0; // unused ?
+	bool _fieldAA = false;
+	int32 _fieldAE_rnd = 0;
+	bool _fieldB2 = false;
+	int32 _fieldB6_counter = 0;
 	int32 _fieldC2 = 0;
-	int32 _fieldC6 = 0;
-	int32 _fieldCA = 0;
+	bool _fieldC6 = false; // always false??
 
+	bool _commandNotAllowedFl = false;
+	bool _digi207r04PlayedFl = false;
+	const char *_digiName = nullptr;
+	int32 _digiTriggerNum = 0;
+	int32 _dispatchTriggerNum = 0;
+	bool _dollarFl = false;
+	bool _hiddenWalkerFl = false; // Always false??
+	KernelTriggerType _nextTriggerMode = KT_PARSE;
+	bool _node1Entry2Fl = false;
+	bool _ripForegroundFl = false;
+	
 	int32 _leadPipeSeries = 0;
 	int32 _metalRimSeries = 0;
 	int32 _oneFrameMoneySpriteSeries = 0;
@@ -76,23 +75,32 @@ private:
 	int32 _peskyRockLoopSeries = 0;
 	int32 _ppShowsAmuletTakesMoneySeries = 0;
 	int32 _rebusAmuletSeries = 0;
+	int32 _ripHeadDownTalkOffTd33Series = 0;
+	int32 _ripHeadDownTalkOffTd33Series2 = 0;
+	int32 _ripTrekArmsXPos3Series = 0;
+	int32 _ripTrekLowReacherPos1Series = 0;
 	int32 _sevenSpokesSeries = 0;
 	int32 _shadowPeskyFrom9ToSquatSeries = 0;
 	int32 _wheelSeries = 0;
 	int32 _withoutAmuletSeries = 0;
 	int32 _woodenRimSeries = 0;
 
+	machine *_dropsWheelMach = nullptr;
 	machine *_leadPipeMach = nullptr;
+	machine *_leadPipeMach2 = nullptr;
 	machine *_metalRimMach = nullptr;
+	machine *_oneFrameMoneySpriteMach = nullptr;
+	machine *_ppSquatMach = nullptr;
 	machine *_ppWalkerMach = nullptr;
 	machine *_rebusAmuletMach = nullptr;
+	machine *_ripInConvMach = nullptr;
+	machine *_ripTrekLowReachMach = nullptr;
+	machine *_ripTrekLowReacherPos5Mach = nullptr;
+	machine *_safariShadow3Mach = nullptr;
 	machine *_sevenSpokesMach = nullptr;
 	machine *_wheelMach = nullptr;
-	machine *_ppSquatMach = nullptr;
 
-	machine *_field84 = nullptr;
-	machine *_field68 = nullptr;
-
+	void convHandler();
 };
 
 } // namespace Rooms

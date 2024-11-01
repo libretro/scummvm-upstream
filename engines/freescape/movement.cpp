@@ -199,6 +199,9 @@ void FreescapeEngine::activate() {
 			debugC(1, kFreescapeDebugMove, "Must use interact = true when executing: %s", gobj->_conditionSource.c_str());
 
 		executeObjectConditions(gobj, false, false, true);
+	} else {
+		if (!_outOfReachMessage.empty())
+			insertTemporaryMessage(_outOfReachMessage, _countdown - 2);
 	}
 	//executeLocalGlobalConditions(true, false, false); // Only execute "on shot" room/global conditions
 }
@@ -451,9 +454,9 @@ void FreescapeEngine::resolveCollisions(Math::Vector3d const position) {
 
 bool FreescapeEngine::runCollisionConditions(Math::Vector3d const lastPosition, Math::Vector3d const newPosition) {
 	bool executed = false;
-	uint16 areaID = _currentArea->getAreaID();
 	GeometricObject *gobj = nullptr;
 	Object *collided = nullptr;
+	_gotoExecuted = false;
 
 	Math::Ray ray(newPosition, -_upVector);
 	collided = _currentArea->checkCollisionRay(ray, _playerHeight + 3);
@@ -463,8 +466,10 @@ bool FreescapeEngine::runCollisionConditions(Math::Vector3d const lastPosition, 
 		executed |= executeObjectConditions(gobj, false, true, false);
 	}
 
-	if (areaID != _currentArea->getAreaID())
+	if (_gotoExecuted) {
+		executeMovementConditions();
 		return collided;
+	}
 
 	Math::Vector3d direction = newPosition - lastPosition;
 	direction.normalize();
@@ -474,6 +479,7 @@ bool FreescapeEngine::runCollisionConditions(Math::Vector3d const lastPosition, 
 	else if (_currentArea->getScale() >= 5)
 		rayLenght = MAX(5, 45 / (2 * _currentArea->getScale()));
 
+	_gotoExecuted = false;
 	for (int i = 0; i <= 4; i++) {
 		Math::Vector3d rayPosition = lastPosition;
 		rayPosition.y() = rayPosition.y() - _playerHeight * (i / 4.0);
@@ -485,7 +491,8 @@ bool FreescapeEngine::runCollisionConditions(Math::Vector3d const lastPosition, 
 			executed |= executeObjectConditions(gobj, false, true, false);
 			//break;
 		}
-		if (areaID != _currentArea->getAreaID()) {
+		if (_gotoExecuted) {
+			executeMovementConditions();
 			return true;
 		}
 	}

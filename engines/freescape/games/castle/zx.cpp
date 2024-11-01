@@ -155,7 +155,7 @@ void CastleEngine::loadAssetsZXFullGame() {
 	_gfx->readFromPalette(7, r, g, b);
 	uint32 white = _gfx->_texturePixelFormat.ARGBToColor(0xFF, r, g, b);
 
-	_keysBorderFrames.push_back(loadFrameWithHeader(&file, 0xdf7, red, white));
+	_keysBorderFrames.push_back(loadFrameWithHeader(&file, _language == Common::ES_ESP ? 0xe06 : 0xdf7, red, white));
 
 	uint32 green = _gfx->_texturePixelFormat.ARGBToColor(0xFF, 0, 0xff, 0);
 	_spiritsMeterIndicatorFrame = loadFrameWithHeader(&file, _language == Common::ES_ESP ? 0xe5e : 0xe4f, green, white);
@@ -197,7 +197,6 @@ void CastleEngine::loadAssetsZXFullGame() {
 	_thunderFrame = loadFrame(&file, _thunderFrame, thunderWidth, thunderHeight, front);
 
 	Graphics::Surface *tmp;
-
 	tmp = loadBundledImage("castle_riddle_top_frame");
 	_riddleTopFrame = new Graphics::ManagedSurface;
 	_riddleTopFrame->copyFrom(*tmp);
@@ -214,7 +213,7 @@ void CastleEngine::loadAssetsZXFullGame() {
 
 	tmp = loadBundledImage("castle_riddle_bottom_frame");
 	_riddleBottomFrame = new Graphics::ManagedSurface();
-	_riddleBackgroundFrame->copyFrom(*tmp);
+	_riddleBottomFrame->copyFrom(*tmp);
 	tmp->free();
 	delete tmp;
 	_riddleBottomFrame->convertToInPlace(_gfx->_texturePixelFormat);
@@ -234,25 +233,8 @@ void CastleEngine::loadAssetsZXFullGame() {
 			it._value->addObjectFromArea(id, _areaMap[255]);
 		}
 	}
-	addGhosts();
 	_areaMap[1]->addFloor();
 	_areaMap[2]->addFloor();
-
-	// Discard the first three global conditions
-	// It is unclear why they hide/unhide objects that formed the spirits
-	for (int i = 0; i < 3; i++) {
-		debugC(kFreescapeDebugParser, "Discarding condition %s", _conditionSources[0].c_str());
-		_conditions.remove_at(0);
-		_conditionSources.remove_at(0);
-	}
-
-	_timeoutMessage = _messagesList[1];
-	// Shield is unused in Castle Master
-	_noEnergyMessage = _messagesList[1];
-	_fallenMessage = _messagesList[4];
-	_crushedMessage = _messagesList[3];
-	_outOfReachMessage = _messagesList[7];
-	_noEffectMessage = _messagesList[8];
 }
 
 void CastleEngine::drawZXUI(Graphics::Surface *surface) {
@@ -270,15 +252,18 @@ void CastleEngine::drawZXUI(Graphics::Surface *surface) {
 	surface->fillRect(backRect, black);
 
 	Common::String message;
-	int deadline;
+	int deadline = -1;
 	getLatestMessages(message, deadline);
-	if (deadline <= _countdown) {
+	if (deadline > 0 && deadline <= _countdown) {
 		//debug("deadline: %d countdown: %d", deadline, _countdown);
 		drawStringInSurface(message, 120, 179, front, black, surface);
 		_temporaryMessages.push_back(message);
 		_temporaryMessageDeadlines.push_back(deadline);
-	} else
-		drawStringInSurface(_currentArea->_name, 120, 179, front, black, surface);
+	} else {
+		if (_gameStateControl == kFreescapeGameStatePlaying) {
+			drawStringInSurface(_currentArea->_name, 120, 179, front, black, surface);
+		}
+	}
 
 	for (int k = 0; k < int(_keysCollected.size()); k++) {
 		surface->copyRectToSurface((const Graphics::Surface)*_keysBorderFrames[0], 99 - k * 4, 177, Common::Rect(0, 0, 6, 11));

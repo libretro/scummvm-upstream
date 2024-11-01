@@ -756,7 +756,7 @@ void cmdResetScanStart(AgiGame *state, AgiEngine *vm, uint8 *parameter) {
 
 void cmdSaveGame(AgiGame *state, AgiEngine *vm, uint8 *parameter) {
 	if (vm->getVersion() >= 0x2272) {
-		// this was only donce since 2.272
+		// this was only done since 2.272
 		vm->_sound->stopSound();
 	}
 
@@ -941,65 +941,23 @@ void cmdObjStatusF(AgiGame *state, AgiEngine *vm, uint8 *parameter) {
 	vm->_text->messageBox(msg);
 }
 
-// unknown commands:
-// unk_170: Force savegame name -- j5
-// unk_171: script save -- j5
-// unk_172: script restore -- j5
-// unk_173: Activate keypressed control (ego only moves while key is pressed)
-// unk_174: Change priority table (used in KQ4) -- j5
-// unk_177: Disable menus completely -- j5
-// unk_181: Deactivate keypressed control (default control of ego)
+// only known to used by MMMG for setting the player's name as the save description
 void cmdSetSimple(AgiGame *state, AgiEngine *vm, uint8 *parameter) {
-	if (!(vm->getFeatures() & GF_AGI256)) {
-		// set.simple is called by Larry 1 on Apple IIgs at the store, after answering the 555-6969 phone.
-		// load.sound(16) is called right before it. Interpreter is 2.440-like.
-		// it's called with parameter 16.
-		// Original interpreter doesn't seem to play any sound.
-		// TODO: Figure out what's going on. It can't be automatic saving of course.
-		// Also getting called in KQ1, when planting beans - parameter 12.
-		// And when killing the witch - parameter 40.
-		if ((vm->getVersion() < 0x2425) || (vm->getVersion() == 0x2440)) {
-			// was not available before 2.2425, but also not available in 2.440
-			warning("set.simple called, although not available for current AGI version");
-			return;
-		}
-
-		int16 stringNr = parameter[0];
-		state->automaticSave = false;
-
-		// Try to get description for automatic saves
-		const char *textPtr = state->getString(stringNr);
-
-		strncpy(state->automaticSaveDescription, textPtr, sizeof(state->automaticSaveDescription));
-		state->automaticSaveDescription[sizeof(state->automaticSaveDescription) - 1] = 0;
-
-		if (state->automaticSaveDescription[0]) {
-			// We got it and it's set, so enable automatic saving
-			state->automaticSave = true;
-		}
-	} else { // AGI256 and AGI256-2 use this unknown170 command to load 256 color pictures.
-		// Load the picture. Similar to void cmdLoad_pic(AgiGame *state, AgiEngine *vm, uint8 *p).
-		SpritesMgr *spritesMgr = vm->_sprites;
-		uint16 varNr = parameter[0];
-		uint16 resourceNr = vm->getVar(varNr);
-
-		spritesMgr->eraseSprites();
-		vm->loadResource(RESOURCETYPE_PICTURE, resourceNr);
-
-		// Draw the picture. Similar to void cmdDraw_pic(AgiGame *state, AgiEngine *vm, uint8 *p).
-		vm->_picture->decodePicture(resourceNr, false, true);
-		spritesMgr->drawAllSpriteLists();
-		state->pictureShown = false;
-
-		// Loading trigger
-		vm->artificialDelayTrigger_DrawPicture(resourceNr);
-
-		// Show the picture. Similar to void cmdShow_pic(AgiGame *state, AgiEngine *vm, uint8 *p).
-		vm->setFlag(VM_FLAG_OUTPUT_MODE, false);
-		vm->_text->closeWindow();
-		vm->_picture->showPic();
-		state->pictureShown = true;
+	if ((vm->getVersion() < 0x2425) || (vm->getVersion() == 0x2440)) {
+		// was not available before 2.2425, but also not available in 2.440
+		warning("set.simple called, although not available for current AGI version");
+		return;
 	}
+
+	int16 stringNr = parameter[0];
+
+	// Try to get description for automatic saves
+	const char *textPtr = state->getString(stringNr);
+	strncpy(state->automaticSaveDescription, textPtr, sizeof(state->automaticSaveDescription));
+	state->automaticSaveDescription[sizeof(state->automaticSaveDescription) - 1] = '\0';
+
+	// enable automatic saving if description isn't empty
+	state->automaticSave = (state->automaticSaveDescription[0] != '\0');
 }
 
 // pop.script was not available until 2.425, and also not available in 2.440
@@ -1013,10 +971,10 @@ void cmdPopScript(AgiGame *state, AgiEngine *vm, uint8 *parameter) {
 	debug(0, "pop.script");
 }
 
+// discard.sound only existed on Apple IIgs. Apple IIgs sound resources were
+// relatively large, so scripts would unload them from memory when finished.
 void cmdDiscardSound(AgiGame *state, AgiEngine *vm, uint8 *parameter) {
-	if (vm->getVersion() >= 0x2936) {
-		debug(0, "discard.sound");
-	}
+	debug(0, "discard.sound");
 }
 
 void cmdShowMouse(AgiGame *state, AgiEngine *vm, uint8 *parameter) {
@@ -1103,6 +1061,9 @@ void cmdAdjEgoMoveToXY(AgiGame *state, AgiEngine *vm, uint8 *parameter) {
 	const AgiOpCodeEntry *opCodeTable = vm->getOpCodesTable();
 	int8 x, y;
 
+	// There are apparently two versions of this opcode: one that takes
+	// two parameters and one that takes none. The only games that call
+	// this opcode use the two parameter version.
 	switch (opCodeTable[182].parameterSize) {
 	// The 2 parameter version is used in:
 	// Amiga/Atari ST Gold Rush!   - Logic 130, 150
@@ -1131,8 +1092,8 @@ void cmdAdjEgoMoveToXY(AgiGame *state, AgiEngine *vm, uint8 *parameter) {
 
 		debugC(4, kDebugLevelScripts, "adj.ego.move.to.x.y(%d, %d)", x, y);
 		break;
-	// TODO: Check where (if anywhere) the 0 arguments version is used
-	case 0:
+
+	// No games call this; all games call the 2 parameter version
 	default:
 		state->screenObjTable[SCREENOBJECTS_EGO_ENTRY].flags |= fAdjEgoXY;
 		break;
@@ -2242,24 +2203,9 @@ void cmdPushScript(AgiGame *state, AgiEngine *vm, uint8 *parameter) {
 	debug(0, "push.script");
 }
 
-// The AGIMOUSE interpreter modified push.script to set variables 27-29 to mouse state
-void cmdAgiMousePushScript(AgiGame *state, AgiEngine *vm, uint8 *parameter) {
-	vm->setVar(VM_VAR_MOUSE_BUTTONSTATE, vm->_mouse.button);
-	vm->setVar(VM_VAR_MOUSE_X, vm->_mouse.pos.x / 2);
-	vm->setVar(VM_VAR_MOUSE_Y, vm->_mouse.pos.y);
-}
-
 void cmdSetPriBase(AgiGame *state, AgiEngine *vm, uint8 *parameter) {
 	if ((vm->getVersion() != 0x2425) && (vm->getVersion() < 0x2936)) {
 		// was only available in the 2.425 interpreter and from 2.936 (last AGI2 version) onwards
-		// Called during KQ3 (Apple IIgs):
-		//  - picking up chicken (parameter = 50)
-		//  - opening store/tavern door (parameter = 19)
-		//  - when pirates say "Land Ho" (parameter = 16)
-		//  - when killing the dragon (parameter = 4)
-		// Also called by SQ2 (Apple IIgs):
-		//  - in Vohaul's lair (SQ2 currently gets this call through, which breaks some priority)
-		// TODO: Figure out what's going on
 		warning("set.pri.base called, although not available for current AGI version");
 		return;
 	}
@@ -2340,6 +2286,32 @@ void cmdNewRoomVV1(AgiGame *state, AgiEngine *vm, uint8 *parameter) {
 	state->max_logics = 1;
 	state->logic_list[1] = resourceNr;
 	vm->setVar(13, 1);
+}
+
+// The AGI256 interpreter modified opcode 170 to load 256 color pictures
+void cmdAgi256LoadPic(AgiGame *state, AgiEngine *vm, uint8 *parameter) {
+	// Load the picture. Similar to void cmdLoadPic.
+	SpritesMgr *spritesMgr = vm->_sprites;
+	uint16 varNr = parameter[0];
+	uint16 resourceNr = vm->getVar(varNr);
+
+	spritesMgr->eraseSprites();
+	vm->loadResource(RESOURCETYPE_PICTURE, resourceNr);
+
+	// Draw the picture. Similar to void cmdDrawPic.
+	vm->_picture->decodePicture(resourceNr, false, true);
+	spritesMgr->drawAllSpriteLists();
+	state->pictureShown = false;
+
+	// Loading trigger
+	vm->artificialDelayTrigger_DrawPicture(resourceNr);
+}
+
+// The AGIMOUSE interpreter modified opcode 171 to set variables 27-29 to mouse state
+void cmdAgiMouseGetMouseState(AgiGame *state, AgiEngine *vm, uint8 *parameter) {
+	vm->setVar(VM_VAR_MOUSE_BUTTONSTATE, vm->_mouse.button);
+	vm->setVar(VM_VAR_MOUSE_X, vm->_mouse.pos.x / 2);
+	vm->setVar(VM_VAR_MOUSE_Y, vm->_mouse.pos.y);
 }
 
 void cmdUnknown(AgiGame *state, AgiEngine *vm, uint8 *parameter) {

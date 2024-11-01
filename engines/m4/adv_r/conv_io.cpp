@@ -85,14 +85,6 @@ void cdd_init(void) {
 	_G(cdd).mesg_snd_file = nullptr;
 }
 
-void set_conv_name(const char *s) {
-	Common::strcpy_s(_GC(conv_name), s);
-}
-
-const char *get_conv_name() {
-	return _GC(conv_name);
-}
-
 Conv *conv_get_handle(void) {
 	return _GC(globConv);
 }
@@ -336,7 +328,7 @@ void find_and_set_conv_name(Conv *c) {
 		case CONV_CHUNK:
 			conv = get_conv(c, ent);
 			assert(conv);
-			set_conv_name(get_string(c, c->myCNode + ent + sizeof(conv_chunk)));
+			Common::strcpy_s(_GC(conv_name), get_string(c, c->myCNode + ent + sizeof(conv_chunk)));
 			break;
 
 		default:
@@ -574,7 +566,7 @@ static Conv *conv_restore_state(Conv *c) {
 	ent = 0; c->myCNode = 0;
 
 	find_and_set_conv_name(c);
-	cstrncpy(fname, get_conv_name(), 8);
+	cstrncpy(fname, _GC(conv_name), 8);
 	fname[8] = '\0';
 
 	if (_GC(convSave).empty())
@@ -735,7 +727,6 @@ Conv *conv_load(const char *filename, int x1, int y1, int32 myTrigger, bool want
 	Conv *convers = nullptr;
 	int32 cSize = 0;
 	char fullpathname[MAX_FILENAME_SIZE];
-	void *bufferHandle;
 
 	term_message("conv_load");
 
@@ -770,7 +761,9 @@ Conv *conv_load(const char *filename, int x1, int y1, int32 myTrigger, bool want
 		error_show(FL, 'CNVL', "couldn't conv_load %s", fullpathname);
 		conv_set_handle(nullptr);
 		convers = nullptr;
-		goto done;
+		fp.close();
+
+		return nullptr;
 	}
 
 	cSize = fp.size();
@@ -784,7 +777,9 @@ Conv *conv_load(const char *filename, int x1, int y1, int32 myTrigger, bool want
 	if (!convers) {
 		conv_set_handle(nullptr);
 		convers = nullptr;
-		goto done;
+		fp.close();
+
+		return nullptr;
 	}
 
 	convers->chunkSize = cSize;
@@ -798,14 +793,13 @@ Conv *conv_load(const char *filename, int x1, int y1, int32 myTrigger, bool want
 
 	convers->conv = (char *)mem_alloc(cSize * sizeof(char), "conv char data");
 
-	bufferHandle = convers->conv;
-	if (!fp.read((MemHandle)&bufferHandle, cSize)) {
+	if (!fp.read((byte *)convers->conv, cSize)) {
 		conv_set_handle(nullptr);
-		if (convers)
-			delete convers;
-
+		delete convers;
 		convers = nullptr;
-		goto done;
+		fp.close();
+
+		return nullptr;
 	}
 
 	conv_swap_words(convers);
@@ -823,7 +817,6 @@ Conv *conv_load(const char *filename, int x1, int y1, int32 myTrigger, bool want
 
 	conv_set_handle(convers);
 
-done:
 	fp.close();
 
 	return convers;

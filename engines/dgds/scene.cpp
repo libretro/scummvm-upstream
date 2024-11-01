@@ -42,7 +42,7 @@
 #include "dgds/globals.h"
 #include "dgds/image.h"
 #include "dgds/inventory.h"
-#include "dgds/dragon_arcade.h"
+#include "dgds/minigames/dragon_arcade.h"
 #include "dgds/dragon_native.h"
 #include "dgds/hoc_intro.h"
 
@@ -1686,10 +1686,10 @@ void SDSScene::mouseLUp(const Common::Point &pt) {
 
 	GDSScene *gds = engine->getGDSScene();
 
-	if (area && area->_num == 0) {
+	if (area->_num == 0) {
 		debug("Mouseup on inventory.");
 		engine->getInventory()->open();
-	} else if (area && area->_num == 0xffff) {
+	} else if (area->_num == 0xffff) {
 		debug("Mouseup on swap characters.");
 		bool haveInvBtn = _hotAreaList.size() && _hotAreaList.front()._num == 0;
 		if (haveInvBtn)
@@ -1707,19 +1707,18 @@ void SDSScene::mouseLUp(const Common::Point &pt) {
 			if (activeItem) {
 				if (!runOps(activeItem->onBothButtonsOps))
 					return;
-				if (area) {
-					const GameItem *destItem = dynamic_cast<const GameItem *>(area);
-					const ObjectInteraction *i;
-					if (destItem) {
-						i =_findInteraction(gds->getObjInteractions2(), activeItem->_num, area->_num);
-					} else {
-						i = _findInteraction(_objInteractions2, activeItem->_num, area->_num);
-					}
-					if (i) {
-						debug(" --> exec %d both-click ops for item combo %d", i->opList.size(), activeItem->_num);
-						if (!runOps(i->opList, engine->getGameGlobals()->getGameMinsToAddOnObjInteraction()))
-							return;
-					}
+
+				const GameItem *destItem = dynamic_cast<const GameItem *>(area);
+				const ObjectInteraction *i;
+				if (destItem) {
+					i =_findInteraction(gds->getObjInteractions2(), activeItem->_num, area->_num);
+				} else {
+					i = _findInteraction(_objInteractions2, activeItem->_num, area->_num);
+				}
+				if (i) {
+					debug(" --> exec %d both-click ops for item combo %d", i->opList.size(), activeItem->_num);
+					if (!runOps(i->opList, engine->getGameGlobals()->getGameMinsToAddOnObjInteraction()))
+						return;
 				}
 			}
 		} else {
@@ -2324,10 +2323,10 @@ int GDSScene::countItemsInScene2() const {
 
 GameItem *GDSScene::getActiveItem() {
 	int16 itemNum = getGlobal(0x60);
-	if (!itemNum)
+	if (itemNum <= 0)
 		return nullptr;
 	for (auto &item : _gameItems) {
-		if (item._num == itemNum)
+		if (item._num == (uint16)itemNum)
 			return &item;
 	}
 	return nullptr;

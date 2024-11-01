@@ -23,6 +23,7 @@
 #include "engines/wintermute/base/base_game.h"
 
 #include "math/glmath.h"
+#include "common/config-manager.h"
 
 namespace Wintermute {
 
@@ -35,7 +36,14 @@ BaseRenderer3D::BaseRenderer3D(Wintermute::BaseGame *inGame) : BaseRenderer(inGa
 	_nearClipPlane = DEFAULT_NEAR_PLANE;
 	_farClipPlane = DEFAULT_FAR_PLANE;
 
+	_lastTexture = nullptr;
+
+	_blendMode = Graphics::BLEND_UNKNOWN;
+
 	_spriteBatchMode = false;
+	_batchBlendMode = Graphics::BLEND_UNKNOWN;
+	_batchAlphaDisable = false;
+	_batchTexture = nullptr;
 
 	_ambientLightColor = 0x00000000;
 	_ambientLightOverride = false;
@@ -54,12 +62,12 @@ void BaseRenderer3D::initLoop() {
 	setup2D();
 }
 
-bool BaseRenderer3D::drawSprite(BaseSurfaceOpenGL3D &tex, const Wintermute::Rect32 &rect,
+bool BaseRenderer3D::drawSprite(BaseSurface *texture, const Wintermute::Rect32 &rect,
 							float zoomX, float zoomY, const Wintermute::Vector2 &pos,
 							uint32 color, bool alphaDisable, Graphics::TSpriteBlendMode blendMode,
 							bool mirrorX, bool mirrorY) {
 	Vector2 scale(zoomX / 100.0f, zoomY / 100.0f);
-	return drawSpriteEx(tex, rect, pos, Vector2(0.0f, 0.0f), scale, 0.0f, color, alphaDisable, blendMode, mirrorX, mirrorY);
+	return drawSpriteEx(texture, rect, pos, Vector2(0.0f, 0.0f), scale, 0.0f, color, alphaDisable, blendMode, mirrorX, mirrorY);
 }
 
 bool BaseRenderer3D::getProjectionParams(float *resWidth, float *resHeight, float *layerWidth, float *layerHeight,
@@ -157,6 +165,38 @@ void BaseRenderer3D::flipVertical(Graphics::Surface *s) {
 		for (int x = 0; x < s->pitch; ++x)
 			SWAP(line1P[x], line2P[x]);
 	}
+}
+
+bool BaseRenderer3D::flip() {
+	_lastTexture = nullptr;
+	g_system->updateScreen();
+	return true;
+}
+
+bool BaseRenderer3D::indicatorFlip() {
+	flip();
+	return true;
+}
+
+bool BaseRenderer3D::forcedFlip() {
+	flip();
+	return true;
+}
+
+bool BaseRenderer3D::windowedBlt() {
+	flip();
+	return true;
+}
+
+void BaseRenderer3D::onWindowChange() {
+	_windowed = !g_system->getFeatureState(OSystem::kFeatureFullscreenMode);
+}
+
+void BaseRenderer3D::setWindowed(bool windowed) {
+	ConfMan.setBool("fullscreen", !windowed);
+	g_system->beginGFXTransaction();
+	g_system->setFeatureState(OSystem::kFeatureFullscreenMode, !windowed);
+	g_system->endGFXTransaction();
 }
 
 } // namespace Wintermute

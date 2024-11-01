@@ -270,7 +270,8 @@ int32 gr_font_write(Buffer *target, char *out_string, int32 x, int32 y, int32 w,
 	else
 		target_w = target->w;
 
-	x += 1; y += 1;
+	x += 1;
+	y += 1;
 	int32 skipTop = 0;
 	if (y < 0) {
 		skipTop = -y;
@@ -310,7 +311,7 @@ int32 gr_font_write(Buffer *target, char *out_string, int32 x, int32 y, int32 w,
 			int32 offset = offsetArray[c];
 			Byte *charData = &fontPixData[offset];
 
-			int32 bytesInChar = (_G(font)->width[c] >> 2) + 1; //bytesPer[wdth];	// 2 bits per pixel
+			int32 bytesInChar = (_G(font)->width[c] >> 2) + 1; // bytesPer[wdth];	// 2 bits per pixel
 			if (skipTop)
 				charData += bytesInChar * skipTop;
 
@@ -344,7 +345,7 @@ int32 gr_font_write(Buffer *target, char *out_string, int32 x, int32 y, int32 w,
 		cursX += w;
 	} // end while there is a character to draw loop
 
-	return(cursX);
+	return cursX;
 }
 
 int32 gr_font_write(Buffer *target, const char *out_string, int32 x, int32 y, int32 w, int32 auto_spacing) {
@@ -356,21 +357,14 @@ int32 gr_font_write(Buffer *target, const char *out_string, int32 x, int32 y, in
 }
 
 Font *gr_font_load(const char *fontName) {
-	uint8 buffer[10];
 	uint32 tag;
-	uint32 *bumpf;
 	Font *newFont;
-	void *bufferHandle = &buffer[0];
 
 	SysFile fontFile(fontName, BINARY);
 	if (!fontFile.exists())
 		return nullptr;
 
-	bufferHandle = &buffer[0];
-	fontFile.read(&bufferHandle, 10);
-
-	bumpf = (uint32 *)&buffer[0];
-	tag = convert_intel32(*bumpf);
+	tag = fontFile.readUint32LE();
 	if (tag != 'FONT')
 		error_show(FL, 'FNTL', "font: %s chkpnt: %d", (const char *)fontName, 0);
 
@@ -378,16 +372,12 @@ Font *gr_font_load(const char *fontName) {
 	if (!newFont)
 		error_show(FL, 'OOM!', "_G(font) struct");
 
-	newFont->max_y_size = buffer[4];
-	newFont->max_x_size = buffer[5];
-	newFont->dataSize = *((uint32 *)&buffer[6]);
-	newFont->dataSize = convert_intel32(newFont->dataSize);
+	newFont->max_y_size = fontFile.readByte();
+	newFont->max_x_size = fontFile.readByte();
+	newFont->dataSize = fontFile.readUint32LE();
 
 	// read 'WIDT' into tag
-	bufferHandle = &buffer[0];
-	fontFile.read(&bufferHandle, 4);
-	bumpf = (uint32 *)&buffer[0];
-	tag = convert_intel32(*bumpf);
+	tag = fontFile.readUint32LE();
 	if (tag != 'WIDT')
 		error_show(FL, 'FNTL', "font: %s chkpnt: %d", fontName, 1);
 
@@ -396,14 +386,10 @@ Font *gr_font_load(const char *fontName) {
 	if (!newFont->width)
 		error_show(FL, 'OOM!', "_G(font) width table");
 
-	bufferHandle = newFont->width;
-	fontFile.read(&bufferHandle, 256);
+	fontFile.read(newFont->width, 256);
 
 	// read 'OFFS' into tag
-	bufferHandle = &buffer[0];
-	fontFile.read(&bufferHandle, 4);
-	bumpf = (uint32 *)&buffer[0];
-	tag = convert_intel32(*bumpf);
+	tag = fontFile.readUint32LE();
 	if (tag != 'OFFS')
 		error_show(FL, 'FNTL', "font: %s chkpnt: %d", fontName, 2);
 
@@ -412,17 +398,11 @@ Font *gr_font_load(const char *fontName) {
 	if (!newFont->offset)
 		error_show(FL, 'OOM!', "font offset table");
 
-	bufferHandle = newFont->offset;
-	fontFile.read(&bufferHandle, 256 * sizeof(int16));
-
 	for (int i = 0; i < 256; i++)
-		newFont->offset[i] = convert_intel16(newFont->offset[i]);
+		newFont->offset[i] = fontFile.readSint16LE();
 
 	// read 'PIXS' into tag
-	bufferHandle = &buffer[0];
-	fontFile.read(&bufferHandle, 4);
-	bumpf = (uint32 *)&buffer[0];
-	tag = convert_intel32(*bumpf);
+	tag = fontFile.readUint32LE();
 	if (tag != 'PIXS')
 		error_show(FL, 'FNTL', "font: %s chkpnt: %d", fontName, 3);
 
@@ -431,8 +411,7 @@ Font *gr_font_load(const char *fontName) {
 	if (!newFont->pixData)
 		error_show(FL, 'OOM!', "font pix data");
 
-	bufferHandle = newFont->pixData;
-	fontFile.read(&bufferHandle, newFont->dataSize);
+	fontFile.read(newFont->pixData, newFont->dataSize);
 
 	// we don't need to close the file, because the destructor will close fontFile automagically
 	return newFont;

@@ -62,7 +62,7 @@
 #include "dgds/scripts.h"
 #include "dgds/sound.h"
 #include "dgds/game_palettes.h"
-#include "dgds/dragon_arcade.h"
+#include "dgds/minigames/dragon_arcade.h"
 #include "dgds/hoc_intro.h"
 
 // for frame contents debugging
@@ -86,8 +86,7 @@ DgdsEngine::DgdsEngine(OSystem *syst, const ADGameDescription *gameDesc)
 	_detailLevel(kDgdsDetailHigh), _textSpeed(1), _justChangedScene1(false), _justChangedScene2(false),
 	_random("dgds"), _currentCursor(-1), _menuToTrigger(kMenuNone), _isLoading(true), _flipMode(false),
 	_rstFileName(nullptr), _difficulty(1), _menu(nullptr), _adsInterp(nullptr), _isDemo(false),
-	_dragonArcade(nullptr), _skipNextFrame(false) {
-	syncSoundSettings();
+	_dragonArcade(nullptr), _skipNextFrame(false), _gameId(GID_INVALID) {
 
 	_platform = gameDesc->platform;
 
@@ -476,6 +475,7 @@ static void _dumpFrame(const Graphics::ManagedSurface &surf, const char *name) {
 
 
 Common::Error DgdsEngine::run() {
+	syncSoundSettings();
 	_isLoading = true;
 	init(false);
 	loadGameFiles();
@@ -752,11 +752,12 @@ bool DgdsEngine::canSaveAutosaveCurrently() {
 }
 
 void DgdsEngine::enableKeymapper() {
-	_eventMan->getKeymapper()->setEnabled(true);
+	_eventMan->getKeymapper()->setEnabledKeymapType(Common::Keymap::kKeymapTypeGame);
 }
 
 void DgdsEngine::disableKeymapper() {
-	_eventMan->getKeymapper()->setEnabled(false);
+	// Don't totally disable keymapper, as we still want the console and screenshot keys to work.
+	_eventMan->getKeymapper()->setEnabledKeymapType(Common::Keymap::kKeymapTypeGui);
 }
 
 Common::Error DgdsEngine::syncGame(Common::Serializer &s) {

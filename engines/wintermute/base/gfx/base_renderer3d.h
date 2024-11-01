@@ -76,23 +76,25 @@ public:
 	virtual bool disableShadows() = 0;
 	virtual bool stencilSupported() = 0;
 	virtual void displayShadow(BaseObject *object, const DXVector3 *light, bool lightPosRelative) = 0;
-	//HRESULT InvalidateTexture(LPDIRECT3DTEXTURE Texture);
+	virtual bool invalidateTexture(BaseSurfaceOpenGL3D *texture) = 0;
 
-	virtual void setSpriteBlendMode(Graphics::TSpriteBlendMode blendMode) = 0;
+	Graphics::TSpriteBlendMode _blendMode;
+	virtual void setSpriteBlendMode(Graphics::TSpriteBlendMode blendMode, bool forceChange = false) = 0;
 	// declared in sub class: virtual const char* GetName();
 	// declared in sub class: virtual HRESULT DisplayDebugInfo();
 
 	// declared in sub class: virtual CBImage* TakeScreenshot();
 	// declared in sub class: virtual HRESULT SetViewport(int left, int top, int right, int bottom);
-	// NOT declared in sub class: HRESULT InvalidateDeviceObjects();
+	bool invalidateDeviceObjects();
 	// NOT declared in sub class: HRESULT RestoreDeviceObjects();
+	BaseSurfaceOpenGL3D *_lastTexture;
 	void fade(uint16 alpha) override;
 	// declared in sub class: virtual HRESULT FadeToColor(DWORD Color, RECT* rect=NULL);
 	// declared in sub class: virtual HRESULT DrawLine(int X1, int Y1, int X2, int Y2, DWORD Color);
 	// declared in sub class: virtual HRESULT SetProjection();
-	bool drawSprite(BaseSurfaceOpenGL3D &tex, const Rect32 &rect, float zoomX, float zoomY, const Vector2 &pos,
+	bool drawSprite(BaseSurface *texture, const Rect32 &rect, float zoomX, float zoomY, const Vector2 &pos,
 					uint32 color, bool alphaDisable, Graphics::TSpriteBlendMode blendMode, bool mirrorX, bool mirrorY);
-	virtual bool drawSpriteEx(BaseSurfaceOpenGL3D &tex, const Rect32 &rect, const Vector2 &pos, const Vector2 &rot, const Vector2 &scale,
+	virtual bool drawSpriteEx(BaseSurface *texture, const Rect32 &rect, const Vector2 &pos, const Vector2 &rot, const Vector2 &scale,
 							  float angle, uint32 color, bool alphaDisable, Graphics::TSpriteBlendMode blendMode, bool mirrorX, bool mirrorY) = 0;
 	// declared in sub class: virtual HRESULT Setup3D(C3DCamera* Camera=NULL, bool Force=false);
 	// NOT declared in sub class: virtual HRESULT Setup3DCustom(D3DXMATRIX* ViewMat, D3DXMATRIX* ProjMat);
@@ -109,9 +111,9 @@ public:
 
 	// declared in sub class: virtual bool UsingStencilBuffer();
 
-	// declared in sub class: virtual HRESULT StartSpriteBatch();
-	// declared in sub class: virtual HRESULT EndSpriteBatch();
-	// NOT declared in sub class: HRESULT CommitSpriteBatch();
+	virtual bool startSpriteBatch() override = 0;
+	virtual bool endSpriteBatch() override = 0;
+	virtual bool commitSpriteBatch() = 0;
 
 	// declared in sub class: virtual HRESULT DrawShaderQuad();
 
@@ -126,6 +128,10 @@ public:
 	virtual void disableCulling() = 0;
 
 	DXViewport getViewPort();
+
+	void setWindowed(bool windowed) override;
+	void onWindowChange() override;
+	bool windowedBlt() override;
 
 	Graphics::PixelFormat getPixelFormat() const override;
 
@@ -158,6 +164,9 @@ public:
 
 	Math::Matrix3 build2dTransformation(const Vector2 &center, float angle);
 
+	bool flip() override;
+	bool indicatorFlip() override;
+	bool forcedFlip() override;
 	virtual bool setViewport3D(DXViewport *viewport) = 0;
 
 	// ScummVM specific methods <--
@@ -172,6 +181,9 @@ protected:
 	float _farClipPlane;
 	TRendererState _state;
 	bool _spriteBatchMode;
+	Graphics::TSpriteBlendMode _batchBlendMode;
+	bool _batchAlphaDisable;
+	BaseSurfaceOpenGL3D *_batchTexture;
 
 	// NOT declared in sub class: HRESULT CreateShaderQuad();
 	virtual void setAmbientLightRenderState() = 0;

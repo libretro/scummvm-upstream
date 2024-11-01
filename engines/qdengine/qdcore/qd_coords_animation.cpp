@@ -268,7 +268,11 @@ bool qdCoordsAnimation::save_script(Common::WriteStream &fh, int indent) const {
 		fh.writeString(" name=\" \"");
 	}
 
-	fh.writeString(Common::String::format(" type=\"%d\"", (int)_type));
+	if (debugChannelSet(-1, kDebugLog))
+		fh.writeString(Common::String::format(" type=\"%s\"", _type == CA_INTERPOLATE_COORDS ? "CA_INTERPOLATE_COORDS" : "CA_WALK"));
+	else
+		fh.writeString(Common::String::format(" type=\"%d\"", (int)_type));
+
 	fh.writeString(Common::String::format(" speed=\"%f\"", _speed));
 	fh.writeString(Common::String::format(" animation_phase=\"%f\"", _animation_phase));
 
@@ -282,7 +286,11 @@ bool qdCoordsAnimation::save_script(Common::WriteStream &fh, int indent) const {
 		for (int i = 0; i <= indent; i++) {
 			fh.writeString("\t");
 		}
-		fh.writeString(Common::String::format("<flag>%d</flag>\r\n", flags()));
+
+		if (debugChannelSet(-1, kDebugLog))
+			fh.writeString(Common::String::format("<flag>%s</flag>\r\n", flag2str(flags()).c_str()));
+		else
+			fh.writeString(Common::String::format("<flag>%d</flag>\r\n", flags()));
 	}
 
 	if (NULL != _start_object) {
@@ -477,4 +485,36 @@ bool qdCoordsAnimation::save_data(Common::WriteStream &fh) const {
 	debugC(4, kDebugSave, "    qdCoordsAnimation::save_data(): after: %d", (int)fh.pos());
 	return true;
 }
+
+#define defFlag(x) { x, #x }
+
+struct FlagsList {
+	int f;
+	const char *s;
+} static flagList[] = {
+	defFlag(QD_COORDS_ANM_OBJECT_START_FLAG),
+	defFlag(QD_COORDS_ANM_LOOP_FLAG),
+	defFlag(QD_COORDS_ANM_RELATIVE_FLAG),
+};
+
+Common::String qdCoordsAnimation::flag2str(int fl) const {
+	Common::String res;
+
+	for (int i = 0; i < ARRAYSIZE(flagList); i++) {
+		if (fl & flagList[i].f) {
+			if (!res.empty())
+				res += " | ";
+
+			res += flagList[i].s;
+
+			fl &= ~flagList[i].f;
+		}
+	}
+
+	if (fl)
+		res += Common::String::format(" | %x", fl);
+
+	return res;
+}
+
 } // namespace QDEngine

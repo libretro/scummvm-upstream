@@ -56,7 +56,9 @@ public:
 	BaseRenderOpenGL3D(BaseGame *inGame = nullptr);
 	~BaseRenderOpenGL3D() override;
 
-	void setSpriteBlendMode(Graphics::TSpriteBlendMode blendMode) override;
+	bool invalidateTexture(BaseSurfaceOpenGL3D *texture) override;
+
+	void setSpriteBlendMode(Graphics::TSpriteBlendMode blendMode, bool forceChange = false) override;
 
 	void setAmbientLightRenderState() override;
 
@@ -74,7 +76,6 @@ public:
 
 	void dumpData(const char *filename) override {}
 	BaseImage *takeScreenshot() override;
-	void setWindowed(bool windowed) override;
 	void fadeToColor(byte r, byte g, byte b, byte a) override;
 
 	bool fill(byte r, byte g, byte b, Common::Rect *rect = nullptr) override;
@@ -88,13 +89,7 @@ public:
 	bool setViewTransform(const DXMatrix &transform) override;
 	bool setProjectionTransform(const DXMatrix &transform) override;
 
-	bool windowedBlt() override;
-
-	void onWindowChange() override;
 	bool initRenderer(int width, int height, bool windowed) override;
-	bool flip() override;
-	bool indicatorFlip() override;
-	bool forcedFlip() override;
 	bool setup2D(bool force = false) override;
 	bool setup3D(Camera3D *camera, bool force = false) override;
 	bool setupLines() override;
@@ -118,14 +113,11 @@ public:
 	
 	BaseSurface *createSurface() override;
 	
-	bool startSpriteBatch() override {
-		return STATUS_OK;
-	};
-	bool endSpriteBatch() override {
-		return STATUS_OK;
-	};
+	bool startSpriteBatch() override;
+	bool endSpriteBatch() override;
+	bool commitSpriteBatch() override;
 
-	bool drawSpriteEx(BaseSurfaceOpenGL3D &tex, const Rect32 &rect, const Vector2 &pos, const Vector2 &rot, const Vector2 &scale,
+	bool drawSpriteEx(BaseSurface *texture, const Rect32 &rect, const Vector2 &pos, const Vector2 &rot, const Vector2 &scale,
 					  float angle, uint32 color, bool alphaDisable, Graphics::TSpriteBlendMode blendMode, bool mirrorX, bool mirrorY) override;
 
 	void renderSceneGeometry(const BaseArray<AdWalkplane *> &planes, const BaseArray<AdBlock *> &blocks,

@@ -181,11 +181,14 @@ bool qdConditionalObject::save_conditions_script(Common::WriteStream &fh, int in
 			fh.writeString("\t");
 		}
 
-		fh.writeString(Common::String::format("<conditions_mode>%d</conditions_mode>\r\n", _conditions_mode));
+		if (debugChannelSet(-1, kDebugLog))
+			fh.writeString(Common::String::format("<conditions_mode>%s</conditions_mode>\r\n", _conditions_mode == CONDITIONS_AND ? "CONDITIONS_AND" : "CONDITIONS_OR"));
+		else
+			fh.writeString(Common::String::format("<conditions_mode>%d</conditions_mode>\r\n", _conditions_mode));
 	}
 
 	for (auto  &it : _condition_groups) {
-		it.save_script(fh, indent);
+		it.save_script(fh, indent + 1);
 	}
 
 	return true;

@@ -187,7 +187,7 @@ bool FreescapeEngine::executeCode(FCLInstructionVector &code, bool shot, bool co
 			continue;
 		}
 
-		if (instruction.getType() != Token::CONDITIONAL)
+		if (instruction.getType() != Token::CONDITIONAL && !instruction.isConditional())
 			executed = true;
 
 		switch (instruction.getType()) {
@@ -200,7 +200,7 @@ bool FreescapeEngine::executeCode(FCLInstructionVector &code, bool shot, bool co
 
 		case Token::CONDITIONAL:
 			if (checkConditional(instruction, shot, collided, timer, activated))
-				executeCode(*instruction._thenInstructions, shot, collided, timer, activated);
+				executed = executeCode(*instruction._thenInstructions, shot, collided, timer, activated);
 			// else branch is always empty
 			assert(instruction._elseInstructions == nullptr);
 			break;
@@ -342,7 +342,8 @@ void FreescapeEngine::executeExecute(FCLInstruction &instruction, bool shot, boo
 		if (!obj) {
 			obj = _areaMap[255]->entranceWithID(objId);
 			assert(obj);
-			executeEntranceConditions((Entrance *)obj);
+			FCLInstructionVector &condition = ((Entrance *)obj)->_condition;
+			executeCode(condition, shot, collided, false, activated);
 			return;
 		}
 	}
@@ -479,7 +480,7 @@ bool FreescapeEngine::checkIfGreaterOrEqual(FCLInstruction &instruction) {
 
 	uint16 variable = instruction._source;
 	int8 value = instruction._destination;
-	debugC(1, kFreescapeDebugCode, "Check if variable %d is greater than equal to %d!", variable, value);
+	debugC(1, kFreescapeDebugCode, "Check if variable %d with value %d is greater or equal to %d!", variable, (int8)_gameStateVars[variable], value);
 	return ((int8)_gameStateVars[variable] >= value);
 }
 
@@ -488,7 +489,7 @@ bool FreescapeEngine::checkIfLessOrEqual(FCLInstruction &instruction) {
 
 	uint16 variable = instruction._source;
 	int8 value = instruction._destination;
-	debugC(1, kFreescapeDebugCode, "Check if variable %d is less than equal to %d!", variable, value);
+	debugC(1, kFreescapeDebugCode, "Check if variable %d with value %d is less or equal to %d!", variable, (int8)_gameStateVars[variable], value);
 	return ((int8)_gameStateVars[variable] <= value);
 }
 
@@ -496,7 +497,7 @@ bool FreescapeEngine::checkIfLessOrEqual(FCLInstruction &instruction) {
 bool FreescapeEngine::executeEndIfNotEqual(FCLInstruction &instruction) {
 	uint16 variable = instruction._source;
 	uint16 value = instruction._destination;
-	debugC(1, kFreescapeDebugCode, "End condition if variable %d is not equal to %d!", variable, value);
+	debugC(1, kFreescapeDebugCode, "End condition if variable %d with value %d is not equal to %d!", variable, (int8)_gameStateVars[variable], value);
 	return (_gameStateVars[variable] != value);
 }
 
@@ -582,6 +583,19 @@ void FreescapeEngine::executeMakeInvisible(FCLInstruction &instruction) {
 	debugC(1, kFreescapeDebugCode, "Making obj %d invisible in area %d!", objectID, areaID);
 	if (_areaMap.contains(areaID)) {
 		Object *obj = _areaMap[areaID]->objectWithID(objectID);
+
+		if (!obj) {
+			// Object is not in the area, but it should be invisible so we can return immediately
+			return;
+			/*obj = _areaMap[255]->objectWithID(objectID);
+			if (!obj) {
+				error("obj %d does not exists in area %d nor in the global one!", objectID, areaID);
+				return;
+			}
+			_currentArea->addObjectFromArea(objectID, _areaMap[255]);
+			obj = _areaMap[areaID]->objectWithID(objectID);*/
+		}
+
 		assert(obj); // We assume the object was there
 		obj->makeInvisible();
 	} else {
@@ -610,7 +624,8 @@ void FreescapeEngine::executeMakeVisible(FCLInstruction &instruction) {
 		if (!obj) {
 			obj = _areaMap[255]->objectWithID(objectID);
 			if (!obj) {
-				error("obj %d does not exists in area %d nor in the global one!", objectID, areaID);
+				if (!isCastle() || !isDemo())
+					error("obj %d does not exists in area %d nor in the global one!", objectID, areaID);
 				return;
 			}
 			_currentArea->addObjectFromArea(objectID, _areaMap[255]);
@@ -667,6 +682,7 @@ void FreescapeEngine::executeToggleVisibility(FCLInstruction &instruction) {
 			Math::AABB boundingBox = createPlayerAABB(_position, _playerHeight);
 			if (obj->_boundingBox.collides(boundingBox)) {
 				_playerWasCrushed = true;
+				_avoidRenderingFrames = 60 * 3;
 				_shootingFrames = 0;
 			}
 		}

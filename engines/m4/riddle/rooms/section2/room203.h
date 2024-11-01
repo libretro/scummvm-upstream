@@ -22,15 +22,108 @@
 #ifndef M4_RIDDLE_ROOMS_SECTION2_ROOM203_H
 #define M4_RIDDLE_ROOMS_SECTION2_ROOM203_H
 
-#include "m4/riddle/rooms/room.h"
+#include "m4/riddle/rooms/section2/section2_room.h"
 
 namespace M4 {
 namespace Riddle {
 namespace Rooms {
 
-class Room203 : public Room {
+class Room203 : public Section2Room {
+private:
+	int _val1 = 0;
+	int _val2 = 0;
+	const char *_digiName1 = nullptr;
+	int _val4 = 0;
+	int _val5 = 0;
+	int _val6 = 0;
+	int _val7 = 0;
+	int _val8 = 0;
+	bool _showWalker = false;
+	bool _ripley80000 = false;
+	int _val11 = 0;
+	int _val12 = 0;
+	int _trigger1 = -1;
+	int _trigger2 = -1;
+	int _trigger3 = -1;
+	int _trigger4 = -1;
+	int _trigger5 = -1;
+	int _shadow3 = 0;
+	machine *_ripley = nullptr;
+	machine *_stream1 = nullptr;
+	int _ripHeadTurn = 0;
+	int _ripLooksAtHeads = 0;
+	int _ripYouSeeToIt = 0;
+	int _ripLookAtHeadsTalkMei = 0;
+	int _ripKneeling = 0;
+	int _ripKneelingTalk = 0;
+	int _ripGivesPhoto = 0;
+	int _ripClimbsAndBacksDown = 0;
+	int _ripPointsAtHelmet = 0;
+	machine *_mei = nullptr;
+	int _meiTalkToRip = 0;
+	int _meiTurnAndTalk = 0;
+	int _meiRightHandOut = 0;
+	int _meiCheekLine = 0;
+	int _meiHallOfClassics = 0;
+	machine *_gk = nullptr;
+	int _gkFrame = 0;
+	int _gkMode = 0, _gkShould = 0;
+	machine *_oldLady = nullptr;
+	int _oldLadyFrame = 0;
+	int _oldLadyNoHelmet = 0;
+	int _oldLadyFeedingBirds = 0;
+	int _oldLadyMode = 0, _oldLadyShould = 0;
+	int _oldLadyMode2 = 0;
+	int _oldLady1 = 0;
+	int _oldLadyPointsToPhoto = 0;
+	int _oldLadyPhotoPopup = 0;
+	int _oldLadyProtectsHelmet = 0;
+	machine *_pigeons1 = nullptr;
+	machine *_pigeons3 = nullptr;
+	int _pigeonsSeries1 = 0;
+	int _pigeonsSeries3 = 0;
+	machine *_official = nullptr;
+	machine *_officialShadow = nullptr;
+	int _officialStander = 0;
+	int _officialMode = 0, _officialShould = 0;
+	int _officialTurn9_11 = 0;
+	int _officialTurn11_3 = 0;
+	int _officialTurn3_7 = 0;
+	machine *_peasant = nullptr;
+	machine *_peasantShadow = nullptr;
+	int _peasantSeries = 0;
+	int _peasantSeriesShadow = 0;
+	int _peasantRocks = 0;
+	int _peasantRocksShadow = 0;
+	int _peskyYellsThief = 0;
+	int _peasantMode = 0, _peasantShould = 0;
+	int _peasantX = 0;
+	int _peasantY = 0;
+	int _peasantScale = 0;
+	int _peasantLayer = 0;
+	int _peasantSquat9 = 0;
+	int _peasantSquat3 = 0;
+	bool _flag1 = false;
+	machine *_sg = nullptr;
+	int _203sg01 = 0;
+	machine *_g1 = nullptr;
+	machine *_g2 = nullptr;
+	int _unkMode = 0;
+	int _unkShould = 0;
+
+	int _ctr1 = 0;
+
+	void setupHelmetHotspot();
+	void setupPeasantHotspot(int mode);
+	void setupGk();
+	void setupOldLady();
+	void setupPigeons();
+	void setupOfficial();
+	void setupPeasant();
+	void peasantWalk();
+
 public:
-	Room203() : Room() {}
+	Room203() : Section2Room() {}
 	~Room203() override {}
 
 	void init() override;

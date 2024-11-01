@@ -586,17 +586,20 @@ bool SysFile::seek_ahead(int32 amount) {
 
 
 uint32 SysFile::read(MemHandle bufferHandle) {
-	int32 bytesToRead;
-
-	bytesToRead = size() - get_pos();
+	int32 bytesToRead  = size() - get_pos();
 	if (bytesToRead < 0)
 		error("SysFile::read - %s", filename.c_str());
 
 	return read(bufferHandle, (int32)bytesToRead);
 }
 
+int32 SysFile::read(byte *bufferHandle, int32 n) {
+	void *h = bufferHandle;
+	return read((MemHandle)&h, n);
+}
+
 int32 SysFile::read(MemHandle bufferHandle, int32 n) {
-	uint32  temp_size;
+	uint32 temp_size;
 
 	if (!bufferHandle)
 		error("reading %s", filename.c_str());
@@ -629,6 +632,22 @@ int32 SysFile::read(MemHandle bufferHandle, int32 n) {
 			return 0;
 		}
 	}
+}
+
+byte SysFile::readByte() {
+	byte buf[1];
+	void *ptr = (void *)buf;
+	read(&ptr, 1);
+
+	return buf[0];
+}
+
+uint16 SysFile::readUint16LE() {
+	byte buf[2];
+	void *ptr = (void *)buf;
+	read(&ptr, 2);
+
+	return READ_LE_UINT16(buf);
 }
 
 uint32 SysFile::readUint32LE() {

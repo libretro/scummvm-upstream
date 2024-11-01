@@ -12,6 +12,7 @@ For a more comprehensive changelog of the latest experimental code, see:
   - Added support for Backyard Basketball.
   - Added support for Unrest.
   - Added support for Rise of the Dragon.
+  - Added support for Castle Master.
 
  New platforms:
   - Added SailfishOS port.
@@ -51,6 +52,10 @@ For a more comprehensive changelog of the latest experimental code, see:
  Draci:
   - Added keymapper support.
 
+ Dreamweb:
+  - Fixed crash when changing scenes, while holding some non-essential game
+    items.
+
  Freescape:
   - Added support for Atari/Amiga releases of Dark Side.
   - Improved handling of close colinear surfaces.
@@ -60,6 +65,7 @@ For a more comprehensive changelog of the latest experimental code, see:
   - Refactored font handling to use common classes.
   - Improved keymapper support coverage.
   - Correctly implement aspect ratio correction following dosbox implementation.
+  - More precise perspective matrix computation to match the original.
 
  Groovie:
   - Added keymapper support.
@@ -74,9 +80,15 @@ For a more comprehensive changelog of the latest experimental code, see:
   - Added keymapper support.
 
  KYRA:
-  - Added some more gameplay enhancements that get enabled via the "Faithful AD&D rules"
-	checkbox (fix projectile weapon damage and elf weapon bonus acoording to AD&D 2nd ed.
-	handbook rules, fix some messed up npc stats in Eye of the Beholder I).
+  - (EOB) Added a "Faithful AD&D rules" checkbox, to enable improvements and
+    fixes to original Eye of the Beholder I and II game code.
+  - (EOB) Fixed an issue where multi-class characters might gain incorrect HP
+    due to round-off errors.
+  - (EOB) Corrected projectile weapon damage (as per AD&D 2nd Edition rules).
+  - (EOB) Elves get +1 to hit with swords and bows (according to the official
+    game manual).
+  - Fixed NPCs Ileria (female) and Beohram (paladin) in Eye of the Beholder I.
+  - (EOB) Fixed a few small bugs.
 
  Lure:
   - Added keymapper support.
@@ -123,6 +135,8 @@ For a more comprehensive changelog of the latest experimental code, see:
 
  TsAGE:
    - Added support for Russian CD fan-translation for Ringworld.
+   - Added keymapper support.
+   - Added support for Russian CD fan-translation for Blue Force.
 
  Toon:
   - Added keymapper support.
