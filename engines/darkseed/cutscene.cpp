@@ -31,7 +31,7 @@ Cutscene::~Cutscene() {
 void Cutscene::play(char cutsceneId) {
 	_cutsceneId = cutsceneId;
 	_movieStep = 1;
-	g_engine->_sound->waitForSpeech();
+	g_engine->waitForSpeech();
 	g_engine->_cursor.showCursor(false);
 	g_engine->fadeOut();
 }
@@ -74,6 +74,8 @@ void Cutscene::update() {
 	}
 
 	if (_movieStep == 9999) {
+		g_engine->_sound->stopMusic();
+
 		if (_cutsceneId == 'E') {
 			g_engine->_previousRoomNumber = 38;
 			g_engine->changeToRoom(7);
@@ -87,10 +89,27 @@ void Cutscene::update() {
 			g_engine->newGame();
 		} else if (_cutsceneId == 'Y') {
 			play('I');
-		} else if (_cutsceneId == 'B' || _cutsceneId == 'C' || _cutsceneId == 'D' || _cutsceneId == 'G') {
-			g_engine->_cursor.showCursor(true); // TODO fade in here
+		} else if (_cutsceneId == 'B' || _cutsceneId == 'C') {
 			g_engine->_room->restorePalette();
 			g_engine->_frame.draw();
+			g_engine->doCircles();
+
+			if (g_engine->_currentDay == 2) {
+				g_engine->_console->printTosText(12);
+			} else if (g_engine->_currentDay == 3) {
+				g_engine->_console->printTosText(14);
+			}
+			g_engine->_console->draw();
+			g_engine->_screen->update();
+
+			g_engine->waitForSpeech();
+			g_engine->_systemTimerCounter = 4;
+			g_engine->_cursor.showCursor(true);
+			g_engine->_room->loadRoomMusic();
+		} else if (_cutsceneId == 'D' || _cutsceneId == 'G') {
+			g_engine->_room->restorePalette();
+			g_engine->_frame.draw();
+			g_engine->_cursor.showCursor(true);
 		}
 	}
 }
@@ -991,7 +1010,7 @@ bool Cutscene::nightmare2Scene() {
 	return true;
 }
 
-bool Cutscene::nightmare3Scene() { // TODO fix animation of values + face here.
+bool Cutscene::nightmare3Scene() {
 	switch (_movieStep) {
 	case 1: {
 		_palette.load("art/ship.pal");
@@ -1022,20 +1041,31 @@ bool Cutscene::nightmare3Scene() { // TODO fix animation of values + face here.
 		break;
 	case 4:
 		_animIdx = 0;
-		_animCount = 12;
-		// TODO speed = 2
+		_animCount = 24;
 		runAnim();
 		break;
 	case 5:
-		if (stepAnim(1)) {
+		if (stepValveAnim(false)) {
 			return true;
 		}
 		registTime();
 		break;
 	case 6:
+		_faceIdx = 0;
+		_animCount = 34;
+		break;
 	case 7:
+		if (stepValveAnim(true)) {
+			return true;
+		}
+		break;
 	case 8:
+		_animCount = 34;
+		break;
 	case 9:
+		if (stepValveAnim(false)) {
+			return true;
+		}
 		registTime();
 		break;
 	case 10:
@@ -1052,6 +1082,7 @@ bool Cutscene::nightmare3Scene() { // TODO fix animation of values + face here.
 		}
 		break;
 	default:
+		g_engine->_sound->stopMusic();
 		_movieStep = 9999;
 		return false;
 	}
@@ -1077,6 +1108,39 @@ bool Cutscene::stepAnim(int drawMode) {
 		return true;
 	}
 	return false;
+}
+
+bool Cutscene::stepValveAnim(bool doFaceAnim) {
+	if (_animDelayCount == 0) {
+		Img animLeftFrame;
+		_animation.getImg(_valvesIdx, animLeftFrame);
+		animLeftFrame.draw(1);
+
+		Img animRightFrame;
+		_animation.getImg(_valvesIdx + 6, animRightFrame);
+		animRightFrame.draw(1);
+
+		if (doFaceAnim && (_animCount % 2) == 0) {
+			Img faceFrame;
+			Common::Path facePath = Common::Path("art").join(Common::String::format("f%02d.img", _faceIdx + 2));
+			faceFrame.load(facePath);
+			faceFrame.draw(0, faceFrame.getWidth() - 6);
+			_faceIdx++;
+		}
+
+		_valvesIdx++;
+		if (_valvesIdx > 5) {
+			_valvesIdx = 0;
+		}
+		_animCount--;
+	}
+
+	_animDelayCount++;
+	if (_animDelayCount == 12) {
+		_animDelayCount = 0;
+	}
+
+	return _animCount > 0;
 }
 
 void Cutscene::putHouse() {

@@ -40,6 +40,8 @@ namespace Scumm {
 // ---------------------------------------------------------------------------
 
 MacGuiImpl::MacDialogWindow::MacDialogWindow(MacGuiImpl *gui, OSystem *system, Graphics::Surface *from, Common::Rect bounds, MacDialogWindowStyle windowStyle, MacDialogMenuStyle menuStyle) : _gui(gui), _system(system), _from(from), _bounds(bounds) {
+	_gui->updatePalette();
+
 	// Only apply menu style if the menu is open.
 	Graphics::MacMenu *menu = _gui->_windowManager->getMenu();
 
@@ -407,8 +409,6 @@ int MacGuiImpl::MacDialogWindow::runDialog(Common::Array<int> &deferredActionIds
 
 	if (!_visible) {
 		show();
-
-		Common::Rect windowBounds(_innerSurface.w, _innerSurface.h);
 
 		for (uint i = 0; i < _widgets.size(); i++) {
 			if (_widgets[i]->isVisible()) {

@@ -60,7 +60,7 @@ Dialog *Dialog::_lastDialogSelectionChangedFor = nullptr;
 
 Dialog::Dialog() : _num(0), _bgColor(0), _fontColor(0), _selectionBgCol(0), _selectonFontCol(0),
 	_fontSize(0), _flags(kDlgFlagNone), _frameType(kDlgFramePlain), _time(0), _nextDialogDlgNum(0),
-	_nextDialogFileNum(0), _fileNum(0), _unk1(0), _unk2(0)
+	_nextDialogFileNum(0), _fileNum(0), _talkDataNum(0), _talkDataHeadNum(0)
 {}
 
 
@@ -179,7 +179,8 @@ void Dialog::drawType2(Graphics::ManagedSurface *dst, DialogDrawStage stage) {
 	Common::String title;
 	Common::String txt;
 	uint32 colonpos = _str.find(':');
-	if (colonpos != Common::String::npos) {
+	uint32 crpos = _str.find('\r');
+	if (colonpos != Common::String::npos && (crpos == Common::String::npos || crpos > colonpos)) {
 		title = _str.substr(0, colonpos);
 		txt = _str.substr(colonpos + 1);
 		// Most have a CR after the colon? trim it to remove a blank line.
@@ -435,7 +436,7 @@ void Dialog::drawFindSelectionXY() {
 		x += _stringWidthIgnoringTrainingSpace(font, _str.substr(totalchars, _state->_strMouseLoc - totalchars));
 
 		// TODO: does this make sense?
-		if (_state->_loc.x + _state->_loc.width < (x + font->getCharWidth(_state->_strMouseLoc))) {
+		if (_state->_loc.x + _state->_loc.width < (x + font->getCharWidth(_str[_state->_strMouseLoc]))) {
 			if (_str[_state->_strMouseLoc] < '!') {
 				_state->_charHeight = 0;
 				_state->_charWidth = 0;
@@ -449,7 +450,7 @@ void Dialog::drawFindSelectionXY() {
 
 		_state->_lastMouseX = x;
 		_state->_lastMouseY = y;
-		_state->_charWidth = font->getCharWidth(_state->_strMouseLoc);
+		_state->_charWidth = font->getCharWidth(_str[_state->_strMouseLoc]);
 	}
 }
 
@@ -641,7 +642,7 @@ void Dialog::updateSelectedAction(int delta) {
 	}
 
 	if (_action.size() > 1 || !delta) {
-		debug("Dialog %d: update mouse to %d, %d (mouseloc %d, selnum %d)", _num, mouseX, mouseY, _state->_strMouseLoc, _lastSelectedDialogItemNum);
+		debug(1, "Dialog %d: update mouse to %d, %d (mouseloc %d, selnum %d)", _num, mouseX, mouseY, _state->_strMouseLoc, _lastSelectedDialogItemNum);
 		g_system->warpMouse(mouseX, mouseY);
 	}
 }
@@ -688,9 +689,9 @@ struct DialogAction *Dialog::pickAction(bool isClosing, bool isForceClose) {
 
 Common::String Dialog::dump(const Common::String &indent) const {
 	Common::String str = Common::String::format(
-			"%sDialog<num %d %s bgcol %d fcol %d selbgcol %d selfontcol %d fntsz %d flags 0x%02x frame %d delay %d next %d:%d",
+			"%sDialog<num %d %s bgcol %d fcol %d selbgcol %d selfontcol %d fntsz %d flags 0x%02x frame %d delay %d next %d:%d talkdata %d:%d",
 			indent.c_str(), _num, _rect.dump("").c_str(), _bgColor, _fontColor, _selectionBgCol, _selectonFontCol, _fontSize,
-			_flags, _frameType, _time, _nextDialogFileNum, _nextDialogDlgNum);
+			_flags, _frameType, _time, _nextDialogFileNum, _nextDialogDlgNum, _talkDataNum, _talkDataHeadNum);
 	str += indent + "state=" + (_state ? _state->dump("") : "null");
 	str += "\n";
 	str += _dumpStructList(indent, "actions", _action);

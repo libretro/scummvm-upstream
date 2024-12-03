@@ -75,7 +75,7 @@ private:
 	void drawTitle(int32 centerx, int32 top, const char *title);
 	int32 searchNextArrow(int32 num) const;
 	int32 searchPrevArrow(int32 num) const;
-
+	void drawCursor(); // DrawCurseur
 	void drawListPos(int xRot, int yRot, int zRot, bool lower);
 
 	/**
@@ -97,6 +97,20 @@ private:
 public:
 	HolomapV1(TwinEEngine *engine) : Super(engine) {}
 	virtual ~HolomapV1() = default;
+
+	int32 _current = 0;
+	int32 _otimer = 0;
+	int32 _dalpha = 0;
+	int32 _dbeta = 0;
+	int32 _calpha = 0;
+	int32 _cbeta = 0;
+	int32 _cgamma = 0;
+	int32 _oalpha = 0;
+	int32 _obeta = 0;
+	bool _automove = false;
+	bool _flagredraw = false;
+	bool _dialstat = false;
+	bool _flagpal = false;
 
 	/**
 	 * Set Holomap location position

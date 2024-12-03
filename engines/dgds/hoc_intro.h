@@ -35,7 +35,7 @@ public:
 	HocIntro();
 	void init();
 	void tick();
-	void leave();
+	void end();
 
 private:
 	void clean1(int16 xoff);

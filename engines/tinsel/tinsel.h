@@ -47,6 +47,7 @@
  * Games using this engine:
  * - Discworld
  * - Discworld 2: Missing Presumed ...!?
+ * - Discworld Noir
  */
 namespace Tinsel {
 
@@ -66,6 +67,7 @@ class Scroll;
 class Dialogs;
 class Notebook;
 class SystemReel;
+class Spriter;
 
 typedef Common::List<Common::Rect> RectList;
 
@@ -97,6 +99,9 @@ enum {
 	kTinselDebugSound = 1 << 2,
 	kTinselDebugMusic = 2 << 3
 };
+
+// Just for development
+#define NOIR_SKIP_INTRO 0
 
 #define DEBUG_BASIC 1
 #define DEBUG_INTERMEDIATE 2
@@ -204,6 +209,7 @@ public:
 	Dialogs *_dialogs;
 	Notebook *_notebook = nullptr;
 	SystemReel *_systemReel = nullptr;
+	Spriter *_spriter = nullptr;
 
 	KEYFPTR _keyHandler;
 

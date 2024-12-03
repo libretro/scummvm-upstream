@@ -49,15 +49,15 @@ void Room305::init() {
 	digi_preload("305_s02");
 
 	if (_G(game).previous_room != KERNEL_RESTORING_GAME) {
-		_val1 = -1;
+		_trigger1 = -1;
 		_triggerMode1 = KT_DAEMON;
 		_triggerMode2 = KT_DAEMON;
-		_val2 = 0;
-		_val3 = 0;
-		_val4 = 0;
+		_showWalker = false;
+		_unused = false;
+		_drawerOpen = false;
 	}
 
-	_val5 = 0;
+	_hideCartoon = false;
 	_ripMedHigh = series_load("RIP MED HIGH REACHER POS2");
 	_ripLooksDown = series_load("RIP LOOKS DOWN POS1");
 
@@ -167,13 +167,13 @@ void Room305::init() {
 			_stander = TriggerMachineByHash(1, 1, 0, 0, 0, 0, 494, 278, 73, 0xf00, 1,
 				triggerMachineByHashCallback, "fl stander");
 			sendWSMessage_10000(1, _stander, _feng3, 1, 1, 400, _feng3, 1, 6, 0);
-			_val6 = _val7 = 1;
+			_fengMode = _fengShould = 1;
 			setShadow5(true);
 		} else {
 			hotspot_set_active("FENG LI", false);
 		}
 
-		if (_val4) {
+		if (_drawerOpen) {
 			ws_demand_facing(11);
 			player_update_info();
 
@@ -193,11 +193,11 @@ void Room305::init() {
 
 			hotspot_hide_all();
 			mouse_set_sprite(0);
-			hotspot_add_dynamic("LOOK AT", " ", 0, 0, 1500, 480, 0);
+			hotspot_add_dynamic("LOOK AT", " ", 0, 0, 1500, 480, false);
 
 			if (inv_object_is_here("TURTLE TREATS")) {
-				hotspot_add_dynamic("LOOK AT", "TURTLE TREATS", 1105, 208, 1175, 266, 6);
-				hotspot_add_dynamic("LOOK AT", "TURTLE TREATS", 1052, 230, 1147, 296, 6);
+				hotspot_add_dynamic("LOOK AT", "TURTLE TREATS", 1105, 208, 1175, 266, 6, true);
+				hotspot_add_dynamic("LOOK AT", "TURTLE TREATS", 1052, 230, 1147, 296, 6, true);
 			}
 
 			_openDrawer = series_show_sprite("open drawer", 0, 0);
@@ -218,7 +218,7 @@ void Room305::init() {
 					triggerMachineByHashCallback, "fl stander");
 				_G(kernel).trigger_mode = KT_DAEMON;
 				sendWSMessage_10000(1, _stander, _feng3, 1, 1, 400, _feng3, 1, 6, 0);
-				_val6 = _val7 = 1;
+				_fengMode = _fengShould = 1;
 				setShadow5(true);
 			} else {
 				hotspot_set_active("FENG LI", false);
@@ -277,7 +277,7 @@ void Room305::daemon() {
 			triggerMachineByHashCallback, "fl stander");
 		_G(kernel).trigger_mode = KT_DAEMON;
 		sendWSMessage_10000(1, _stander, _feng3, 1, 1, 400, _feng3, 1, 6, 1);
-		_val6 = _val7 = 1;
+		_fengMode = _fengShould = 1;
 		setShadow5(true);
 		_G(player).disable_hyperwalk = false;
 		break;
@@ -287,13 +287,13 @@ void Room305::daemon() {
 		break;
 
 	case 200:
-		if (!_val8 && !_conv1 && _val1 != -1) {
-			kernel_trigger_dispatchx(_val1);
-			_val1 = -1;
+		if (!_ripleyMode && !_ripleyShould && _trigger1 != -1) {
+			kernel_trigger_dispatchx(_trigger1);
+			_trigger1 = -1;
 
-			if (_val2) {
+			if (_showWalker) {
 				ws_unhide_walker();
-				_val2 = 0;
+				_showWalker = 0;
 			}
 		}
 
@@ -301,26 +301,26 @@ void Room305::daemon() {
 		break;
 
 	case 201:
-		switch (_val8) {
+		switch (_ripleyMode) {
 		case 0:
-			switch (_conv1) {
+			switch (_ripleyShould) {
 			case 0:
 				sendWSMessage_10000(1, _rip6, 1, 1, 1, 200, 1, 1, 1, 0);
 				break;
 
 			case 1:
 				sendWSMessage_10000(1, _rip6, _rip3, 1, 6, 200, _rip3, 6, 6, 0);
-				_val8 = 1;
+				_ripleyMode = 1;
 				break;
 
 			case 3:
 				sendWSMessage_10000(1, _rip6, _rip2, 1, 16, 200, _rip2, 16, 16, 0);
-				_val8 = 3;
+				_ripleyMode = 3;
 				break;
 
 			case 5:
 				sendWSMessage_10000(1, _rip6, _rip1, 1, 12, 200, _rip1, 12, 12, 0);
-				_val8 = 5;
+				_ripleyMode = 5;
 				break;
 
 			case 7:
@@ -336,29 +336,29 @@ void Room305::daemon() {
 			break;
 
 		case 1:
-			if (_conv1 == 1) {
+			if (_ripleyShould == 1) {
 				sendWSMessage_10000(1, _rip6, _rip3, 6, 6, 200, _rip3, 6, 6, 0);
 			} else {
 				sendWSMessage_10000(1, _rip6, _rip3, 6, 1, 200, 1, 1, 1, 0);
-				_val8 = 5;
+				_ripleyMode = 5;
 			}
 			break;
 
 		case 3:
-			if (_conv1 == 3) {
+			if (_ripleyShould == 3) {
 				sendWSMessage_10000(1, _rip6, _rip2, 16, 16, 200, _rip2, 16, 16, 0);
 			} else {
 				sendWSMessage_10000(1, _rip6, _rip2, 16, 1, 200, 1, 1, 1, 0);
-				_val8 = 0;
+				_ripleyMode = 0;
 			}
 			break;
 
 		case 5:
-			if (_conv1 == 5) {
+			if (_ripleyShould == 5) {
 				sendWSMessage_10000(1, _rip6, _rip1, 12, 12, 200, _rip1, 12, 12, 0);
 			} else {
 				sendWSMessage_10000(1, _rip6, _rip1, 12, 1, 200, 1, 1, 1, 0);
-				_val8 = 0;
+				_ripleyMode = 0;
 			}
 			break;
 
@@ -368,13 +368,13 @@ void Room305::daemon() {
 		break;
 
 	case 300:
-		if (!_val8 && !_conv1 && _val1 != -1) {
-			kernel_trigger_dispatchx(_val1);
-			_val1 = -1;
+		if (!_ripleyMode && !_ripleyShould && _trigger1 != -1) {
+			kernel_trigger_dispatchx(_trigger1);
+			_trigger1 = -1;
 
-			if (_val2) {
+			if (_showWalker) {
 				ws_unhide_walker();
-				_val2 = 0;
+				_showWalker = false;
 			}
 		}
 
@@ -382,27 +382,27 @@ void Room305::daemon() {
 		break;
 
 	case 301:
-		switch (_val8) {
+		switch (_ripleyMode) {
 		case 0:
-			switch (_conv1) {
+			switch (_ripleyShould) {
 			case 0:
 				sendWSMessage_10000(1, _rip6, 1, 1, 1, 300, 1, 1, 1, 0);
 				break;
 
 			case 1:
 				sendWSMessage_10000(1, _rip6, _suit2, 1, 10, 300, _suit2, 10, 10, 0);
-				_val8 = 1;
+				_ripleyMode = 1;
 				break;
 
 			case 3:
 				sendWSMessage_10000(1, _rip6, _suit1, 1, 17, 300, _suit1, 17, 17, 0);
-				_val8 = 3;
+				_ripleyMode = 3;
 				break;
 
 			case 5:
 			case 6:
 				sendWSMessage_10000(1, _rip6, _suit3, 1, 14, 300, _suit3, 14, 14, 0);
-				_val8 = 5;
+				_ripleyMode = 5;
 				break;
 
 			case 7:
@@ -418,47 +418,47 @@ void Room305::daemon() {
 			break;
 
 		case 1:
-			if (_conv1 == 1) {
+			if (_ripleyShould == 1) {
 				sendWSMessage_10000(1, _rip6, _suit2, 10, 10, 300, _suit2, 10, 10, 0);
 			} else {
 				sendWSMessage_10000(1, _rip6, _suit2, 11, 18, 300, 1, 1, 1, 0);
-				_val8 = 0;
+				_ripleyMode = 0;
 			}
 			break;
 
 		case 3:
-			if (_conv1 == 3) {
+			if (_ripleyShould == 3) {
 				sendWSMessage_10000(1, _rip6, _suit1, 17, 17, 300, _suit1, 17, 17, 0);
 			} else {
 				sendWSMessage_10000(1, _rip6, _suit1, 17, 1, 300, 1, 1, 1, 0);
-				_val8 = 0;
+				_ripleyMode = 0;
 			}
 			break;
 
 		case 5:
-			switch (_conv1) {
+			switch (_ripleyShould) {
 			case 5:
 				sendWSMessage_10000(1, _rip6, _suit3, 14, 14, 300, _suit3, 14, 14, 0);
 				break;
 
 			case 6:
 				sendWSMessage_10000(1, _rip6, _suit3, 15, 25, 300, _suit3, 25, 25, 0);
-				_val8 = 6;
+				_ripleyMode = 6;
 				break;
 
 			default:
 				sendWSMessage_10000(1, _rip6, _suit3, 14, 1, 300, 1, 1, 1, 0);
-				_val8 = 0;
+				_ripleyMode = 0;
 				break;
 			}
 			break;
 
 		case 6:
-			if (_conv1 == 6) {
+			if (_ripleyShould == 6) {
 				sendWSMessage_10000(1, _rip6, _suit3, 25, 25, 300, _suit3, 25, 25, 0);
 			} else {
 				sendWSMessage_10000(1, _rip6, _suit3, 25, 15, 300, _suit3, 14, 14, 0);
-				_val8 = 5;
+				_ripleyMode = 5;
 			}
 			break;
 
@@ -468,13 +468,13 @@ void Room305::daemon() {
 		break;
 
 	case 400:
-		if (!_val6 && !_val7 && _val1 != -1) {
-			kernel_trigger_dispatchx(_val1);
-			_val1 = -1;
+		if (!_fengMode && !_fengShould && _trigger1 != -1) {
+			kernel_trigger_dispatchx(_trigger1);
+			_trigger1 = -1;
 
-			if (_val2) {
+			if (_showWalker) {
 				ws_unhide_walker();
-				_val2 = 0;
+				_showWalker = false;
 			}
 		}
 
@@ -482,9 +482,9 @@ void Room305::daemon() {
 		break;
 
 	case 401:
-		switch (_val6) {
+		switch (_fengMode) {
 		case 0:
-			switch (_val7) {
+			switch (_fengShould) {
 			case 0:
 				sendWSMessage_10000(1, _stander, _jellyBeans, 1, 1, 400, _jellyBeans, 1, 1, 0);
 				break;
@@ -493,12 +493,12 @@ void Room305::daemon() {
 			case 2:
 			case 4:
 				sendWSMessage_10000(1, _stander, _feng1, 16, 1, 400, _feng3, 1, 6, 1);
-				_val6 = 1;
+				_fengMode = 1;
 				break;
 
 			case 3:
 				sendWSMessage_10000(1, _stander, _jellyBeans, 1, 13, 400, _jellyBeans, 14, 19, 1);
-				_val6 = 3;
+				_fengMode = 3;
 				break;
 
 			default:
@@ -507,10 +507,10 @@ void Room305::daemon() {
 			break;
 
 		case 1:
-			switch (_val7) {
+			switch (_fengShould) {
 			case 0:
 				sendWSMessage_10000(1, _stander, _feng1, 16, 1, 400, _jellyBeans, 1, 1, 0);
-				_val6 = 0;
+				_fengMode = 0;
 				break;
 
 			case 1:
@@ -520,45 +520,45 @@ void Room305::daemon() {
 
 			case 2:
 				sendWSMessage_10000(1, _stander, _feng2, 1, 18, 400, _feng2, 19, 21, 1);
-				_val6 = 2;
+				_fengMode = 2;
 				break;
 
 			case 3:
 				sendWSMessage_10000(1, _stander, _feng1, 16, 1, 400, _jellyBeans, 1, 1, 0);
-				_val6 = 0;
+				_fengMode = 0;
 				break;
 
 			case 4:
 				frame = imath_ranged_rand(1, 6);
 				sendWSMessage_10000(1, _stander, _feng3, frame, frame, 400, _feng3, frame, frame, 0);
-				_val7 = 1;
+				_fengShould = 1;
 				break;
 
 			default:
 				sendWSMessage_10000(1, _stander, _feng2, 1, 18, 400, _feng2, 19, 21, 1);
-				_val6 = 2;
+				_fengMode = 2;
 				break;
 			}
 			break;
 
 		case 2:
-			if (_val7 == 2) {
+			if (_fengShould == 2) {
 				frame = imath_ranged_rand(19, 21);
 				sendWSMessage_10000(1, _stander, _feng2, frame, frame, 400, _feng2, frame, frame, 0);
 			} else {
 				sendWSMessage_10000(1, _stander, _feng2, 18, 1, 400, _feng3, 1, 6, 0);
-				_val6 = 1;
+				_fengMode = 1;
 				break;
 			}
 			break;
 
 		case 3:
-			if (_val7 == 3) {
+			if (_fengShould == 3) {
 				frame = imath_ranged_rand(14, 19);
 				sendWSMessage_10000(1, _stander, _jellyBeans, frame, frame, 400, _jellyBeans, frame, frame, 0);
 			} else {
 				sendWSMessage_10000(1, _stander, _jellyBeans, 20, 31, 400, _jellyBeans, 1, 1, 0);
-				_val6 = 0;
+				_fengMode = 0;
 			}
 			break;
 
@@ -576,7 +576,7 @@ void Room305::pre_parser() {
 	bool lookFlag = player_said_any("look", "look at");
 	bool takeFlag = player_said("take");
 
-	if (_val4 && !(takeFlag && player_said("turtle treats"))
+	if (_drawerOpen && !(takeFlag && player_said("turtle treats"))
 			&& !(lookFlag && player_said("turtle treats"))) {
 		player_set_commands_allowed(false);
 		Common::strcpy_s(_G(player).verb, "close");
@@ -605,12 +605,12 @@ void Room305::pre_parser() {
 	if (lookFlag && player_said("cartoon"))
 		_G(camera_reacts_to_player) = false;
 
-	if (_val5) {
+	if (_hideCartoon) {
 		_G(camera_reacts_to_player) = true;
 		terminateMachineAndNull(_cartoonMach);
 		series_unload(_cartoon);
 		intr_cancel_sentence();
-		_val5 = 0;
+		_hideCartoon = false;
 		hotspot_restore_all();
 		interface_show();
 	}
@@ -639,8 +639,8 @@ void Room305::parser() {
 			_G(flags)[V000] == 1 ? 200 : 300,
 			1, 1, 1, 0);
 
-		_val8 = 0;
-		_conv1 = 0;
+		_ripleyMode = 0;
+		_ripleyShould = 0;
 		_G(kernel).trigger_mode = KT_PARSE;
 		player_set_commands_allowed(false);
 
@@ -667,121 +667,19 @@ void Room305::parser() {
 
 		conv_export_value_curr(_G(flags)[V141], 8);
 		conv_play();
-		_val7 = 1;
-		_conv1 = 0;
+		_fengShould = 1;
+		_ripleyShould = 0;
 	} else if (_G(kernel).trigger == 747) {
-		_val7 = 4;
-		_conv1 = 7;
+		_fengShould = 4;
+		_ripleyShould = 7;
 	} else if (player_said("close", "drawer")) {
-		switch (_G(kernel).trigger) {
-		case -1:
-			if (inv_object_is_here("TURTLE TREATS"))
-				terminateMachineAndNull(_openDrawerTreats);
-
-			terminateMachineAndNull(_openDrawer);
-			hotspot_restore_all();
-
-			if (_G(flags)[V000]) {
-				sendWSMessage_120000(1);
-			} else {
-				sendWSMessage_10000(1, _rip6, _rip4, 5, 1, 1, _rip4, 1, 1, 0);
-			}
-			break;
-
-		case 1:
-			if (_G(flags)[V000]) {
-				sendWSMessage_150000(-1);
-			} else {
-				terminateMachineAndNull(_rip6);
-				terminateMachineAndNull(_rip5);
-				ws_unhide_walker();
-			}
-			kernel_timing_trigger(1, 2);
-			break;
-
-		case 2:
-			series_unload(_rip4);
-			player_set_commands_allowed(true);
-			_val4 = 0;
-			break;
-
-		default:
-			break;
-		}
+		closeDrawer();
 	} else if (useFlag && player_said("drawer")) {
-		switch (_G(kernel).trigger) {
-		case -1:
-			player_set_commands_allowed(false);
-			player_update_info();
-
-			if (_G(flags)[V000]) {
-				_rip4 = series_load("RIP TREK MED REACH HAND POS1");
-				setGlobals1(1, 5, 5, 5, 0, 5, 1, 1, 1);
-				sendWSMessage_110000(1);
-			} else {
-				ws_hide_walker();
-				_rip4 = series_load("SUIT RIP REACHES FOR DRAWER");
-				_rip5 = series_show("ripsh1", 0xf00, 128, -1, -1, 0,
-					_G(player_info).scale, _G(player_info).x, _G(player_info).y);
-				_rip6 = TriggerMachineByHash(1, 1, 0, 0, 0, 0, 0, 0, 100, 0xf00, false,
-					triggerMachineByHashCallback, "rip reach");
-
-				sendWSMessage_10000(1, _rip6, _rip4, 1, 5, 1, _rip4, 5, 5, 0);
-			}
-			break;
-
-		case 1:
-			hotspot_hide_all();
-			intr_cancel_sentence();
-			mouse_set_sprite(0);
-			hotspot_add_dynamic("LOOK AT", " ", 0, 0, 1500, 374, 0);
-
-			if (inv_object_is_here("TURTLE TREATS")) {
-				hotspot_add_dynamic("LOOK AT", "TURTLE TREATS", 1105, 208, 1175, 266, 6);
-				hotspot_add_dynamic("LOOK AT", "TURTLE TREATS", 1052, 230, 1147, 296, 6);
-			}
-
-			_val4 = 1;
-			_openDrawer = series_show_sprite("open drawer", 0, 0);
-
-			if (inv_object_is_here("TURTLE TREATS")) {
-				_openDrawerTreats = series_show_sprite("open drawer with treats", 0, 0);
-			}
-
-			player_set_commands_allowed(true);
-			digi_play("305_s02", 2);
-			break;
-
-		default:
-			break;
-		}
-	} else if (takeFlag && player_said("turtle treats") && _G(kernel).trigger == -1
-			&& inv_object_is_here("TURTLE TREATS")) {
-		terminateMachineAndNull(_openDrawerTreats);
-		terminateMachineAndNull(_openDrawer);
-		hotspot_restore_all();
-
-		if (_G(flags)[V000])
-			sendWSMessage_120000(1);
-		else
-			sendWSMessage_10000(1, _rip6, _rip4, 5, 1, 1, _rip4, 1, 1, 0);
-
-		digi_play("305r20", 1);
-
-	} else if (takeFlag && player_said("turtle treats") && _G(kernel).trigger == 1) {
-		inv_give_to_player("TURTLE TREATS");
-		terminateMachineAndNull(_rip6);
-		terminateMachineAndNull(_rip5);
-		ws_unhide_walker();
-		kernel_timing_trigger(1, 2);
-
-	} else if (takeFlag && player_said("turtle treats") && _G(kernel).trigger == 2) {
-		series_unload(_rip4);
-		player_set_commands_allowed(true);
-		_val4 = 0;
-
+		openDrawer();
+	} else if (takeFlag && player_said("turtle treats")) {
+		takeTurtleTreats();
 	} else if (takeFlag && player_said("turtle")) {
-		if (_G(flags)[GLB_TEMP_12]) {
+		if (_G(flags)[V018]) {
 			digi_play("305r55", 1);
 		} else {
 			switch (_G(kernel).trigger) {
@@ -1005,7 +903,7 @@ next4:
 
 		case 1:
 			player_set_commands_allowed(true);
-			_val7 = 1;
+			_fengShould = 1;
 			break;
 
 		default:
@@ -1031,7 +929,7 @@ next4:
 			interface_hide();
 			hotspot_hide_all();
 			mouse_set_sprite(0);
-			hotspot_add_dynamic("LOOK AT", " ", 0, 0, 1500, 480, 0);
+			hotspot_add_dynamic("LOOK AT", " ", 0, 0, 1500, 480, false);
 
 			Common::String digiName;
 			if (flag) {
@@ -1057,7 +955,7 @@ next4:
 				digi_play(digiName.c_str(), 1);
 			}
 
-			_val5 = 1;
+			_hideCartoon = true;
 			break;
 		}
 
@@ -1159,7 +1057,7 @@ next4:
 					digi_play("305r32", 1);
 				} else if (player_been_here(201)) {
 					digi_play("305f03", 1, 255, 1);
-					_val7 = 2;
+					_fengShould = 2;
 					player_set_commands_allowed(false);
 				} else {
 					digi_play("305r15", 1);
@@ -1171,7 +1069,7 @@ next4:
 
 		case 1:
 			player_set_commands_allowed(true);
-			_val7 = 1;
+			_fengShould = 1;
 			break;
 
 		default:
@@ -1180,7 +1078,7 @@ next4:
 	} else if (lookFlag && player_said("terrarium")) {
 		if (inv_player_has("TURTLE")) {
 			digi_play("305r16a", 1);
-		} else if (_G(flags)[GLB_TEMP_12]) {
+		} else if (_G(flags)[V018]) {
 			digi_play("305r16b", 1);
 		} else if (inv_object_is_here("TURTLE")) {
 			digi_play("305r16c", 1);
@@ -1341,11 +1239,11 @@ void Room305::conv305a() {
 
 	if (_G(kernel).trigger == 1) {
 		if (who <= 0) {
-			_val7 = 1;
+			_fengShould = 1;
 		} else if (_G(kernel).trigger == 1) {
 			if (node != 1 || (entry != 0 && entry != 3 && entry != 5
 				&& entry != 6 && entry != 7))
-				_conv1 = 0;
+				_ripleyShould = 0;
 		}
 
 		conv_resume();
@@ -1355,21 +1253,21 @@ void Room305::conv305a() {
 
 	} else {
 		if (who <= 0) {
-			_val7 = 2;
+			_fengShould = 2;
 		} else if (who == 1) {
 			if ((node == 1 && entry == 0) || (node == 1 && entry == 6) ||
 					(node == 1 && entry == 7)) {
-				_conv1 = 5;
+				_ripleyShould = 5;
 			} else if (node == 1 && (entry == 3 || entry == 5)) {
-				_conv1 = 3;
+				_ripleyShould = 3;
 			} else if ((node == 7 && entry == 0) || (node == 8 && entry == 0) ||
 					(node == 9 && entry == 0) || (node == 10 && entry == 0) ||
 					(node == 12 && entry == 0)) {
-				_conv1 = 0;
+				_ripleyShould = 0;
 			} else if (node == 1 && entry == 1) {
 				_G(flags)[V089] = 2;
 			} else {
-				_conv1 = 1;
+				_ripleyShould = 1;
 			}
 		}
 
@@ -1396,7 +1294,7 @@ bool Room305::walkToObject() {
 	} else if (player_said("ROMANOV EMERALD")) {
 		if (_G(flags)[V090] == 3) {
 			digi_play("305f08", 1, 255, 6);
-			_val7 = 2;
+			_fengShould = 2;
 		} else {
 			ws_walk(183, 288, 0, 1, 10, 1);
 		}
@@ -1484,6 +1382,184 @@ int Room305::getItemX(int seriesHash) const {
 int Room305::getItemY(int seriesHash) const {
 	int h = ws_get_sprite_height(seriesHash, 0);
 	return (374 - h) / 2;
+}
+
+void Room305::syncGame(Common::Serializer &s) {
+	s.syncAsByte(_drawerOpen);
+	s.syncAsByte(_showWalker);
+	s.syncAsByte(_hideCartoon);
+	s.syncAsByte(_unused);
+
+	s.syncAsUint32LE(_fengMode);
+	s.syncAsUint32LE(_fengShould);
+	s.syncAsUint32LE(_ripleyMode);
+	s.syncAsUint32LE(_ripleyShould);
+	s.syncAsUint32LE(_trigger1);
+
+	s.syncAsUint32LE(_ripMedHigh);
+	s.syncAsUint32LE(_ripLooksDown);
+	s.syncAsUint32LE(_shrunkenHead1);
+	s.syncAsUint32LE(_incenseHolder1);
+	s.syncAsUint32LE(_crystalSkull1);
+	s.syncAsUint32LE(_whaleboneHorn1);
+	s.syncAsUint32LE(_wheeledToy1);
+	s.syncAsUint32LE(_butterfly1);
+	s.syncAsUint32LE(_amulet1);
+	s.syncAsUint32LE(_knife1);
+	s.syncAsUint32LE(_banknote1);
+	s.syncAsUint32LE(_stamp1);
+	s.syncAsUint32LE(_map1);
+	s.syncAsUint32LE(_emerald1);
+	s.syncAsUint32LE(_easterIslandCartoon);
+	s.syncAsUint32LE(_chinshiCartoon);
+	s.syncAsUint32LE(_tabletsCartoon);
+	s.syncAsUint32LE(_epitaphCartoon);
+	s.syncAsUint32LE(_graveyardCartoon);
+	s.syncAsUint32LE(_castleCartoon);
+	s.syncAsUint32LE(_mocaMocheCartoon);
+	s.syncAsUint32LE(_templeCartoon);
+	s.syncAsUint32LE(_emeraldCartoon);
+	s.syncAsUint32LE(_jellyBeans);
+	s.syncAsUint32LE(_feng1);
+	s.syncAsUint32LE(_feng2);
+	s.syncAsUint32LE(_feng3);
+	s.syncAsUint32LE(_rip1);
+	s.syncAsUint32LE(_rip2);
+	s.syncAsUint32LE(_rip3);
+	s.syncAsUint32LE(_rip4);
+	s.syncAsUint32LE(_suit1);
+	s.syncAsUint32LE(_suit2);
+	s.syncAsUint32LE(_suit3);
+	s.syncAsUint32LE(_cartoon);
+	s.syncAsUint32LE(_lookUp);
+}
+
+void Room305::openDrawer() {
+	switch (_G(kernel).trigger) {
+	case -1:
+		player_set_commands_allowed(false);
+		player_update_info();
+
+		if (_G(flags)[V000]) {
+			_rip4 = series_load("RIP TREK MED REACH HAND POS1");
+			setGlobals1(1, 5, 5, 5, 0, 5, 1, 1, 1);
+			sendWSMessage_110000(1);
+		} else {
+			ws_hide_walker();
+			_rip4 = series_load("SUIT RIP REACHES FOR DRAWER");
+			_rip5 = series_show("ripsh1", 0xf00, 128, -1, -1, 0,
+				_G(player_info).scale, _G(player_info).x, _G(player_info).y);
+			_rip6 = TriggerMachineByHash(1, 1, 0, 0, 0, 0, 0, 0, 100, 0xf00, false,
+				triggerMachineByHashCallback, "rip reach");
+
+			sendWSMessage_10000(1, _rip6, _rip4, 1, 5, 1, _rip4, 5, 5, 0);
+		}
+		break;
+
+	case 1:
+		hotspot_hide_all();
+		intr_cancel_sentence();
+		mouse_set_sprite(0);
+		hotspot_add_dynamic("LOOK AT", " ", 0, 0, 1500, 374, 0);
+
+		if (inv_object_is_here("TURTLE TREATS")) {
+			hotspot_add_dynamic("LOOK AT", "TURTLE TREATS", 1105, 208, 1175, 266, 6, true);
+			hotspot_add_dynamic("LOOK AT", "TURTLE TREATS", 1052, 230, 1147, 296, 6, true);
+		}
+
+		_drawerOpen = true;
+		_openDrawer = series_show_sprite("open drawer", 0, 0);
+
+		if (inv_object_is_here("TURTLE TREATS")) {
+			_openDrawerTreats = series_show_sprite("open drawer with treats", 0, 0);
+		}
+
+		player_set_commands_allowed(true);
+		digi_play("305_s02", 2);
+		break;
+
+	default:
+		break;
+	}
+}
+
+void Room305::closeDrawer() {
+	switch (_G(kernel).trigger) {
+	case -1:
+		if (inv_object_is_here("TURTLE TREATS"))
+			terminateMachineAndNull(_openDrawerTreats);
+
+		terminateMachineAndNull(_openDrawer);
+		hotspot_restore_all();
+
+		if (_G(flags)[V000]) {
+			sendWSMessage_120000(1);
+		} else {
+			sendWSMessage_10000(1, _rip6, _rip4, 5, 1, 1, _rip4, 1, 1, 0);
+		}
+		break;
+
+	case 1:
+		if (_G(flags)[V000]) {
+			sendWSMessage_150000(-1);
+		} else {
+			terminateMachineAndNull(_rip6);
+			terminateMachineAndNull(_rip5);
+			ws_unhide_walker();
+		}
+		kernel_timing_trigger(1, 2);
+		break;
+
+	case 2:
+		series_unload(_rip4);
+		player_set_commands_allowed(true);
+		_drawerOpen = false;
+		break;
+
+	default:
+		break;
+	}
+}
+
+void Room305::takeTurtleTreats() {
+	switch (_G(kernel).trigger) {
+	case -1:
+		if (inv_object_is_here("TURTLE TREATS")) {
+			terminateMachineAndNull(_openDrawerTreats);
+			terminateMachineAndNull(_openDrawer);
+			hotspot_restore_all();
+
+			if (_G(flags)[V000])
+				sendWSMessage_120000(1);
+			else
+				sendWSMessage_10000(1, _rip6, _rip4, 5, 1, 1, _rip4, 1, 1, 0);
+
+			digi_play("305r20", 1);
+		}
+		break;
+
+	case 1:
+		inv_give_to_player("TURTLE TREATS");
+
+		if (_G(flags)[V000]) {
+			sendWSMessage_150000(-1);
+		} else {
+			terminateMachineAndNull(_rip6);
+			terminateMachineAndNull(_rip5);
+			ws_unhide_walker();
+		}
+		kernel_timing_trigger(1, 2);
+		break;
+
+	case 2:
+		series_unload(_rip4);
+		player_set_commands_allowed(true);
+		_drawerOpen = false;
+		break;
+
+	default:
+		break;
+	}
 }
 
 } // namespace Rooms

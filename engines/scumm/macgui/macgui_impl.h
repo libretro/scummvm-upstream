@@ -108,9 +108,14 @@ public:
 		kMSIAboutString40
 	};
 
+	enum ParsingMethod {
+		kStrC,
+		kStrPascal,
+	};
+
 	struct MacSTRSParsingEntry {
 		MacStringIds strId;
-		Common::String parsingMethod;
+		ParsingMethod parsingMethod;
 		int numStrings;
 	};
 
@@ -134,6 +139,8 @@ protected:
 	MacGuiImpl::MacDialogWindow *_bannerWindow = nullptr;
 
 	Common::Path _resourceFile;
+
+	bool _paletteDirty = false;
 
 	bool _menuIsActive = false;
 	bool _cursorWasVisible = false;
@@ -221,8 +228,8 @@ protected:
 
 	bool runOkCancelDialog(Common::String text);
 
-	void readStrings();
-	void parseSTRSBlock(uint8 *strsData, MacSTRSParsingEntry *parsingTable, int parsingTableSize);
+	bool readStrings();
+	void parseSTRSBlock(uint8 *strsData, const MacSTRSParsingEntry *parsingTable, int parsingTableSize);
 
 	// These are non interactable, no point in having them as widgets for now...
 	void drawFakePathList(MacDialogWindow *window, Common::Rect r, const char *text);
@@ -463,10 +470,10 @@ public:
 	class MacSlider : public MacSliderBase {
 	private:
 		Common::Point _clickPos;
-		uint32 _nextRepeat;
+		uint32 _nextRepeat = 0;
 
-		int _pageSize;
-		int _paging;
+		int _pageSize = 0;
+		int _paging = 0;
 
 		bool _upArrowPressed = false;
 		bool _downArrowPressed = false;
@@ -699,11 +706,13 @@ public:
 
 	int toMacRoman(int unicode) const;
 
-	void setPalette(const byte *palette, uint size);
+	void setPaletteDirty();
+	void updatePalette();
+
 	virtual bool handleEvent(Common::Event event);
 
 	static void menuCallback(int id, Common::String &name, void *data);
-	virtual void initialize();
+	virtual bool initialize();
 	void updateWindowManager();
 
 	const Graphics::Font *getFont(FontId fontId);

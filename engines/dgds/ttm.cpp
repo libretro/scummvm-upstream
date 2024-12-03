@@ -34,7 +34,8 @@
 #include "dgds/sound.h"
 #include "dgds/font.h"
 #include "dgds/sound_raw.h"
-
+#include "dgds/drawing.h"
+#include "dgds/scene.h"
 
 namespace Dgds {
 
@@ -176,6 +177,7 @@ static const char *ttmOpName(uint16 op) {
 	case 0x4120: return "FADE IN";
 	case 0x4200: return "STORE AREA";
 	case 0x4210: return "SAVE GETPUT REGION";
+	case 0x5000: return "SET DYNAMIC RECT";
 
 	case 0xa000: return "DRAW PIXEL";
 	case 0xa010: return "WIPE DISSOLVE";
@@ -208,7 +210,7 @@ static const char *ttmOpName(uint16 op) {
 	case 0xa520: return "DRAW SPRITE FLIPH";
 	case 0xa530: return "DRAW SPRITE FLIPHV";
 	case 0xa600: return "DRAW GETPUT";
-	case 0xa700: return "DRAW A700??";
+	case 0xa700: return "DRAW SCROLL";
 	case 0xaf00: return "DRAW FLOOD FILL";
 	case 0xaf10: return "DRAW EMPTY POLY";
 	case 0xaf20: return "DRAW FILLED POLY";
@@ -372,7 +374,7 @@ static void _doScroll(Graphics::ManagedSurface &compBuf, int16 dir, int16 steps,
 	g_system->unlockScreen();
 }
 
-void TTMInterpreter::doWipeOp(uint16 code, TTMEnviro &env, TTMSeq &seq, const Common::Rect &r) {
+void TTMInterpreter::doWipeOp(uint16 code, const TTMEnviro &env, const TTMSeq &seq, const Common::Rect &r) {
 	//
 	// In the original games, these operations copy certain parts of the buffer on to
 	// the screen, and rely on the system's speed to make it happen faster than a regular
@@ -498,7 +500,7 @@ int16 TTMInterpreter::doOpInitCreditScroll(const Image *img) {
  bool TTMInterpreter::doOpCreditsScroll(const Image *img, int16 ygap, int16 ymax, int16 xoff, int16 measuredWidth, const Common::Rect &clipRect) {
 	int nframes = img->loadedFrameCount();
 	bool scrollFinished = true;
-	int y = 200 - ymax;
+	int y = SCREEN_HEIGHT - ymax;
 	for (int i = 0; i < nframes; i++) {
 		int width = img->width(i);
 		int height = img->height(i);
@@ -511,13 +513,13 @@ int16 TTMInterpreter::doOpInitCreditScroll(const Image *img) {
 			scrollFinished = false;
 		}
 		y += ygap + height;
-		if (y > 200)
+		if (y > SCREEN_HEIGHT)
 			break;
 	}
 	return scrollFinished;
 }
 
-void TTMInterpreter::doDrawDialogForStrings(TTMEnviro &env, TTMSeq &seq, int16 x, int16 y, int16 width, int16 height) {
+void TTMInterpreter::doDrawDialogForStrings(const TTMEnviro &env, const TTMSeq &seq, int16 x, int16 y, int16 width, int16 height) {
 	int16 fontno = seq._currentFontId;
 	if (fontno >= (int16)env._fonts.size()) {
 		warning("Trying to draw font no %d but only loaded %d", fontno, env._fonts.size());
@@ -595,7 +597,11 @@ void TTMInterpreter::handleOperation(TTMEnviro &env, TTMSeq &seq, uint16 op, byt
 		seq._currentPalId = 0;
 		break;
 	case 0x0080: // FREE SHAPE
-		//debug("0x0080: Free from slot %d for seq %d env %d", seq._currentBmpId, seq._seqNum, env._enviro);
+		// This is a one-shot op only in Willy Beamish - in HoC and Dragon it's done every time
+		// (although it may not make any difference)
+		if (seq._executed && DgdsEngine::getInstance()->getGameId() == GID_WILLY)
+			break;
+		//debug(1, "0x0080: Free from slot %d for seq %d env %d", seq._currentBmpId, seq._seqNum, env._enviro);
 		env._scriptShapes[seq._currentBmpId].reset();
 		break;
 	case 0x0090: // FREE FONT
@@ -640,13 +646,13 @@ void TTMInterpreter::handleOperation(TTMEnviro &env, TTMSeq &seq, uint16 op, byt
 	case 0x1020: // SET DELAY:	    i:int   [0..n]
 		// TODO: Probably should do this accounting (as well as timeCut and dialogs)
 		// 		 in game frames, not millis.
-		_vm->adsInterpreter()->setScriptDelay((int)(ivals[0] * MS_PER_FRAME));
+		_vm->adsInterpreter()->setScriptDelay((int)round(ivals[0] * MS_PER_FRAME));
 		break;
 	case 0x1030: // SET BRUSH:	id:int [-1:n]
 		seq._brushNum = ivals[0];
 		break;
 	case 0x1050: // SELECT BMP:	    id:int [0:n]
-		//debug("0x1051: Select bmp %d for seq %d from env %d", ivals[0], seq._seqNum, env._enviro);
+		//debug(1, "0x1051: Select bmp %d for seq %d from env %d", ivals[0], seq._seqNum, env._enviro);
 		seq._currentBmpId = ivals[0];
 		break;
 	case 0x1060: // SELECT PAL:  id:int [0]
@@ -767,7 +773,7 @@ void TTMInterpreter::handleOperation(TTMEnviro &env, TTMSeq &seq, uint16 op, byt
 	}
 	case 0x4000: // SET CLIP WINDOW x,y,x2,y2:int	[0..320,0..200]
 		// NOTE: params are xmax/ymax, NOT w/h
-		seq._drawWin = Common::Rect(ivals[0], ivals[1], ivals[2], ivals[3]);
+		seq._drawWin = Common::Rect(ivals[0], ivals[1], ivals[2] + 1, ivals[3] + 1);
 		break;
 	case 0x4110: // FADE OUT:	colorno,ncolors,targetcol,speed:byte
 		if (seq._executed) // this is a one-shot op.
@@ -801,10 +807,10 @@ void TTMInterpreter::handleOperation(TTMEnviro &env, TTMSeq &seq, uint16 op, byt
 		if (ivals[3] == 0) {
 			_vm->getGamePals()->setPalette();
 		} else {
-			for (int i = 320; i > 0; i -= ivals[3]) {
+			for (int i = SCREEN_WIDTH; i > 0; i -= ivals[3]) {
 				int fade = MAX(0, MIN(i / 5, 63));
 				_vm->getGamePals()->setFade(ivals[0], ivals[1], ivals[2], fade * 4);
-				if (i == 320) {
+				if (i == SCREEN_WIDTH) {
 					// update screen first to make the initial fade-in work
 					g_system->copyRectToScreen(_vm->_compositionBuffer.getPixels(), SCREEN_WIDTH, 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
 				}
@@ -836,6 +842,9 @@ void TTMInterpreter::handleOperation(TTMEnviro &env, TTMSeq &seq, uint16 op, byt
 		env._getPuts[seq._currentGetPutId]._surf.reset(surf);
 		break;
 	}
+	case 0x5000: // SET DYNAMIC RECT: x,y,w,h,num ??
+		_vm->getScene()->setDynamicSceneRect(ivals[4], ivals[0], ivals[1], ivals[2], ivals[3]);
+		break;
 	case 0xa000: // DRAW PIXEL x,y:int
 		if (seq._drawWin.contains(ivals[0], ivals[1]))
 			_vm->_compositionBuffer.setPixel(ivals[0], ivals[1], seq._drawColFG);
@@ -899,6 +908,19 @@ void TTMInterpreter::handleOperation(TTMEnviro &env, TTMSeq &seq, uint16 op, byt
 	case 0xa300:
 		doDrawDialogForStrings(env, seq, ivals[0], ivals[1], ivals[2], ivals[3]);
 		break;
+
+	case 0xa400: { // DRAW FILLED CIRCLE
+		int16 xr = ivals[2] / 2;
+		int16 yr = ivals[3] / 2;
+		Drawing::filledCircle(ivals[0] + xr, ivals[1] + yr, xr, yr, &_vm->_compositionBuffer, seq._drawColFG, seq._drawColBG);
+		break;
+	}
+	case 0xa420: { // DRAW EMPTY CIRCLE
+		int16 xr = ivals[2] / 2;
+		int16 yr = ivals[3] / 2;
+		Drawing::emptyCircle(ivals[0] + xr, ivals[1] + yr, xr, yr, &_vm->_compositionBuffer, seq._drawColFG);
+		break;
+	}
 	case 0xa500: // DRAW SPRITE: x,y,tile-id,bmp-id:int [-n,+n]
 	case 0xa510: // DRAW SPRITE FLIP V x,y:int
 	case 0xa520: // DRAW SPRITE FLIP H: x,y:int
@@ -930,8 +952,13 @@ void TTMInterpreter::handleOperation(TTMEnviro &env, TTMSeq &seq, uint16 op, byt
 
 		Common::SharedPtr<Image> img = env._scriptShapes[bmpNo];
 		if (img) {
-			img->drawBitmap(frameno, env._xOff + ivals[0], env._yOff + ivals[1],
-					seq._drawWin, _vm->_compositionBuffer, flipMode, dstWidth, dstHeight);
+			int x = ivals[0];
+			int y = ivals[1];
+			if (_stackDepth > 0) {
+				x += env._xOff;
+				y += env._yOff;
+			}
+			img->drawBitmap(frameno, x, y, seq._drawWin, _vm->_compositionBuffer, flipMode, dstWidth, dstHeight);
 		} else {
 			warning("Trying to draw image %d in env %d which is not loaded", bmpNo, env._enviro);
 		}
@@ -951,7 +978,7 @@ void TTMInterpreter::handleOperation(TTMEnviro &env, TTMSeq &seq, uint16 op, byt
 						Common::Point(r.left, r.top));
 		break;
 	}
-	case 0xa700: { // DRAW scrollshape? x,y,w,h??
+	case 0xa700: { // DRAW SCROLL x,y,w,h??
 		if (!env._scrollShape) {
 			warning("Trying to draw scroll with no scrollshape loaded");
 		} else {
@@ -1007,25 +1034,27 @@ void TTMInterpreter::handleOperation(TTMEnviro &env, TTMSeq &seq, uint16 op, byt
 		}
 		break;
 	}
-	case 0xb600: { // COPY BUFFER: x, y, w, h, buf1, buf2
-		// buf1 and buf2 are buffer numbers.
-		// 	0 - composition
+	case 0xb600: { // COPY BUFFER: x, y, w, h, srcbuf, dstbuf
+		// srcbuf and dstbuf are buffer numbers.
+		// 	0 - background
 		// 	1 - stored area
-		// 	2 - background
+		// 	2 - composition
 		if (seq._executed) // this is a one-shot op
 			break;
 		const Common::Rect r(Common::Point(ivals[0], ivals[1]), ivals[2], ivals[3]);
 		int16 b1 = ivals[4];
 		int16 b2 = ivals[5];
-		Graphics::ManagedSurface &s1 = ((b1 == 0) ? _vm->_compositionBuffer :
-				(b1 == 2 ? _vm->getBackgroundBuffer() : _vm->getStoredAreaBuffer()));
-		Graphics::ManagedSurface &s2 = ((b2 == 0) ? _vm->_compositionBuffer :
-				(b2 == 2 ? _vm->getBackgroundBuffer() : _vm->getStoredAreaBuffer()));
-		s2.blitFrom(s1, r, r);
+		Graphics::ManagedSurface &src = ((b1 == 2) ? _vm->_compositionBuffer :
+				(b1 == 0 ? _vm->getBackgroundBuffer() : _vm->getStoredAreaBuffer()));
+		Graphics::ManagedSurface &dst = ((b2 == 2) ? _vm->_compositionBuffer :
+				(b2 == 0 ? _vm->getBackgroundBuffer() : _vm->getStoredAreaBuffer()));
+		dst.blitFrom(src, r, r);
 		break;
 	}
 	case 0xc020: {	// LOAD SAMPLE: filename:str
-		_vm->_soundPlayer->loadMacMusic(sval.c_str());
+		// Ignore this?
+		//_vm->_soundPlayer->loadMusic(sval.c_str());
+		//_vm->_soundPlayer->stopMusic();
 		break;
 	}
 	case 0xc030: {	// SELECT SAMPLE: int: i
@@ -1033,7 +1062,11 @@ void TTMInterpreter::handleOperation(TTMEnviro &env, TTMSeq &seq, uint16 op, byt
 		break;
 	}
 	case 0xc050: {	// PLAY SAMPLE: int: i
-		_vm->_soundPlayer->playMusic(ivals[0]);
+		_vm->_soundPlayer->playMusicOrSFX(ivals[0]);
+		break;
+	}
+	case 0xc060: {	// STOP SAMPLE: int: i
+		_vm->_soundPlayer->stopMusicOrSFX(ivals[0]);
 		break;
 	}
 	case 0xc210: {  // LOAD RAW SFX filename:str
@@ -1066,7 +1099,7 @@ void TTMInterpreter::handleOperation(TTMEnviro &env, TTMSeq &seq, uint16 op, byt
 	case 0xf020: // LOAD BMP:	filename:str
 		if (seq._executed) // this is a one-shot op
 			break;
-		//debug("0xf020: Load bitmap %s to slot %d for env %d", sval.c_str(), env._enviro, seq._currentBmpId);
+		//debug(1, "0xf020: Load bitmap %s to slot %d for env %d", sval.c_str(), env._enviro, seq._currentBmpId);
 		env._scriptShapes[seq._currentBmpId].reset(new Image(_vm->getResourceManager(), _vm->getDecompressor()));
 		env._scriptShapes[seq._currentBmpId]->loadBitmap(sval);
 		break;
@@ -1091,9 +1124,6 @@ void TTMInterpreter::handleOperation(TTMEnviro &env, TTMSeq &seq, uint16 op, byt
 		if (_vm->_platform == Common::kPlatformAmiga) {
 			// TODO: remove hard-coded stuff..
 			_vm->_soundPlayer->playAmigaSfx("DYNAMIX.INS", 0, 255);
-		} else if (_vm->_platform == Common::kPlatformMacintosh) {
-			if (_vm->_soundPlayer->loadMacMusic(sval.c_str()))
-				_vm->_soundPlayer->playMusic(seq._currentSongId);
 		} else {
 			if (_vm->_soundPlayer->loadMusic(sval.c_str()))
 				_vm->_soundPlayer->playMusic(seq._currentSongId);
@@ -1206,7 +1236,7 @@ bool TTMInterpreter::run(TTMEnviro &env, TTMSeq &seq) {
 	return true;
 }
 
-int32 TTMInterpreter::findGOTOTarget(TTMEnviro &env, TTMSeq &seq, int16 targetFrame) {
+int32 TTMInterpreter::findGOTOTarget(const TTMEnviro &env, const TTMSeq &seq, int16 targetFrame) {
 	int64 startpos = env.scr->pos();
 	int32 retval = -1;
 	for (int32 i = 0; i < (int)env._frameOffsets.size(); i++) {
@@ -1226,28 +1256,28 @@ int32 TTMInterpreter::findGOTOTarget(TTMEnviro &env, TTMSeq &seq, int16 targetFr
 	return retval;
 }
 
-void TTMInterpreter::findAndAddSequences(TTMEnviro &env, Common::Array<TTMSeq> &seqArray) {
+void TTMInterpreter::findAndAddSequences(TTMEnviro &env, Common::Array<Common::SharedPtr<TTMSeq>> &seqArray) {
 	int16 envno = env._enviro;
 	env.scr->seek(0);
 	uint16 op = 0;
 	for (uint frame = 0; frame < env._totalFrames; frame++) {
 		env._frameOffsets[frame] = env.scr->pos();
-		//debug("findAndAddSequences: frame %d at offset %d", frame, (int)env.scr->pos());
+		//debug(1, "findAndAddSequences: frame %d at offset %d", frame, (int)env.scr->pos());
 		op = env.scr->readUint16LE();
 		while (op != 0x0ff0 && env.scr->pos() < env.scr->size()) {
-			//debug("findAndAddSequences: check ttm op %04x", op);
+			//debug(1, "findAndAddSequences: check ttm op %04x", op);
 			switch (op & 0xf) {
 			case 0:
 				break;
 			case 1:
 				if (op == 0x1111) {
-					TTMSeq newseq;
-					newseq._enviro = envno;
-					newseq._seqNum = env.scr->readUint16LE();
-					newseq._startFrame = frame;
-					newseq._currentFrame = frame;
-					newseq._lastFrame = -1;
-					//debug("findAndAddSequences: found env %d seq %d at %d", newseq._enviro, newseq._seqNum, (int)env.scr->pos());
+					Common::SharedPtr<TTMSeq> newseq(new TTMSeq());
+					newseq->_enviro = envno;
+					newseq->_seqNum = env.scr->readUint16LE();
+					newseq->_startFrame = frame;
+					newseq->_currentFrame = frame;
+					newseq->_lastFrame = -1;
+					//debug(1, "findAndAddSequences: found env %d seq %d at %d", newseq._enviro, newseq._seqNum, (int)env.scr->pos());
 					seqArray.push_back(newseq);
 				} else {
 					env.scr->skip(2);
@@ -1276,8 +1306,11 @@ void TTMSeq::reset() {
 	_currentFontId = 0;
 	_currentPalId = 0;
 	_currentSongId = 0;
-	_currentBmpId = 0;
-	_currentGetPutId = 0;
+	if (DgdsEngine::getInstance()->getGameId() == GID_DRAGON) {
+		// These slots are not reset in HOC onward
+		_currentBmpId = 0;
+		_currentGetPutId = 0;
+	}
 	_currentFrame = _startFrame;
 	_gotoFrame = -1;
 	_drawColBG = 0xf;

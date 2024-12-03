@@ -394,7 +394,7 @@ void unload_game() {
 	_GP(guis).clear();
 	_GP(scrGui).clear();
 
-	remove_screen_overlay(-1);
+	get_overlays().clear();
 
 	resetRoomStatuses();
 	_GP(thisroom).Free();
@@ -1288,7 +1288,7 @@ void replace_tokens(const char *srcmes, char *destm, size_t maxlen) {
 			indxdest++;
 			indxsrc++;
 		}
-		if (indxdest >= maxlen - 3)
+		if (indxdest >= (int)maxlen - 3)
 			break;
 	}
 	destm[indxdest] = 0;

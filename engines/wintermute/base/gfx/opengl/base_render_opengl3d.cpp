@@ -31,8 +31,6 @@
 
 #include "common/config-manager.h"
 
-#include "math/glmath.h"
-
 #if defined(USE_OPENGL_GAME)
 
 #include "engines/wintermute/base/gfx/3dutils.h"
@@ -43,18 +41,6 @@
 #include "engines/wintermute/base/gfx/opengl/shadow_volume_opengl.h"
 
 namespace Wintermute {
-
-struct SpriteVertex {
-	float u;
-	float v;
-	float x;
-	float y;
-	float z;
-	uint8 r;
-	uint8 g;
-	uint8 b;
-	uint8 a;
-};
 
 BaseRenderer3D *makeOpenGL3DRenderer(BaseGame *inGame) {
 	return new BaseRenderOpenGL3D(inGame);
@@ -108,6 +94,12 @@ bool BaseRenderOpenGL3D::initRenderer(int width, int height, bool windowed) {
 	_simpleShadow[3].u = 1.0f;
 	_simpleShadow[3].v = 0.0f;
 
+	// filter post process: greyscale, sepia
+	glGenTextures(1, &_filterTexture);
+	glBindTexture(GL_TEXTURE_2D, _filterTexture);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, nullptr);
 
 
 	_windowed = !ConfMan.getBool("fullscreen");
@@ -123,7 +115,24 @@ bool BaseRenderOpenGL3D::initRenderer(int width, int height, bool windowed) {
 	return true;
 }
 
+bool BaseRenderOpenGL3D::flip() {
+	_lastTexture = nullptr;
+	postfilter();
+
+	// Disable blend mode and cull face to prevent interfere with backend renderer
+	glDisable(GL_BLEND);
+	glDisable(GL_CULL_FACE);
+
+	g_system->updateScreen();
+
+	_state = RSTATE_NONE;
+	return true;
+}
+
 bool BaseRenderOpenGL3D::fill(byte r, byte g, byte b, Common::Rect *rect) {
+	if(!_gameRef->_editorMode) {
+		glViewport(0, _height, _width, _height);
+	}
 	glClearColor(r / 255.0f, g / 255.0f, b / 255.0f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 	return true;
@@ -146,7 +155,7 @@ bool BaseRenderOpenGL3D::setup2D(bool force) {
 		glAlphaFunc(GL_GEQUAL, 0.0f);
 
 		glPolygonMode(GL_FRONT, GL_FILL);
-		glFrontFace(GL_CCW);
+		glFrontFace(GL_CCW);  // WME DX have CW
 		glEnable(GL_CULL_FACE);
 		glDisable(GL_STENCIL_TEST);
 
@@ -165,9 +174,6 @@ bool BaseRenderOpenGL3D::setup2D(bool force) {
 		// D3DTSS_MIPFILTER             = D3DTEXF_NONE
 		// D3DTSS_TEXCOORDINDEX         = 0
 		// D3DTSS_TEXTURETRANSFORMFLAGS = D3DTTFF_DISABLE
-
-		glViewport(0, 0, _width, _height);
-		setProjection2D();
 	}
 
 	return true;
@@ -191,12 +197,16 @@ bool BaseRenderOpenGL3D::setup3D(Camera3D *camera, bool force) {
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
 
+		// Disable blending for 3d rendering, it seems no need to enable it.
+		// It will be enabled in other places when needed.
+		// This is delta compared to original sources.
+		glDisable(GL_BLEND);
+
 		glEnable(GL_DEPTH_TEST);
 		glEnable(GL_LIGHTING);
 		glEnable(GL_ALPHA_TEST);
 		// WME uses 8 as a reference value and Direct3D expects it to be in the range [0, 255]
-		// 8 / 255 ~ 0.0313
-		glAlphaFunc(GL_GEQUAL, 0.0313f);
+		glAlphaFunc(GL_GEQUAL, 8 / 255.0f);
 
 		setAmbientLightRenderState();
 
@@ -256,7 +266,6 @@ bool BaseRenderOpenGL3D::setup3D(Camera3D *camera, bool force) {
 			glDisable(GL_FOG);
 		}
 
-		glViewport(_viewportRect.left, _height - _viewportRect.bottom, _viewportRect.width(), _viewportRect.height());
 		setProjection();
 	}
 
@@ -296,7 +305,7 @@ bool BaseRenderOpenGL3D::setupLines() {
 		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 		glDisable(GL_LIGHTING);
 		glDisable(GL_DEPTH_TEST);
-		glFrontFace(GL_CW);
+		glFrontFace(GL_CW); // WME DX have CCW
 		glEnable(GL_CULL_FACE);
 		glEnable(GL_BLEND);
 		glEnable(GL_ALPHA_TEST);
@@ -316,6 +325,8 @@ bool BaseRenderOpenGL3D::drawSpriteEx(BaseSurface *tex, const Wintermute::Rect32
 								  bool mirrorX, bool mirrorY) {
 
 	BaseSurfaceOpenGL3D *texture = dynamic_cast<BaseSurfaceOpenGL3D *>(tex);
+	if (!texture)
+		return false;
 
 	if (_spriteBatchMode) {
 		_batchTexture = texture;
@@ -338,9 +349,6 @@ bool BaseRenderOpenGL3D::drawSpriteEx(BaseSurface *tex, const Wintermute::Rect32
 	float texRight = (float)rect.right / (float)texWidth;
 	float texBottom = (float)rect.bottom / (float)texHeight;
 
-	float offset = _height / 2.0f;
-	float correctedYPos = (pos.y - offset) * -1.0f + offset;
-
 	if (mirrorX) {
 		SWAP(texLeft, texRight);
 	}
@@ -357,35 +365,41 @@ bool BaseRenderOpenGL3D::drawSpriteEx(BaseSurface *tex, const Wintermute::Rect32
 		commitSpriteBatch();
 	}
 
+	// Convert to OpenGL origin space
+	SWAP(texTop, texBottom);
+
 	// texture coords
 	vertices[0].u = texLeft;
-	vertices[0].v = texTop;
+	vertices[0].v = texBottom;
 
 	vertices[1].u = texLeft;
-	vertices[1].v = texBottom;
+	vertices[1].v = texTop;
 
 	vertices[2].u = texRight;
-	vertices[2].v = texTop;
+	vertices[2].v = texBottom;
 
 	vertices[3].u = texRight;
-	vertices[3].v = texBottom;
+	vertices[3].v = texTop;
+
+	float offset = _height / 2.0f;
+	float correctedYPos = (pos.y - offset) * -1.0f + offset;
 
 	// position coords
 	vertices[0].x = pos.x;
 	vertices[0].y = correctedYPos;
-	vertices[0].z = -0.9f;
+	vertices[0].z = 0.9f;
 
 	vertices[1].x = pos.x;
 	vertices[1].y = correctedYPos - height;
-	vertices[1].z = -0.9f;
+	vertices[1].z = 0.9f;
 
 	vertices[2].x = pos.x + width;
 	vertices[2].y = correctedYPos;
-	vertices[2].z = -0.9f;
+	vertices[2].z = 0.9f;
 
 	vertices[3].x = pos.x + width;
 	vertices[3].y = correctedYPos - height;
-	vertices[3].z = -0.9f;
+	vertices[3].z = 0.9f;
 
 	// not exactly sure about the color format, but this seems to work
 	byte a = RGBCOLGetA(color);
@@ -401,16 +415,9 @@ bool BaseRenderOpenGL3D::drawSpriteEx(BaseSurface *tex, const Wintermute::Rect32
 	}
 
 	if (angle != 0) {
-		Vector2 correctedRot(rot.x, (rot.y - offset) * -1.0f + offset);
-		Math::Matrix3 transform = build2dTransformation(correctedRot, angle);
-
-		for (int i = 0; i < 4; ++i) {
-			Math::Vector3d vertexPostion(vertices[i].x, vertices[i].y, 1.0f);
-			transform.transformVector(&vertexPostion);
-
-			vertices[i].x = vertexPostion.x();
-			vertices[i].y = vertexPostion.y();
-		}
+		DXVector2 sc(1.0f, 1.0f);
+		DXVector2 rotation(rot.x, (rot.y - (_height / 2.0f)) * -1.0f + (_height / 2.0f));
+		transformVertices(vertices, &rotation, &sc, degToRad(-angle));
 	}
 
 	if (_spriteBatchMode) {
@@ -419,7 +426,7 @@ bool BaseRenderOpenGL3D::drawSpriteEx(BaseSurface *tex, const Wintermute::Rect32
 		setSpriteBlendMode(blendMode);
 		if (alphaDisable) {
 			glDisable(GL_ALPHA_TEST);
-			//glDisable(GL_BLEND);
+			glDisable(GL_BLEND);
 		}
 
 		if (_lastTexture != texture) {
@@ -432,6 +439,8 @@ bool BaseRenderOpenGL3D::drawSpriteEx(BaseSurface *tex, const Wintermute::Rect32
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 			glEnable(GL_TEXTURE_2D);
 		}
+
+		setProjection2D();
 
 		glEnableClientState(GL_COLOR_ARRAY);
 		glEnableClientState(GL_VERTEX_ARRAY);
@@ -491,6 +500,44 @@ bool BaseRenderOpenGL3D::endSpriteBatch() {
 
 	_spriteBatchMode = false;
 	return commitSpriteBatch();
+}
+
+DXMatrix *BaseRenderOpenGL3D::buildMatrix(DXMatrix* out, const DXVector2 *centre, const DXVector2 *scaling, float angle) {
+	DXMatrix matrices[5];
+
+	DXMatrixTranslation(&matrices[0], -centre->_x, -centre->_y, 0);
+	DXMatrixScaling(&matrices[1], scaling->_x, scaling->_y, 1);
+	DXMatrixIdentity(&matrices[2]);
+	DXMatrixIdentity(&matrices[3]);
+	DXMatrixRotationZ(&matrices[2], angle);
+	DXMatrixTranslation(&matrices[3], centre->_x, centre->_y, 0);
+
+	matrices[4] = matrices[0] * matrices[1] * matrices[2] * matrices[3];
+	*out = matrices[4];
+
+	return out;
+}
+
+void BaseRenderOpenGL3D::transformVertices(struct SpriteVertex *vertices, const DXVector2 *centre, const DXVector2 *scaling, float angle) {
+	DXMatrix matTransf, matVerts, matNew;
+
+	buildMatrix(&matTransf, centre, scaling, angle);
+
+	int cr;
+	for (cr = 0; cr < 4; cr++) {
+		matVerts(cr, 0) = vertices[cr].x;
+		matVerts(cr, 1) = vertices[cr].y;
+		matVerts(cr, 2) = vertices[cr].z;
+		matVerts(cr, 3) = 1.0f;
+	}
+
+	matNew = matVerts * matTransf;
+
+	for (cr = 0; cr < 4; cr++) {
+		vertices[cr].x = matNew(cr, 0);
+		vertices[cr].y = matNew(cr, 1);
+		vertices[cr].z = matNew(cr, 2);
+	}
 }
 
 bool BaseRenderOpenGL3D::setProjection() {
@@ -555,8 +602,6 @@ bool BaseRenderOpenGL3D::drawLine(int x1, int y1, int x2, int y2, uint32 color) 
 }
 
 void BaseRenderOpenGL3D::fadeToColor(byte r, byte g, byte b, byte a) {
-	setProjection2D();
-
 	const int vertexSize = 16;
 	byte vertices[4 * vertexSize];
 	float *vertexCoords = reinterpret_cast<float *>(vertices);
@@ -600,6 +645,8 @@ void BaseRenderOpenGL3D::fadeToColor(byte r, byte g, byte b, byte a) {
 	glDisable(GL_TEXTURE_2D);
 	_lastTexture = nullptr;
 
+	setProjection2D();
+
 	glEnableClientState(GL_VERTEX_ARRAY);
 	glEnableClientState(GL_COLOR_ARRAY);
 
@@ -635,16 +682,29 @@ BaseImage *BaseRenderOpenGL3D::takeScreenshot() {
 }
 
 bool BaseRenderOpenGL3D::enableShadows() {
-	warning("BaseRenderOpenGL3D::enableShadows not implemented yet");
+	_gameRef->_supportsRealTimeShadows = false;
 	return true;
 }
 
 bool BaseRenderOpenGL3D::disableShadows() {
-	warning("BaseRenderOpenGL3D::disableShadows not implemented yet");
 	return true;
 }
 
 void BaseRenderOpenGL3D::displayShadow(BaseObject *object, const DXVector3 *lightPos, bool lightPosRelative) {
+	if (!_ready || !object || !lightPos)
+		return;
+
+	// redirect simple shadow if needed
+	bool simpleShadow = _gameRef->getMaxShadowType(object) <= SHADOW_SIMPLE;
+	if (!_gameRef->_supportsRealTimeShadows)
+		simpleShadow = true;
+	if (simpleShadow)
+		return renderSimpleShadow(object);
+
+	// TODO: to be implemented
+}
+
+void BaseRenderOpenGL3D::renderSimpleShadow(BaseObject *object) {
 	BaseSurface *shadowImage;
 	if (object->_shadowImage) {
 		shadowImage = object->_shadowImage;
@@ -655,7 +715,6 @@ void BaseRenderOpenGL3D::displayShadow(BaseObject *object, const DXVector3 *ligh
 	if (!shadowImage) {
 		return;
 	}
-
 
 	DXMatrix scale, trans, rot, finalm;
 	DXMatrixScaling(&scale, object->_shadowSize * object->_scale3D, 1.0f, object->_shadowSize * object->_scale3D);
@@ -786,7 +845,7 @@ void BaseRenderOpenGL3D::renderSceneGeometry(const BaseArray<AdWalkplane *> &pla
 	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 	glDisable(GL_LIGHTING);
 	glDisable(GL_DEPTH_TEST);
-	glFrontFace(GL_CW);
+	glFrontFace(GL_CW); // WME DX have CCW
 	glEnable(GL_BLEND);
 	glDisable(GL_ALPHA_TEST);
 	glDisable(GL_TEXTURE_2D);
@@ -844,6 +903,9 @@ void BaseRenderOpenGL3D::renderSceneGeometry(const BaseArray<AdWalkplane *> &pla
 		}
 	}
 
+	// This is delta compared to original sources.
+	glDisable(GL_BLEND);
+
 	glDisable(GL_COLOR_MATERIAL);
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 }
@@ -869,7 +931,7 @@ void BaseRenderOpenGL3D::renderShadowGeometry(const BaseArray<AdWalkplane *> &pl
 	glDisable(GL_TEXTURE_2D);
 	glBindTexture(GL_TEXTURE_2D, 0);
 
-	glFrontFace(GL_CW);
+	glFrontFace(GL_CW); // WME DX have CCW
 
 	// render blocks
 	for (uint i = 0; i < blocks.size(); i++) {
@@ -897,7 +959,7 @@ void BaseRenderOpenGL3D::renderShadowGeometry(const BaseArray<AdWalkplane *> &pl
 
 // implements D3D SetRenderState() D3DRS_CULLMODE - CCW
 void BaseRenderOpenGL3D::enableCulling() {
-	glFrontFace(GL_CW);
+	glFrontFace(GL_CW); // WME DX have CCW
 	glEnable(GL_CULL_FACE);
 }
 
@@ -925,11 +987,19 @@ bool BaseRenderOpenGL3D::setViewport3D(DXViewport *viewport) {
 }
 
 bool BaseRenderOpenGL3D::setProjection2D() {
+	DXMatrix matrix2D;
+	DXMatrixOrthoOffCenterLH(&matrix2D, 0, _width, 0, _height, 0.0f, 1.0f);
+
+	// convert DX [0, 1] depth range to OpenGL [-1, 1] depth range.
+	matrix2D.matrix._33 = 2.0f;
+	matrix2D.matrix._43 = -1.0f;
+
 	glMatrixMode(GL_PROJECTION);
-	glLoadIdentity();
-	glOrtho(0, _width, 0, _height, -1.0, 100.0);
+	glLoadMatrixf(matrix2D);
+
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
+
 	return true;
 }
 
@@ -954,12 +1024,132 @@ bool BaseRenderOpenGL3D::setViewTransform(const DXMatrix &transform) {
 // implements SetTransform() D3DTS_PROJECTION
 bool BaseRenderOpenGL3D::setProjectionTransform(const DXMatrix &transform) {
 	_projectionMatrix = transform;
+
+	// convert DX [0, 1] depth range to OpenGL [-1, 1] depth range.
+	DXMatrix finalMatrix = transform;
+	float range = 2.0f / (_farClipPlane - _nearClipPlane);
+	finalMatrix.matrix._33 = range;
+	finalMatrix.matrix._43 = -(_nearClipPlane + _farClipPlane) * range / 2;
+
 	glMatrixMode(GL_PROJECTION);
-	glLoadMatrixf(transform);
+	glLoadMatrixf(finalMatrix);
+
+	glMatrixMode(GL_MODELVIEW);
+
+	glViewport(_viewportRect.left, _height - _viewportRect.bottom, _viewportRect.width(), _viewportRect.height());
+
 	return true;
 }
 
-BaseSurface *Wintermute::BaseRenderOpenGL3D::createSurface() {
+void BaseRenderOpenGL3D::postfilter() {
+	if (_postFilterMode == kPostFilterOff)
+		return;
+
+	setup2D();
+	glViewport(0, 0, _width, _height);
+
+	glMatrixMode(GL_PROJECTION);
+	glLoadIdentity();
+
+	glMatrixMode(GL_TEXTURE);
+	glLoadIdentity();
+
+	glMatrixMode(GL_MODELVIEW);
+	glLoadIdentity();
+
+	if (_postFilterMode == kPostFilterBlackAndWhite ||
+		_postFilterMode == kPostFilterSepia) {
+		glDisable(GL_BLEND);
+		glDisable(GL_ALPHA_TEST);
+		glDisable(GL_CULL_FACE);
+
+
+		glEnable(GL_TEXTURE_2D);
+		glBindTexture(GL_TEXTURE_2D, _filterTexture);
+
+
+		glCopyTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 0, 0, _width, _height, 0);
+
+		glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_COMBINE);
+		glTexEnvi(GL_TEXTURE_ENV, GL_COMBINE_RGB, GL_DOT3_RGB);
+		GLfloat grayscaleWeights[] = {0.333f, 0.333f, 0.333f};
+		glTexEnvfv(GL_TEXTURE_ENV, GL_TEXTURE_ENV_COLOR, grayscaleWeights);
+		glTexEnvi(GL_TEXTURE_ENV, GL_SOURCE0_RGB, GL_TEXTURE);
+		glTexEnvi(GL_TEXTURE_ENV, GL_OPERAND0_RGB, GL_SRC_COLOR);
+		glTexEnvi(GL_TEXTURE_ENV, GL_SOURCE1_RGB, GL_CONSTANT);
+		glTexEnvi(GL_TEXTURE_ENV, GL_OPERAND1_RGB, GL_SRC_COLOR);
+
+		glBegin(GL_QUADS);
+		glTexCoord2f(0.0f, 0.0f); glVertex2f(-1.0f, -1.0f);
+		glTexCoord2f(1.0f, 0.0f); glVertex2f( 1.0f, -1.0f);
+		glTexCoord2f(1.0f, 1.0f); glVertex2f( 1.0f,  1.0f);
+		glTexCoord2f(0.0f, 1.0f); glVertex2f(-1.0f,  1.0f);
+		glEnd();
+
+
+		glCopyTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 0, 0, _width, _height, 0);
+
+		glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_COMBINE);
+		glTexEnvi(GL_TEXTURE_ENV, GL_COMBINE_RGB, GL_SUBTRACT);
+		GLfloat whiteColor[] = { 1.0f, 1.0f, 1.0f, 1.0f };
+		glTexEnvfv(GL_TEXTURE_ENV, GL_TEXTURE_ENV_COLOR, whiteColor);
+		glTexEnvi(GL_TEXTURE_ENV, GL_SOURCE0_RGB, GL_CONSTANT);
+		glTexEnvi(GL_TEXTURE_ENV, GL_OPERAND0_RGB, GL_SRC_COLOR);
+		glTexEnvi(GL_TEXTURE_ENV, GL_SOURCE1_RGB, GL_TEXTURE);
+		glTexEnvi(GL_TEXTURE_ENV, GL_OPERAND1_RGB, GL_SRC_COLOR);
+
+		glBegin(GL_QUADS);
+		glTexCoord2f(0.0f, 0.0f); glVertex2f(-1.0f, -1.0f);
+		glTexCoord2f(1.0f, 0.0f); glVertex2f( 1.0f, -1.0f);
+		glTexCoord2f(1.0f, 1.0f); glVertex2f( 1.0f,  1.0f);
+		glTexCoord2f(0.0f, 1.0f); glVertex2f(-1.0f,  1.0f);
+		glEnd();
+
+		glCopyTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 0, 0, _width, _height, 0);
+		
+		glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_COMBINE);
+		glTexEnvf(GL_TEXTURE_ENV, GL_COMBINE_RGB, GL_MODULATE);
+		GLfloat luminanceWeights[] = { 0.65f, 0.65f, 0.65f };
+		glTexEnvfv(GL_TEXTURE_ENV, GL_TEXTURE_ENV_COLOR, luminanceWeights);
+		glTexEnvi(GL_TEXTURE_ENV, GL_SOURCE0_RGB, GL_TEXTURE);
+		glTexEnvi(GL_TEXTURE_ENV, GL_OPERAND0_RGB, GL_SRC_COLOR);
+		glTexEnvi(GL_TEXTURE_ENV, GL_SOURCE1_RGB, GL_CONSTANT);
+		glTexEnvi(GL_TEXTURE_ENV, GL_OPERAND1_RGB, GL_SRC_COLOR);
+
+		glBegin(GL_QUADS);
+		glTexCoord2f(0.0f, 0.0f); glVertex2f(-1.0f, -1.0f);
+		glTexCoord2f(1.0f, 0.0f); glVertex2f( 1.0f, -1.0f);
+		glTexCoord2f(1.0f, 1.0f); glVertex2f( 1.0f,  1.0f);
+		glTexCoord2f(0.0f, 1.0f); glVertex2f(-1.0f,  1.0f);
+		glEnd();
+
+		if (_postFilterMode == kPostFilterSepia) {
+			glCopyTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 0, 0, _width, _height, 0);
+
+			glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_COMBINE);
+			glTexEnvi(GL_TEXTURE_ENV, GL_COMBINE_RGB, GL_MODULATE);
+			GLfloat sepiaWeights[] = { 1.0f, 0.88f, 0.71f, 1.0f };
+			glTexEnvfv(GL_TEXTURE_ENV, GL_TEXTURE_ENV_COLOR, sepiaWeights);
+			glTexEnvi(GL_TEXTURE_ENV, GL_SOURCE0_RGB, GL_TEXTURE);
+			glTexEnvi(GL_TEXTURE_ENV, GL_OPERAND0_RGB, GL_SRC_COLOR);
+			glTexEnvi(GL_TEXTURE_ENV, GL_SOURCE1_RGB, GL_CONSTANT);
+			glTexEnvi(GL_TEXTURE_ENV, GL_OPERAND1_RGB, GL_SRC_COLOR);
+
+			glBegin(GL_QUADS);
+			glTexCoord2f(0.0f, 0.0f); glVertex2f(-1.0f, -1.0f);
+			glTexCoord2f(1.0f, 0.0f); glVertex2f( 1.0f, -1.0f);
+			glTexCoord2f(1.0f, 1.0f); glVertex2f( 1.0f,  1.0f);
+			glTexCoord2f(0.0f, 1.0f); glVertex2f(-1.0f,  1.0f);
+			glEnd();
+
+		}
+
+		glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+		glDisable(GL_TEXTURE_2D);
+	}
+}
+
+BaseSurface *BaseRenderOpenGL3D::createSurface() {
 	return new BaseSurfaceOpenGL3D(_gameRef, this);
 }
 

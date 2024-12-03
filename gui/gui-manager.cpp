@@ -152,7 +152,7 @@ void GuiManager::computeScaleFactor() {
 	if (_theme)
 		_theme->setBaseResolution(_baseWidth, _baseHeight, _scaleFactor);
 
-	debug(3, "Setting %d x %d -> %d x %d -- %g", w, h, _baseWidth, _baseHeight, _scaleFactor);
+	debug(1, "Setting %d x %d -> %d x %d -- %g", w, h, _baseWidth, _baseHeight, _scaleFactor);
 }
 
 Common::Keymap *GuiManager::getKeymap() const {
@@ -737,6 +737,10 @@ void GuiManager::openDialog(Dialog *dialog) {
 		getTopDialog()->lostFocus();
 
 	_dialogStack.push(dialog);
+	// We were already ready to redraw a new dialog
+	// Redraw fully to ensure a proper draw of the whole stack
+	if (_redrawStatus == kRedrawOpenDialog)
+		_redrawStatus = kRedrawFull;
 	if (_redrawStatus != kRedrawFull)
 		_redrawStatus = kRedrawOpenDialog;
 
@@ -908,7 +912,10 @@ void GuiManager::processEvent(const Common::Event &event, Dialog *const activeDi
 
 void GuiManager::scheduleTopDialogRedraw() {
 	// Open/Close dialog redraws have higher priority, otherwise they may not be processed at all
-	if (_redrawStatus != kRedrawOpenDialog && _redrawStatus != kRedrawCloseDialog)
+	// Full redraw also has higher priority
+	if (_redrawStatus != kRedrawOpenDialog &&
+		_redrawStatus != kRedrawCloseDialog &&
+		_redrawStatus != kRedrawFull)
 		_redrawStatus = kRedrawTopDialog;
 }
 

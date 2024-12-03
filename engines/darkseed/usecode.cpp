@@ -260,11 +260,9 @@ void Darkseed::UseCode::useCode(int objNum) {
 	if ((162 < objNum) && (objNum < 169)) {
 		g_engine->playSound(47, 5, -1);
 	}
-	if (objNum == 175) {
+	if (objNum == 175) { // car horn
 		g_engine->playSound(39, 5, -1);
-		//		while (iVar2 = VOCPlaying(), iVar2 != 0) {
-		//			VOCPoll();
-		//		}
+		g_engine->waitForSpeechOrSfx();
 		_console->printTosText(719);
 		return;
 	}
@@ -312,7 +310,7 @@ void Darkseed::UseCode::useCode(int objNum) {
 		if (handTosIdx != 0 && handTosIdx < 979) {
 			_console->printTosText(handTosIdx);
 		} else if (handTosIdx > 978) {
-			// TODO genericResponse
+			genericResponse(2, objNum, handTosIdx);
 		}
 		if (objNum == 80) {
 			_console->printTosText(553 + (_objectVar[80] & 1));
@@ -334,7 +332,7 @@ void Darkseed::UseCode::useCode(int objNum) {
 			return;
 		}
 		if (objNum == 114) {
-			gancAnim();
+			g_engine->_animation->gancAnim();
 			return;
 		}
 		if ((objNum == 28) && (_objectVar[28] == 2)) {
@@ -638,17 +636,12 @@ void Darkseed::UseCode::useCode(int objNum) {
 			}
 		} else if ((objNum == 68) && (_objectVar[68] == 0)) {
 			if (_objectVar[12] == 2) {
-				if (true) {
-					if ((_objectVar[66] == 1) && (_objectVar[67] == 1)) {
-						g_engine->playSound(13, 5, -1);
-						_objectVar[68] = 1;
-						g_engine->_animation->setupOtherNspAnimation(0, 23);
-					} else {
-						_objectVar[68] = 2;
-					}
-				// TODO: Unreachable code
-				//} else {
-				//	_objectVar[68] = 0;
+				if ((_objectVar[66] == 1) && (_objectVar[67] == 1)) {
+					g_engine->playSound(13, 5, -1);
+					_objectVar[68] = 1;
+					g_engine->_animation->setupOtherNspAnimation(0, 23);
+				} else {
+					_objectVar[68] = 2;
 				}
 			} else {
 				_console->addTextLine("You touch the surface of the ornate sigil.");
@@ -1737,10 +1730,6 @@ void UseCode::putObjUnderPillow(int objNum) {
 	_console->printTosText(946);
 	_console->addToCurrentLine(Common::String::format("%s", g_engine->_objectVar.getObjectName(objNum)));
 	_console->printTosText(947);
-}
-
-void UseCode::gancAnim() {
-	error("implement gancAnim()"); // TODO
 }
 
 static constexpr bool diggingxflipTbl[12] = {

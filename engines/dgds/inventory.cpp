@@ -28,6 +28,7 @@
 #include "dgds/font.h"
 #include "dgds/request.h"
 #include "dgds/includes.h"
+#include "dgds/globals.h"
 
 namespace Dgds {
 
@@ -107,7 +108,15 @@ void Inventory::drawHeader(Graphics::ManagedSurface &surf) {
 	const DgdsFont *font = RequestData::getMenuFont();
 	const RequestData &r = _reqData._requests[0];
 
-	static const char *title = "INVENTORY";
+	static const char *title;
+
+	if (DgdsEngine::getInstance()->getGameLang() == Common::EN_ANY)
+		title = "INVENTORY";
+	else if (DgdsEngine::getInstance()->getGameLang() == Common::DE_DEU)
+		title = "INVENTAR";
+	else
+		error("Unsupported language %d", DgdsEngine::getInstance()->getGameLang());
+
 	int titleWidth = font->getStringWidth(title);
 	int y1 = r._rect.y + 7;
 	int x1 = r._rect.x + 112;
@@ -148,14 +157,25 @@ void Inventory::draw(Graphics::ManagedSurface &surf, int itemCount) {
 	_nextPageBtn->setVisible(needPageButtons);
 
 	//
-	// Decide whether the time buttons should be visible (only in Dragon)
+	// Decide whether the time buttons should be visible (only in Dragon and Willy Beamish)
+	// In Willy Beamish the buttons are controlled by a global.
 	//
-	if (gameId != GID_DRAGON) {
-		if (_clockSkipMinBtn)
-			_clockSkipMinBtn->setVisible(false);
-		if (_clockSkipHrBtn)
-			_clockSkipHrBtn->setVisible(false);
+	bool showTimeButtons;
+	switch (gameId) {
+		case GID_DRAGON:
+			showTimeButtons = true;
+			break;
+		case GID_WILLY:
+			showTimeButtons = static_cast<WillyGlobals *>(engine->getGameGlobals())->isDrawTimeSkipButtons();
+			break;
+		default:
+			showTimeButtons = false;
+			break;
 	}
+	if (_clockSkipMinBtn)
+		_clockSkipMinBtn->setVisible(showTimeButtons);
+	if (_clockSkipHrBtn)
+		_clockSkipHrBtn->setVisible(showTimeButtons);
 
 	//
 	// Decide whether the give-to and swap char buttons should be visible (only in China)
@@ -212,7 +232,7 @@ void Inventory::drawItems(Graphics::ManagedSurface &surf) {
 		return;
 
 	// TODO: does this need to be adjusted ever?
-	const Common::Rect drawMask(0, 0, 320, 200);
+	const Common::Rect drawMask(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
 	int offset = _itemOffset;
 	Common::Array<GameItem> &items = engine->getGDSScene()->getGameItems();
 	for (auto & item: items) {

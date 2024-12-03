@@ -22,6 +22,7 @@
 #include "m4/riddle/rooms/section6/room651.h"
 #include "m4/graphics/gr_series.h"
 #include "m4/riddle/vars.h"
+#include "m4/riddle/riddle.h"
 
 namespace M4 {
 namespace Riddle {
@@ -52,7 +53,7 @@ void Room651::init() {
 		break;
 	}
 
-	digi_play_loop("950_28c", 3);
+	digi_play_loop("950_s28c", 3);
 }
 
 void Room651::parser() {
@@ -64,7 +65,7 @@ void Room651::parser() {
 		} else {
 			if (_G(kernel).trigger == 6)
 				_G(flags)[V201] = 1;
-			sendWSMessage_multi(0);
+			sketchInJournal(0);
 		}
 
 		_G(player).command_ready = false;

@@ -175,6 +175,9 @@ bool DgdsChunkReader::isPacked() const {
 	case EX_BMP:
 		packed = (_id == ID_BIN || _id == ID_VGA);
 		break;
+	case EX_CDS:
+		packed = (_id == ID_TT3);
+		break;
 	case EX_GDS:
 	case EX_SDS:
 		packed = (_id == ID_SDS);
@@ -247,6 +250,10 @@ bool DgdsChunkReader::isPacked() const {
 		else if (strcmp(_idStr, "101:") == 0)
 			packed = true;
 		else if (strcmp(_idStr, "VGA:") == 0)
+			packed = true;
+		else if (strcmp(_idStr, "EGA:") == 0)
+			packed = true;
+		else if (strcmp(_idStr, "HCG:") == 0)
 			packed = true;
 		break;
 	case EX_TDS:
@@ -328,7 +335,7 @@ Common::SeekableReadStream *DgdsChunkReader::readStream() {
 		output = new Common::SeekableSubReadStream(_sourceStream, _startPos, _startPos + _size, DisposeAfterUse::NO);
 	}
 
-	//debug("    %s %u%c", _idStr, _size, (_container ? '+' : ' '));
+	//debug(1, "    %s %u%c", _idStr, _size, (_container ? '+' : ' '));
 	return output;
 }
 

@@ -56,6 +56,7 @@ void b_count(int nargs);
 void b_deleteAt(int nargs);
 void b_deleteOne(int nargs);
 void b_deleteProp(int nargs);
+void b_duplicateList(int nargs);
 void b_findPos(int nargs);
 void b_findPosNear(int nargs);
 void b_getaProp(int nargs);
@@ -187,6 +188,7 @@ void b_true(int nargs);
 void b_version(int nargs);
 
 void b_cast(int nargs);
+void b_castLib(int nargs);
 void b_script(int nargs);
 
 void b_numberofchars(int nargs);

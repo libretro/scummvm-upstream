@@ -48,7 +48,7 @@ public:
 
 	int getNumColors() const;
 
-	void initialize();
+	bool initialize();
 	void reset();
 	void update(int delta);
 	void updateWindowManager();
@@ -58,7 +58,7 @@ public:
 
 	void setupCursor(int &width, int &height, int &hotspotX, int &hotspotY, int &animate);
 
-	void setPalette(const byte *palette, uint size);
+	void setPaletteDirty();
 
 	const Graphics::Font *getFontByScummId(int32 id);
 

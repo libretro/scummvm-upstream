@@ -19,6 +19,9 @@
  *
  */
 
+#include "common/debug.h"
+
+#include "qdengine/qdengine.h"
 #include "qdengine/minigames/adv/common.h"
 #include "qdengine/minigames/adv/m_swap.h"
 #include "qdengine/minigames/adv/RunTime.h"
@@ -28,8 +31,8 @@ namespace QDEngine {
 
 typedef Rect<float, mgVect2f> Rectf;
 
-MinigameInterface *createGame() {
-	return new Swap;
+MinigameInterface *createMinigameSwap(MinigameManager *runtime) {
+	return new Swap(runtime);
 }
 
 enum {
@@ -49,64 +52,66 @@ const char *Swap::getStateName(int angle, bool selected) const {
 	static char buf[32];
 	buf[31] = 0;
 
-	xassert(angle >= 0 && angle < angles_);
+	assert(angle >= 0 && angle < _angles);
 
-	_snprintf(buf, 31, "%02d%s", angle + 1, selected ? selected_suf : "");
+	snprintf(buf, 31, "%02d%s", angle + 1, selected ? selected_suf : "");
 	return buf;
 }
 
-Swap::Swap() {
-	if (!getParameter("game_size", gameSize_, true) || gameSize_ < 2)
+Swap::Swap(MinigameManager *runtime) {
+	_runtime = runtime;
+
+	if (!_runtime->getParameter("game_size", _gameSize, true) || _gameSize < 2)
 		return;
 
-	if ((angles_ = getParameter("angles", 4)) < 1)
+	if ((_angles = _runtime->getParameter("angles", 4)) < 1)
 		return;
 
-	if ((rotateTimePeriod_ = getParameter("rotate_period", 86400.f)) < 10.f)
+	if ((_rotateTimePeriod = _runtime->getParameter("rotate_period", 86400.f)) < 10.f)
 		return;
-	nextRotateTime_ = g_runtime->getTime() + rotateTimePeriod_;
+	_nextRotateTime = _runtime->getTime() + _rotateTimePeriod;
 
-	const char *name_begin = g_runtime->parameter("obj_name_begin", "obj_");
+	/*const char *name_begin = */_runtime->parameter("obj_name_begin", "obj_");
 
-	char buf[128];
-	buf[127] = 0;
-
+	warning("STUB: Swap::Swap()");
+#if 0
 	XBuffer gameData;
 
-	for (int idx = 0; idx < gameSize_; ++idx) {
-		_snprintf(buf, 127, "%s%02d", name_begin, idx + 1);
+	for (int idx = 0; idx < _gameSize; ++idx) {
+		Common::String buf = Common::String::format("%s%02d", name_begin, idx + 1);
 
 		Node node(idx);
-		node.obj = g_runtime->getObject(buf);
+		node.obj = _runtime->getObject(buf.c_str());
 		node.angle = 0;
 		node.obj.setState(getStateName(node.angle, false));
-		nodes_.push_back(node);
+		_nodes.push_back(node);
 
 		gameData.write(node.obj->R());
 	}
 
-	if (!g_runtime->processGameData(gameData))
+	if (!_runtime->processGameData(gameData))
 		return;
 
-	positions_.resize(gameSize_);
-	for (int idx = 0; idx < gameSize_; ++idx)
-		gameData.read(positions_[idx]);
+	_positions.resize(_gameSize);
+	for (int idx = 0; idx < _gameSize; ++idx)
+		gameData.read(_positions[idx]);
+#endif
 
-	size_ = getParameter("element_size", g_runtime->getSize(nodes_[0].obj));
-	xassert(size_.x > 0.f && size_.y > 0.f && size_.x < 500.f && size_.y < 500.f);
-	debugC(2, kDebugMinigames, "element_size = (%6.2f,%6.2f)", size_.x, size_.y);
+	_size = _runtime->getParameter("element_size", _runtime->getSize(_nodes[0].obj));
+	assert(_size.x > 0.f && _size.y > 0.f && _size.x < 500.f && _size.y < 500.f);
+	debugC(2, kDebugMinigames, "element_size = (%6.2f,%6.2f)", _size.x, _size.y);
 
-	pickedItem_ = -1;
-	last1_ = last2_ = -1;
+	_pickedItem = -1;
+	_last1 = _last2 = -1;
 
-	if (g_runtime->debugMode()) {
-		last1_ = 0;
-		last2_ = 1;
-		rotate(last1_, last2_, false);
+	if (_runtime->debugMode()) {
+		_last1 = 0;
+		_last2 = 1;
+		rotate(_last1, _last2, false);
 	} else
 		for (int cnt = 0; cnt < 50; ++cnt) {
-			rotate(g_runtime->rnd(0, gameSize_ - 1), g_runtime->rnd(0, gameSize_ - 1), true, true);
-			swap(g_runtime->rnd(0, gameSize_ - 1), g_runtime->rnd(0, gameSize_ - 1), true);
+			rotate(_runtime->rnd(0, _gameSize - 1), _runtime->rnd(0, _gameSize - 1), true, true);
+			swap(_runtime->rnd(0, _gameSize - 1), _runtime->rnd(0, _gameSize - 1), true);
 		}
 
 
@@ -115,178 +120,176 @@ Swap::Swap() {
 }
 
 Swap::~Swap() {
-	Nodes::iterator it;
-	FOR_EACH(nodes_, it)
-	g_runtime->release(it->obj);
+	for (auto &it : _nodes)
+		_runtime->release(it.obj);
 
 }
 
 void Swap::quant(float dt) {
-	if (pickedItem_ >= 0)
-		g_runtime->setGameHelpVariant(1);
-	else if (last1_ >= 0)
-		g_runtime->setGameHelpVariant(2);
+	if (_pickedItem >= 0)
+		_runtime->setGameHelpVariant(1);
+	else if (_last1 >= 0)
+		_runtime->setGameHelpVariant(2);
 	else
-		g_runtime->setGameHelpVariant(0);
+		_runtime->setGameHelpVariant(0);
 
-	if (g_runtime->getTime() > nextRotateTime_) {
-		int item1 = g_runtime->rnd(0, gameSize_ - 1);
-		int item2 = g_runtime->rnd(0, gameSize_ - 1);
-		if (item1 != last1_ && item1 != last2_ && item1 != pickedItem_ && item2 != last1_ && item2 != last2_ && item2 != pickedItem_) {
-			nextRotateTime_ = g_runtime->getTime() + rotateTimePeriod_;
+	if (_runtime->getTime() > _nextRotateTime) {
+		int item1 = _runtime->rnd(0, _gameSize - 1);
+		int item2 = _runtime->rnd(0, _gameSize - 1);
+		if (item1 != _last1 && item1 != _last2 && item1 != _pickedItem && item2 != _last1 && item2 != _last2 && item2 != _pickedItem) {
+			_nextRotateTime = _runtime->getTime() + _rotateTimePeriod;
 			rotate(item1, item2, false, true);
-			g_runtime->event(EVENT_AUTO_ROTATE, mgVect2f(400, 300));
+			_runtime->event(EVENT_AUTO_ROTATE, mgVect2f(400, 300));
 			return;
 		}
 	}
 
-	mgVect2f mouse = g_runtime->mousePosition();
+	mgVect2f mouse = _runtime->mousePosition();
 
 	int hovPlace = -1;  // Номер места которое сейчас под мышкой
-	if (pickedItem_ == -1) {
-		Nodes::iterator it;
-		FOR_EACH(nodes_, it)
-		if (it->obj.hit(mouse)) {
-			hovPlace = distance(nodes_.begin(), it);
-			break;
-		}
+	if (_pickedItem == -1) {
+		for (auto &it : _nodes)
+			if (it.obj.hit(mouse)) {
+				hovPlace = Common::distance(_nodes.begin(), &it);
+				break;
+			}
 	}
 	if (hovPlace == -1)
-		for (int idx = 0; idx < gameSize_; ++idx) {
-			Rectf rect(size_ * 0.9f);
-			rect.center(g_runtime->world2game(position(idx)));
+		for (int idx = 0; idx < _gameSize; ++idx) {
+			Rectf rect(_size * 0.9f);
+			rect.center(_runtime->world2game(position(idx)));
 			if (rect.point_inside(mouse)) {
 				hovPlace = idx;
 				break;
 			}
 		}
 
-	if (g_runtime->mouseLeftPressed()) {
+	if (_runtime->mouseLeftPressed()) {
 		if (hovPlace >= 0) { // клик по полю
-			if (pickedItem_ == -1) { // мышь пустая, берем
+			if (_pickedItem == -1) { // мышь пустая, берем
 				deactivate();
-				g_runtime->event(EVENT_GET, mouse);
-				pickedItem_ = hovPlace;
-			} else if (pickedItem_ == hovPlace) { // вернуть на место
-				g_runtime->event(EVENT_RETURN, mouse);
-				put(pickedItem_, false);
-				pickedItem_ = -1;
+				_runtime->event(EVENT_GET, mouse);
+				_pickedItem = hovPlace;
+			} else if (_pickedItem == hovPlace) { // вернуть на место
+				_runtime->event(EVENT_RETURN, mouse);
+				put(_pickedItem, false);
+				_pickedItem = -1;
 			} else { // поменять местами
-				last1_ = pickedItem_;
-				last2_ = hovPlace;
-				swap(last1_, last2_, false);
-				pickedItem_ = -1;
+				_last1 = _pickedItem;
+				_last2 = hovPlace;
+				swap(_last1, _last2, false);
+				_pickedItem = -1;
 			}
 		} else { // пустой клик мимо игрового поля
 			deactivate();
-			g_runtime->event(EVENT_CLICK, mouse);
+			_runtime->event(EVENT_CLICK, mouse);
 		}
-	} else if (g_runtime->mouseRightPressed()) {
-		if (pickedItem_ >= 0) // если на мыши фрагмент ничего не делаем
-			g_runtime->event(EVENT_CLICK, mouse);
-		else if (hovPlace == last1_ || hovPlace == last2_) // клик по выделенным
-			rotate(last1_, last2_, false);
+	} else if (_runtime->mouseRightPressed()) {
+		if (_pickedItem >= 0) // если на мыши фрагмент ничего не делаем
+			_runtime->event(EVENT_CLICK, mouse);
+		else if (hovPlace == _last1 || hovPlace == _last2) // клик по выделенным
+			rotate(_last1, _last2, false);
 		else // пустой клик мимо активного места
-			g_runtime->event(EVENT_CLICK, mouse);
+			_runtime->event(EVENT_CLICK, mouse);
 	}
 
-	if (pickedItem_ >= 0)
-		nodes_[pickedItem_].obj->set_R(g_runtime->game2world(mouse, -5000));
+	if (_pickedItem >= 0)
+		_nodes[_pickedItem].obj->set_R(_runtime->game2world(mouse, -5000));
 
 	int idx = 0;
-	for (; idx < gameSize_; ++idx)
+	for (; idx < _gameSize; ++idx)
 		if (!testPlace(idx))
 			break;
 
-	if (idx == nodes_.size()) {
+	if (idx == (int)_nodes.size()) {
 		deactivate();
 		setState(MinigameInterface::GAME_WIN);
 	}
 }
 
 const mgVect3f &Swap::position(int num) const {
-	xassert(num >= 0 && num < positions_.size());
-	return positions_[num];
+	assert(num >= 0 && num < (int)_positions.size());
+	return _positions[num];
 }
 
 void Swap::put(int item, bool hl) {
-	xassert(item >= 0 && item < nodes_.size());
-	nodes_[item].obj->set_R(position(item));
-	nodes_[item].obj.setState(getStateName(nodes_[item].angle, hl));
+	assert(item >= 0 && item < (int)_nodes.size());
+	_nodes[item].obj->set_R(position(item));
+	_nodes[item].obj.setState(getStateName(_nodes[item].angle, hl));
 
 }
 
 void Swap::deactivate() {
-	if (last1_ >= 0) {
-		xassert(last2_ >= 0);
-		put(last1_, false);
-		put(last2_, false);
+	if (_last1 >= 0) {
+		assert(_last2 >= 0);
+		put(_last1, false);
+		put(_last2, false);
 	}
-	last1_ = -1;
-	last2_ = -1;
+	_last1 = -1;
+	_last2 = -1;
 }
 
 bool Swap::testPlace(int item) const {
-	xassert(item >= 0 && item < nodes_.size());
-	return nodes_[item].home == item && nodes_[item].angle == 0;
+	assert(item >= 0 && item < (int)_nodes.size());
+	return _nodes[item].home == item && _nodes[item].angle == 0;
 }
 
 void Swap::swap(int item1, int item2, bool silent) {
-	xassert(item1 >= 0 && item1 < nodes_.size());
-	xassert(item2 >= 0 && item2 < nodes_.size());
+	assert(item1 >= 0 && item1 < (int)_nodes.size());
+	assert(item2 >= 0 && item2 < (int)_nodes.size());
 
 	bool res = false;
 	if (!silent) {
 		if (testPlace(item1)) { // сняли со своего места
-			g_runtime->event(EVENT_GET_RIGHT, g_runtime->world2game(position(item1)));
+			_runtime->event(EVENT_GET_RIGHT, _runtime->world2game(position(item1)));
 			res = true;
 		}
 		if (testPlace(item2)) { // сняли со своего места
-			g_runtime->event(EVENT_GET_RIGHT, g_runtime->world2game(position(item2)));
+			_runtime->event(EVENT_GET_RIGHT, _runtime->world2game(position(item2)));
 			res = true;
 		}
 	}
 
-	SWAP(nodes_[item1], nodes_[item2]);
+	SWAP(_nodes[item1], _nodes[item2]);
 	put(item1, !silent);
 	put(item2, !silent);
 
 	if (!silent) {
 		if (testPlace(item1)) { // оказалась при обмене на своем месте
-			g_runtime->event(EVENT_PUT_RIGHT, g_runtime->world2game(position(item1)));
+			_runtime->event(EVENT_PUT_RIGHT, _runtime->world2game(position(item1)));
 			res = true;
 		}
 		if (testPlace(item2)) { // положили на свое свое место
-			g_runtime->event(EVENT_PUT_RIGHT, g_runtime->world2game(position(item2)));
+			_runtime->event(EVENT_PUT_RIGHT, _runtime->world2game(position(item2)));
 			res = true;
 		}
 		if (!res) // просто обменяли
-			g_runtime->event(EVENT_SWAP, g_runtime->mousePosition());
+			_runtime->event(EVENT_SWAP, _runtime->mousePosition());
 	}
 }
 
 void Swap::rotate(int item1, int item2, bool silent, bool avto) {
-	xassert(item1 >= 0 && item1 < nodes_.size());
-	xassert(item2 >= 0 && item2 < nodes_.size());
+	assert(item1 >= 0 && item1 < (int)_nodes.size());
+	assert(item2 >= 0 && item2 < (int)_nodes.size());
 
 	if (!silent) {
 		if (testPlace(item1)) // сняли со своего места
-			g_runtime->event(EVENT_GET_RIGHT, g_runtime->world2game(position(item1)));
+			_runtime->event(EVENT_GET_RIGHT, _runtime->world2game(position(item1)));
 		if (testPlace(item2)) // сняли со своего места
-			g_runtime->event(EVENT_GET_RIGHT, g_runtime->world2game(position(item2)));
+			_runtime->event(EVENT_GET_RIGHT, _runtime->world2game(position(item2)));
 	}
 
-	nodes_[item1].angle = (nodes_[item1].angle + 1) % angles_;
-	nodes_[item2].angle = (nodes_[item2].angle + 1) % angles_;
+	_nodes[item1].angle = (_nodes[item1].angle + 1) % _angles;
+	_nodes[item2].angle = (_nodes[item2].angle + 1) % _angles;
 	put(item1, !avto);
 	put(item2, !avto);
 
 	if (!silent) {
 		if (testPlace(item1)) // оказалась при обмене на своем месте
-			g_runtime->event(EVENT_PUT_RIGHT, g_runtime->world2game(position(item1)));
+			_runtime->event(EVENT_PUT_RIGHT, _runtime->world2game(position(item1)));
 		if (testPlace(item2)) // положили на свое свое место
-			g_runtime->event(EVENT_PUT_RIGHT, g_runtime->world2game(position(item2)));
-		g_runtime->event(EVENT_ROTATE, g_runtime->mousePosition());
+			_runtime->event(EVENT_PUT_RIGHT, _runtime->world2game(position(item2)));
+		_runtime->event(EVENT_ROTATE, _runtime->mousePosition());
 	}
 }
 

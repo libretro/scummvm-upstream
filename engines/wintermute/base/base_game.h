@@ -31,6 +31,7 @@
 #include "engines/wintermute/base/base_object.h"
 #include "engines/wintermute/base/base_game_custom_actions.h"
 #include "engines/wintermute/base/timer.h"
+#include "engines/wintermute/ext/plugin_event.h"
 #include "engines/wintermute/persistent.h"
 #include "engines/wintermute/coll_templ.h"
 #include "engines/wintermute/math/rect32.h"
@@ -405,6 +406,7 @@ protected:
 
 public:
 	void autoSaveOnExit();
+	PluginEvent &pluginEvents() { return _pluginEvents; }
 
 #ifdef ENABLE_HEROCRAFT
 private:
@@ -415,6 +417,7 @@ private:
 	uint8 getFilePartChecksumHc(const char *filename, uint32 begin, uint32 end);
 #endif
 
+	PluginEvent _pluginEvents;
 };
 
 } // End of namespace Wintermute

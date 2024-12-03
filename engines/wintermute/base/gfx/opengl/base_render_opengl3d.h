@@ -29,9 +29,6 @@
 
 #include "graphics/transform_struct.h"
 
-#include "math/matrix4.h"
-#include "math/ray.h"
-
 #if defined(USE_OPENGL_GAME)
 
 #include "graphics/opengl/system_headers.h"
@@ -40,18 +37,35 @@ namespace Wintermute {
 
 class BaseSurfaceOpenGL3D;
 
-struct SimpleShadowVertex {
-	float u;
-	float v;
-	float nx;
-	float ny;
-	float nz;
-	float x;
-	float y;
-	float z;
-};
-
 class BaseRenderOpenGL3D : public BaseRenderer3D {
+	friend class BaseSurfaceOpenGL3D;
+	friend class Mesh3DSOpenGL;
+	friend class XMeshOpenGL;
+	friend class ShadowVolumeOpenGL;
+
+	struct SpriteVertex {
+		float x;
+		float y;
+		float z;
+		float u;
+		float v;
+		uint8 r;
+		uint8 g;
+		uint8 b;
+		uint8 a;
+	};
+
+	struct SimpleShadowVertex {
+		float u;
+		float v;
+		float nx;
+		float ny;
+		float nz;
+		float x;
+		float y;
+		float z;
+	};
+
 public:
 	BaseRenderOpenGL3D(BaseGame *inGame = nullptr);
 	~BaseRenderOpenGL3D() override;
@@ -78,13 +92,17 @@ public:
 	BaseImage *takeScreenshot() override;
 	void fadeToColor(byte r, byte g, byte b, byte a) override;
 
+	bool flip() override;
 	bool fill(byte r, byte g, byte b, Common::Rect *rect = nullptr) override;
 
 	bool setViewport(int left, int top, int right, int bottom) override;
 	bool drawLine(int x1, int y1, int x2, int y2, uint32 color) override;
 
+	DXMatrix *buildMatrix(DXMatrix* out, const DXVector2 *centre, const DXVector2 *scaling, float angle);
+	void transformVertices(struct SpriteVertex *vertices, const DXVector2 *centre, const DXVector2 *scaling, float angle);
+
 	bool setProjection() override;
-	bool setProjection2D() override;
+	bool setProjection2D();
 	bool setWorldTransform(const DXMatrix &transform) override;
 	bool setViewTransform(const DXMatrix &transform) override;
 	bool setProjectionTransform(const DXMatrix &transform) override;
@@ -130,10 +148,16 @@ public:
 
 	bool setViewport3D(DXViewport *viewport) override;
 
+	void postfilter() override;
+	void setPostfilter(PostFilter postFilter) override { _postFilterMode = postFilter; };
+
 private:
+	void renderSimpleShadow(BaseObject *object);
+
 	SimpleShadowVertex _simpleShadow[4]{};
 	Common::Array<DXVector4> _lightPositions;
 	Common::Array<DXVector3> _lightDirections;
+	GLuint _filterTexture;
 };
 
 } // wintermute namespace

@@ -34,14 +34,6 @@ class Keymap;
 
 namespace Kyra {
 
-const int8 ITEM_TYPE_BOW = 0;
-const int8 ITEM_TYPE_LONG_SWORD = 1;
-const int8 ITEM_TYPE_SHORT_SWORD = 2;
-const int8 ITEM_TYPE_SLING = 7;
-const int8 ITEM_TYPE_ARROW = 16;
-const int8 ITEM_TYPE_ROCK= 18;
-const int8 ITEM_TYPE_RATIONS = 31;
-
 #define releaseShpArr(shapes, num) \
 if (shapes) { \
 	for (int iii = 0; iii < num; iii++) { \
@@ -144,6 +136,7 @@ struct EoBCharacter {
 };
 
 struct EoBItem {
+	EoBItem() : nameUnid(0), nameId(0), flags(0), icon(0), type(0), pos(0), block(-1), next(0), prev(0), level(0), value(0) {}
 	uint8 nameUnid;
 	uint8 nameId;
 	uint8 flags;
@@ -499,7 +492,7 @@ protected:
 
 	void reloadWeaponSlot(int charIndex, int slotIndex, int itemType, int arrowOrDagger);
 
-	EoBItem *_items;
+	Common::Array<EoBItem> _items;
 	uint16 _numItems;
 	EoBItemType *_itemTypes;
 	char **_itemNames;

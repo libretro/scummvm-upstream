@@ -123,10 +123,13 @@ SoundGenPCJr::SoundGenPCJr(AgiBase *vm, Audio::Mixer *pMixer) : SoundGen(vm, pMi
 	memset(_channel, 0, sizeof(_channel));
 	memset(_tchannel, 0, sizeof(_tchannel));
 
-	_mixer->playStream(Audio::Mixer::kMusicSoundType, _soundHandle, this, -1, Audio::Mixer::kMaxChannelVolume, 0, DisposeAfterUse::NO, true);
-
 	_v1data = nullptr;
 	_v1size = 0;
+	_v1duration = 0;
+
+	_reg = 0;
+
+	_mixer->playStream(Audio::Mixer::kMusicSoundType, _soundHandle, this, -1, Audio::Mixer::kMaxChannelVolume, 0, DisposeAfterUse::NO, true);
 }
 
 SoundGenPCJr::~SoundGenPCJr() {
@@ -136,6 +139,8 @@ SoundGenPCJr::~SoundGenPCJr() {
 }
 
 void SoundGenPCJr::play(int resnum) {
+	Common::StackLock lock(_mutex);
+
 	PCjrSound *pcjrSound = (PCjrSound *)_vm->_game.sounds[resnum];
 
 	for (int i = 0; i < CHAN_MAX; i++) {
@@ -145,6 +150,8 @@ void SoundGenPCJr::play(int resnum) {
 		_channel[i].dissolveCount = 0xFFFF;
 		_channel[i].attenuation = 0;
 		_channel[i].attenuationCopy = 0;
+		_channel[i].genType = kGenSilence;
+		_channel[i].freqCount = 0;
 
 		_tchannel[i].avail = 1;
 		_tchannel[i].noteCount = 0;
@@ -153,16 +160,24 @@ void SoundGenPCJr::play(int resnum) {
 		_tchannel[i].atten = 0xF;   // silence
 		_tchannel[i].genType = kGenTone;
 		_tchannel[i].genTypePrev = -1;
+		_tchannel[i].count = 0;
+		_tchannel[i].scale = 0;
+		_tchannel[i].sign = 0;
+		_tchannel[i].noiseState = 0;
+		_tchannel[i].feedback = 0;
 	}
 
 	_v1data = pcjrSound->getData() + 1;
 	_v1size = pcjrSound->getLength() - 1;
+	_v1duration = 0;
+
+	_reg = 0;
 }
 
 void SoundGenPCJr::stop() {
-	int i;
+	Common::StackLock lock(_mutex);
 
-	for (i = 0; i < CHAN_MAX; i++) {
+	for (int i = 0; i < CHAN_MAX; i++) {
 		_channel[i].avail = 0;
 		_tchannel[i].avail = 0;
 	}
@@ -291,10 +306,11 @@ int SoundGenPCJr::getNextNote_v2(int ch) {
 }
 
 int SoundGenPCJr::getNextNote_v1(int ch) {
-	static int duration = 0;
-
 	byte *data = _v1data;
 	uint32 len = _v1size;
+
+	if (!_vm->getFlag(VM_FLAG_SOUND_ON))
+		return -1;
 
 	if (len <= 0 || data == nullptr) {
 		_channel[ch].avail = 0;
@@ -304,11 +320,11 @@ int SoundGenPCJr::getNextNote_v1(int ch) {
 	}
 
 	// In the V1 player the default duration for a row is 3 ticks
-	if (duration > 0) {
-		duration--;
+	if (_v1duration > 0) {
+		_v1duration--;
 		return 0;
 	}
-	duration = 3 * CHAN_MAX;
+	_v1duration = 3 * CHAN_MAX;
 
 	// Otherwise fetch a row of data for all channels
 	while (*data) {
@@ -326,13 +342,11 @@ int SoundGenPCJr::getNextNote_v1(int ch) {
 }
 
 void SoundGenPCJr::writeData(uint8 val) {
-	static int reg = 0;
-
 	debugC(5, kDebugLevelSound, "writeData(%.2X)", val);
 
 	if ((val & 0x90) == 0x90) {
-		reg = (val >> 5) & 0x3;
-		_channel[reg].attenuation = val & 0xF;
+		_reg = (val >> 5) & 0x3;
+		_channel[_reg].attenuation = val & 0xF;
 	} else if ((val & 0xF0) == 0xE0) {
 		_channel[3].genType = (val & 0x4) ? kGenWhite : kGenPeriod;
 		int noiseFreq = val & 0x03;
@@ -353,11 +367,11 @@ void SoundGenPCJr::writeData(uint8 val) {
 			break;
 		}
 	} else if (val & 0x80) {
-		reg = (val >> 5) & 0x3;
-		_channel[reg].freqCount = val & 0xF;
-		_channel[reg].genType = kGenTone;
+		_reg = (val >> 5) & 0x3;
+		_channel[_reg].freqCount = val & 0xF;
+		_channel[_reg].genType = kGenTone;
 	} else {
-		_channel[reg].freqCount |= (val & 0x3F) << 4;
+		_channel[_reg].freqCount |= (val & 0x3F) << 4;
 	}
 }
 
@@ -533,8 +547,7 @@ int SoundGenPCJr::fillNoise(ToneChan *t, int16 *buf, int len) {
 }
 
 int SoundGenPCJr::readBuffer(int16 *stream, const int len) {
-	int streamCount;
-	int16 *sPtr, *cPtr;
+	Common::StackLock lock(_mutex);
 
 	if (_chanAllocated < len) {
 		free(_chanData);
@@ -551,9 +564,9 @@ int SoundGenPCJr::readBuffer(int16 *stream, const int len) {
 		// get channel data(chan.userdata)
 		if (chanGen(i, _chanData, len) == 0) {
 			// divide by number of channels then add to stream
-			streamCount = len;
-			sPtr = stream;
-			cPtr = _chanData;
+			int streamCount = len;
+			int16 *sPtr = stream;
+			int16 *cPtr = _chanData;
 
 			while (streamCount--)
 				*(sPtr++) += *(cPtr++) / CHAN_MAX;

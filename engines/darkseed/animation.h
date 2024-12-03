@@ -52,6 +52,7 @@ public:
 	void dCopAnim();
 	void sargoAnim();
 	void keeperAdmin();
+	void gancAnim();
 	void stuffPlayer();
 	void runDrekethSequence();
 	void libAnim(bool pickingUpReservedBook);
@@ -59,6 +60,7 @@ public:
 	void setupOtherNspAnimation(int nspAnimIdx, int animId);
 private:
 	void adddrekbutt();
+	void wonGame();
 };
 
 } // End of namespace Darkseed

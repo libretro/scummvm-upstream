@@ -339,6 +339,7 @@ void ScummEngine::beginTextInput() {
 	Common::Keymap *engineDefault = keymapper->getKeymap("engine-default");
 
 	engineDefault->setEnabled(false);
+	_system->setFeatureState(OSystem::kFeatureVirtualKeyboard, true);
 }
 
 void ScummEngine::endTextInput() {
@@ -346,6 +347,7 @@ void ScummEngine::endTextInput() {
 	Common::Keymap *engineDefault = keymapper->getKeymap("engine-default");
 
 	engineDefault->setEnabled(true);
+	_system->setFeatureState(OSystem::kFeatureVirtualKeyboard, false);
 }
 
 void ScummEngine::parseEvents() {
@@ -680,7 +682,7 @@ void ScummEngine::waitForBannerInput(int32 waitTime, Common::KeyState &ks, bool 
 				return;
 			}
 
- 			validKey = ks.keycode != Common::KEYCODE_INVALID &&
+			validKey = ks.keycode != Common::KEYCODE_INVALID &&
 					   ks.keycode != Common::KEYCODE_LALT    &&
 					   ks.keycode != Common::KEYCODE_RALT    &&
 					   ks.keycode != Common::KEYCODE_LCTRL   &&

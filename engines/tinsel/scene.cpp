@@ -46,6 +46,7 @@
 #include "tinsel/sound.h"	// stopAllSamples()
 #include "tinsel/sysvar.h"
 #include "tinsel/token.h"
+#include "tinsel/noir/spriter.h"
 
 #include "common/memstream.h"
 #include "common/textconsole.h"
@@ -543,7 +544,15 @@ void SetView(int sceneId, int scale) {
 	CAMERA_STRUC *pCamera = (CAMERA_STRUC *)_vm->_handle->LockMem(g_tempStruc.hCamera);
 	for (i = 0; i < g_tempStruc.numCameras; ++i, ++pCamera) {
 		if (sceneId == (int)FROM_32(pCamera->sceneId)) {
-			// set camera
+			_vm->_spriter->SetCamera(
+				FROM_32(pCamera->rotX),
+				FROM_32(pCamera->rotY),
+				FROM_32(pCamera->rotZ),
+				FROM_32(pCamera->posX * SysVar(SV_SPRITER_SCALE)),
+				FROM_32(-pCamera->posY * SysVar(SV_SPRITER_SCALE)),
+				FROM_32(-pCamera->posZ * SysVar(SV_SPRITER_SCALE)),
+				FROM_32(pCamera->aperture)
+			);
 			SetSysVar(SV_SPRITER_SCENE_ID, sceneId);
 			break;
 		}
@@ -557,16 +566,16 @@ void SetView(int sceneId, int scale) {
 	LIGHT_STRUC *pLight = (LIGHT_STRUC *)_vm->_handle->LockMem(g_tempStruc.hLight);
 	for (i = 0; i < g_tempStruc.numLights; ++i, ++pLight) {
 		if (sceneId == (int)FROM_32(pLight->sceneId)) {
-			// set light
+			// TODO: Load lights
 			break;
 		}
 	}
 
 	if (i == g_tempStruc.numLights) {
-		// use default light
+		// if no lights are present use the default light
 	}
 
-	//update ground plane
+	// TODO: Update the ground plane
 }
 
 } // End of namespace Tinsel

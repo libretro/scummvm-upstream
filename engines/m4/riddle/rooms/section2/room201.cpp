@@ -126,8 +126,8 @@ void Room201::init() {
 					triggerMachineByHashCallback, "MC");
 				series_place_sprite("candleman shadow4", 0, 200, 238, 73, 0xf00);
 				sendWSMessage(1, _mei2, _meiHandHip, 22, 22, 2000, _meiHandHip, 22, 22, 0);
-				_val5 = 2;
-				_val6 = 2;
+				_meiMode = 2;
+				_meiShould = 2;
 				_trigger9 = -1;
 				_val8 = -1;
 				_val9 = -1;
@@ -355,13 +355,13 @@ void Room201::daemon() {
 		break;
 
 	case 210:
-		_val6 = 3;
+		_meiShould = 3;
 		digi_play("201m01", 1, 255, 215);
 		break;
 
 	case 215:
 		_ctr1 = 0;
-		_val6 = 0;
+		_meiShould = 0;
 		setGlobals1(_ripTalk, 1, 7, 1, 7, 1);
 		sendWSMessage_110000(217);
 		digi_play("201r02", 1, 255, 217);
@@ -378,12 +378,12 @@ void Room201::daemon() {
 
 	case 220:
 		series_unload(_ripTalk);
-		_val6 = 3;
+		_meiShould = 3;
 		digi_play("201m02", 1, 255, 230);
 		break;
 
 	case 230:
-		_val6 = 0;
+		_meiShould = 0;
 		kernel_timing_trigger(120, 235);
 		break;
 
@@ -419,17 +419,17 @@ void Room201::daemon() {
 
 	case 260:
 		_agentShould = 0;
-		_val6 = 4;
+		_meiShould = 4;
 		digi_play("201m03", 1, 255, 270);
 		break;
 
 	case 270:
-		_val6 = 0;
+		_meiShould = 0;
 		_trigger9 = kernel_trigger_create(279);
 		break;
 
 	case 279:
-		_val6 = 2;
+		_meiShould = 2;
 		ws_walk(356, 256, nullptr, 280, 3);
 		break;
 
@@ -460,7 +460,7 @@ void Room201::daemon() {
 		_ripHandChin = series_load("RIP TREK HAND CHIN POS3");
 		setGlobals1(_ripHandChin, 1, 14, 14, 14);
 		sendWSMessage_110000(320);
-		digi_play(_G(flags)[GLB_TEMP_2] == 1 ? "201r05" : "201r06", 1, 255, 320);
+		digi_play(_G(flags)[V008] == 1 ? "201r05" : "201r06", 1, 255, 320);
 		break;
 
 	case 320:
@@ -599,22 +599,22 @@ void Room201::daemon() {
 		break;
 
 	case 1003:
-		_conv2 = 6;
+		_ripleyShould = 6;
 		_trigger4 = kernel_trigger_create(1004);
 		break;
 
 	case 1004:
-		_conv2 = 7;
+		_ripleyShould = 7;
 		_trigger5 = kernel_trigger_create(1005);
 		break;
 
 	case 1005:
-		_conv2 = 8;
+		_ripleyShould = 8;
 		digi_play("201r03", 1, 255, 1010);
 		break;
 
 	case 1010:
-		_conv2 = 7;
+		_ripleyShould = 7;
 		_agentShould = 0;
 		_trigger10 = kernel_trigger_create(1030);
 		break;
@@ -653,7 +653,7 @@ void Room201::daemon() {
 			kernel_timing_trigger(1, 9200);
 		} else {
 			kernel_timing_trigger(15, 1073);
-			_conv2 = 6;
+			_ripleyShould = 6;
 		}
 		break;
 
@@ -698,22 +698,22 @@ void Room201::daemon() {
 		sendWSMessage_10000(1, _mei2, _meiWalk, 1, 1, 2000, _meiWalk, 1, 1, 0);
 		sendWSMessage_60000(_mei0);
 		kernel_timing_trigger(1, 9300);
-		_val5 = _val6 = 0;
+		_meiMode = _meiShould = 0;
 		_trigger9 = _val8 = _val9 = -1;
 		break;
 
 	case 2000:
-		if (_val5 == 0 && _val6 == 0 && _trigger9 != -1) {
+		if (_meiMode == 0 && _meiShould == 0 && _trigger9 != -1) {
 			kernel_trigger_dispatchx(_trigger9);
 			_trigger9 = -1;
 		}
 
-		if (_val5 == 2 && _val6 == 2 && _val8 != -1) {
+		if (_meiMode == 2 && _meiShould == 2 && _val8 != -1) {
 			kernel_trigger_dispatchx(_val8);
 			_val8 = -1;
 		}
 
-		if (_val5 == 5 && _val6 == 5 && _val9 != -1) {
+		if (_meiMode == 5 && _meiShould == 5 && _val9 != -1) {
 			kernel_trigger_dispatchx(_val9);
 			_val9 = -1;
 		}
@@ -722,9 +722,9 @@ void Room201::daemon() {
 		break;
 
 	case 2010:
-		switch (_val5) {
+		switch (_meiMode) {
 		case 0:
-			switch (_val6) {
+			switch (_meiShould) {
 			case 0:
 				sendWSMessage_10000(1, _mei2, _meiWalk, 1, 1, 2000, _meiWalk, 1, 1, 0);
 				break;
@@ -732,25 +732,25 @@ void Room201::daemon() {
 			case 2:
 				_meiHandHip = series_load("MEI TREK HAND ON HIP POS4");
 				sendWSMessage_10000(1, _mei2, _meiHandHip, 1, 21, 2000, _meiHandHip, 22, 22, 0);
-				_val5 = 2;
+				_meiMode = 2;
 				break;
 
 			case 3:
 				sendWSMessage_10000(1, _mei2, _meiTalker, 1, 1, 2000, _meiTalker, 1, 4, 1);
-				_val5 = 3;
+				_meiMode = 3;
 				break;
 
 			case 4:
 				_meiHeadTurn = series_load("MEI TREK HEAD TRN POS4");
 				sendWSMessage_10000(1, _mei2, _meiHeadTurn, 8, 9, 2000, _meiHeadTurn, 10, 10, 0);
-				_val5 = 4;
+				_meiMode = 4;
 				break;
 
 			case 5:
 			case 6:
 				_meiTalkLoop = series_load("MEI TREK TALK LOOP POS4");
 				sendWSMessage_10000(1, _mei2, _meiTalkLoop, 1, 14, 2000, _meiTalkLoop, 15, 15, 0);
-				_val5 = 5;
+				_meiMode = 5;
 				break;
 
 			default:
@@ -759,17 +759,17 @@ void Room201::daemon() {
 			break;
 
 		case 2:
-			switch (_val6) {
+			switch (_meiShould) {
 			case 0:
 				sendWSMessage_10000(1, _mei2, _meiHandHip, 21, 1, 2000, _meiWalk, 1, 1, 0);
-				_val6 = 1;
+				_meiShould = 1;
 				break;
 
 			case 1:
 				sendWSMessage_10000(1, _mei2, _meiWalk, 1, 1, 2000, _meiWalk, 1, 1, 0);
 				series_unload(_meiHandHip);
-				_val6 = 0;
-				_val5 = 0;
+				_meiShould = 0;
+				_meiMode = 0;
 				break;
 
 			case 2:
@@ -782,10 +782,10 @@ void Room201::daemon() {
 			break;
 
 		case 3:
-			switch (_val6) {
+			switch (_meiShould) {
 			case 0:
 				sendWSMessage_10000(1, _mei2, _meiTalker, 1, 1, 2000, _meiWalk, 1, 1, 0);
-				_val5 = 0;
+				_meiMode = 0;
 				break;
 
 			case 3:
@@ -800,15 +800,15 @@ void Room201::daemon() {
 			break;
 
 		case 4:
-			switch (_val6) {
+			switch (_meiShould) {
 			case 0:
 				sendWSMessage_10000(1, _mei2, _meiHeadTurn, 10, 8, 2000, _meiWalk, 1, 1, 0);
-				_val6 = 1;
+				_meiShould = 1;
 				break;
 
 			case 1:
 				sendWSMessage_10000(1, _mei2, _meiWalk, 1, 1, 2000, _meiWalk, 1, 1, 0);
-				_val5 = _val6 = 0;
+				_meiMode = _meiShould = 0;
 				series_unload(_meiHeadTurn);
 				break;
 
@@ -823,15 +823,15 @@ void Room201::daemon() {
 			break;
 
 		case 5:
-			switch (_val6) {
+			switch (_meiShould) {
 			case 0:
 				sendWSMessage_10000(1, _mei2, _meiTalkLoop, 15, 1, 2000, _meiWalk, 1, 1, 0);
-				_val6 = 1;
+				_meiShould = 1;
 				break;
 
 			case 1:
 				sendWSMessage_10000(1, _mei2, _meiWalk, 1, 1, 2000, _meiWalk, 1, 1, 0);
-				_val6 = _val5 = 0;
+				_meiShould = _meiMode = 0;
 				series_unload(_meiTalkLoop);
 				break;
 
@@ -841,12 +841,12 @@ void Room201::daemon() {
 
 			case 6:
 				sendWSMessage_10000(1, _mei2, _meiTalkLoop, 15, 29, 2000, _meiTalkLoop, 29, 29, 0);
-				_val6 = 7;
+				_meiShould = 7;
 				break;
 
 			case 7:
 				sendWSMessage_10000(1, _mei2, _meiTalkLoop, 29, 15, 2000, _meiTalkLoop, 15, 15, 0);
-				_val6 = 5;
+				_meiShould = 5;
 				break;
 
 			default:
@@ -867,7 +867,7 @@ void Room201::daemon() {
 		break;
 
 	case 3003:
-		_conv2 = 7;
+		_ripleyShould = 7;
 		_trigger5 = kernel_trigger_create(3005);
 		break;
 
@@ -876,36 +876,36 @@ void Room201::daemon() {
 		break;
 
 	case 3010:
-		_conv2 = 8;
+		_ripleyShould = 8;
 		digi_play("201r27", 1, 255, 3020);
 		break;
 
 	case 3020:
-		_conv2 = 7;
+		_ripleyShould = 7;
 		_agentShould = 10;
 		digi_play("201x06", 1, 255, 3030);
 		break;
 
 	case 3030:
-		_conv2 = 8;
+		_ripleyShould = 8;
 		_agentShould = 0;
 		digi_play("201r28", 1, 255, 3040);
 		break;
 
 	case 3040:
-		_conv2 = 7;
+		_ripleyShould = 7;
 		_agentShould = 10;
 		digi_play("201x07", 1, 255, 3050);
 		break;
 
 	case 3050:
-		_conv2 = 8;
+		_ripleyShould = 8;
 		_agentShould = 0;
 		digi_play("201r29", 1, 255, 3060);
 		break;
 
 	case 3060:
-		_conv2 = 6;
+		_ripleyShould = 6;
 		_agentShould = 0;
 		_trigger10 = kernel_trigger_create(3070);
 		break;
@@ -926,8 +926,8 @@ void Room201::daemon() {
 		break;
 
 	case 4000:
-		_num1 = 1;
-		_conv2 = 1;
+		_ripleyMode = 1;
+		_ripleyShould = 1;
 		_trigger1 = _trigger2 = _trigger3 = _trigger4 = -1;
 		_trigger5 = _trigger6 = _trigger7 = _trigger8 = -1;
 
@@ -943,42 +943,42 @@ void Room201::daemon() {
 		break;
 
 	case 4010:
-		if (_num1 == 1 && _conv2 == 1 && _trigger1 != -1) {
+		if (_ripleyMode == 1 && _ripleyShould == 1 && _trigger1 != -1) {
 			kernel_trigger_dispatchx(_trigger1);
 			_trigger1 = -1;
 		}
 
-		if (_num1 == 3 && _conv2 == 3 && _trigger2 != -1) {
+		if (_ripleyMode == 3 && _ripleyShould == 3 && _trigger2 != -1) {
 			kernel_trigger_dispatchx(_trigger2);
 			_trigger2 = -1;
 		}
 
-		if (_num1 == 4 && _conv2 == 4 && _trigger3 != -1) {
+		if (_ripleyMode == 4 && _ripleyShould == 4 && _trigger3 != -1) {
 			kernel_trigger_dispatchx(_trigger3);
 			_trigger3 = -1;
 		}
 
-		if (_num1 == 6 && _conv2 == 6 && _trigger4 != -1) {
+		if (_ripleyMode == 6 && _ripleyShould == 6 && _trigger4 != -1) {
 			kernel_trigger_dispatchx(_trigger4);
 			_trigger4 = -1;
 		}
 
-		if (_num1 == 7 && _conv2 == 7 && _trigger5 != -1) {
+		if (_ripleyMode == 7 && _ripleyShould == 7 && _trigger5 != -1) {
 			kernel_trigger_dispatchx(_trigger5);
 			_trigger5 = -1;
 		}
 
-		if (_num1 == 7 && _conv2 == 16 && _trigger6 != -1) {
+		if (_ripleyMode == 7 && _ripleyShould == 16 && _trigger6 != -1) {
 			kernel_trigger_dispatchx(_trigger6);
 			_trigger6 = -1;
 		}
 
-		if (_num1 == 2 && _conv2 == 22 && _trigger7 != -1) {
+		if (_ripleyMode == 22 && _ripleyShould == 22 && _trigger7 != -1) {
 			kernel_trigger_dispatchx(_trigger7);
 			_trigger7 = -1;
 		}
 
-		if (_num1 == 7 && _conv2 == 13 && _trigger8 != -1) {
+		if (_ripleyMode == 7 && _ripleyShould == 13 && _trigger8 != -1) {
 			kernel_trigger_dispatchx(_trigger8);
 			_trigger8 = -1;
 		}
@@ -994,9 +994,9 @@ void Room201::daemon() {
 		break;
 
 	case 4020:
-		switch (_num1) {
+		switch (_ripleyMode) {
 		case 1:
-			switch (_conv2) {
+			switch (_ripleyShould) {
 			case 1:
 				sendWSMessage_10000(1, _ripley, _series6, 1, 1, 4010, _series6, 1, 1, 0);
 				break;
@@ -1004,13 +1004,13 @@ void Room201::daemon() {
 			case 2:
 			case 3:
 				sendWSMessage_10000(1, _ripley, _series6, 1, 5, 4010, _series6, 5, 5, 0);
-				_num1 = 3;
+				_ripleyMode = 3;
 				break;
 
 			case 4:
 			case 5:
 				sendWSMessage_10000(1, _ripley, _ripHandChin, 1, 12, 4010, _ripHandChin, 12, 12, 0);
-				_num1 = 4;
+				_ripleyMode = 4;
 				break;
 
 			default:
@@ -1019,10 +1019,10 @@ void Room201::daemon() {
 			break;
 
 		case 3:
-			switch (_conv2) {
+			switch (_ripleyShould) {
 			case 1:
 				sendWSMessage_10000(1, _ripley, _series6, 5, 1, 4010, _series6, 1, 1, 0);
-				_num1 = 1;
+				_ripleyMode = 1;
 				break;
 
 			case 2:
@@ -1039,10 +1039,10 @@ void Room201::daemon() {
 			break;
 
 		case 4:
-			switch (_conv2) {
+			switch (_ripleyShould) {
 			case 1:
 				sendWSMessage_10000(1, _ripley, _ripHandChin, 12, 1, 4010, _ripHandChin, 1, 1, 0);
-				_num1 = 1;
+				_ripleyMode = 1;
 				break;
 
 			case 4:
@@ -1051,7 +1051,7 @@ void Room201::daemon() {
 
 			case 5:
 				sendWSMessage_10000(1, _ripley, _ripHandChin, 11, 7, 4010, _ripHandChin, 7, 7, 0);
-				_num1 = 5;
+				_ripleyMode = 5;
 				break;
 
 			default:
@@ -1060,10 +1060,10 @@ void Room201::daemon() {
 			break;
 
 		case 5:
-			switch (_conv2) {
+			switch (_ripleyShould) {
 			case 4:
 				sendWSMessage_10000(1, _ripley, _ripHandChin, 7, 12, 4010, _ripHandChin, 12, 12, 0);
-				_num1 = 4;
+				_ripleyMode = 4;
 				break;
 
 			case 5:
@@ -1076,18 +1076,18 @@ void Room201::daemon() {
 			break;
 
 		case 6:
-			switch (_conv2) {
+			switch (_ripleyShould) {
 			case 6:
 				sendWSMessage_10000(1, _ripley, _series7, 1, 1, 4010, _series7, 1, 1, 0);
 				break;
 
 			case 7:
 				sendWSMessage_10000(1, _ripley, _series7, 1, 9, 4010, _series7, 10, 10, 0);
-				_num1 = 7;
+				_ripleyMode = 7;
 				break;
 
 			case 9:
-				_conv2 = 7;
+				_ripleyShould = 7;
 				_trigger5 = kernel_trigger_create(6500);
 				kernel_timing_trigger(1, 4010);
 				break;
@@ -1098,10 +1098,10 @@ void Room201::daemon() {
 			break;
 
 		case 7:
-			switch (_conv2) {
+			switch (_ripleyShould) {
 			case 6:
 				sendWSMessage_10000(1, _ripley, _series7, 9, 1, 4010, _series7, 1, 1, 0);
-				_num1 = 6;
+				_ripleyMode = 6;
 				break;
 
 			case 7:
@@ -1116,18 +1116,18 @@ void Room201::daemon() {
 			case 10:
 				_flag3 = true;
 				sendWSMessage_10000(1, _ripley, _guyParcel, 1, 25, 4010, _guyParcel, 25, 25, 0);
-				_conv2 = 11;
+				_ripleyShould = 11;
 				break;
 
 			case 11:
 				digi_play("COM090", 1);
 				sendWSMessage_10000(1, _ripley, _guyParcel, 26, 68, 4010, _guyParcel, 1, 1, 0);
-				_conv2 = 13;
+				_ripleyShould = 13;
 				break;
 
 			case 12:
 				player_set_commands_allowed(true);
-				_conv2 = 7;
+				_ripleyShould = 7;
 				sendWSMessage_10000(1, _ripley, _guyParcel, 1, 1, 4010, _guyParcel, 1, 1, 0);
 				kernel_timing_trigger(1, 6500);
 				break;
@@ -1137,7 +1137,7 @@ void Room201::daemon() {
 				break;
 
 			case 14:
-				_conv2 = 6;
+				_ripleyShould = 6;
 				_agentShould = 8;
 				_trigger4 = kernel_trigger_create(6000);
 				kernel_timing_trigger(1, 4010);
@@ -1151,7 +1151,7 @@ void Room201::daemon() {
 			case 15:
 				_flag3 = true;
 				sendWSMessage_10000(1, _ripley, _series5, 1, 35, 4010, _series5, 35, 35, 0);
-				_conv2 = 16;
+				_ripleyShould = 16;
 				break;
 
 			case 16:
@@ -1160,7 +1160,7 @@ void Room201::daemon() {
 
 			case 17:
 				sendWSMessage_10000(1, _ripley, _series5, 35, 1, 4010, _series5, 1, 1, 0);
-				_conv2 = 7;
+				_ripleyShould = 7;
 				break;
 
 			case 18:
@@ -1169,12 +1169,12 @@ void Room201::daemon() {
 				digi_play(conv_sound_to_play(), 1);
 				sendWSMessage_10000(1, _ripley, _guyPassForm, 1, 77, 4010,
 					_guyPassForm, 77, 77, 0);
-				_conv2 = 19;
+				_ripleyShould = 19;
 				break;
 
 			case 19:
 				sendWSMessage_10000(1, _ripley, _series5, 48, 1, 4010, _series5, 1, 1, 0);
-				_conv2 = 7;
+				_ripleyShould = 7;
 				_trigger5 = kernel_trigger_create(7100);
 				series_unload(_guyPassForm);
 				break;
@@ -1183,20 +1183,20 @@ void Room201::daemon() {
 				_flag3 = true;
 				digi_preload("201R63");
 				sendWSMessage_10000(1, _ripley, _series8, 1, 50, 4010, _series8, 50, 50, 0);
-				_conv2 = 21;
+				_ripleyShould = 21;
 				break;
 
 			case 21:
 				digi_play("201R63", 1);
 				sendWSMessage_10000(1, _ripley, _series8, 51, 69, 4010, _series8, 69, 69, 0);
-				_conv2 = 22;
-				_num1 = 22;
+				_ripleyShould = 22;
+				_ripleyMode = 22;
 				break;
 
 			case 24:
 				_flag3 = true;
 				sendWSMessage_10000(1, _ripley, _guyPassForm, 1, 50, 4010, _guyPassForm, 50, 50, 0);
-				_conv2 = 25;
+				_ripleyShould = 25;
 				break;
 
 			case 25:
@@ -1208,33 +1208,33 @@ void Room201::daemon() {
 				}
 
 				sendWSMessage_10000(1, _ripley, _guyPassForm, 51, 57, 4010, _guyPassForm, 57, 57, 0);
-				_conv2 = 26;
+				_ripleyShould = 26;
 				break;
 
 			case 26:
 				digi_stop(2);
 				sendWSMessage_10000(1, _ripley, _guyPassForm, 58, 77, 4010, _guyPassForm, 77, 77, 0);
 				kernel_timing_trigger(1, 509);
-				_conv2 = 27;
+				_ripleyShould = 27;
 				break;
 
 			case 27:
 				_G(flags)[V079] = 1;
 				_G(flags)[V365] = 1;
 				sendWSMessage_10000(1, _ripley, _series7, 10, 10, 4010, _series7, 10, 10, 0);
-				_conv2 = 7;
+				_ripleyShould = 7;
 				break;
 
 			case 28:
 				_flag3 = true;
 				sendWSMessage_10000(1, _ripley, _guyParcel, 68, 1, 4010, _guyParcel, 1, 1, 0);
-				_conv2 = 29;
+				_ripleyShould = 29;
 				break;
 
 			case 29:
 				kernel_timing_trigger(1, 509);
 				sendWSMessage_10000(1, _ripley, _guyParcel, 1, 1, 4010, _guyParcel, 1, 1, 0);
-				_conv2 = 7;
+				_ripleyShould = 7;
 				_trigger5 = kernel_trigger_create(9250);
 				break;
 
@@ -1244,10 +1244,10 @@ void Room201::daemon() {
 			break;
 
 		case 22:
-			switch (_conv2) {
+			switch (_ripleyShould) {
 			case 7:
 				sendWSMessage_10000(1, _ripley, _series8, 70, 79, 4010, _series7, 10, 10, 0);
-				_num1 = 7;
+				_ripleyMode = 7;
 				kernel_timing_trigger(1, 509);
 				break;
 
@@ -1257,7 +1257,7 @@ void Room201::daemon() {
 
 			case 23:
 				sendWSMessage_10000(1, _ripley, _series8, 69, 70, 4010, _series8, 70, 69, 0);
-				_conv2 = 22;
+				_ripleyShould = 22;
 				break;
 
 			default:
@@ -1310,8 +1310,14 @@ void Room201::daemon() {
 		_G(game).setRoom(495);
 		break;
 
+	case 7000:
+		player_set_commands_allowed(false);
+		_ripleyShould = 15;
+		_trigger6 = kernel_trigger_create(7010);
+		break;
+
 	case 7010:
-		_conv2 = 17;
+		_ripleyShould = 17;
 		_trigger5 = kernel_trigger_create(7020);
 		break;
 
@@ -1322,6 +1328,7 @@ void Room201::daemon() {
 		}
 
 		kernel_timing_trigger(1, 509);
+		conv_resume();
 		break;
 
 	case 7100:
@@ -1406,7 +1413,7 @@ void Room201::daemon() {
 		break;
 
 	case 9060:
-		_conv2 = 22;
+		_ripleyShould = 22;
 		_trigger7 = kernel_trigger_create(9085);
 		break;
 
@@ -1444,7 +1451,7 @@ void Room201::daemon() {
 			kernel_timing_trigger(1, 9230);
 		} else {
 			if (--_val1 > 0) {
-				_conv2 = 23;
+				_ripleyShould = 23;
 				_trigger7 = kernel_trigger_create(9050);
 			} else {
 				kernel_timing_trigger(1, 9220);
@@ -1457,19 +1464,19 @@ void Room201::daemon() {
 		break;
 
 	case 9160:
-		_conv2 = 20;
+		_ripleyShould = 20;
 		_trigger7 = kernel_trigger_create(9050);
 		break;
 
 	case 9200:
 		_guyPassForm = series_load("GUY PASS FORM TO RIPLEY");
 		digi_preload("950_S34");
-		_conv2 = 8;
+		_ripleyShould = 8;
 		digi_play("201R60", 1, 255, 9210);
 		break;
 
 	case 9210:
-		_conv2 = 24;
+		_ripleyShould = 24;
 		_trigger5 = kernel_trigger_create(9215);
 		break;
 
@@ -1480,21 +1487,21 @@ void Room201::daemon() {
 		break;
 
 	case 9220:
-		_conv2 = 7;
+		_ripleyShould = 7;
 		_trigger5 = kernel_trigger_create(1070);
 		break;
 
 	case 9230:
-		_conv2 = 7;
+		_ripleyShould = 7;
 		_trigger5 = kernel_trigger_create(9240);
 		break;
 
 	case 9240:
-		_conv2 = 28;
+		_ripleyShould = 28;
 		break;
 
 	case 9250:
-		_conv2 = 8;
+		_ripleyShould = 8;
 		digi_play("COM084", 1, 255, 9220, 997);
 
 		if (!inv_player_has("ROMANOV EMERALD"))
@@ -1531,7 +1538,7 @@ void Room201::parser() {
 		// Handled
 	} else if (useFlag && _G(walker).ripley_said(USE)) {
 		// Handled
-	} else if (takeFlag && player_said("AGENT")) {
+	} else if (talkFlag && player_said("AGENT")) {
 		switch (_G(kernel).trigger) {
 		case -1:
 		case 666:
@@ -1544,14 +1551,14 @@ void Room201::parser() {
 			break;
 
 		case 3:
-			_conv2 = 9;
+			_ripleyShould = 9;
 			_agentShould = 0;
 			break;
 		default:
 			break;
 		}
 	} else if (_G(kernel).trigger == 747) {
-		_conv2 = 14;
+		_ripleyShould = 14;
 	} else if (talkFlag && player_said("MEI CHEN")) {
 		if (_G(flags)[V059] == 0) {
 			switch (_G(kernel).trigger) {
@@ -1560,7 +1567,7 @@ void Room201::parser() {
 				_ctr2 = 0;
 				player_set_commands_allowed(false);
 				_ripTalk = series_load("RIP TREK TALK");
-				_val6 = 0;
+				_meiShould = 0;
 				setGlobals1(_ripTalk, 1, 7, 1, 7, 1);
 				sendWSMessage_110000(2);
 				digi_play("201r15", 1, 255, 2);
@@ -1577,17 +1584,17 @@ void Room201::parser() {
 
 			case 3:
 				series_unload(_ripTalk);
-				_val6 = 3;
+				_meiShould = 3;
 				digi_play("201m04", 1, 255, 4);
 				break;
 
 			case 4:
-				_val6 = 0;
+				_meiShould = 0;
 				_trigger9 = kernel_trigger_create(5);
 				break;
 
 			case 5:
-				_val6 = 2;
+				_meiShould = 2;
 				_val8 = kernel_trigger_create(6);
 				break;
 
@@ -1605,12 +1612,12 @@ void Room201::parser() {
 			case 666:
 				player_set_commands_allowed(false);
 				_ripTalk = series_load("RIP TREK TALK");
-				_val6 = 0;
+				_meiShould = 0;
 				_trigger9 = kernel_trigger_create(2);
 				break;
 
 			case 2:
-				_val6 = 5;
+				_meiShould = 5;
 				_val9 = kernel_trigger_create(3);
 				break;
 
@@ -1636,17 +1643,17 @@ void Room201::parser() {
 
 			case 5:
 				series_unload(_ripTalk);
-				_val6 = 6;
+				_meiShould = 6;
 				_val9 = kernel_trigger_create(6);
 				break;
 
 			case 6:
-				_val6 = 0;
+				_meiShould = 0;
 				_trigger9 = kernel_trigger_create(7);
 				break;
 
 			case 7:
-				_val6 = 2;
+				_meiShould = 2;
 				_val8 = kernel_trigger_create(8);
 				break;
 
@@ -1709,7 +1716,7 @@ void Room201::conv201a() {
 			_agentShould = 0;
 
 		} else if (who == 1) {
-			_conv2 = 7;
+			_ripleyShould = 7;
 
 			if (node == 1 && entry == 1) {
 				int32 x1, y1, x2, y2;
@@ -1740,7 +1747,7 @@ void Room201::conv201a() {
 		if (who <= 0) {
 			if (node == 3 && entry == 0) {
 				player_set_commands_allowed(false);
-				_conv2 = 18;
+				_ripleyShould = 18;
 				_guyPassForm = series_load("GUY PASS FORM TO RIPLEY");
 				return;
 			} else {
@@ -1748,7 +1755,7 @@ void Room201::conv201a() {
 			}
 		} else if (who == 1) {
 			if (node != 14)
-				_conv2 = 8;
+				_ripleyShould = 8;
 		}
 
 		if (sound)
@@ -1759,8 +1766,8 @@ void Room201::conv201a() {
 void Room201::animateRipley() {
 	_trigger1 = _trigger2 = _trigger3 = _trigger4 = -1;
 	_trigger5 = _trigger6 = _trigger7 = _trigger8 = -1;
-	_num1 = 6;
-	_conv2 = 6;
+	_ripleyMode = 6;
+	_ripleyShould = 6;
 	_num2 = 0;
 
 	player_update_info();
@@ -1791,8 +1798,8 @@ void Room201::checkFlags() {
 	}
 
 	for (int i = V365; i <= V373; ++i) {
-		if (_G(flags)[i] == 1) {
-			_G(flags)[i - 10] = 1;
+		if (_G(flags)[(Flag)i] == 1) {
+			_G(flags)[(Flag)(i - 10)] = 1;
 			++_val1;
 		}
 	}

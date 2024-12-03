@@ -28,7 +28,7 @@
 
 namespace QDEngine {
 
-MinigameInterface *createMinigameTriangleGame();
+MinigameInterface *createMinigameTriangle(MinigameManager *runtime);
 
 class MinigameTriangle : public MinigameInterface {
 	enum GameType {
@@ -47,7 +47,7 @@ class MinigameTriangle : public MinigameInterface {
 	struct Node {
 		Node(int number = -1, int rot = -1);
 
-		void release();
+		void release(MinigameManager *runtime);
 		void debugInfo() const;
 
 		const QDObject &obj() const {
@@ -73,7 +73,7 @@ class MinigameTriangle : public MinigameInterface {
 	typedef Std::vector<Node> Nodes;
 
 public:
-	MinigameTriangle();
+	MinigameTriangle(MinigameManager *runtime);
 	~MinigameTriangle();
 	void quant(float dt);
 
@@ -92,7 +92,7 @@ private:
 	int _hovered = 0;
 
 	AnimationState _animationState = NO_ANIMATION;
-	int animatedNodes_[2] =  { 0 };
+	int _animatedNodes[2] =  { 0 };
 	float _animationTime = 0.0;
 	float _animationTimer = 0.0;
 
@@ -126,6 +126,8 @@ private:
 	int destination(int num1, int num2) const;
 	/// по номеру слота и углу переворота (с учетом типа игры) возвращает экранные координаты
 	mgVect3f slotCoord(int pos, int angle = 0) const;
+
+	MinigameManager *_runtime;
 };
 
 } // namespace QDEngine

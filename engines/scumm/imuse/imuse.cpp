@@ -69,6 +69,7 @@ IMuseInternal::IMuseInternal(ScummEngine *vm, MidiDriverFlags sndType, bool nati
 	_trigger_count(0),
 	_snm_trigger_index(0),
 	_soundType(sndType),
+	_lowLevelVolumeControl(sndType == MDT_MACINTOSH),
 	_game_id(vm ? vm->_game.id : 0),
 	_mutex(vm ? vm->_mixer->mutex() : _dummyMutex) {
 	memset(_channel_volume, 0, sizeof(_channel_volume));
@@ -125,7 +126,7 @@ byte *IMuseInternal::findStartOfSound(int sound, int ct) {
 		return ct == trFlag ? ptr + 4 : nullptr;
 
 	ptr += 4;
-	size = READ_BE_UINT32(ptr);
+	//size = READ_BE_UINT32(ptr);
 	ptr += 4;
 
 	// Okay, we're looking for one of those things: either
@@ -161,7 +162,7 @@ bool IMuseInternal::isMT32(int sound) {
 	case MKTAG('A', 'M', 'I', ' '): // MI2 Amiga
 		return false;
 
-	case MKTAG('R', 'O', 'L', ' '): // Unfortunately FOA Amiga also uses this resource type
+	case MKTAG('R', 'O', 'L', ' '): // Roland LAPC/MT-32/CM32L track, but FOA Amiga and and DOTT Demo Mac also use this resource type
 		return _soundType != MDT_AMIGA && _soundType != MDT_MACINTOSH;
 
 	case MKTAG('M', 'A', 'C', ' '): // Occurs in the Mac version of FOA and MI2
@@ -208,7 +209,7 @@ bool IMuseInternal::isMIDI(int sound) {
 	case MKTAG('A', 'M', 'I', ' '): // Amiga (return true, since the driver is initalized as native midi)
 		return true;
 
-	case MKTAG('R', 'O', 'L', ' '):
+	case MKTAG('R', 'O', 'L', ' '): // Roland LAPC/MT-32/CM32L track
 		return true;
 
 	case MKTAG('M', 'A', 'C', ' '): // Occurs in the Mac version of FOA and MI2
@@ -250,17 +251,15 @@ bool IMuseInternal::supportsPercussion(int sound) {
 	case MKTAG('A', 'M', 'I', ' '): // MI2 Amiga
 		return false;
 
-	case MKTAG('R', 'O', 'L', ' '): // Roland LAPC/MT-32/CM32L track, but also used by INDY4 Amiga
-		return _soundType != MDT_AMIGA && _soundType != MDT_MACINTOSH;
+	case MKTAG('R', 'O', 'L', ' '): // Roland LAPC/MT-32/CM32L track, but also used by INDY4 Amiga and DOTT Demo Mac (but the latter does support percussion).
+		return _soundType != MDT_AMIGA;
 
-	case MKTAG('M', 'A', 'C', ' '): // Occurs in the Mac version of FOA and MI2
-		// This is MIDI, i.e. uses MIDI style program changes, but without a
-		// special percussion channel.
+	case MKTAG('M', 'A', 'C', ' '): // Occurs in the Mac version of FOA and MI2. The early Mac imuse system doesn't support percussion.
 		return false;
 
-	case MKTAG('G', 'M', 'D', ' '):
-	case MKTAG('M', 'I', 'D', 'I'): // Occurs in Sam & Max
-		return true;
+	case MKTAG('G', 'M', 'D', ' '): // DOTT
+	case MKTAG('M', 'I', 'D', 'I'): // Sam & Max
+		return true;				// This is correct for Mac, too. The later Mac imuse system does have a percussion channel.
 
 	default:
 		break;
@@ -269,8 +268,6 @@ bool IMuseInternal::supportsPercussion(int sound) {
 	// Old style 'RO' has equivalent properties to 'ROL'
 	if (ptr[0] == 'R' && ptr[1] == 'O')
 		return true;
-	// Euphony tracks show as 'SO' and have equivalent properties to 'ADL'
-	// FIXME: Right now we're pretending it's GM.
 	if (ptr[4] == 'S' && ptr[5] == 'O')
 		return true;
 
@@ -373,7 +370,7 @@ void IMuseInternal::pause(bool paused) {
 	// The result is hanging notes on pause. Reportedly
 	// happens in the original distro, too. To fix that,
 	// just send AllNotesOff to the channels.
- 	if (_midi_native && _native_mt32) {
+	if (_midi_native && _native_mt32) {
 		for (int i = 0; i < 16; ++i)
 			_midi_native->send(123 << 8 | 0xB0 | i);
 	}
@@ -488,6 +485,17 @@ uint32 IMuseInternal::property(int prop, uint32 value) {
 		_recycle_players = (value != 0);
 		break;
 
+	case IMuse::PROP_QUALITY:
+		if (_midi_native)
+			_midi_native->property(IMuse::PROP_QUALITY, value);
+		break;
+
+	case IMuse::PROP_MUSICVOLUME:
+	case IMuse::PROP_SFXVOLUME:
+		if (_midi_native && _lowLevelVolumeControl)
+			_midi_native->property(prop, value);
+		break;
+
 	default:
 		break;
 	}
@@ -514,6 +522,11 @@ void IMuseInternal::startSoundWithNoteOffset(int sound, int offset) {
 ////////////////////////////////////////
 
 void IMuseInternal::setMusicVolume(int vol) {
+	if (_lowLevelVolumeControl) {
+		property(IMuse::PROP_MUSICVOLUME, vol);
+		return;
+	}
+
 	Common::StackLock lock(_mutex);
 	if (vol > 255)
 		vol = 255;
@@ -529,6 +542,14 @@ void IMuseInternal::setMusicVolume(int vol) {
 	}
 	if (!_paused)
 		update_volumes();
+}
+
+void IMuseInternal::setSfxVolume(int vol) {
+	// This is supported only for drivers that can distinguish music from sound effects at the driver or emulator level.
+	// The imuse engine in its early version does not have volume groups. It simply (and successfully for the more relevant
+	// targets) relies on sound effects not being played through the imuse engine.
+	if (_lowLevelVolumeControl)
+		property(IMuse::PROP_SFXVOLUME, vol);
 }
 
 void IMuseInternal::startSound(int sound) {
@@ -1495,6 +1516,9 @@ int IMuseInternal::initialize(OSystem *syst, MidiDriver *native_midi, MidiDriver
 	if (!_tempoFactor)
 		_tempoFactor = 100;
 	_master_volume = 255;
+
+	if (_lowLevelVolumeControl)
+		_music_volume = _music_volume_eff = 255;
 
 	for (i = 0; i != 8; i++)
 		_channel_volume[i] = _channel_volume_eff[i] = _volchan_table[i] = 127;

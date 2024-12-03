@@ -258,7 +258,7 @@ struct ScriptPatch {
  * always mean a yes response, and "no" should always mean a no response.
  */
 
-const char *kyotoTextEntryFix = " \
+const char *const kyotoTextEntryFix = " \
 on scrubInput inputString \r\
   set result = \"\" \r\
   repeat with x = 1 to the number of chars in inputString \r\
@@ -325,7 +325,7 @@ end \r\
  * to determine which has the CD. This works, but takes forever.
  */
 
-const char *vncSkipDetection = " \
+const char *const vncSkipDetection = " \
 global cdDriveLetter, gMultiDisk \r\
 on findVNCVolume \r\
   set cdDriveLetter to \"D\" \r\
@@ -340,7 +340,7 @@ end \r\
  * released game has this code stubbed out with a return.
  */
 
-const char *vncEnableCheats = " \
+const char *const vncEnableCheats = " \
 on togCh\r\
   if getFlag(#cheats) then\r\
     setFlag(#cheats, 0)\r\
@@ -364,9 +364,19 @@ end\r\
  * different drive letters. ScummVM will pretend that every drive letter contains the
  * game contents, so we need to hotpatch the CD detection routine to return D:.
  */
-const char *amberDriveDetectionFix = " \
+const char *const amberDriveDetectionFix = " \
 on GetCDLetter tagFile, discNumber\r\
   return \"D:\"\r\
+end \r\
+";
+
+/* Frankenstein: Through The Eyes Of The Monster uses a projector FRANKIE.EXE, which calls an
+ * identically-named submovie FRANKIE.DIR. For now we can work around this mess by referring to
+ * the full "path" of the embedded submovie so path detection doesn't collide with FRANKIE.EXE.
+ */
+const char *const frankensteinSwapFix = " \
+on exitFrame \r\
+  go(1, \"FRANKIE\\FRANKIE.DIR\")\r\
 end \r\
 ";
 
@@ -378,7 +388,7 @@ struct ScriptHandlerPatch {
 	ScriptType type;
 	uint16 id;
 	uint16 castLib;
-	const char **handlerBody;
+	const char *const *handlerBody;
 } const scriptHandlerPatches[] = {
 	{"kyoto", nullptr, kPlatformWindows, "ck_data\\dd_dairi\\shared.dxr", kMovieScript, 906, DEFAULT_CAST_LIB, &kyotoTextEntryFix},
 	{"kyoto", nullptr, kPlatformWindows, "ck_data\\findfldr\\shared.dxr", kMovieScript, 802, DEFAULT_CAST_LIB, &kyotoTextEntryFix},
@@ -395,6 +405,7 @@ struct ScriptHandlerPatch {
 	{"vnc", nullptr, kPlatformWindows, "VNC\\VNC.EXE", kMovieScript, 57, DEFAULT_CAST_LIB, &vncSkipDetection},
 	{"vnc", nullptr, kPlatformWindows, "VNC2\\SHARED.DXR", kMovieScript, 1248, DEFAULT_CAST_LIB, &vncEnableCheats},
 	{"amber", nullptr, kPlatformWindows, "AMBER_F\\AMBER_JB.EXE", kMovieScript, 7, DEFAULT_CAST_LIB, &amberDriveDetectionFix},
+	{"frankenstein", nullptr, kPlatformWindows, "FRANKIE.EXE", kScoreScript, 21, DEFAULT_CAST_LIB, &frankensteinSwapFix},
 	{nullptr, nullptr, kPlatformUnknown, nullptr, kNoneScript, 0, 0, nullptr},
 
 };

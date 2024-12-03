@@ -269,6 +269,7 @@ _detection_features_static=yes
 _detection_features_full=yes
 # The following variables are automatically detected, and should not
 # be modified otherwise. Consider them read-only.
+_3d=no
 _posix=no
 _has_posix_spawn=no
 _has_fseeko_offt_64=no
@@ -282,6 +283,7 @@ _imgui=yes
 
 # Add (virtual) features
 add_feature 16bit "16bit color" "_16bit"
+add_feature 3d "3D rendering" "_3d"
 add_feature bink "Bink" "_bink"
 add_feature cloud "cloud" "_cloud"
 add_feature faad "libfaad" "_faad"
@@ -1660,7 +1662,7 @@ case $_host in
 	datadir='${datarootdir}'
 	docdir='${prefix}/doc'
 	;;
-android-arm-v7a | ouya)
+android-arm-v7a | android-armeabi-v7a | ouya)
 	_host_os=android
 	_host_cpu=arm
 	_host_alias=arm-linux-androideabi
@@ -2639,14 +2641,17 @@ __attribute__ ((used)) unsigned short ebcdic_mm[] = { 0xC2C9, 0xC785, 0x95C4, 0x
 const char * _ebcdic() { char* s = (char*) ebcdic_mm; s = (char*) ebcdic_ii; return s; }
 int main() { _ascii (); _ebcdic (); return 0; }
 EOF
-$CXX $LDFLAGS $CXXFLAGS -o $TMPO$HOSTEXEEXT tmp_endianness_check.cpp >> "$TMPLOG" 2>&1
+# Make sure that this particular object always has regular machine code content,
+# so that the checks below can be done, even with LTO on.
+test "$have_gcc" = yes && no_lto_regular_machine_code_removal=-ffat-lto-objects
+$CXX $LDFLAGS $CXXFLAGS $no_lto_regular_machine_code_removal -o $TMPO$HOSTEXEEXT tmp_endianness_check.cpp >> "$TMPLOG" 2>&1
 if $_strings $TMPO$HOSTEXEEXT 2>> "$TMPLOG"| grep BIGenDianSyS >/dev/null; then
 	_endian=big
 elif $_strings $TMPO$HOSTEXEEXT 2>> "$TMPLOG" | grep LiTTleEnDian >/dev/null; then
 	_endian=little
 fi
-echo $_endian;
-cc_check_clean tmp_endianness_check.cpp $TMPO-tmp_endianness_check.dwo
+echo $_endian
+cc_check_clean tmp_endianness_check.cpp $TMPO-tmp_endianness_check.dwo tmp_endianness_check.dwo
 
 case $_endian in
 	big)
@@ -2689,7 +2694,7 @@ esac
 # for the smaller sizes.
 echo_n "Alignment required... "
 case $_host_cpu in
-	i[3-6]86 | amd64 | x86_64 | powerpc* | ppc*)
+	i[3-6]86 | amd64 | x86_64 | powerpc* | ppc* | m68k)
 		# Unaligned access should work
 		_need_memalign=no
 		;;
@@ -2808,7 +2813,6 @@ case $_host_os in
 		append_var LIBS "-lcitro3d"
 		;;
 	amigaos*)
-		# AmigaOS (PPC) target
 		_port_mk="backends/platform/sdl/amigaos/amigaos.mk"
 		add_line_to_config_mk 'AMIGAOS = 1'
 		# -mlongcall is needed to fix relocation errors,
@@ -2823,23 +2827,19 @@ case $_host_os in
 			_optimization_level=-O0
 			define_in_config_if_yes "$_debug_build" 'DEBUG_BUILD'
 		fi
-		# dynamic builds leave out resources to save binary size
-		# and detection features *must* be static
+		# dynamic builds will leave out resources to save binary size
 		if test "$_dynamic_modules" = yes ; then
 			_builtin_resources=no
+			_detection_features_static=no
 			_plugins_default=dynamic
-		else
-			_plugins_default=static
-			_static_build=yes
 		fi
-		# use 'long' for ScummVM's 4 byte typedef, because AmigaOS
-		# already typedefs (u)int32 as (unsigned) long and suppress
-		# those noisy format warnings caused by the 'long' 4 byte
+		# AmigaOS already typedefs uint32 as long unsigned int
+		# suppress the noisy [-Wformat=] warnings caused by it
 		append_var CXXFLAGS "-Wno-format"
 		;;
 	android)
 		case $_host in
-			android-arm-v7a)
+			android-arm-v7a | android-armeabi-v7a)
 				# Disable NEON for older devices (like with Tegra 2)
 				append_var CXXFLAGS "-mfpu=vfp"
 				# This is really old CPU but might be still used with android 4.1, it slightly increases code size and decreases performance.
@@ -3456,7 +3456,7 @@ if test -n "$_host"; then
 			_vorbis=no
 			_port_mk="backends/platform/3ds/3ds.mk"
 			;;
-		android-arm-v7a | android-arm64-v8a | android-x86 | android-x86_64 | ouya)
+		android-* | ouya)
 			# __ANDROID__ is defined by Clang in the NDK
 			# we link a .so as default
 			append_var LDFLAGS "-shared"
@@ -3662,8 +3662,10 @@ if test -n "$_host"; then
 			if test "$_release_build" = "yes"; then
 				# --enable-release
 				append_var DEFINES  "-DNDEBUG"
-				#append_var DEFINES  "-DDISABLE_TEXT_CONSOLE"
+				append_var DEFINES  "-DDISABLE_TEXT_CONSOLE"
 			fi
+
+			append_var LDFLAGS "-Wl,--msuper-memory"
 
 			_seq_midi=no
 			_timidity=no
@@ -3962,6 +3964,8 @@ case $_backend in
 		append_var INCLUDES '-I$(srcdir)/backends/platform/'$_backend
 		append_var CXXFLAGS "-Wa,--noexecstack"
 		append_var LDFLAGS "-Wl,-z,noexecstack"
+		# Newer Android devices will have 16K pages so we must be aligned
+		append_var LDFLAGS "-Wl,-z,max-page-size=16384"
 		# removed the following directive - was causing compilation issues when not also explicitly using --disable-mt32emu
 		# append_var INCLUDES "-isystem $ANDROID_NDK/sources/cxx-stl/system/include"
 		_sdl=no
@@ -6900,6 +6904,14 @@ if test "$_16bit" = "no"; then
 fi
 define_in_config_if_yes $_tinygl 'USE_TINYGL'
 echo "$_tinygl"
+
+echo_n "Building any 3D game... "
+if (test "$_tinygl" = yes || test "$_opengl_game_classic" = yes || test "$_opengl_game_shaders" = yes); then
+	_3d=yes
+else
+	_3d=no
+fi
+echo "$_3d"
 
 #
 # Check whether to build Bink video support

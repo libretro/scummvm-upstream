@@ -58,6 +58,7 @@ Common::String DarkseedEngine::getGameId() const {
 
 Common::Error DarkseedEngine::run() {
 	initGraphics(640, 350);
+	_canSaveGame = false;
 	_sound = new Sound(_mixer);
 	if (_sound->init() > 0) {
 		return Common::kAudioDeviceInitFailed;
@@ -195,13 +196,15 @@ void DarkseedEngine::gameLoop() {
 						_animation->stuffPlayer();
 					}
 				} else {
-					_animation->dCopAnim();
-					changeToRoom(59, true);
-					_player->_position = {320, 200};
-					_player->updateSprite();
-					_inventory.gotoJailLogic();
+					if (_objectVar[56] > 0) {
+						_animation->dCopAnim();
+						changeToRoom(59, true);
+						_player->_position = {320, 200};
+						_player->updateSprite();
+						_inventory.gotoJailLogic();
 
-					playSound(0, 6, -1);
+						playSound(0, 6, -1);
+					}
 				}
 			}
 			if (_currentTimeInSeconds > 35999 && _currentTimeInSeconds < 36005 &&
@@ -353,17 +356,18 @@ void DarkseedEngine::updateEvents() {
 		case Common::EVENT_MOUSEMOVE:
 			_cursor.updatePosition(event.mouse.x, event.mouse.y);
 			break;
-		case Common::EVENT_RBUTTONDOWN:
-			_isRightMouseClicked = true;
-			break;
-//		case Common::EVENT_RBUTTONUP: _isRightMouseClicked = false; break;
-		case Common::EVENT_LBUTTONDOWN:
-			_isLeftMouseClicked = true;
-			break;
-//		case Common::EVENT_LBUTTONUP: _isLeftMouseClicked = false; break;
 		case Common::EVENT_KEYDOWN:
-			if (event.kbd.keycode == Common::KEYCODE_t) {
+			_lastKeyPressed = event.kbd.keycode;
+			break;
+		case Common::EVENT_CUSTOM_ENGINE_ACTION_START:
+			if (event.customType == kDarkseedActionSelect) {
+				_isLeftMouseClicked = true;
+			} else if (event.customType == kDarkseedActionChangeCommand) {
+				_isRightMouseClicked = true;
+			} else if (event.customType == kDarkseedActionTimeAdvance) {
 				_timeAdvanceEventSelected = true;
+			} else if (event.customType == kDarkseedActionQuit) {
+				quitGame();
 			}
 			break;
 		default:
@@ -650,6 +654,7 @@ void DarkseedEngine::handleInput() {
 	}
 	if (_isLeftMouseClicked && _cursor.getY() < 41) {
 		_inventory.handleClick();
+		return;
 	}
 	_room->calculateScaledSpriteDimensions(_player->getWidth(), _player->getHeight(), _player->_position.y);
 
@@ -746,6 +751,7 @@ void DarkseedEngine::handleInput() {
 						_player->loadAnimations("opendoor.nsp");
 						_animation->setupOtherNspAnimation(0, 14);
 						// FUN_1208_0dac_sound_related(10,CONCAT11(extraout_AH,5));
+						playSound(1, 5, -1);
 						return;
 					}
 					if (currentRoomNumber == 6 && roomExit.roomNumber == 5 && bVar) {
@@ -759,6 +765,7 @@ void DarkseedEngine::handleInput() {
 						_player->loadAnimations("opendoor.nsp");
 						_animation->setupOtherNspAnimation(0, 25);
 						// FUN_1208_0dac_sound_related(24,CONCAT11(extraout_AH,5));
+						playSound(15, 5, -1); //open car door
 						return;
 					}
 					if (currentRoomNumber == 5 && roomExit.roomNumber == 6 && bVar) {
@@ -1019,13 +1026,13 @@ void DarkseedEngine::handlePointerAction() {
 void DarkseedEngine::loadRoom(int roomNumber) {
 //	*(undefined *)&_erasemenu = 1; TODO do we need these?
 //	*(undefined2 *)&_gShipOff = 0;
-	_sound->waitForSpeech();
+	waitForSpeech();
 	if (roomNumber == 33 && _objectVar[62] == 101) {
 		_objectVar[62] = 0;
 	}
 	_printedcomeheredawson = false;
 	_objectVar.setObjectRunningCode(53, 0);
-	_objectVar[56] = 0;
+	_objectVar[56] = 0; // evil sargent anim spriteNumber
 	_objectVar.setObjectRunningCode(72, 0);
 	for (int i = 31; i < 34; i++) {
 		if (_objectVar.getMoveObjectRoom(i) == 99) {
@@ -1221,7 +1228,7 @@ void DarkseedEngine::updateDisplay() { // AKA ServiceRoom
 					const Sprite &playerSprite = _player->getSprite(26);
 					_room->calculateScaledSpriteDimensions(playerSprite._width, playerSprite._height, _player->_position.y);
 					_sprites.addSpriteToDrawList(
-						_player->_position.x,
+						_player->_position.x - _scaledSpriteWidth / 2,
 						_player->_position.y - _scaledSpriteHeight,
 						&playerSprite,
 						240 - _player->_position.y,
@@ -1376,7 +1383,7 @@ void DarkseedEngine::updateDisplay() { // AKA ServiceRoom
 						_scaledSpriteWidth,
 						_scaledSpriteHeight,
 						_player->_flipSprite);
-				} else if (_animation->_otherNspAnimationType_maybe == 39) {
+				} else if (_animation->_otherNspAnimationType_maybe == 39) { // Mike arrested by cop.
 					int16 spriteX = 110;
 					int16 spriteY = _player->_position.y;
 					if (_room->_roomNumber == 10) {
@@ -1387,23 +1394,23 @@ void DarkseedEngine::updateDisplay() { // AKA ServiceRoom
 					_room->calculateScaledSpriteDimensions(
 						sprite._width,
 						sprite._height,
-						spriteX);
+						spriteY);
 					_sprites.addSpriteToDrawList(
-						spriteX,
+						spriteX - _scaledSpriteWidth / 2,
 						spriteY - _scaledSpriteHeight,
 						&sprite,
 						240 - _player->_position.y,
 						_scaledSpriteWidth,
 						_scaledSpriteHeight,
 						_player->_flipSprite);
-				} else if (_animation->_otherNspAnimationType_maybe == 47) {
+				} else if (_animation->_otherNspAnimationType_maybe == 47) { // Mike stick throw
 					const Sprite &sprite = _room->_locationSprites.getSpriteAt(_player->_frameIdx);
 					_room->calculateScaledSpriteDimensions(
 						sprite._width,
 						sprite._height,
 						_player->_position.y);
 					_sprites.addSpriteToDrawList(
-						_player->_position.x,
+						_player->_position.x - _scaledSpriteWidth / 2,
 						_player->_position.y - _scaledSpriteHeight,
 						&sprite,
 						240 - _player->_position.y,
@@ -1891,11 +1898,6 @@ void DarkseedEngine::lookCode(int objNum) {
 	_console->addTextLine(Common::String::format("You see the %s.", _objectVar.getObjectName(objNum)));
 }
 
-void DarkseedEngine::wonGame() {
-	error("implement wonGame()"); // TODO
-	//	_cutscene.play('Z');
-}
-
 void DarkseedEngine::printTime() {
 	_console->printTosText(958);
 	int hour = g_engine->_currentTimeInSeconds / 60 / 60 + 1;
@@ -1941,8 +1943,9 @@ void DarkseedEngine::getPackageObj(int packageType) {
 	}
 }
 
-void DarkseedEngine::playSound(int16 unk, uint8 unk1, int16 unk2) {
-	// TODO...
+void DarkseedEngine::playSound(uint8 sfxId, uint8 unk1, int16 unk2) {
+	debug("Play SFX: %d", sfxId);
+	_sound->playSfx(sfxId, unk1, unk2);
 }
 
 void DarkseedEngine::nextFrame(int nspAminIdx) {
@@ -2252,7 +2255,7 @@ void DarkseedEngine::runObjects() {
 			}
 			if (_delbertspeech == 64) {
 				_console->printTosText(908);
-				_sound->waitForSpeech();
+				waitForSpeech();
 			} else if (_delbertspeech == 65) {
 				_animation->setupOtherNspAnimation(3, 20);
 				_animation->_spriteAnimCountdownTimer[1] = 3;
@@ -2501,7 +2504,7 @@ void DarkseedEngine::leavePackage() {
 	} else {
 		_objectVar.setMoveObjectRoom(packageObjNum, 10);
 	}
-//	_MoveObjectDepth[packageObjNum] = 0; TODO do we need this? It doesn't appear to be used.
+	//	_MoveObjectDepth[packageObjNum] = 0; TODO do we need this? It doesn't appear to be used.
 	_objectVar._objectRunningCode[140] = 0;
 }
 
@@ -2544,33 +2547,130 @@ void DarkseedEngine::waitxticks(int ticks) {
 		wait();
 	}
 }
-void DarkseedEngine::restartGame() {
-	_restartGame = true;
-}
 
-void DarkseedEngine::newGame() {
-	_redrawFrame = true;
-	_cursor.showCursor(true);
-	_sprites.clearSpriteDrawList();
-	removeFullscreenPic();
-	_inventory.reset();
-	_sound->resetSpeech();
-	_objectVar.reset();
-	_room->_roomNumber = 0;
-	changeToRoom(0);
+void DarkseedEngine::doCircles() {
+	debug("DarkseedEngine::doCircles");
 	_player->loadAnimations("bedsleep.nsp");
 	_player->_position.x = 0x87;
 	_player->_position.y = 0x5b;
 	_player->_frameIdx = 0;
 	_player->_direction = 1;
 	_animation->setupOtherNspAnimation(0, 1);
-	//		bVar1 = true;
-	if (_currentDay == 1) {
-		_console->printTosText(8);
-	} else if (_currentDay == 2) {
-		_console->printTosText(0xc);
-	} else if (_currentDay == 3) {
-		_console->printTosText(0xe);
+
+	_frame.draw();
+	_room->draw();
+	_console->draw(true);
+
+	// setup & draw Mike in bed.
+	_sprites.clearSpriteDrawList();
+	const Sprite &animSprite = _player->_animations.getSpriteAt(_player->_frameIdx);
+	_sprites.addSpriteToDrawList(0x75, 0x71, &animSprite, 240 - _player->_position.y, animSprite._width, animSprite._height, _player->_flipSprite);
+	_sprites.drawSprites();
+
+	// Capture screen.
+
+	Graphics::Surface screenCopy;
+	screenCopy.copyFrom(*_screen);
+
+	_screen->clear(0);
+
+	// draw onion rings of the screen.
+
+	int16 lineLengthTbl[175];
+
+	for (int i = 0; i < 175; i++) {
+		lineLengthTbl[i] = -1;
+	}
+
+	for (int xOffset = 5; xOffset < 261; xOffset = xOffset + 5) {
+		int16 prevLineLengthTbl[175];
+		for (int i = 0; i < 175; i++) {
+			prevLineLengthTbl[i] = lineLengthTbl[i];
+		}
+		int local_4 = xOffset * xOffset;
+		for (int y = 0; y < xOffset; y++) {
+			int local_6 = local_4 - y * y;
+			int local_8 = 0;
+			int iVar1 = 0;
+			for (int local_a = 0; local_a < local_6; local_a = local_a + iVar1 + 1) {
+				iVar1 = local_8 * 2;
+				local_8 = local_8 + 1;
+			}
+			if (y < 175) {
+				lineLengthTbl[y] = (int16)(local_8 * 3 >> 1);
+				if (prevLineLengthTbl[y] == -1) {
+					copyLine(screenCopy, 320 - lineLengthTbl[y],lineLengthTbl[y] + 320,175 - y);
+					copyLine(screenCopy, 320 - lineLengthTbl[y],lineLengthTbl[y] + 320,y + 176);
+				}
+				else {
+					copyLine(screenCopy, 320 - lineLengthTbl[y],320 - prevLineLengthTbl[y],175 - y);
+					copyLine(screenCopy, prevLineLengthTbl[y] + 320,lineLengthTbl[y] + 320,175 - y);
+					copyLine(screenCopy, 320 - lineLengthTbl[y],320 - prevLineLengthTbl[y],y + 176);
+					copyLine(screenCopy, prevLineLengthTbl[y] + 320,lineLengthTbl[y] + 320,y + 176);
+				}
+			}
+		}
+		_screen->update();
+		wait();
+	}
+
+	_screen->copyRectToSurface(screenCopy, 0, 0, {screenCopy.w, screenCopy.h});
+	_screen->update();
+}
+
+void DarkseedEngine::copyLine(const Graphics::Surface &surface, int16 x1, int16 x2, int16 y) {
+	auto rect = Common::Rect({x1, y}, x2 - x1, 1);
+	_screen->blitFrom(surface, rect, rect);
+}
+
+void DarkseedEngine::restartGame() {
+	_restartGame = true;
+}
+
+void DarkseedEngine::newGame() {
+	_canSaveGame = false;
+	_redrawFrame = false;
+	_sprites.clearSpriteDrawList();
+	removeFullscreenPic();
+	_inventory.reset();
+	_sound->resetSpeech();
+	_objectVar.reset();
+	_room->_roomNumber = 0;
+	_currentDay = 1;
+	changeToRoom(0);
+
+	doCircles();
+
+	_console->printTosText(8);
+
+	_console->draw();
+	_screen->update();
+
+	waitForSpeech();
+	_systemTimerCounter = 4;
+	_cursor.showCursor(true);
+	_canSaveGame = true;
+}
+
+void DarkseedEngine::waitForSpeech() {
+	while (_sound && _sound->isPlayingSpeech()) {
+		updateEvents();
+		if (_room) {
+			_room->update();
+		}
+		_screen->update();
+		wait();
+	}
+}
+
+void DarkseedEngine::waitForSpeechOrSfx() {
+	while (_sound && (_sound->isPlayingSpeech() || _sound->isPlayingSfx())) {
+		updateEvents();
+		if (_room) {
+			_room->update();
+		}
+		_screen->update();
+		wait();
 	}
 }
 

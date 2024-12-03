@@ -30,6 +30,7 @@
 #include "engines/wintermute/base/base_surface_storage.h"
 #include "engines/wintermute/base/gfx/base_surface.h"
 #include "engines/wintermute/base/gfx/xmaterial.h"
+#include "engines/wintermute/base/gfx/3deffect.h"
 #include "engines/wintermute/base/gfx/xfile_loader.h"
 #include "engines/wintermute/dcgf.h"
 #include "engines/wintermute/utils/path_util.h"
@@ -48,6 +49,8 @@ Material::Material(BaseGame *inGame) : BaseNamedObject(inGame) {
 	_ownedSurface = false;
 	_sprite = nullptr;
 	_theora = nullptr;
+	_effect = nullptr;
+	_params = nullptr;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -58,23 +61,28 @@ Material::~Material() {
 
 	_sprite = nullptr; // ref only
 	_theora = nullptr;
+	_effect = nullptr;
+	_params = nullptr;
 }
 
 //////////////////////////////////////////////////////////////////////////
 bool Material::invalidateDeviceObjects() {
-	// as long as we don't support D3DX effects, there is nothing to be done here
+	if (_effect)
+		return _effect->invalidateDeviceObjects();
 	return true;
 }
 
 //////////////////////////////////////////////////////////////////////////
 bool Material::restoreDeviceObjects() {
+	if (_effect)
+		return _effect->restoreDeviceObjects();
 	return true;
 }
 
 //////////////////////////////////////////////////////////////////////////
 bool Material::setTexture(const Common::String &filename, bool adoptName) {
 	if (adoptName) {
-		setName(PathUtil::getFileName(filename).c_str());
+		setName(PathUtil::getFileNameWithoutExtension(filename).c_str());
 	}
 
 	_textureFilename = filename;
@@ -93,7 +101,7 @@ bool Material::setTexture(const Common::String &filename, bool adoptName) {
 //////////////////////////////////////////////////////////////////////////
 bool Material::setSprite(BaseSprite *sprite, bool adoptName) {
 	if (adoptName) {
-		setName(PathUtil::getFileName(sprite->getFilename()).c_str());
+		setName(PathUtil::getFileNameWithoutExtension(sprite->getFilename()).c_str());
 	}
 
 	_textureFilename = sprite->getFilename();
@@ -113,7 +121,7 @@ bool Material::setSprite(BaseSprite *sprite, bool adoptName) {
 //////////////////////////////////////////////////////////////////////////
 bool Material::setTheora(VideoTheoraPlayer *theora, bool adoptName) {
 	if (adoptName) {
-		setName(PathUtil::getFileName(theora->_filename).c_str());
+		setName(PathUtil::getFileNameWithoutExtension(theora->_filename).c_str());
 	}
 	_textureFilename = theora->_filename;
 
@@ -125,6 +133,25 @@ bool Material::setTheora(VideoTheoraPlayer *theora, bool adoptName) {
 
 	_theora = theora;
 	_ownedSurface = false;
+
+	return true;
+}
+
+//////////////////////////////////////////////////////////////////////////
+bool Material::setEffect(Effect3D *effect, Effect3DParams *params, bool adoptName) {
+	if (!effect) {
+		_effect = nullptr;
+		_params = nullptr;
+		return true;
+	}
+
+	if (adoptName) {
+		setName(PathUtil::getFileNameWithoutExtension(effect->getFileName()).c_str());
+	}
+	_textureFilename = effect->getFileName();
+
+	_effect = effect;
+	_params = params;
 
 	return true;
 }

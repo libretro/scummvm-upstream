@@ -405,6 +405,27 @@ String Path::baseName() const {
 	return unescape(kNoSeparator, begin, end);
 }
 
+int Path::numComponents() const {
+	if (_str.empty())
+		return 0;
+
+	const char *str = _str.c_str();
+
+	if (isEscaped())
+		str++;
+
+	int num = 1;
+
+	const char *sep = strchr(str, SEPARATOR);
+	while (sep) {
+		str = sep + 1;
+		sep = strchr(str, SEPARATOR);
+		num++;
+	}
+
+	return num;
+}
+
 Path &Path::appendInPlace(const Path &x) {
 	if (x._str.empty()) {
 		return *this;
@@ -1004,6 +1025,18 @@ Path Path::punycodeEncode() const {
 		}, tmp);
 }
 
+bool Path::punycodeNeedsEncode() const {
+	bool tmp;
+	return reduceComponents<bool &>(
+		[](bool &result, const String &in, bool last) -> bool & {
+			// If we already need encode, we still need it
+			if (result) return result;
+
+			result = punycode_needEncode(in);
+			return result;
+		}, tmp);
+}
+
 // For a path component creates a string with following property:
 // if 2 files have the same case-insensitive
 // identifier string then and only then we treat them as
@@ -1116,7 +1149,63 @@ Path Path::fromConfig(const String &value) {
 #endif
 
 	// If the path is not punyencoded this will be a no-op
-	return Path(value, '/').punycodeDecode();
+	Path tmp;
+	return Path(value, '/').reduceComponents<Path &>(
+		[](Path &path, const String &in, bool last) -> Path & {
+			// We encode the result as Latin-1: every byte has its own value
+			// This avoids error for non UTF-8 paths
+			String out = punycode_hasprefix(in) ?
+				     punycode_decodefilename(in).encode(kISO8859_1) :
+				     in;
+			path.appendInPlace(out, kNoSeparator);
+			if (!last) {
+				path._str += SEPARATOR;
+			}
+			return path;
+		}, tmp);
+}
+
+String Path::toConfig() const {
+#if defined(WIN32) && defined(UNICODE)
+	if (!isEscaped()) {
+		// If we are escaped, we have forbidden characters (slash or pipe) which must be encoded
+		// This can't happen on real Win32 paths
+		// With UNICODE every path is encoded by the backend to UTF-8 strings all the configuration
+		// Except for (strange) cases where we would like to store paths containing backslashes,
+		// there is no need for escaping
+		if (strchr(_str.c_str(), Path::kNativeSeparator) == nullptr) {
+			return toString(Path::kNativeSeparator);
+		}
+	}
+#elif defined(__3DS__) || defined(__amigaos4__) || defined(__DS__) || defined(__MORPHOS__) || defined(NINTENDO_SWITCH) || defined(__PSP__) || defined(PSP2) || defined(__WII__) || defined(WIN32)
+	// For all platforms making use of : as a drive separator, avoid useless punycoding
+	if (!isEscaped()) {
+		// If we are escaped, we have forbidden characters which must be encoded
+		// Try to replace all : by SEPARATOR and check if we need puny encoding: if we don't, we are safe
+		Path tmp(*this);
+		tmp._str.replace(':', SEPARATOR);
+#if defined(WIN32)
+		// WIN32 can also make use of ? in Win32 devices namespace
+		tmp._str.replace('?', SEPARATOR);
+#endif
+		if (!tmp.punycodeNeedsEncode()) {
+			return toString(Path::kNativeSeparator);
+		}
+	}
+#endif
+
+	String tmp;
+	return reduceComponents<String &>(
+		[](String &path, const String &in, bool last) -> String & {
+			// We decode the result as Latin-1: every byte has its own value
+			// This avoids error for non UTF-8 paths
+			Common::String out = punycode_encodefilename(in.decode(kISO8859_1));
+			path += out;
+			if (!last) {
+				path += '/';
+			}
+			return path;
+		}, tmp);
 }
 
 Path Path::fromCommandLine(const String &value) {

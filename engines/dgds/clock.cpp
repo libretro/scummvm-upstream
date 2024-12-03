@@ -114,7 +114,13 @@ Common::String Clock::getTimeStr() const {
 			month = 0;
 	}
 
-	return Common::String::format("%2d/%02d %2d:%02d", month + 1, day, _hours, _mins);
+	if (DgdsEngine::getInstance()->getGameLang() == Common::EN_ANY) {
+		return Common::String::format("%2d/%02d %2d:%02d", month + 1, day, _hours, _mins);
+	} else if (DgdsEngine::getInstance()->getGameLang() == Common::DE_DEU) {
+		return Common::String::format("%2d.%d %2d.%02d", day, month + 1, _hours, _mins);
+	} else {
+		error("Unsupported language %d", DgdsEngine::getInstance()->getGameLang());
+	}
 }
 
 void Clock::draw(Graphics::ManagedSurface &surf) {
@@ -140,7 +146,7 @@ static const int MILLIS_PER_GAME_MIN = 5000;
 static const int MILLIS_PER_TIMER_TICK = 60;
 
 void Clock::update(bool gameRunning) {
-	uint32 playTimeNow = g_engine->getTotalPlayTime();
+	uint32 playTimeNow = DgdsEngine::getInstance()->getThisFrameMs();
 	// These timers are updated whether or not the game is running
 	_gameTicksUp = playTimeNow / MILLIS_PER_TIMER_TICK;
 

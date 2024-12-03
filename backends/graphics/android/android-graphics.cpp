@@ -40,6 +40,7 @@
 #include "backends/platform/android/jni-android.h"
 #include "backends/graphics/android/android-graphics.h"
 #include "backends/graphics/opengl/pipelines/pipeline.h"
+#include "backends/graphics/opengl/texture.h"
 
 #include "graphics/blit.h"
 #include "graphics/managed_surface.h"
@@ -163,6 +164,23 @@ void AndroidGraphicsManager::displayMessageOnOSD(const Common::U32String &msg) {
 	ENTER("%s", msg.encode().c_str());
 
 	JNI::displayMessageOnOSD(msg);
+}
+
+void AndroidGraphicsManager::recalculateDisplayAreas() {
+	Common::Rect oldDrawRect = _activeArea.drawRect;
+
+	OpenGLGraphicsManager::recalculateDisplayAreas();
+
+	int offsetX = _activeArea.drawRect.left - oldDrawRect.left;
+	int offsetY = _activeArea.drawRect.top - oldDrawRect.top;
+
+	int newX = _cursorX + offsetX;
+	int newY = _cursorY + offsetY;
+
+	newX = CLIP<int16>(newX, _activeArea.drawRect.left, _activeArea.drawRect.right);
+	newY = CLIP<int16>(newY, _activeArea.drawRect.top, _activeArea.drawRect.bottom);
+
+	setMousePosition(newX, newY);
 }
 
 void AndroidGraphicsManager::showOverlay(bool inGUI) {

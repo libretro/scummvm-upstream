@@ -30,6 +30,7 @@ Sprite::Sprite(uint16 width, uint16 height, uint16 pitch) : _width(width), _heig
 }
 
 bool Sprite::loadData(Common::SeekableReadStream &readStream) {
+	g_engine->waitForSpeech();
 	if (_width == 1 && _height == 1) {
 		byte b = readStream.readByte();
 		_pixels[0] = b >> 4;
@@ -60,6 +61,9 @@ void Sprite::clipToScreen(int x, int y, uint16 frameBottom, uint16 *clippedWidth
 	if (x + _width > g_engine->_screen->w) {
 		*clippedWidth = g_engine->_screen->w - x;
 	}
+	if (x + _width > 569) {
+		*clippedWidth = 569 - x;
+	}
 	if (frameBottom != 0 && y + _height > g_engine->_frameBottom) {
 		if (y >= frameBottom) {
 			return;
@@ -72,7 +76,19 @@ void Sprite::draw(int x, int y, uint16 frameBottom) const {
 	uint16 clippedWidth = _width;
 	uint16 clippedHeight = _height;
 	clipToScreen(x, y, frameBottom, &clippedWidth, &clippedHeight);
-	g_engine->_screen->copyRectToSurfaceWithKey(_pixels.data(), _pitch, x, y, clippedWidth, clippedHeight, 0xf);
+
+	// clip to left side of frame.
+	if (x + _width <= 70) {
+		return;
+	}
+	int dX = 0;
+	if (x < 70) {
+		dX = 70 - x;
+		x = 70;
+		clippedWidth -= dX;
+	}
+	const uint8  *pixels = _pixels.data() + dX;
+	g_engine->_screen->copyRectToSurfaceWithKey(pixels, _pitch, x, y, clippedWidth, clippedHeight, 0xf);
 }
 
 void Sprite::draw(Graphics::Surface *dst, int x, int y, uint16 frameBottom) const {
@@ -121,7 +137,7 @@ void Sprite::drawScaled(int destX, int destY, int destWidth, int destHeight, boo
 		int xi = flipX ? xs : xs * clipX;
 		const byte *wsrc = hsrc + ((xi + 0x8000) >> 16);
 		for (int xc = 0; xc < destWidth; ++xc) {
-			if (currX >= 69 && currX < destSurface->w) { // clip to game window. TODO pass clip rect into method.
+			if (currX > 69 && currX < destSurface->w) { // clip to game window. TODO pass clip rect into method.
 				byte colorIndex = *wsrc;
 				//				uint16 c = READ_LE_UINT16(&palette[colorIndex * 2]);
 				if (colorIndex != 0xf) {

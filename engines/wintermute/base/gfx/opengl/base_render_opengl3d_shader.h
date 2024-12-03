@@ -30,9 +30,6 @@
 #include "graphics/opengl/system_headers.h"
 #include "graphics/transform_struct.h"
 
-#include "math/matrix4.h"
-#include "math/ray.h"
-
 #if defined(USE_OPENGL_SHADERS)
 
 #include "graphics/opengl/shader.h"
@@ -42,6 +39,23 @@ namespace Wintermute {
 class BaseSurfaceOpenGL3D;
 
 class BaseRenderOpenGL3DShader : public BaseRenderer3D {
+	friend class BaseSurfaceOpenGL3DShader;
+	friend class Mesh3DSOpenGLShader;
+	friend class XMeshOpenGLShader;
+	friend class ShadowVolumeOpenGLShader;
+
+	struct SpriteVertex {
+		float x;
+		float y;
+		float z;
+		float u;
+		float v;
+		float r;
+		float g;
+		float b;
+		float a;
+	};
+
 public:
 	BaseRenderOpenGL3DShader(BaseGame *inGame = nullptr);
 	~BaseRenderOpenGL3DShader() override;
@@ -67,13 +81,17 @@ public:
 	void dumpData(const char *filename) override {}
 	BaseImage *takeScreenshot() override;
 	void fadeToColor(byte r, byte g, byte b, byte a) override;
+	bool flip() override;
 	bool fill(byte r, byte g, byte b, Common::Rect *rect = nullptr) override;
 
 	bool setViewport(int left, int top, int right, int bottom) override;
 	bool drawLine(int x1, int y1, int x2, int y2, uint32 color) override;
 
+	DXMatrix *buildMatrix(DXMatrix* out, const DXVector2 *centre, const DXVector2 *scaling, float angle);
+	void transformVertices(struct SpriteVertex *vertices, const DXVector2 *centre, const DXVector2 *scaling, float angle);
+
 	bool setProjection() override;
-	bool setProjection2D() override;
+	bool setProjection2D(OpenGL::Shader *);
 	bool setWorldTransform(const DXMatrix &transform) override;
 	bool setViewTransform(const DXMatrix &transform) override;
 	bool setProjectionTransform(const DXMatrix &transform) override;
@@ -119,8 +137,16 @@ public:
 
 	bool setViewport3D(DXViewport *viewport) override;
 
+	void postfilter() override;
+	void setPostfilter(PostFilter postFilter) override { _postFilterMode = postFilter; };
+
+	OpenGL::Shader *_shadowMaskShader;
+
 private:
-	DXMatrix _projectionMatrix2d;
+	void renderSimpleShadow(BaseObject *object);
+
+	DXMatrix _glProjectionMatrix;
+	float _alphaRef;
 
 	Common::Array<DXMatrix> _transformStack;
 
@@ -129,13 +155,12 @@ private:
 	GLuint _spriteVBO;
 	GLuint _fadeVBO;
 	GLuint _lineVBO;
-	OpenGL::Shader *_spriteShader;
-	OpenGL::Shader *_fadeShader;
-	OpenGL::Shader *_xmodelShader;
-	OpenGL::Shader *_geometryShader;
-	OpenGL::Shader *_shadowVolumeShader;
-	OpenGL::Shader *_shadowMaskShader;
-	OpenGL::Shader *_lineShader;
+	OpenGL::Shader *_spriteShader{};
+	OpenGL::Shader *_fadeShader{};
+	OpenGL::Shader *_xmodelShader{};
+	OpenGL::Shader *_geometryShader{};
+	OpenGL::Shader *_shadowVolumeShader{};
+	OpenGL::Shader *_lineShader{};
 };
 
 } // namespace Wintermute

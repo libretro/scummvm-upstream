@@ -41,7 +41,7 @@ Renderer *CreateGfxOpenGL(int screenW, int screenH, Common::RenderMode renderMod
 OpenGLRenderer::OpenGLRenderer(int screenW, int screenH, Common::RenderMode renderMode, bool authenticGraphics) : Renderer(screenW, screenH, renderMode, authenticGraphics) {
 	_verts = (Vertex *)malloc(sizeof(Vertex) * kVertexArraySize);
 	_coords = (Coord *)malloc(sizeof(Coord) * kCoordsArraySize);
-	_texturePixelFormat = OpenGLTexture::getRGBAPixelFormat();
+	_texturePixelFormat = getRGBAPixelFormat();
 	_isAccelerated = true;
 	_variableStippleArray = nullptr;
 }
@@ -51,7 +51,7 @@ OpenGLRenderer::~OpenGLRenderer() {
 	free(_coords);
 }
 
-Texture *OpenGLRenderer::createTexture(const Graphics::Surface *surface) {
+Texture *OpenGLRenderer::createTexture(const Graphics::Surface *surface, bool is3D) {
 	return new OpenGLTexture(surface);
 }
 
@@ -492,7 +492,7 @@ void OpenGLRenderer::depthTesting(bool enabled) {
 void OpenGLRenderer::polygonOffset(bool enabled) {
 	if (enabled) {
 		glEnable(GL_POLYGON_OFFSET_FILL);
-		glPolygonOffset(-10.0f, 1.0f);
+		glPolygonOffset(-1.0f, 1.0f);
 	} else {
 		glPolygonOffset(0, 0);
 		glDisable(GL_POLYGON_OFFSET_FILL);
@@ -513,7 +513,7 @@ void OpenGLRenderer::useStipple(bool enabled) {
 		GLfloat factor = 0;
 		glGetFloatv(GL_POLYGON_OFFSET_FACTOR, &factor);
 		glEnable(GL_POLYGON_OFFSET_FILL);
-		glPolygonOffset(factor - 1.0f, -1.0f);
+		glPolygonOffset(factor - 0.5f, -1.0f);
 		glEnable(GL_POLYGON_STIPPLE);
 		if (_renderMode == Common::kRenderZX    ||
 			_renderMode == Common::kRenderCPC   ||
@@ -563,7 +563,7 @@ void OpenGLRenderer::flipBuffer() {}
 Graphics::Surface *OpenGLRenderer::getScreenshot() {
 	Common::Rect screen = viewport();
 	Graphics::Surface *s = new Graphics::Surface();
-	s->create(screen.width(), screen.height(), OpenGLTexture::getRGBAPixelFormat());
+	s->create(screen.width(), screen.height(), getRGBAPixelFormat());
 	glReadPixels(screen.left, screen.top, screen.width(), screen.height(), GL_RGBA, GL_UNSIGNED_BYTE, s->getPixels());
 	flipVertical(s);
 	return s;

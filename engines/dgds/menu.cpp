@@ -42,11 +42,19 @@ namespace Dgds {
 
 // TODO: These are the IDs for Dragon, this code needs updates for China/Beamish/etc
 enum MenuButtonIds {
+	kMainMenuWillySave = 110,
+	kMainMenuWillyLoad = 111,
+	kMainMenuWillyRestart = 112,
+	kMainMenuWillyQuit = 113,
+	kMainMenuWillyHelp = 114,
+	kMainMenuWillySoundsOnOff = 115,
+	kMainMenuWillyMusicOnOff = 116,
+
 	kMenuMainPlay = 120,
 	kMenuMainControls = 20,
 	kMenuMainOptions = 121,
-	kMenuMainCalibrate = 118,
-	kMenuMainFiles = 119,
+	kMenuMainCalibrate = 118, // or Credits in Willy Beamish
+	kMenuMainFiles = 119, // or Play in Willy Beamish
 	kMenuMainQuit = 122,
 
 	kMenuControlsVCR = 127,
@@ -63,6 +71,7 @@ enum MenuButtonIds {
 	kMenuOptionsSoundsOnOff = 137,
 	kMenuOptionsMusicOnOff = 140,
 	kMenuOptionsSoundsOnOffHoC = 175,
+	kMenuOptionsSoundsOnOffDE = 172, // German version
 	kMenuOptionsMusicOnOffHoC = 171,
 	kMenuOptionsVCR = 135,
 	kMenuOptionsPlay = 136,
@@ -149,24 +158,45 @@ void Menu::setScreenBuffer() {
 
 bool Menu::updateOptionsGadget(Gadget *gadget) {
 	Audio::Mixer *mixer = DgdsEngine::getInstance()->_mixer;
+	const char *mouseStr, *soundStr, *musicStr, *onStr, *offStr;
+	if (DgdsEngine::getInstance()->getGameLang() == Common::EN_ANY) {
+		mouseStr = "MOUSE";
+		soundStr = "SOUND";
+		musicStr = "MUSIC";
+		onStr = "ON";
+		offStr = "OFF";
+	} else if (DgdsEngine::getInstance()->getGameLang() == Common::DE_DEU) {
+		mouseStr = "MAUS";
+		soundStr = "TON";
+		musicStr = "MUSIK";
+		onStr = "AN";
+		offStr = "AUS";
+	} else {
+		error("Unsupported language %d", DgdsEngine::getInstance()->getGameLang());
+	}
 
 	switch (gadget->_gadgetNo) {
 	case kMenuOptionsJoystickOnOff:
 	case kMenuOptionsJoystickOnOffHoC:
-		gadget->_buttonName = "JOYSTICK ON";
-		return false;
+		gadget->_buttonName = Common::String::format("JOYSTICK %s", onStr);
+		return true;
 	case kMenuOptionsMouseOnOff:
 	case kMenuOptionsMouseOnOffHoC:
-		gadget->_buttonName = "MOUSE ON";
-		return false;
+		gadget->_buttonName = Common::String::format("%s %s", mouseStr, onStr);
+		return true;
 	case kMenuOptionsSoundsOnOff: // same id as kMenuMaybeBetterSaveYes
-	case kMenuOptionsSoundsOnOffHoC:
-		gadget->_buttonName = (!mixer->isSoundTypeMuted(Audio::Mixer::kSFXSoundType)) ? "SOUNDS ON" : "SOUNDS OFF";
+	case kMenuOptionsSoundsOnOffDE:
+	case kMenuOptionsSoundsOnOffHoC: {
+		bool isMuted = mixer->isSoundTypeMuted(Audio::Mixer::kSFXSoundType);
+		gadget->_buttonName = Common::String::format("%s %s", soundStr, isMuted ? offStr : onStr);
 		return true;
+	}
 	case kMenuOptionsMusicOnOff:
-	case kMenuOptionsMusicOnOffHoC:
-		gadget->_buttonName = (!mixer->isSoundTypeMuted(Audio::Mixer::kMusicSoundType)) ? "MUSIC ON" : "MUSIC OFF";
+	case kMenuOptionsMusicOnOffHoC: {
+		bool isMuted = mixer->isSoundTypeMuted(Audio::Mixer::kMusicSoundType);
+		gadget->_buttonName = Common::String::format("%s %s", musicStr, isMuted ? offStr : onStr);
 		return true;
+	}
 	default:
 		return false;
 	}
@@ -444,12 +474,14 @@ void Menu::handleClick(const Common::Point &mouse) {
 	case kMenuFilesRestore:
 	case kMenuGameOverRestore:
 	case kMenuIntroRestore:
+	case kMainMenuWillyLoad:
 		if (g_engine->loadGameDialog())
 			hideMenu();
 		else
 			drawMenu(_curMenu);
 		break;
 	case kMenuFilesRestart:
+	case kMainMenuWillyRestart:
 		drawMenu(kMenuRestart);
 		break;
 	case kMenuFilesSave: // TODO: Add an option to support original save/load dialogs?
@@ -457,6 +489,7 @@ void Menu::handleClick(const Common::Point &mouse) {
 	//case kMenuSaveNext:
 	//case kMenuSaveSave:
 	case kMenuMaybeBetterSaveYes:
+	case kMainMenuWillySave:
 		if (g_engine->saveGameDialog())
 			hideMenu();
 		else
@@ -477,6 +510,7 @@ void Menu::handleClick(const Common::Point &mouse) {
 		engine->restartGame();
 		break;
 	case kMenuGameOverQuit:
+	case kMainMenuWillyQuit:
 		drawMenu(kMenuReallyQuit);
 		break;
 	case kMenuGameOverRestart:
@@ -542,7 +576,7 @@ void Menu::handleClick(const Common::Point &mouse) {
 		drawMenu(_curMenu);
 		break;
 	default:
-		debug("Clicked ID %d", clickedMenuItem);
+		debug(1, "Clicked ID %d", clickedMenuItem);
 		break;
 	}
 }
@@ -562,21 +596,24 @@ void Menu::handleClickOptionsMenu(const Common::Point &mouse) {
 		// Do nothing - we don't toggle joystick or mouse functionality
 		break;
 	case kMenuOptionsSoundsOnOff: // same id as kMenuMaybeBetterSaveYes
+	case kMenuOptionsSoundsOnOffDE:
 	case kMenuOptionsSoundsOnOffHoC:
+	case kMainMenuWillySoundsOnOff:
 		soundType = Audio::Mixer::kSFXSoundType;
 		// fall through
 	case kMenuOptionsMusicOnOff:
 	case kMenuOptionsMusicOnOffHoC:
+	case kMainMenuWillyMusicOnOff:
 		if (!mixer->isSoundTypeMuted(soundType)) {
 			mixer->muteSoundType(soundType, true);
 			warning("TODO: Sync volume and pause music");
 			//midiPlayer->syncVolume();
-			//midiPlayer->pause();
+			//engine->_soundPlayer->pauseMusic();
 		} else {
 			mixer->muteSoundType(soundType, false);
 			warning("TODO: Sync volume and resume music");
 			//midiPlayer->syncVolume();
-			//midiPlayer->resume();
+			//engine->_soundPlayer->resumeMusic();
 		}
 
 		updateOptionsGadget(gadget);

@@ -72,6 +72,7 @@ enum DialogDrawStage {
 };
 
 struct DialogAction {
+	int16 num;
 	// The game initializes str offsets to pointers, but let's be a bit nicer.
 	uint16 strStart; /// The start of the clickable text for this action
 	uint16 strEnd;	 /// End of clickable text for this action
@@ -114,8 +115,8 @@ public:
 	uint16 _time;
 	uint16 _nextDialogFileNum; // HOC onward, always set 0 in dragon.
 	uint16 _nextDialogDlgNum;
-	uint16 _unk1; // Willy onward, always set 0 in dragon and HoC
-	uint16 _unk2; // Willy onward, always set 0 in dragon and HoC
+	uint16 _talkDataNum; // Willy onward, always set 0 in dragon and HoC
+	uint16 _talkDataHeadNum; // Willy onward, always set 0 in dragon and HoC
 	Common::Array<DialogAction> _action;
 	Common::String _str;
 

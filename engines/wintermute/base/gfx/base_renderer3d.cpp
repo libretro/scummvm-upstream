@@ -22,7 +22,6 @@
 #include "engines/wintermute/base/gfx/base_renderer3d.h"
 #include "engines/wintermute/base/base_game.h"
 
-#include "math/glmath.h"
 #include "common/config-manager.h"
 
 namespace Wintermute {
@@ -130,30 +129,6 @@ DXViewport BaseRenderer3D::getViewPort() {
 
 Graphics::PixelFormat BaseRenderer3D::getPixelFormat() const {
 	return g_system->getScreenFormat();
-}
-
-Math::Matrix3 BaseRenderer3D::build2dTransformation(const Vector2 &center, float angle) {
-	Math::Matrix3 translateCenter;
-	translateCenter.setToIdentity();
-	translateCenter(0, 2) = -center.x;
-	translateCenter(1, 2) = -center.y;
-
-	float sinOfAngle = Math::Angle(angle).getSine();
-	float cosOfAngle = Math::Angle(angle).getCosine();
-
-	Math::Matrix3 rotation;
-	rotation.setToIdentity();
-	rotation(0, 0) = cosOfAngle;
-	rotation(0, 1) = sinOfAngle;
-	rotation(1, 0) = -sinOfAngle;
-	rotation(1, 1) = cosOfAngle;
-
-	Math::Matrix3 translateCenterBack;
-	translateCenterBack.setToIdentity();
-	translateCenterBack(0, 2) = center.x;
-	translateCenterBack(1, 2) = center.y;
-
-	return translateCenterBack * rotation * translateCenter;
 }
 
 void BaseRenderer3D::flipVertical(Graphics::Surface *s) {

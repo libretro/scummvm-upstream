@@ -44,6 +44,8 @@ private:
 	virtual ~JNI();
 
 public:
+	static bool assets_updated;
+
 	static bool pause;
 	static sem_t pause_sem;
 
@@ -93,6 +95,7 @@ public:
 	static void setOrientation(int touchMode);
 	static void addSysArchivesToSearchSet(Common::SearchSet &s, int priority);
 	static Common::String getScummVMBasePath();
+	static Common::String getScummVMAssetsPath();
 	static Common::String getScummVMConfigPath();
 	static Common::String getScummVMLogPath();
 	static jint getAndroidSDKVersionId();
@@ -183,7 +186,8 @@ private:
 	static void create(JNIEnv *env, jobject self, jobject asset_manager,
 						jobject egl, jobject egl_display,
 						jobject at, jint audio_sample_rate,
-						jint audio_buffer_size);
+						jint audio_buffer_size,
+						jboolean assets_updated_);
 	static void destroy(JNIEnv *env, jobject self);
 
 	static void setSurface(JNIEnv *env, jobject self, jint width, jint height, jint bpp);
@@ -196,7 +200,7 @@ private:
 	static void syncVirtkeyboardState(JNIEnv *env, jobject self, jboolean newState);
 	static void setPause(JNIEnv *env, jobject self, jboolean value);
 
-	static void systemInsetsUpdated(JNIEnv *env, jobject self, jintArray insets);
+	static void systemInsetsUpdated(JNIEnv *env, jobject self, jintArray gestureInsets, jintArray systemInsets, jintArray cutoutInsets);
 
 	static jstring getNativeVersionInfo(JNIEnv *env, jobject self);
 	static jstring convertToJString(JNIEnv *env, const Common::U32String &str);

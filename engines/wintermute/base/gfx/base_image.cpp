@@ -27,6 +27,7 @@
 
 #include "engines/wintermute/base/gfx/base_image.h"
 #include "engines/wintermute/base/base_file_manager.h"
+#include "engines/wintermute/base/file/base_savefile_manager_file.h"
 
 #include "graphics/surface.h"
 
@@ -45,6 +46,7 @@ namespace Wintermute {
 BaseImage::BaseImage() {
 	_fileManager = BaseFileManager::getEngineInstance();
 	_palette = nullptr;
+	_paletteTga = nullptr;
 	_paletteCount = 0;
 	_surface = nullptr;
 	_decoder = nullptr;
@@ -59,6 +61,8 @@ BaseImage::~BaseImage() {
 		_deletableSurface->free();
 	}
 	delete _deletableSurface;
+	delete _paletteTga;
+	_paletteTga = nullptr;
 }
 
 bool BaseImage::loadFile(const Common::String &filename) {
@@ -87,6 +91,20 @@ bool BaseImage::loadFile(const Common::String &filename) {
 	_paletteCount = _decoder->getPaletteColorCount();
 	_fileManager->closeFile(file);
 
+	//
+	// W/A: ScummVM TGA decoder interpreting palette as RGB, but TGA format should be as BGR
+	// So, swap R and B color components
+	//
+	if (_filename.hasSuffix(".tga")) {
+		_paletteTga = new byte[_paletteCount * 3];
+		for (uint32 i = 0; i < _paletteCount * 3; i += 3) {
+			_paletteTga[i + 0] = _palette[i + 2];
+			_paletteTga[i + 1] = _palette[i + 1];
+			_paletteTga[i + 2] = _palette[i + 0];
+		}
+		_palette = _paletteTga;
+	}
+
 	return true;
 }
 
@@ -107,15 +125,19 @@ void BaseImage::copyFrom(const Graphics::Surface *surface) {
 
 //////////////////////////////////////////////////////////////////////////
 bool BaseImage::saveBMPFile(const Common::String &filename) const {
-	warning("BaseImage::saveBMPFile - stubbed"); // TODO
+	Common::WriteStream *stream = openSfmFileForWrite(filename);
+	if (stream) {
+		bool ret = writeBMPToStream(stream);
+		delete stream;
+		return ret;
+	}
 	return false;
 }
 
 
 //////////////////////////////////////////////////////////////////////////
 bool BaseImage::resize(int newWidth, int newHeight) {
-	// WME Lite used FILTER_BILINEAR with FreeImage_Rescale here.
-	Graphics::Surface *temp = _surface->scale((uint16)newWidth, (uint16)newHeight);
+	Graphics::Surface *temp = _surface->scale((uint16)newWidth, (uint16)newHeight, true);
 	if (_deletableSurface) {
 		_deletableSurface->free();
 		delete _deletableSurface;
@@ -216,9 +238,7 @@ bool BaseImage::writeBMPToStream(Common::WriteStream *stream) const {
 
 //////////////////////////////////////////////////////////////////////////
 bool BaseImage::copyFrom(BaseImage *origImage, int newWidth, int newHeight) {
-	// WME Lite used FILTER_BILINEAR with FreeImage_Rescale here.
-
-	Graphics::Surface *temp = origImage->_surface->scale((uint16)newWidth, (uint16)newHeight);
+	Graphics::Surface *temp = origImage->_surface->scale((uint16)newWidth, (uint16)newHeight, true);
 	if (_deletableSurface) {
 		_deletableSurface->free();
 		delete _deletableSurface;

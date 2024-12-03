@@ -268,26 +268,14 @@ int Score::getNextLabelNumber(int referenceFrame) {
 	if (_labels == nullptr || _labels->size() == 0)
 		return 0;
 
-	Common::SortedArray<Label *>::iterator i;
-
-	for (i = _labels->begin(); i != _labels->end(); ++i) {
-		if ((*i)->number >= referenceFrame) {
-			int n = (*i)->number;
-			++i;
-			if (i != _labels->end()) {
-				// return to the first marker to to the right
-				return (*i)->number;
-			} else {
-				// if no markers are to the right of the playback head,
-				// the playback head goes to the first marker to the left
-				return n;
-			}
+	for (auto &it : *_labels) {
+		if (it->number > referenceFrame) {
+			return it->number;
 		}
 	}
-
-	// If there are not markers to the left,
-	// the playback head goes to frame 1, (Director frame array start from 1, engine from 0)
-	return 0;
+	// if no markers are to the right of the playback head,
+	// return the last marker
+	return _labels->back()->number;
 }
 
 int Score::getPreviousLabelNumber(int referenceFrame) {
@@ -806,8 +794,8 @@ void Score::updateSprites(RenderMode mode) {
 				_window->addDirtyRect(channel->getBbox());
 
 			if (currentSprite && currentSprite->_cast && currentSprite->_cast->_erase) {
-				_movie->eraseCastMember(currentSprite->_castId);
 				currentSprite->_cast->_erase = false;
+				_movie->eraseCastMember(currentSprite->_castId);
 
 				currentSprite->setCast(currentSprite->_castId);
 				nextSprite->setCast(nextSprite->_castId);
@@ -919,7 +907,7 @@ bool Score::renderPrePaletteCycle(RenderMode mode) {
 			// For fade to black and fade to white palette transitions,
 			// the first half happens with the previous frame's layout.
 
-			byte *fadePal = nullptr;
+			const byte *fadePal = nullptr;
 			if (_currentFrame->_mainChannels.palette.fadeToBlack) {
 				// Fade everything except color index 0 to black
 				debugC(2, kDebugImages, "Score::renderPrePaletteCycle(): fading palette to black over %d frames", fadeFrames);
@@ -1132,7 +1120,7 @@ void Score::renderPaletteCycle(RenderMode mode) {
 				// then to the new palette
 				int halfway = frameCount / 2;
 
-				byte *fadePal = nullptr;
+				const byte *fadePal = nullptr;
 				if (_currentFrame->_mainChannels.palette.fadeToBlack) {
 					// Fade everything except color index 0 to black
 					fadePal = kBlackPalette;
@@ -1176,7 +1164,7 @@ void Score::renderPaletteCycle(RenderMode mode) {
 			// Do a full cycle in one frame transition
 			// For normal mode, we've already faded the palette in renderPrePaletteCycle
 			if (!_currentFrame->_mainChannels.palette.normal) {
-				byte *fadePal = nullptr;
+				const byte *fadePal = nullptr;
 				if (_currentFrame->_mainChannels.palette.fadeToBlack) {
 					// Fade everything except color index 0 to black
 					fadePal = kBlackPalette;

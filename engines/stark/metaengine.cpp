@@ -185,14 +185,14 @@ Common::KeymapArray StarkMetaEngine::initKeymaps(const char *target) const {
 	Keymap *gameKeyMap = new Keymap(Keymap::kKeymapTypeGame, "game-shortcuts", _("Game keymappings"));
 
 	Action *act;
-	
-	act = new Action(kStandardActionLeftClick, _("Left click"));
+
+	act = new Action(kStandardActionLeftClick, _("Left Click"));
 	act->setLeftClickEvent();
 	act->addDefaultInputMapping("MOUSE_LEFT");
 	act->addDefaultInputMapping("JOY_A");
 	engineKeyMap->addAction(act);
 
-	act = new Action(kStandardActionRightClick, _("Right click"));
+	act = new Action(kStandardActionRightClick, _("Right Click"));
 	act->setRightClickEvent();
 	act->addDefaultInputMapping("MOUSE_RIGHT");
 	act->addDefaultInputMapping("JOY_B");
@@ -204,12 +204,12 @@ Common::KeymapArray StarkMetaEngine::initKeymaps(const char *target) const {
 	act->addDefaultInputMapping("F1");
 	act->addDefaultInputMapping("JOY_X");
 	gameKeyMap->addAction(act);
-	
+
 	act = new Action("SAVEGAME", _("Save game"));
 	act->setCustomEngineActionEvent(kActionSaveGame);
 	act->addDefaultInputMapping("F2");
 	gameKeyMap->addAction(act);
-	
+
 	act = new Action("LOADGAME", _("Load game"));
 	act->setCustomEngineActionEvent(kActionLoadGame);
 	act->addDefaultInputMapping("F3");
@@ -221,49 +221,49 @@ Common::KeymapArray StarkMetaEngine::initKeymaps(const char *target) const {
 	act->addDefaultInputMapping("F4");
 	gameKeyMap->addAction(act);
 
-	// I18N: Opens in-game Diary
+	// I18N: Opens in-game Diary. April is the female protagonist name
 	act = new Action("APRILSDIARY", _("April's diary (initially disabled)"));
 	act->setCustomEngineActionEvent(kActionAprilsDiary);
 	act->addDefaultInputMapping("F5");
 	gameKeyMap->addAction(act);
-	
+
 	act = new Action("VIDREPLAY", _("Video replay"));
 	act->setCustomEngineActionEvent(kActionVideoReplay);
 	act->addDefaultInputMapping("F6");
 	gameKeyMap->addAction(act);
-	
+
 	act = new Action("GAMESETTINGS", _("Game settings"));
 	act->setCustomEngineActionEvent(kActionGameSettings);
 	act->addDefaultInputMapping("F7");
 	gameKeyMap->addAction(act);
-	
+
 	act = new Action("SAVESCRNSHOT", _("Save screenshot"));
 	act->setCustomEngineActionEvent(kActionSaveScreenshot);
 	act->addDefaultInputMapping("F8");
 	gameKeyMap->addAction(act);
-	
+
 	act = new Action("TOGGLESUBS", _("Toggle subtitles"));
 	act->setCustomEngineActionEvent(kActionToggleSubtitles);
 	act->addDefaultInputMapping("F9");
 	gameKeyMap->addAction(act);
-	
+
 	act = new Action("QUITTOMENU", _("Quit to menu"));
 	act->setCustomEngineActionEvent(kActionQuitToMenu);
 	act->addDefaultInputMapping("F10");
 	gameKeyMap->addAction(act);
-	
+
 	act = new Action("CYCLEBACK", _("Cycle back through inventory cursor items"));
 	act->setCustomEngineActionEvent(kActionCycleForwardInventory);
 	act->addDefaultInputMapping("a");
 	act->addDefaultInputMapping("JOY_LEFT_TRIGGER");
 	gameKeyMap->addAction(act);
-	
+
 	act = new Action("CYCLEFORWARD", _("Cycle forward through inventory cursor items"));
 	act->setCustomEngineActionEvent(kActionCycleBackInventory);
 	act->addDefaultInputMapping("s");
 	act->addDefaultInputMapping("JOY_RIGHT_TRIGGER");
 	gameKeyMap->addAction(act);
-	
+
 	act = new Action("INVENTORY", _("Inventory"));
 	act->setCustomEngineActionEvent(kActionInventory);
 	act->addDefaultInputMapping("i");
@@ -315,12 +315,12 @@ Common::KeymapArray StarkMetaEngine::initKeymaps(const char *target) const {
 	act->addDefaultInputMapping("JOY_RIGHT_SHOULDER");
 	gameKeyMap->addAction(act);
 
-	act = new Action("SCROLLUPINVPREVDILOG", _("go to next dialogue"));
+	act = new Action("SCROLLUPINVPREVDILOG", _("Go to next dialogue"));
 	act->setCustomEngineActionEvent(kActionNextDialogue);
 	act->addDefaultInputMapping("DOWN");
 	gameKeyMap->addAction(act);
 
-	act = new Action("SCROLLDOWNINVNEXTDILOG", _("go to previous dialogues"));
+	act = new Action("SCROLLDOWNINVNEXTDILOG", _("Go to previous dialogues"));
 	act->setCustomEngineActionEvent(kActionPrevDialogue);
 	act->addDefaultInputMapping("UP");
 	gameKeyMap->addAction(act);
@@ -331,14 +331,14 @@ Common::KeymapArray StarkMetaEngine::initKeymaps(const char *target) const {
 	act->addDefaultInputMapping("KP_ENTER");
 	act->addDefaultInputMapping("JOY_RIGHT");
 	gameKeyMap->addAction(act);
-	
+
 	act = new Action("SKIP", _("Skip video sequence or dialogue"));
 	act->setCustomEngineActionEvent(kActionSkip);
 	act->addDefaultInputMapping("ESCAPE");
 	act->addDefaultInputMapping("JOY_BACK");
 	gameKeyMap->addAction(act);
 
-	
+
 	KeymapArray keymaps(2);
 	keymaps[0] = engineKeyMap;
 	keymaps[1] = gameKeyMap;

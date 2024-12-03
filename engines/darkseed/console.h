@@ -45,7 +45,8 @@ public:
 	void addTextLine(const Common::String &text);
 	void addToCurrentLine(const Common::String &text);
 
-	void draw();
+	void draw(bool forceRedraw = false);
+	void drawStringAt(int x, int y, const Common::String &text) const;
 
 private:
 	void addLine(const Common::String &line);

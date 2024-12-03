@@ -47,7 +47,7 @@ Common::Error ADSData::syncState(Common::Serializer &s) {
 		error("Unexpected number of ttm seqeunces (%d in save vs %d in ADS)", nseqs, _ttmSeqs.size());
 
 	for (auto &seq : _ttmSeqs)
-		seq.syncState(s);
+		seq->syncState(s);
 
 	return Common::kNoError;
 }
@@ -78,9 +78,10 @@ bool ADSInterpreter::load(const Common::String &filename) {
 	if (!_vm->getResourceManager()->hasResource(detailfile))
 		detailfile = filename;
 
-	debug("ADSInterpreter: load %s", detailfile.c_str());
+	debug(1, "ADSInterpreter: load %s", detailfile.c_str());
 
 	// Reset the state
+	_vm->setFlipMode(false);
 	_adsTexts.setVal(detailfile, ADSData());
 	_adsData = &(_adsTexts.getVal(detailfile));
 
@@ -91,7 +92,7 @@ bool ADSInterpreter::load(const Common::String &filename) {
 		if (file.empty())
 			continue;
 		_adsData->_scriptEnvs.resize(_adsData->_scriptEnvs.size() + 1);
-		debug("   load TTM %s to env %d", file.c_str(), _adsData->_scriptEnvs.size());
+		debug(1, "   load TTM %s to env %d", file.c_str(), _adsData->_scriptEnvs.size());
 		TTMEnviro &data = _adsData->_scriptEnvs.back();
 		data._enviro = _adsData->_scriptEnvs.size();
 		_ttmInterpreter->load(file, data);
@@ -125,7 +126,7 @@ bool ADSInterpreter::load(const Common::String &filename) {
 	for (uint i = 0; i < ARRAYSIZE(_adsData->_state); i++)
 		_adsData->_state[i] = 8;
 	for (auto &seq : _adsData->_ttmSeqs)
-		seq.reset();
+		seq->reset();
 
 	return true;
 }
@@ -135,58 +136,60 @@ static const uint16 ADS_SEQ_OPCODES[] = {
 	0x1340, 0x1360, 0x1370, 0x1320, 0x1310, 0x1350
 };
 
-bool ADSInterpreter::updateSeqTimeAndFrame(const TTMEnviro *env, TTMSeq &seq) {
-	if (seq._timeInterval != 0) {
-		uint32 now = g_engine->getTotalPlayTime();
-		if (now < seq._timeNext) {
-			debug(10, "env %d seq %d (%s) not advancing from frame %d (now %d timeNext %d interval %d)", seq._enviro,
-					seq._seqNum, env->_tags.getValOrDefault(seq._seqNum).c_str(), seq._currentFrame, now, seq._timeNext, seq._timeInterval);
+bool ADSInterpreter::updateSeqTimeAndFrame(const TTMEnviro *env, Common::SharedPtr<TTMSeq> seq) {
+	if (seq->_timeInterval != 0) {
+		uint32 now = DgdsEngine::getInstance()->getThisFrameMs();
+		if (now < seq->_timeNext) {
+			debug(10, "env %d seq %d (%s) not advancing from frame %d (now %d timeNext %d interval %d)", seq->_enviro,
+					seq->_seqNum, env->_tags.getValOrDefault(seq->_seqNum).c_str(), seq->_currentFrame, now, seq->_timeNext, seq->_timeInterval);
 			return false;
 		}
-		seq._timeNext = now + seq._timeInterval;
+		seq->_timeNext = now + seq->_timeInterval;
 	}
 
-	seq._executed = false;
-	if (seq._gotoFrame == -1) {
-		debug(10, "env %d seq %d (%s) advance to frame %d->%d (start %d last %d)", seq._enviro, seq._seqNum,
-				env->_tags.getValOrDefault(seq._seqNum).c_str(), seq._currentFrame, seq._currentFrame + 1, seq._startFrame, seq._lastFrame);
-		seq._currentFrame++;
+	seq->_executed = false;
+	if (seq->_gotoFrame == -1) {
+		debug(10, "env %d seq %d (%s) advance to frame %d->%d (start %d last %d)", seq->_enviro, seq->_seqNum,
+				env->_tags.getValOrDefault(seq->_seqNum).c_str(), seq->_currentFrame, seq->_currentFrame + 1, seq->_startFrame, seq->_lastFrame);
+		seq->_currentFrame++;
 	} else {
-		debug(10, "env %d seq %d (%s) goto to frame %d->%d (start %d last %d)", seq._enviro, seq._seqNum,
-				env->_tags.getValOrDefault(seq._seqNum).c_str(), seq._currentFrame, seq._gotoFrame, seq._startFrame, seq._lastFrame);
-		seq._currentFrame = seq._gotoFrame;
-		seq._gotoFrame = -1;
+		debug(10, "env %d seq %d (%s) goto to frame %d->%d (start %d last %d)", seq->_enviro, seq->_seqNum,
+				env->_tags.getValOrDefault(seq->_seqNum).c_str(), seq->_currentFrame, seq->_gotoFrame, seq->_startFrame, seq->_lastFrame);
+		seq->_currentFrame = seq->_gotoFrame;
+		seq->_gotoFrame = -1;
 	}
 
 	return true;
 }
 
-void ADSInterpreter::findUsedSequencesForSegment(int segno) {
-	_adsData->_usedSeqs[segno].clear();
+void ADSInterpreter::findUsedSequencesForSegment(int idx) {
+	_adsData->_usedSeqs[idx].clear();
 	int64 startoff = _adsData->scr->pos();
 	uint16 opcode = 0;
 	// Skip the segment number.
-	_adsData->scr->readUint16LE();
+	int16 segno = _adsData->scr->readUint16LE();
 	while (opcode != 0xffff && _adsData->scr->pos() < _adsData->scr->size()) {
 		opcode = _adsData->scr->readUint16LE();
 		for (uint16 o : ADS_SEQ_OPCODES) {
 			if (opcode == o) {
 				int16 envno = _adsData->scr->readSint16LE();
 				int16 seqno = _adsData->scr->readSint16LE();
-				TTMSeq *seq = findTTMSeq(envno, seqno);
+				Common::SharedPtr<TTMSeq> seq = findTTMSeq(envno, seqno);
 				if (!seq) {
 					warning("ADS opcode %04x at offset %d references unknown seq %d %d",
 							opcode, (int)_adsData->scr->pos(), envno, seqno);
 				} else {
 					bool already_added = false;
-					for (const TTMSeq *s : _adsData->_usedSeqs[segno]) {
+					for (const Common::SharedPtr<TTMSeq> &s : _adsData->_usedSeqs[idx]) {
 						if (s == seq) {
 							already_added = true;
 							break;
 						}
 					}
-					if (!already_added)
-						_adsData->_usedSeqs[segno].push_back(seq);
+					if (!already_added) {
+						debug(10, "ADS seg no %d (idx %d) uses seq %d %d", segno, idx, envno, seqno);
+						_adsData->_usedSeqs[idx].push_back(seq);
+					}
 				}
 				// Rewind as we will go forward again outside this loop.
 				_adsData->scr->seek(-4, SEEK_CUR);
@@ -289,10 +292,10 @@ TTMEnviro *ADSInterpreter::findTTMEnviro(int16 enviro) {
 	return nullptr;
 }
 
-TTMSeq *ADSInterpreter::findTTMSeq(int16 enviro, int16 seqno) {
+Common::SharedPtr<TTMSeq> ADSInterpreter::findTTMSeq(int16 enviro, int16 seqno) {
 	for (auto &seq : _adsData->_ttmSeqs) {
-		if (seq._enviro == enviro && seq._seqNum == seqno)
-			return &seq;
+		if (seq->_enviro == enviro && seq->_seqNum == seqno)
+			return seq;
 	}
 	return nullptr;
 }
@@ -363,9 +366,12 @@ bool ADSInterpreter::logicOpResult(uint16 code, const TTMEnviro *env, const TTMS
 		debugN(10, "ADS 0x%04x: %s finished env %d seq %d (%s)", code, optype, envNum, seqNum, tag);
 		return seq->_runFlag == kRunTypeFinished;
 	case 0x1060: // WHILE NOT RUNNING
-	case 0x1360: // IF_NOT_RUNNING, 2 params
+	case 0x1360: { // IF_NOT_RUNNING, 2 params
 		debugN(10, "ADS 0x%04x: %s not running env %d seq %d (%s)", code, optype, envNum, seqNum, tag);
-		return seq->_runFlag == kRunTypeStopped;
+		// Dragon only checks kRunTypeStopped, HoC onward also check for kRunTypeFinished
+		bool isDragon = _vm->getGameId() == GID_DRAGON;
+		return seq->_runFlag == kRunTypeStopped || (!isDragon && seq->_runFlag == kRunTypeFinished);
+	}
 	case 0x1070: // WHILE RUNNING
 	case 0x1370: // IF_RUNNING, 2 params
 		debugN(10, "ADS 0x%04x: %s running env %d seq %d (%s)", code, optype, envNum, seqNum, tag);
@@ -396,7 +402,7 @@ bool ADSInterpreter::handleLogicOp(uint16 code, Common::SeekableReadStream *scr)
 	while (scr->pos() < scr->size()) {
 		uint16 enviro;
 		uint16 seqnum;
-		TTMSeq *seq = nullptr;
+		Common::SharedPtr<TTMSeq> seq;
 		TTMEnviro *env = nullptr;
 
 		if (code != 0x1380 && code != 0x1390) {
@@ -413,7 +419,7 @@ bool ADSInterpreter::handleLogicOp(uint16 code, Common::SeekableReadStream *scr)
 			enviro = scr->readUint16LE();
 		}
 
-		bool logicResult = logicOpResult(code, env, seq, enviro);
+		bool logicResult = logicOpResult(code, env, seq.get(), enviro);
 
 		if (andor == 0x1420) // AND
 			testval &= logicResult;
@@ -527,7 +533,7 @@ bool ADSInterpreter::handleOperation(uint16 code, Common::SeekableReadStream *sc
 	case 0x1050: // WHILE finished, 2 params
 	case 0x1060: // WHILE not running, 2 params
 	case 0x1070: // WHILE running, 2 params
-	case 0x1080: // WHILE count?, 1 param (HOC+ only)
+	case 0x1080: // WHILE countdown <= , 1 param (HOC+ only)
 	case 0x1090: // WHILE ??, 1 param (HOC+ only)
 	case 0x1310: // IF paused, 2 params
 	case 0x1320: // IF not paused, 2 params
@@ -560,10 +566,13 @@ bool ADSInterpreter::handleOperation(uint16 code, Common::SeekableReadStream *sc
 		int16 runCount = scr->readSint16LE();
 		uint16 unk = scr->readUint16LE(); // proportion
 
-		TTMSeq *seq = findTTMSeq(enviro, seqnum);
+		Common::SharedPtr<TTMSeq> seq = findTTMSeq(enviro, seqnum);
 		TTMEnviro *env = findTTMEnviro(enviro);
-		if (!seq || !env)
-			error("ADS invalid seq requested %d %d", enviro, seqnum);
+		if (!seq || !env) {
+			// This happens in Willy Beamish FDD scene 24
+			warning("ADS op %04x invalid env + seq requested %d %d", code, enviro, seqnum);
+			break;
+		}
 
 		debug(10, "ADS 0x%04x: add scene - env %d seq %d (%s) runCount %d prop %d", code,
 					enviro, seqnum, env->_tags.getValOrDefault(seqnum).c_str(), runCount, unk);
@@ -576,7 +585,7 @@ bool ADSInterpreter::handleOperation(uint16 code, Common::SeekableReadStream *sc
 			seq->_runFlag = kRunType1;
 		} else if (runCount < 0) {
 			// Negative run count sets the cut time
-			seq->_timeCut = g_engine->getTotalPlayTime() + (-runCount * MS_PER_FRAME);
+			seq->_timeCut = DgdsEngine::getInstance()->getThisFrameMs() + (-runCount * MS_PER_FRAME);
 			seq->_runFlag = kRunTypeTimeLimited;
 		} else {
 			seq->_runFlag = kRunTypeMulti;
@@ -597,7 +606,7 @@ bool ADSInterpreter::handleOperation(uint16 code, Common::SeekableReadStream *sc
 			_currentTTMSeq->_runFlag = kRunTypeStopped;
 		break;
 	}
-	case 0x2015: { // SET RUNFLAG 5, 3 params (ttmenv, ttmseq, proportion) (pause)
+	case 0x2015: { // PAUSE SEQ, 3 params (ttmenv, ttmseq, proportion)
 		enviro = scr->readUint16LE();
 		seqnum = scr->readUint16LE();
 		uint16 unk = scr->readUint16LE();
@@ -636,37 +645,56 @@ bool ADSInterpreter::handleOperation(uint16 code, Common::SeekableReadStream *sc
 		debug(10, "ADS 0x30FF: random end");
 		error("Unexpected RANDOM END mid-stream (no RANDOM START?).");
 
-	case 0x4000: { // MOVE SEQ TO FRONT
-		enviro = scr->readUint16LE();
-		seqnum = scr->readUint16LE();
-		debug(10, "ADS 0x%04x: mov seq to front env %d seq %d", code, enviro, seqnum);
-		/*uint16 unk = */scr->readUint16LE();
-		if (seqnum < _adsData->_ttmSeqs.size()) {
-			// This is O(N) but the N is small and it's not called often.
-			TTMSeq seq = _adsData->_ttmSeqs.remove_at(seqnum);
-			_adsData->_ttmSeqs.insert_at(0, seq);
-		} else {
-			warning("ADS: 0x4000 Request to move env %d seq %d which doesn't exist", enviro, seqnum);
-		}
-
-		break;
-	}
-
-	case 0x4010: { // MOVE SEQ TO BACK
+	case 0x4000: { // MOVE SEQ TO BACK
 		enviro = scr->readUint16LE();
 		seqnum = scr->readUint16LE();
 		debug(10, "ADS 0x%04x: mov seq to back env %d seq %d", code, enviro, seqnum);
 		/*uint16 unk = */scr->readUint16LE();
-		if (seqnum < _adsData->_ttmSeqs.size()) {
-			// This is O(N) but the N is small and it's not called often.
-			TTMSeq seq = _adsData->_ttmSeqs.remove_at(seqnum);
-			_adsData->_ttmSeqs.push_back(seq);
-		} else {
-			warning("ADS: 0x4010 Request to move env %d seq %d which doesn't exist", enviro, seqnum);
+		// This is O(N) but the N is small and it's not called often.
+		Common::SharedPtr<TTMSeq> seq;
+		for (uint i = 0; i < _adsData->_ttmSeqs.size(); i++) {
+			if (_adsData->_ttmSeqs[i]->_enviro == enviro && _adsData->_ttmSeqs[i]->_seqNum == seqnum) {
+				seq = _adsData->_ttmSeqs[i];
+				_adsData->_ttmSeqs.remove_at(i);
+				break;
+			}
 		}
+
+		if (seq)
+			_adsData->_ttmSeqs.push_back(seq);
+		else
+			warning("ADS: 0x4000 Request to move env %d seq %d which doesn't exist", enviro, seqnum);
 
 		break;
 	}
+
+	case 0x4010: { // MOVE SEQ TO FRONT
+		enviro = scr->readUint16LE();
+		seqnum = scr->readUint16LE();
+		debug(10, "ADS 0x%04x: mov seq to front env %d seq %d", code, enviro, seqnum);
+		/*uint16 unk = */scr->readUint16LE();
+		// This is O(N) but the N is small and it's not called often.
+		Common::SharedPtr<TTMSeq> seq;
+		for (uint i = 0; i < _adsData->_ttmSeqs.size(); i++) {
+			if (_adsData->_ttmSeqs[i]->_enviro == enviro && _adsData->_ttmSeqs[i]->_seqNum == seqnum) {
+				seq = _adsData->_ttmSeqs[i];
+				_adsData->_ttmSeqs.remove_at(i);
+				break;
+			}
+		}
+
+		if (seq)
+			_adsData->_ttmSeqs.insert_at(0, seq);
+		else
+			warning("ADS: 0x4010 Request to move env %d seq %d which doesn't exist", enviro, seqnum);
+
+		break;
+	}
+
+	case 0x1420: // AND, 0 params - should not hit this here.
+	case 0x1430: // OR, 0 params - should not hit this here.
+		warning("ADS: Unexpected logic opcode 0x%04x - should be after IF/WHILE", code);
+		break;
 
 	case 0xF000:
 		debug(10, "ADS 0x%04x: set state 2, current idx (%d)", code, _adsData->_runningSegmentIdx);
@@ -674,7 +702,7 @@ bool ADSInterpreter::handleOperation(uint16 code, Common::SeekableReadStream *sc
 			_adsData->_state[_adsData->_runningSegmentIdx] = 2;
 		return false;
 
-	case 0xF010: {// FADE_OUT, 1 param
+	case 0xF010: { // FADE_OUT, 1 param
 		int16 segment = scr->readSint16LE();
 		int16 idx = _adsData->_runningSegmentIdx;
 		if (segment >= 0)
@@ -711,12 +739,18 @@ bool ADSInterpreter::handleOperation(uint16 code, Common::SeekableReadStream *sc
 	}
 
 	case 0xffff:	// END
-		debug(10, "ADS 0xFFF: end");
+		debug(10, "ADS 0xFFFF: end");
 		return false;
 
 	//// unknown / to-be-implemented
-	case 0x1420: // AND, 0 params
-	case 0x1430: // OR, 0 params
+	// The next 6 are in HoC code but maybe never used?
+	case 0x13A0: // IF some_ads_variable[0] <=
+	case 0x13A1: // IF some_ads_variable[1] <=
+	case 0x13B0: // IF some_ads_variable[0] >
+	case 0x13B1: // IF some_ads_variable[1] >
+	case 0x13C0: // IF some_ads_variable[0] ==
+	case 0x13C1: // IF some_ads_variable[1] ==
+
 	case 0xFF10:
 	case 0xFFF0: // END_IF, 0 params
 	default: {
@@ -736,7 +770,7 @@ int16 ADSInterpreter::getStateForSceneOp(uint16 segnum) {
 	if (idx < 0)
 		return 0;
 	if (!(_adsData->_state[idx] & 4)) {
-		for (auto *seq : _adsData->_usedSeqs[idx]) {
+		for (const Common::SharedPtr<TTMSeq> &seq: _adsData->_usedSeqs[idx]) {
 			if (!seq)
 				return 0;
 			if (seq->_runFlag != kRunTypeStopped && !seq->_selfLoop)
@@ -768,62 +802,67 @@ bool ADSInterpreter::run() {
 	if (!_adsData || _adsData->_ttmSeqs.empty())
 		return false;
 
-	for (int i = 0; i < _adsData->_maxSegments; i++) {
-		int16 flag = _adsData->_state[i] & 0xfff7;
-		for (auto seq : _adsData->_usedSeqs[i]) {
+	for (int idx = 0; idx < _adsData->_maxSegments; idx++) {
+		int16 flag = _adsData->_state[idx] & 0xfff7;
+		for (auto seq : _adsData->_usedSeqs[idx]) {
 			if (flag == 3) {
+				debug(10, "ADS: Segment idx %d, Reset seq %d", idx, seq->_seqNum);
 				seq->reset();
 			} else {
-				seq->_scriptFlag = flag;
+				if (flag != seq->_scriptFlag) {
+					//debug(10, "ADS: Segment idx %d, update seq %d scriptflag %d -> %d",
+					//	idx, seq->_seqNum, seq->_scriptFlag, flag);
+					seq->_scriptFlag = flag;
+				}
 			}
 		}
 	}
 
 	assert(_adsData->scr || !_adsData->_maxSegments);
-	for (int i = 0; i < _adsData->_maxSegments; i++) {
-		int16 state = _adsData->_state[i];
-		int32 offset = _adsData->_segments[i];
+	for (int idx = 0; idx < _adsData->_maxSegments; idx++) {
+		int16 state = _adsData->_state[idx];
+		int32 offset = _adsData->_segments[idx];
 		_adsData->scr->seek(offset);
 		// skip over the segment num
 		offset += 2;
-		/*int16 segnum =*/ _adsData->scr->readSint16LE();
+		int16 segnum = _adsData->scr->readSint16LE();
 		if (state & 8) {
 			state &= 0xfff7;
-			_adsData->_state[i] = state;
+			_adsData->_state[idx] = state;
 		} else {
 			findEndOrInitOp();
 			offset = _adsData->scr->pos();
 		}
 
-		if (_adsData->_charWhile[i])
-			offset = _adsData->_charWhile[i];
+		if (_adsData->_charWhile[idx])
+			offset = _adsData->_charWhile[idx];
 
 		if (state == 3 || state == 4) {
-			_adsData->_state[i] = 1;
+			_adsData->_state[idx] = 1;
 			state = 1;
 		}
 
-		_adsData->_runningSegmentIdx = i;
+		_adsData->_runningSegmentIdx = idx;
 		if (state == 1) {
 			_adsData->scr->seek(offset);
-			//debug("ADS: Run segment %d idx %d/%d", segnum, i, _adsData->_maxSegments);
+			debug(10, "ADS: Run segment %d idx %d/%d", segnum, idx, _adsData->_maxSegments);
 			runUntilBranchOpOrEnd();
 		}
 	}
 
 	bool result = false;
-	for (auto &seq : _adsData->_ttmSeqs) {
-		_currentTTMSeq = &seq;
-		seq._lastFrame = -1;
-		int sflag = seq._scriptFlag;
-		TTMRunType rflag = seq._runFlag;
+	for (Common::SharedPtr<TTMSeq> seq : _adsData->_ttmSeqs) {
+		_currentTTMSeq = seq;
+		seq->_lastFrame = -1;
+		int sflag = seq->_scriptFlag;
+		TTMRunType rflag = seq->_runFlag;
 		if (sflag == 6 || (rflag != kRunType1 && rflag != kRunTypeTimeLimited && rflag != kRunTypeMulti && rflag != kRunTypePaused)) {
 			if (sflag != 6 && sflag != 5 && rflag == kRunTypeFinished) {
-				seq._runFlag = kRunTypeStopped;
+				seq->_runFlag = kRunTypeStopped;
 			}
 		} else {
-			int16 curframe = seq._currentFrame;
-			TTMEnviro *env = findTTMEnviro(seq._enviro);
+			int16 curframe = seq->_currentFrame;
+			TTMEnviro *env = findTTMEnviro(seq->_enviro);
 			_adsData->_hitTTMOp0110 = false;
 			_adsData->_scriptDelay = -1;
 			bool scriptresult = false;
@@ -834,48 +873,48 @@ bool ADSInterpreter::run() {
 			}
 
 			if (scriptresult && sflag != 5) {
-				seq._executed = true;
-				seq._lastFrame = seq._currentFrame;
+				seq->_executed = true;
+				seq->_lastFrame = seq->_currentFrame;
 				result = true;
-				if (_adsData->_scriptDelay != -1 && seq._timeInterval != _adsData->_scriptDelay) {
-					uint32 now = g_engine->getTotalPlayTime();
-					seq._timeNext = now + _adsData->_scriptDelay;
-					seq._timeInterval = _adsData->_scriptDelay;
+				if (_adsData->_scriptDelay != -1 && seq->_timeInterval != _adsData->_scriptDelay) {
+					uint32 now = DgdsEngine::getInstance()->getThisFrameMs();
+					seq->_timeNext = now + _adsData->_scriptDelay;
+					seq->_timeInterval = _adsData->_scriptDelay;
 				}
 
 				if (!_adsData->_hitTTMOp0110) {
 					if (_adsData->_gotoTarget != -1) {
-						seq._gotoFrame = _adsData->_gotoTarget;
-						if (seq._currentFrame == _adsData->_gotoTarget)
-							seq._selfLoop = true;
+						seq->_gotoFrame = _adsData->_gotoTarget;
+						if (seq->_currentFrame == _adsData->_gotoTarget)
+							seq->_selfLoop = true;
 					}
-					if (seq._runFlag != kRunTypePaused)
+					if (seq->_runFlag != kRunTypePaused)
 						updateSeqTimeAndFrame(env, seq);
 				} else {
-					seq._gotoFrame = seq._startFrame;
-					if (seq._runFlag == kRunTypeMulti && seq._runCount != 0) {
+					seq->_gotoFrame = seq->_startFrame;
+					if (seq->_runFlag == kRunTypeMulti && seq->_runCount != 0) {
 						bool updated = updateSeqTimeAndFrame(env, seq);
 						if (updated) {
-							seq._runCount--;
+							seq->_runCount--;
 						}
-					} else if (seq._runFlag == kRunTypeTimeLimited && seq._timeCut != 0) {
+					} else if (seq->_runFlag == kRunTypeTimeLimited && seq->_timeCut != 0) {
 						updateSeqTimeAndFrame(env, seq);
 					} else {
 						bool updated = updateSeqTimeAndFrame(env, seq);
 						if (updated) {
-							seq._runFlag = kRunTypeFinished;
-							seq._timeInterval = 0;
+							seq->_runFlag = kRunTypeFinished;
+							seq->_timeInterval = 0;
 						}
 					}
 				}
 			} else if (sflag != 5) {
-				seq._gotoFrame = seq._startFrame;
-				seq._runFlag = kRunTypeFinished;
+				seq->_gotoFrame = seq->_startFrame;
+				seq->_runFlag = kRunTypeFinished;
 			}
 		}
 
-		if (rflag == kRunTypeTimeLimited && seq._timeCut <= g_engine->getTotalPlayTime()) {
-			seq._runFlag = kRunTypeFinished;
+		if (rflag == kRunTypeTimeLimited && seq->_timeCut <= DgdsEngine::getInstance()->getThisFrameMs()) {
+			seq->_runFlag = kRunTypeFinished;
 		}
 	}
 	return result;

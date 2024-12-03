@@ -13,6 +13,9 @@ MODULE_OBJS = \
 	minigames/adv/Range.o \
 	minigames/adv/RunTime.o \
 	minigames/adv/TextManager.o \
+	minigames/adv/m_puzzle.o \
+	minigames/adv/m_scores.o \
+	minigames/adv/m_swap.o \
 	minigames/adv/m_triangles.o \
 	parser/qdscr_parser.o \
 	parser/xml_parser.o \

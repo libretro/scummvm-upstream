@@ -52,7 +52,7 @@
 
 namespace Director {
 
-static BuiltinProto builtins[] = {
+static const BuiltinProto builtins[] = {
 	// Math
 	{ "abs",			LB::b_abs,			1, 1, 200, FBLTIN },	// D2 function
 	{ "atan",			LB::b_atan,			1, 1, 400, FBLTIN },	//			D4 f
@@ -84,6 +84,7 @@ static BuiltinProto builtins[] = {
 	{ "deleteAt",		LB::b_deleteAt,		2, 2, 400, HBLTIN_LIST },	//			D4 h
 	{ "deleteOne",		LB::b_deleteOne,	2, 2, 400, HBLTIN_LIST },	//			D4 h, undocumented?
 	{ "deleteProp",		LB::b_deleteProp,	2, 2, 400, HBLTIN_LIST },	//			D4 h
+	{ "duplicate",		LB::b_duplicateList,1, 1, 500, FBLTIN_LIST },	//				D5 f
 	{ "findPos",		LB::b_findPos,		2, 2, 400, FBLTIN_LIST },	//			D4 f
 	{ "findPosNear",	LB::b_findPosNear,	2, 2, 400, FBLTIN_LIST },	//			D4 f
 	{ "getaProp",		LB::b_getaProp,		2, 2, 400, FBLTIN_LIST },	//			D4 f
@@ -219,6 +220,7 @@ static BuiltinProto builtins[] = {
 	{ "version",		LB::b_version,		0, 0, 300, KBLTIN },	//		D3 k
 	// References
 	{ "cast",			LB::b_cast,			1, 1, 400, FBLTIN },	//			D4 f
+	{ "castLib",		LB::b_castLib,		1, 1, 500, FBLTIN },	//				D5 f
 	{ "member",			LB::b_member,		1, 2, 500, FBLTIN },	//				D5 f
 	{ "script",			LB::b_script,		1, 1, 400, FBLTIN },	//			D4 f
 	{ "window",			LB::b_window,		1, 1, 400, FBLTIN },	//			D4 f
@@ -243,8 +245,8 @@ void Lingo::initBuiltIns() {
 	initBuiltIns(builtins);
 }
 
-void Lingo::initBuiltIns(BuiltinProto protos[]) {
-	for (BuiltinProto *blt = protos; blt->name; blt++) {
+void Lingo::initBuiltIns(const BuiltinProto protos[]) {
+	for (const BuiltinProto *blt = protos; blt->name; blt++) {
 		if (blt->version > _vm->getVersion())
 			continue;
 
@@ -286,8 +288,8 @@ void Lingo::cleanupBuiltIns() {
 	_builtinConsts.clear();
 }
 
-void Lingo::cleanupBuiltIns(BuiltinProto protos[]) {
-	for (BuiltinProto *blt = protos; blt->name; blt++) {
+void Lingo::cleanupBuiltIns(const BuiltinProto protos[]) {
+	for (const BuiltinProto *blt = protos; blt->name; blt++) {
 		switch (blt->type) {
 		case CBLTIN:
 			_builtinCmds.erase(blt->name);
@@ -771,6 +773,14 @@ void LB::b_deleteProp(int nargs) {
 		break;
 	}
 }
+
+
+void LB::b_duplicateList(int nargs) {
+	Datum list = g_lingo->pop();
+	TYPECHECK2(list, ARRAY, PARRAY);
+	g_lingo->push(list.clone());
+}
+
 
 void LB::b_findPos(int nargs) {
 	Datum prop = g_lingo->pop();
@@ -2017,7 +2027,7 @@ void LB::b_alert(int nargs) {
 
 	if (!debugChannelSet(-1, kDebugFewFramesOnly)) {
 		g_director->_wm->clearHandlingWidgets();
-		GUI::MessageDialog dialog(g_director->getCurrentMovie()->getCast()->decodeString(alert), _("OK"));
+		GUI::MessageDialog dialog(alert.c_str(), _("OK"));
 		dialog.runModal();
 	}
 }
@@ -3355,6 +3365,13 @@ void LB::b_cast(int nargs) {
 	g_lingo->push(res);
 }
 
+void LB::b_castLib(int nargs) {
+	Datum d = g_lingo->pop();
+	Datum res = d.asInt();
+	res.type = CASTLIBREF;
+	g_lingo->push(res);
+}
+
 void LB::b_member(int nargs) {
 	Movie *movie = g_director->getCurrentMovie();
 	CastMemberID res;
@@ -3371,7 +3388,9 @@ void LB::b_member(int nargs) {
 		Datum library = g_lingo->pop();
 		Datum member = g_lingo->pop();
 		int libId = -1;
-		if (library.isNumeric()) {
+		if (library.type == CASTLIBREF) {
+			libId = library.u.i;
+		} else if (library.isNumeric()) {
 			libId = library.asInt();
 		} else {
 			libId = movie->getCastLibIDByName(library.asString());

@@ -38,15 +38,16 @@ public:
 	void pre_parser() override;
 	void parser() override;
 	void daemon() override;
+	void syncGame(Common::Serializer &s) override;
 
 private:
 	int32 _field88 = 0; // unused?
 	int32 _field8A = 0;
-	int32 _field8E = 0;
-	int32 _field92 = 0;
+	int32 _peasantMode = 0;
+	int32 _peasantShould = 0;
 	bool _fieldA4 = false; // always false??
 	int32 _fieldA8 = 0; // unused ?
-	bool _fieldAA = false;
+	bool _pipeFlag = false;
 	int32 _fieldAE_rnd = 0;
 	bool _fieldB2 = false;
 	int32 _fieldB6_counter = 0;

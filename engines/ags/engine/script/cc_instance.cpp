@@ -211,13 +211,13 @@ void ccInstance::FreeInstanceStack() {
 	_GP(InstThreads).clear();
 }
 
-ccInstance *ccInstance::CreateFromScript(PScript scri) {
+std::unique_ptr<ccInstance> ccInstance::CreateFromScript(PScript scri) {
 	return CreateEx(scri, nullptr);
 }
 
-ccInstance *ccInstance::CreateEx(PScript scri, const ccInstance *joined) {
+std::unique_ptr<ccInstance> ccInstance::CreateEx(PScript scri, const ccInstance *joined) {
 	// allocate and copy all the memory with data, code and strings across
-	ccInstance *cinst = new ccInstance();
+	std::unique_ptr<ccInstance> cinst(new ccInstance());
 	if (!cinst->_Create(scri, joined)) {
 		return nullptr;
 	}
@@ -263,7 +263,7 @@ ccInstance::~ccInstance() {
 	Free();
 }
 
-ccInstance *ccInstance::Fork() {
+std::unique_ptr<ccInstance> ccInstance::Fork() {
 	return CreateEx(instanceof, this);
 }
 
@@ -1221,8 +1221,8 @@ int ccInstance::Run(int32_t curpc) {
 					// call only supports a 32-bit value. This is fine in most cases, since
 					// methods mostly set the ptr on GlobalReturnValue, so it doesn't reach here.
 					// But just in case, throw a wobbly if it reaches here with a 64-bit pointer
-					if (fnResult._ptr > reinterpret_cast<void *>(static_cast<uintptr>(0xffffffffu)))
-						error("Uhandled 64-bit pointer result from plugin method call");
+					if (fnResult.full() > static_cast<intptr_t>(0xffffffffu))
+						error("Unhandled 64-bit pointer result from plugin method call");
 
 					return_value.SetPluginArgument(fnResult);
 				}

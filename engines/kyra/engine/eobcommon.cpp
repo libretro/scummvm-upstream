@@ -89,7 +89,6 @@ EoBCoreEngine::EoBCoreEngine(OSystem *system, const GameFlags &flags) : KyraRpgE
 
 	_faceShapes = 0;
 	_characters = 0;
-	_items = 0;
 	_itemTypes = 0;
 	_itemNames = 0;
 	_itemNamesStatic = 0;
@@ -299,7 +298,6 @@ EoBCoreEngine::~EoBCoreEngine() {
 	}
 
 	delete[] _characters;
-	delete[] _items;
 	delete[] _itemTypes;
 
 	releaseShpArr(_itemNames, 130);
@@ -394,6 +392,10 @@ Common::KeymapArray EoBCoreEngine::initKeymaps(const Common::String &gameId) {
 Common::Error EoBCoreEngine::init() {
 	if (ConfMan.hasKey("render_mode"))
 		_configRenderMode = Common::parseRenderMode(ConfMan.get("render_mode"));
+
+	if (_flags.platform == Common::kPlatformDOS && ((_flags.gameID == GI_EOB1 && _configRenderMode != Common::kRenderVGA && _configRenderMode != Common::kRenderCGA && _configRenderMode != Common::kRenderEGA) ||
+		(_flags.gameID == GI_EOB2 && _configRenderMode != Common::kRenderVGA && _configRenderMode != Common::kRenderEGA)))
+			_configRenderMode = Common::kRenderDefault;
 
 	_enableHiResDithering = (_configRenderMode == Common::kRenderEGA && _flags.useHiRes);
 
@@ -527,8 +529,6 @@ Common::Error EoBCoreEngine::init() {
 	_monsters = new EoBMonsterInPlay[30]();
 
 	_characters = new EoBCharacter[6]();
-
-	_items = new EoBItem[600]();
 
 	_itemNames = new char*[130];
 	for (int i = 0; i < 130; i++) {
@@ -2289,11 +2289,11 @@ int EoBCoreEngine::projectileWeaponAttack(int charIndex, Item item) {
 
 	Item ammoItem = 0;
 
-	if (ammoItemType == ITEM_TYPE_ARROW) {
+	if (ammoItemType == kItemTypeArrow) {
 		/* Fire arrow in hand first, then take from quiver. */
-		if (_characters[charIndex].inventory[0] && _items[_characters[charIndex].inventory[0]].type == ITEM_TYPE_ARROW)
+		if (_characters[charIndex].inventory[0] && _items[_characters[charIndex].inventory[0]].type == kItemTypeArrow)
 			SWAP(ammoItem, _characters[charIndex].inventory[0]);
-		else if (_characters[charIndex].inventory[1] && _items[_characters[charIndex].inventory[1]].type == ITEM_TYPE_ARROW)
+		else if (_characters[charIndex].inventory[1] && _items[_characters[charIndex].inventory[1]].type == kItemTypeArrow)
 			SWAP(ammoItem, _characters[charIndex].inventory[1]);
 		else if (_characters[charIndex].inventory[16])
 			ammoItem = getQueuedItem(&_characters[charIndex].inventory[16], 0, -1);
@@ -2378,7 +2378,7 @@ int EoBCoreEngine::calcCharacterDamage(int charIndex, int times, int itemOrPips,
 	}
 
 	if (flags & 4) {
-		if (checkInventoryForRings(charIndex, 3))
+		if (checkInventoryForRings(charIndex, kRingOfFeatherFalling))
 			s = 0;
 	}
 
@@ -2443,14 +2443,14 @@ bool EoBCoreEngine::isElf(int charIndex)
 
 bool EoBCoreEngine::isSword(Item item)
 {
-	return _items[item].type == ITEM_TYPE_LONG_SWORD || _items[item].type == ITEM_TYPE_SHORT_SWORD;
+	return _items[item].type == kItemTypeLongSword || _items[item].type == kItemTypeShortSword;
 }
 
 bool EoBCoreEngine::isBow(Item projectileWeapon)
 {
 	if (projectileWeapon == kItemNone) return false;
 	int projectileWeaopnType = normalizeProjectileWeaponType(_items[projectileWeapon].type);
-	return projectileWeaopnType == ITEM_TYPE_BOW;
+	return projectileWeaopnType == kItemTypeBow;
 }
 
 bool EoBCoreEngine::characterAttackHitTest(int charIndex, int monsterIndex, int item, int attackType, Item projectileWeapon) {

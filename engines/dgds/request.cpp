@@ -35,13 +35,11 @@
 
 namespace Dgds {
 
-// TODO: The following colors are from Rise of the Dragon.  Will need to check
-// if the same ones are hard-coded in the other games.
 static const byte DragonButtonColors[] = {
 	0x73, 0xF0, 0x7B, 0xDF, 0x5F, 0x5F, 0x7E, 0x27, 0x16, 0x73, 0x27, 0x16, 0xDF
 };
 
-static const byte SliderColors[] = {
+static const byte DragonSliderColors[] = {
 	0x7B, 0x4D, 0xF4, 0x54, 0xDF, 0x74, 0x58
 };
 
@@ -65,7 +63,12 @@ static const byte ChinaButtonColorsOff[] = {
 	0x10, 0x14, 0x06, 0x18, 0x10, 0x11, 0x14, 0x13,
 };
 
+static const byte ChinaSliderColors[] = {
+    0x1A, 0x15, 0x10, 0x06, 0x18
+};
+
 static const byte WillyBackgroundColor = 16;
+static const byte WillyButtonColor = 20;
 
 static const byte MenuBackgroundColors[] {
 	0x71, 0x71, 0x71, 0x71, 0x71, 0x7B, 0x71, 0x7B, 0x7B, 0x7B, 0x7B, 0x7B,
@@ -224,6 +227,10 @@ bool RequestParser::parseREQChunk(RequestData &data, DgdsChunkReader &chunk, int
 
 	uint16 chunkNum = str->readUint16LE();
 
+	// Slight HACK - only Willy Beamish has a different number for the main menu
+	if (chunkNum == kMenuMainBeamish)
+		chunkNum = kMenuMain;
+
 	// Note: The original has some logic about loading single request blocks
 	// here, is only ever called with "num" of -1 (load all),
 	// so maybe just skip it?
@@ -286,7 +293,7 @@ bool RequestParser::handleChunk(DgdsChunkReader &chunk, ParserData *data) {
 		parseREQChunk(rfdata._requests.back(), chunk, num);
 	} else if (chunk.getId() == ID_GAD) {
 		if (rfdata._requests.empty())
-			error("GAD chunk before any REQ chunks in Reqeust file %s", _filename.c_str());
+			error("GAD chunk before any REQ chunks in Request file %s", _filename.c_str());
 		parseGADChunk(rfdata._requests.back(), chunk, num);
 	}
 
@@ -421,8 +428,12 @@ byte ButtonGadget::drawChinaBg(Graphics::ManagedSurface *dst, bool enabled) cons
 }
 
 byte ButtonGadget::drawWillyBg(Graphics::ManagedSurface *dst, bool enabled) const {
-	// TODO: Write code to draw Willy Beamish type buttons..
-	return drawChinaBg(dst, enabled);
+	Common::Point pt = topLeft();
+	uint16 cornerFrame = enabled ? 8 : 16;
+	RequestData::drawCorners(dst, cornerFrame, pt.x, pt.y, _width, _height);
+	int16 fillHeight = enabled ? _height - 8 : _height - 6;
+	dst->fillRect(Common::Rect(Common::Point(pt.x + 8, pt.y + 3), _width - 16, fillHeight), WillyButtonColor);
+	return 0;
 }
 
 void ButtonGadget::draw(Graphics::ManagedSurface *dst) const {
@@ -463,6 +474,9 @@ void ButtonGadget::draw(Graphics::ManagedSurface *dst) const {
 		}
 
 		yoffset = y + yoffset / 2;
+		if (gameId == GID_WILLY)
+			yoffset--;
+
 		int lineWidth = font->getStringWidth(line1);
 		font->drawString(dst, line1, x + (_width - lineWidth) / 2 + 1, yoffset + 2, lineWidth, textCol);
 
@@ -470,8 +484,84 @@ void ButtonGadget::draw(Graphics::ManagedSurface *dst) const {
 			lineWidth = font->getStringWidth(line2);
 			font->drawString(dst, line2, x + (_width - lineWidth) / 2 + 1, yoffset + fontHeight, lineWidth, textCol);
 		}
+	} else if (gameId == GID_WILLY && _height == 32) {
+		drawWillyBmpButtons(dst);
 	}
+}
 
+enum WillyMenuIcons {
+	kWillyArrowRight = 33,
+	kWillyCD = 34,
+	kWillyRewind = 35,
+	kWillyStop = 36,
+	kWillyQuestionMark = 37,
+	kWillyBam = 38,
+	kWillyMusicNote = 39,
+	kWillyHelpText = 40,
+	kWillySwoosh = 42,
+	kWillyPlay = 43,
+	kWillyNoBam = 44,
+	kWillyNoMusicNote = 45,
+};
+
+void ButtonGadget::drawCenteredBmpIcon(Graphics::ManagedSurface *dst, int16 cornerNum) const {
+	const Image *uiCorners = RequestData::getCorners();
+	const Common::Rect screen(SCREEN_WIDTH, SCREEN_HEIGHT);
+	const Common::Point tl = topLeft();
+	int16 x = tl.x + (_width - uiCorners->width(cornerNum)) / 2;
+	int16 y = tl.y + (_height - uiCorners->height(cornerNum)) / 2;
+	uiCorners->drawBitmap(cornerNum, x, y, screen, *dst);
+}
+
+void ButtonGadget::drawWillyLoadSaveIcon(Graphics::ManagedSurface *dst, bool isLoad) const {
+	const Image *uiCorners = RequestData::getCorners();
+	const Common::Rect screen(SCREEN_WIDTH, SCREEN_HEIGHT);
+	const Common::Point tl = topLeft();
+	int16 cdIconWidth = uiCorners->width(kWillyCD);
+	int16 arrowIconWidth = uiCorners->width(kWillyArrowRight);
+	int16 x = tl.x + (_width - cdIconWidth - arrowIconWidth) / 2;
+	int16 cdy = tl.y + (_height - uiCorners->height(kWillyCD)) / 2;
+	int16 arrowy = tl.y + (_height - uiCorners->height(kWillyArrowRight)) / 2;
+	uiCorners->drawBitmap(kWillyCD, x, cdy, screen, *dst);
+	uiCorners->drawBitmap(kWillyArrowRight, x + cdIconWidth, arrowy, screen, *dst, isLoad ? kImageFlipNone : kImageFlipH);
+}
+
+void ButtonGadget::drawWillyBmpButtons(Graphics::ManagedSurface *dst) const {
+
+	switch (_gadgetNo) {
+	case 110: // SAVE (CD icon, arrow flipped)
+		drawWillyLoadSaveIcon(dst, false);
+		break;
+	case 111: // LOAD (CD icon, arrow)
+		drawWillyLoadSaveIcon(dst, true);
+		break;
+	case 112: // RESTART (rewind icon)
+		drawCenteredBmpIcon(dst, kWillyRewind);
+		break;
+	case 113: // QUIT (stop icon)
+		drawCenteredBmpIcon(dst, kWillyStop);
+		break;
+	case 114: // HELP (questionmark icon)
+		drawCenteredBmpIcon(dst, kWillyQuestionMark);
+		break;
+	case 115: // SFX (bam icon)
+		drawCenteredBmpIcon(dst, kWillyBam);
+		break;
+	case 116: // MUSIC (musical note icon)
+		drawCenteredBmpIcon(dst, kWillyMusicNote);
+		break;
+	case 120: // HELP (questionmark and text icon)
+		drawCenteredBmpIcon(dst, kWillyHelpText);
+		break;
+	case 118: // CREDITS (swoosh icon)
+		drawCenteredBmpIcon(dst, kWillySwoosh);
+		break;
+	case 119: // PLAY (play icon)
+		drawCenteredBmpIcon(dst, kWillyPlay);
+		break;
+	default:
+		break;
+	}
 }
 
 void ButtonGadget::toggle(bool enable) {
@@ -497,64 +587,138 @@ Common::String SliderGadget::dump() const {
 }
 
 // Slider labels and title are hard-coded in game, not part of data files.
-static const char *_sliderTitleForGadget(uint16 num) {
-	switch (num) {
-	case 0x7B:	return "DIFFICULTY";
-	case 0x7D:	return "TEXT SPEED";
-	case 0x83:	return "DETAIL LEVEL";
-	case 0x98:	return "MOUSE SPEED";
-	case 0x9C:	return "BUTTON THRESHOLD";
-	default:	return "SLIDER";
+static const char *_sliderTitleForGadget(uint16 num, Common::Language language) {
+	if (language == Common::EN_ANY) {
+		switch (num) {
+		case 0x7B:	return "DIFFICULTY";
+		case 0x7D:	return "TEXT SPEED";
+		case 0x83:	return "DETAIL LEVEL";
+		case 0x98:	return "MOUSE SPEED";
+		case 0x9C:	return "BUTTON THRESHOLD";
+		default:	return "SLIDER";
+		}
+	} else if (language == Common::DE_DEU) {
+		switch (num) {
+		case 0x7B:	return "SCHWIERIGKEITSGRAD";
+		case 0x7D:	return "TEXT-VERWEILDAUER";
+		case 0x83:	return "DETAILS";
+		case 0x98:	return "GESCHWINDIGKEIT";
+		case 0x9C:	return "TASTENEMPFINDLICHKEIT";
+		default:	return "REGLER";
+		}
+	} else {
+		error("Unsupported language %d", language);
 	}
 }
 
-static const char *_sliderLabelsForGadget(uint16 num) {
-	switch (num) {
-	case 0x7B:	return "EASY         HARD";
-	case 0x7D:	return "SLOW         FAST";
-	case 0x83:	return "LOW        HIGH";
-	case 0x98:	return "SLOW         FAST";
-	case 0x9C:	return "LONG         SHORT";
-	default:	return "MIN         MAX";
+static const char *_sliderLabelsForGadget(uint16 num, Common::Language language) {
+	if (language == Common::EN_ANY) {
+		switch (num) {
+		case 0x7B:	return "EASY         HARD";
+		case 0x7D:	return "SLOW         FAST";
+		case 0x83:	return "LOW        HIGH";
+		case 0x98:	return "SLOW         FAST";
+		case 0x9C:	return "LONG         SHORT";
+		default:	return "MIN         MAX";
+		}
+	} else if (language == Common::DE_DEU) {
+		return "-             +";
+	} else {
+		error("Unsupported language %d", language);
 	}
 }
 
 static const int SLIDER_HANDLE_FRAME = 28;
 
+void SliderGadget::drawDragonBg(Graphics::ManagedSurface *dst) const {
+	int16 x = _x + _parentX;
+	int16 y = _y + _parentY;
+	int16 x2 = x + _width;
+	int16 y2 = (y + _height) - 1;
+
+	int16 y1 = y - 1;
+	dst->drawLine(x - 2, y - 1, x - 2, y2, DragonSliderColors[0]);
+	dst->drawLine(x - 1, y1, x - 1, y2, DragonSliderColors[1]);
+	dst->drawLine(x, y2, x2 - 1, y2, DragonSliderColors[1]);
+	dst->drawLine(x, y1, x2, y1, DragonSliderColors[2]);
+	dst->drawLine(x2, y1, x2, y2, DragonSliderColors[2]);
+	dst->drawLine(x2 + 1, y1, x2 + 1, y2, DragonSliderColors[3]);
+	dst->drawLine(x, y, x2 - 1, y, DragonSliderColors[4]);
+	dst->drawLine(x2 - 1, y + 1, x2 - 1, (y + _height) - 2, DragonSliderColors[4]);
+	// This is not exactly what happens in the original, but gets the same result
+	Common::Rect fillrect = Common::Rect(x, y + 1, x + _width - 1, y + _height - 1);
+	dst->fillRect(fillrect, DragonSliderColors[5]);
+	fillrect.grow(-1);
+	dst->fillRect(fillrect, DragonSliderColors[6]);
+}
+
+void SliderGadget::drawChinaBg(Graphics::ManagedSurface *dst) const {
+	int16 x = _x + _parentX;
+	int16 y = _y + _parentY;
+	int16 y2 = y + 8;
+	int16 x2 = x + _width + 2;
+
+	// left 1st
+    dst->drawLine(x - 2, y - 1, x - 2, y2 + 1, ChinaSliderColors[0]);
+    // left 2nd
+    dst->drawLine(x - 1, y, x - 1, y2, ChinaSliderColors[1]);
+    // left 3rd
+	dst->drawLine(x, y + 1, x, y2 - 1, ChinaSliderColors[2]);
+
+	// top 1st
+	dst->drawLine(x - 1, y - 1, x2, y - 1, ChinaSliderColors[2]);
+	// top 2nd
+	dst->drawLine(x, y, x2 - 1, y, ChinaSliderColors[0]);
+	// top 3rd
+	dst->drawLine(x + 1, y + 1, x2 - 2, y + 1, ChinaSliderColors[3]);
+
+	// right 1st
+	dst->drawLine(x2 - 1, y + 1, x2 - 1, y2 - 1, ChinaSliderColors[3]);
+	// right 2nd
+	dst->drawLine(x2, y, x2, y2, ChinaSliderColors[0]);
+	// right 3rd
+	dst->drawLine(x2 + 1, y - 1, x2 + 1, y2 + 1, ChinaSliderColors[2]);
+
+	// bottom 1st
+	dst->drawLine(x + 1, y2 - 1, x2 - 2, y2 - 1, ChinaSliderColors[2]);
+	// bottom 2nd
+	dst->drawLine(x, y2, x2 - 1, y2, ChinaSliderColors[1]);
+	// bottom 3rd
+	dst->drawLine(x - 1, y2 + 1, x2, y2 + 1, ChinaSliderColors[0]);
+
+	Common::Rect fillrect = Common::Rect(x + 1, y + 2, x2 - 1, y2 - 1);
+	dst->fillRect(fillrect, ChinaSliderColors[4]);
+}
+
+
 void SliderGadget::draw(Graphics::ManagedSurface *dst) const {
 	const DgdsFont *font = RequestData::getMenuFont();
+	Common::Language language = DgdsEngine::getInstance()->getGameLang();
 
 	int16 x = _x + _parentX;
 	int16 y = _y + _parentY;
 
-	int16 x2 = x + _width;
-	int16 y2 = (y + _height) - 1;
 	int16 titley = (y - font->getFontHeight()) + 1;
-	const char *title = _sliderTitleForGadget(_gadgetNo);
-	const char *labels = _sliderLabelsForGadget(_gadgetNo);
+	const char *title = _sliderTitleForGadget(_gadgetNo, language);
+	const char *labels = _sliderLabelsForGadget(_gadgetNo, language);
 	int16 titleWidth = font->getStringWidth(title);
+	DgdsGameId gameId = DgdsEngine::getInstance()->getGameId();
 
-	font->drawString(dst, title, x + (_width - titleWidth) / 2, titley, titleWidth, 0);
+	byte textCol = (gameId == GID_DRAGON) ? 0 : 0x13;
+	int16 labelYOff = (gameId == GID_DRAGON) ? 7 : 11;
+
+	font->drawString(dst, title, x + (_width - titleWidth) / 2, titley, titleWidth, textCol);
 	int16 labelWidth = font->getStringWidth(labels);
-	font->drawString(dst, labels, x + (_width - labelWidth) / 2, y + 7, labelWidth, 0);
-	int16 y1 = y - 1;
-	dst->drawLine(x - 2, y - 1, x - 2, y2, SliderColors[0]);
-	dst->drawLine(x - 1, y1, x - 1, y2, SliderColors[1]);
-	dst->drawLine(x, y2, x2 - 1, y2, SliderColors[1]);
-	dst->drawLine(x, y1, x2, y1, SliderColors[2]);
-	dst->drawLine(x2, y1, x2, y2, SliderColors[2]);
-	dst->drawLine(x2 + 1, y1, x2 + 1, y2, SliderColors[3]);
-	dst->drawLine(x, y, x2 - 1, y, SliderColors[4]);
-	dst->drawLine(x2 - 1, y + 1, x2 - 1, (y + _height) - 2, SliderColors[4]);
-	// This is not exactly what happens in the original, but gets the same result
-	Common::Rect fillrect = Common::Rect(x, y + 1, x + _width - 1, y + _height - 1);
-	dst->fillRect(fillrect, SliderColors[5]);
-	fillrect.grow(-1);
-	dst->fillRect(fillrect, SliderColors[6]);
+	font->drawString(dst, labels, x + (_width - labelWidth) / 2, y + labelYOff, labelWidth, textCol);
+
+	if (gameId == GID_DRAGON)
+		drawDragonBg(dst);
+	else
+		drawChinaBg(dst);
 
 	// Draw the slider control in the right spot
 	const Image *uiCorners = RequestData::getCorners();
-	uiCorners->drawBitmap(SLIDER_HANDLE_FRAME, x + _handleX, y, Common::Rect(0, 0, 320, 200), *dst);
+	uiCorners->drawBitmap(SLIDER_HANDLE_FRAME, x + _handleX, y, Common::Rect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT), *dst);
 }
 
 SliderGadget::SliderGadget() : _lock(false), _steps(0), _gadget2_i1(0),
@@ -618,7 +782,7 @@ int16 SliderGadget::onClick(const Common::Point &mousePt) {
 	else
 		newVal--;
 
-	debug("clicked on slider %d, move val from %d -> %d", _gadgetNo, val, newVal);
+	debug(1, "clicked on slider %d, move val from %d -> %d", _gadgetNo, val, newVal);
 
 	newVal = CLIP((int)newVal, 0, _steps - 1);
 	setValue(newVal);
@@ -701,7 +865,8 @@ void RequestData::drawBg(Graphics::ManagedSurface *dst) const {
 	if (!_textItemList.empty())
 		header = _textItemList[0]._txt.substr(1);
 
-	if (slidery)
+	bool isDragon = DgdsEngine::getInstance()->getGameId() == GID_DRAGON;
+	if (slidery && isDragon)
 		drawBackgroundWithSliderArea(dst, slidery, header);
 	else
 		drawBackgroundNoSliders(dst, header);
@@ -751,18 +916,38 @@ void RequestData::drawCorners(Graphics::ManagedSurface *dst, uint16 startNum, ui
 	const Common::Array<Common::SharedPtr<Graphics::ManagedSurface>> &cframes = uiCorners->getFrames();
 	const Common::SharedPtr<Graphics::ManagedSurface> *corners = cframes.data() + startNum;
 
-	for (int xoff = x + corners[0]->w; xoff < (x + width) - corners[2]->w; xoff += corners[1]->w)
-		dst->transBlitFrom(*corners[1], Common::Point(xoff, y));
+	//
+	// Corners images are:
+	//  0  1  2  3  4  5  6  7
+	// TL  T TR  L  R BL  B BR
+	//
 
-	for (int xoff = x + corners[6]->w; xoff < (x + width) - corners[7]->w; xoff += corners[6]->w)
-		dst->transBlitFrom(*corners[6], Common::Point(xoff, (y + height) - corners[6]->h));
+	//
+	// The T, L, R, and B blocks are repeated as many times as is needed to make the
+	// size of menu/button we need.
+	//
+	// The last repeated one is bottom/right-aligned so that it doesn't overlap with
+	// the corner (this is visible eg in Willy Beamish menu buttons)
+	//
+
+	for (int xoff = x + corners[0]->w; xoff < (x + width) - corners[2]->w; xoff += corners[1]->w) {
+		int xdraw = MIN(xoff, (x + width) - corners[2]->w - corners[1]->w);
+		dst->transBlitFrom(*corners[1], Common::Point(xdraw, y));
+	}
+
+	for (int xoff = x + corners[5]->w; xoff < (x + width) - corners[7]->w; xoff += corners[6]->w) {
+		int xdraw = MIN(xoff, (x + width) - corners[7]->w - corners[6]->w);
+		dst->transBlitFrom(*corners[6], Common::Point(xdraw, (y + height) - corners[6]->h));
+	}
 
 	for (int yoff = y + corners[0]->h; yoff < (y + height) - corners[5]->h; yoff += corners[3]->h) {
-		dst->transBlitFrom(*corners[3], Common::Point(x, yoff));
+		int ydraw = MIN(yoff, (y + height) - corners[5]->h - corners[3]->h);
+		dst->transBlitFrom(*corners[3], Common::Point(x, ydraw));
 	}
 
 	for (int yoff = y + corners[2]->h; yoff < (y + height) - corners[7]->h; yoff += corners[4]->h) {
-		dst->transBlitFrom(*corners[4], Common::Point((x + width) - corners[4]->w, yoff));
+		int ydraw = MIN(yoff, (y + height) - corners[7]->h - corners[4]->h);
+		dst->transBlitFrom(*corners[4], Common::Point((x + width) - corners[4]->w, ydraw));
 	}
 
 	dst->transBlitFrom(*corners[0], Common::Point(x, y));
@@ -863,7 +1048,7 @@ void RequestData::drawBackgroundNoSliders(Graphics::ManagedSurface *dst, const C
 void RequestData::fillBackground(Graphics::ManagedSurface *dst, uint16 x, uint16 y, uint16 width, uint16 height, int16 startoffset) {
 	DgdsEngine *engine = DgdsEngine::getInstance();
 
-	if (engine->getGameId() == GID_DRAGON && engine->getDetailLevel() == kDgdsDetailHigh) {
+	if (engine->getGameId() == GID_DRAGON && engine->getDetailLevel() == kDgdsDetailHigh && !engine->isEGA()) {
 		Graphics::Surface area = dst->getSubArea(Common::Rect(Common::Point(x, y), width, height));
 		while (startoffset < 0)
 			startoffset += ARRAYSIZE(MenuBackgroundColors);

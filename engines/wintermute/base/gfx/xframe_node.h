@@ -33,15 +33,13 @@
 #include "engines/wintermute/base/gfx/xmodel.h"
 #include "engines/wintermute/coll_templ.h"
 
-#include "math/matrix4.h"
-#include "math/quat.h"
-#include "math/vector3d.h"
-
 namespace Wintermute {
 
 class XModel;
 class XFileData;
 class BaseSprite;
+class Effect3D;
+class Effect3DParams;
 
 class FrameNode : public BaseNamedObject {
 public:
@@ -71,6 +69,8 @@ public:
 
 	bool setMaterialSprite(char *matName, BaseSprite *sprite);
 	bool setMaterialTheora(char *matName, VideoTheoraPlayer *theora);
+	bool setMaterialEffect(char *matName, Effect3D *effect, Effect3DParams *params);
+	bool removeMaterialEffect(const char *matName);
 
 	bool invalidateDeviceObjects();
 	bool restoreDeviceObjects();

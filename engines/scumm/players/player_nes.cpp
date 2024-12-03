@@ -89,25 +89,25 @@ static const byte LengthCounts[32] = {
 
 class SoundGen {
 protected:
-	byte wavehold;
-	uint32 freq;	// short
-	uint32 CurD;
+	byte wavehold = 0;
+	uint32 freq = 0;	// short
+	uint32 CurD = 1;
 
 public:
-	byte Timer;
-	int32 Pos;
-	uint32 Cycles;	// short
+	byte Timer = 0;
+	int32 Pos = 0;
+	uint32 Cycles = 1;	// short
 
 	inline byte GetTimer() const { return Timer; }
 };
 
 class Square : public SoundGen {
 protected:
-	byte volume, envelope, duty, swpspeed, swpdir, swpstep, swpenab;
-	byte Vol;
-	byte EnvCtr, Envelope, BendCtr;
-	bool Enabled, ValidFreq, Active;
-	bool EnvClk, SwpClk;
+	byte volume = 0, envelope = 0, duty = 0, swpspeed = 0, swpdir = 0, swpstep = 0, swpenab = 0;
+	byte Vol = 0;
+	byte EnvCtr = 1, Envelope = 0, BendCtr = 1;
+	bool Enabled = 0, ValidFreq = 0, Active = 0;
+	bool EnvClk = 0, SwpClk = 0;
 
 	void CheckActive();
 
@@ -127,10 +127,7 @@ static const int8 Duties[4][8] = {
 };
 
 void Square::Reset() {
-	memset(this, 0, sizeof(*this));
-	Cycles = 1;
-	EnvCtr = 1;
-	BendCtr = 1;
+	*this = Square();
 }
 
 void Square::CheckActive() {
@@ -236,10 +233,10 @@ void Square::HalfFrame() {
 
 class Triangle : public SoundGen {
 protected:
-	byte linear;
-	byte LinCtr;
-	bool Enabled, Active;
-	bool LinClk;
+	byte linear = 0;
+	byte LinCtr = 0;
+	bool Enabled = false, Active = false;
+	bool LinClk = false;
 
 	void CheckActive();
 
@@ -259,8 +256,7 @@ static const int8 TriDuty[32] = {
 };
 
 void Triangle::Reset() {
-	memset(this, 0, sizeof(*this));
-	Cycles = 1;
+	*this = Triangle();
 }
 
 void Triangle::CheckActive() {
@@ -341,13 +337,11 @@ void Triangle::HalfFrame() {
 
 class Noise : public SoundGen {
 protected:
-	byte volume, envelope, datatype;
-	byte Vol;
-	byte EnvCtr, Envelope;
-	bool Enabled;
-	bool EnvClk;
-
-	void CheckActive();
+	byte volume = 0, envelope = 0, datatype = 0;
+	byte Vol = 0;
+	byte EnvCtr = 1, Envelope = 0;
+	bool Enabled = false;
+	bool EnvClk = false;
 
 public:
 	void Reset();
@@ -363,11 +357,7 @@ static const uint32 NoiseFreq[16] = {
 };
 
 void Noise::Reset() {
-	memset(this, 0, sizeof(*this));
-	CurD = 1;
-	Cycles = 1;
-	EnvCtr = 1;
-
+	*this = Noise();
 }
 
 void Noise::Write(int Reg, byte Val) {

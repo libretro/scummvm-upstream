@@ -60,8 +60,8 @@ int MacGui::getNumColors() const {
 	return _impl->getNumColors();
 }
 
-void MacGui::initialize() {
-	_impl->initialize();
+bool MacGui::initialize() {
+	return _impl->initialize();
 }
 
 void MacGui::reset() {
@@ -88,8 +88,8 @@ void MacGui::setupCursor(int &width, int &height, int &hotspotX, int &hotspotY, 
 	_impl->setupCursor(width, height, hotspotX, hotspotY, animate);
 }
 
-void MacGui::setPalette(const byte *palette, uint size) {
-	_impl->setPalette(palette, size);
+void MacGui::setPaletteDirty() {
+	_impl->setPaletteDirty();
 }
 
 const Graphics::Font *MacGui::getFontByScummId(int32 id) {

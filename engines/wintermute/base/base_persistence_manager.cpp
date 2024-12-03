@@ -43,12 +43,6 @@
 #include "common/system.h"
 #include "common/savefile.h"
 
-#ifdef ENABLE_WME3D
-#include "math/angle.h"
-#include "math/matrix4.h"
-#include "math/vector3d.h"
-#endif
-
 namespace Wintermute {
 
 // The original WME-Lite savegames had the following:
@@ -823,7 +817,6 @@ bool BasePersistenceManager::transferVector2(const char *name, Vector2 *val) {
 	}
 }
 
-#ifdef ENABLE_WME3D
 //////////////////////////////////////////////////////////////////////////
 // Vector3
 bool BasePersistenceManager::transferVector3d(const char *name, DXVector3 *val) {
@@ -841,6 +834,34 @@ bool BasePersistenceManager::transferVector3d(const char *name, DXVector3 *val) 
 		val->_x = getFloat();
 		val->_y = getFloat();
 		val->_z = getFloat();
+
+		if (_loadStream->err()) {
+			return STATUS_FAILED;
+		}
+
+		return STATUS_OK;
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+// Vector4
+bool BasePersistenceManager::transferVector4d(const char *name, DXVector4 *val) {
+	if (_saving) {
+		putFloat(val->_x);
+		putFloat(val->_y);
+		putFloat(val->_z);
+		putFloat(val->_w);
+
+		if (_saveStream->err()) {
+			return STATUS_FAILED;
+		}
+
+		return STATUS_OK;
+	} else {
+		val->_x = getFloat();
+		val->_y = getFloat();
+		val->_z = getFloat();
+		val->_w = getFloat();
 
 		if (_loadStream->err()) {
 			return STATUS_FAILED;
@@ -893,7 +914,6 @@ bool BasePersistenceManager::transferAngle(const char *name, float *val) {
 
 	return STATUS_OK;
 }
-#endif
 
 
 //////////////////////////////////////////////////////////////////////////

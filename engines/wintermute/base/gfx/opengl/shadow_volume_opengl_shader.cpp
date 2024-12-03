@@ -32,7 +32,7 @@
 
 #if defined(USE_OPENGL_SHADERS)
 
-#include "engines/wintermute/base/gfx/opengl/base_render_opengl3d.h"
+#include "engines/wintermute/base/gfx/opengl/base_render_opengl3d_shader.h"
 #include "engines/wintermute/base/gfx/opengl/shadow_volume_opengl_shader.h"
 
 namespace Wintermute {
@@ -44,7 +44,7 @@ struct ShadowVertexShader {
 
 //////////////////////////////////////////////////////////////////////////
 ShadowVolumeOpenGLShader::ShadowVolumeOpenGLShader(BaseGame *inGame, OpenGL::Shader *volumeShader, OpenGL::Shader *maskShader)
-	: ShadowVolume(inGame), _color(0x7f000000), _volumeShader(volumeShader), _maskShader(maskShader) {
+	: ShadowVolume(inGame), _volumeShader(volumeShader), _maskShader(maskShader) {
 	ShadowVertexShader shadowMask[4];
 	_shadowVolumeVertexBuffer = 0;
 	DXViewport viewport = _gameRef->_renderer3D->getViewPort();
@@ -73,8 +73,9 @@ ShadowVolumeOpenGLShader::~ShadowVolumeOpenGLShader() {
 //////////////////////////////////////////////////////////////////////////
 bool ShadowVolumeOpenGLShader::render() {
 	glBindTexture(GL_TEXTURE_2D, 0);
-	glDrawArrays(GL_TRIANGLES, 0, _vertices.size());
+	glDisable(GL_TEXTURE_2D);
 	_gameRef->_renderer3D->_lastTexture = nullptr;
+	glDrawArrays(GL_TRIANGLES, 0, _vertices.size());
 
 	return true;
 }
@@ -96,6 +97,7 @@ bool ShadowVolumeOpenGLShader::renderToStencilBuffer() {
 	// Disable z-buffer writes (note: z-testing still occurs), and enable the
 	// stencil-buffer
 	glDepthMask(GL_FALSE);
+	glDisable(GL_TEXTURE_2D);
 	glEnable(GL_STENCIL_TEST);
 	glEnable(GL_CULL_FACE);
 
@@ -144,9 +146,11 @@ bool ShadowVolumeOpenGLShader::renderToScene() {
 	glStencilFunc(GL_LEQUAL, 0x1, 0xFFFFFFFF);
 	glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
 
-	_gameRef->_renderer3D->setProjection2D();
-
 	glBindTexture(GL_TEXTURE_2D, 0);
+
+	BaseRenderOpenGL3DShader *renderer = dynamic_cast<BaseRenderOpenGL3DShader *>(_gameRef->_renderer3D);
+	renderer->_shadowMaskShader->use();
+	renderer->setProjection2D(renderer->_shadowMaskShader);
 
 	_maskShader->enableVertexAttribute("position", _shadowMaskVertexBuffer, 2, GL_FLOAT, false, 8, 0);
 	_maskShader->use(true);

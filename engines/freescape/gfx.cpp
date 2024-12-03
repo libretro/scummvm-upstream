@@ -34,6 +34,14 @@
 
 namespace Freescape {
 
+const Graphics::PixelFormat getRGBAPixelFormat() {
+#ifdef SCUMM_BIG_ENDIAN
+		return Graphics::PixelFormat(4, 8, 8, 8, 8, 24, 16, 8, 0);
+#else
+		return Graphics::PixelFormat(4, 8, 8, 8, 8, 0, 8, 16, 24);
+#endif
+}
+
 Renderer::Renderer(int screenW, int screenH, Common::RenderMode renderMode, bool authenticGraphics) {
 	_screenW = screenW;
 	_screenH = screenH;
@@ -274,6 +282,7 @@ bool Renderer::getRGBAtCGA(uint8 index, uint8 &r1, uint8 &g1, uint8 &b1, uint8 &
 
 	assert (_renderMode == Common::kRenderCGA);
 	if (index <= 4) { // Solid colors
+		stipple = nullptr;
 		readFromPalette(index - 1, r1, g1, b1);
 		r2 = r1;
 		g2 = g1;
@@ -287,6 +296,9 @@ bool Renderer::getRGBAtCGA(uint8 index, uint8 &r1, uint8 &g1, uint8 &b1, uint8 &
 	byte c2 = (pair >> 4) & 0xf;
 	readFromPalette(c1, r1, g1, b1);
 	readFromPalette(c2, r2, g2, b2);
+	if (r1 == r2 && g1 == g2 && b1 == b2) {
+		stipple = nullptr;
+	}
 	return true;
 }
 
@@ -364,12 +376,14 @@ bool Renderer::getRGBAtZX(uint8 index, uint8 &r1, uint8 &g1, uint8 &b1, uint8 &r
 	if (entry[0] == 0 && entry[1] == 0 && entry[2] == 0 && entry[3] == 0) {
 		readFromPalette(_paperColor, r1, g1, b1);
 		readFromPalette(_paperColor, r2, g2, b2);
+		stipple = nullptr;
 		return true;
 	}
 
 	if (entry[0] == 0xff && entry[1] == 0xff && entry[2] == 0xff && entry[3] == 0xff) {
 		readFromPalette(_inkColor, r1, g1, b1);
 		readFromPalette(_inkColor, r2, g2, b2);
+		stipple = nullptr;
 		return true;
 	}
 
@@ -377,6 +391,9 @@ bool Renderer::getRGBAtZX(uint8 index, uint8 &r1, uint8 &g1, uint8 &b1, uint8 &r
 
 	readFromPalette(_paperColor, r1, g1, b1);
 	readFromPalette(_inkColor, r2, g2, b2);
+	if (r1 == r2 && g1 == g2 && b1 == g2) {
+		stipple = nullptr;
+	}
 	return true;
 }
 
@@ -430,12 +447,14 @@ bool Renderer::getRGBAtCPC(uint8 index, uint8 &r1, uint8 &g1, uint8 &b1, uint8 &
 			r2 = r1;
 			g2 = g1;
 			b2 = b1;
+			stipple = nullptr;
 			return true;
 		}
 		readFromPalette(index, r1, g1, b1);
 		r2 = r1;
 		g2 = g1;
 		b2 = b1;
+		stipple = nullptr;
 		return true;
 	}
 
@@ -445,6 +464,7 @@ bool Renderer::getRGBAtCPC(uint8 index, uint8 &r1, uint8 &g1, uint8 &b1, uint8 &
 		r2 = r1;
 		g2 = g1;
 		b2 = b1;
+		stipple = nullptr;
 		return true;
 	}
 
@@ -454,6 +474,9 @@ bool Renderer::getRGBAtCPC(uint8 index, uint8 &r1, uint8 &g1, uint8 &b1, uint8 &
 	uint8 i2 = getCPCPixel(entry[0], 1, true);
 	selectColorFromFourColorPalette(i1, r1, g1, b1);
 	selectColorFromFourColorPalette(i2, r2, g2, b2);
+	if (r1 == r2 && g1 == g2 && b1 == b2) {
+		stipple = nullptr;
+	}
 	return true;
 }
 
@@ -955,6 +978,9 @@ void Renderer::renderRectangle(const Math::Vector3d &originalOrigin, const Math:
 	Math::Vector3d size = originalSize;
 	Math::Vector3d origin = originalOrigin;
 
+	if (!_isAccelerated)
+		polygonOffset(true);
+
 	if (size.x() > 0 && size.y() > 0 && size.z() > 0) {
 		/* According to https://www.shdon.com/freescape/
 		If the bounding box is has all non-zero dimensions
@@ -1091,6 +1117,10 @@ void Renderer::renderPolygon(const Math::Vector3d &origin, const Math::Vector3d 
 		}
 		polygonOffset(false);
 	} else {
+
+		if (!_isAccelerated)
+			polygonOffset(true);
+
 		if (size.x() == 0) {
 			for (int i = 0; i < int(ordinates->size()); i++) {
 				if (i % 3 == 0)

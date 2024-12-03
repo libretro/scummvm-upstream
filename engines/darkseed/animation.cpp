@@ -169,7 +169,7 @@ void Animation::updateAnimation() {
 			_player->updateSprite();
 		}
 		break;
-	case 2:
+	case 2: // shower
 		advanceAnimationFrame(0);
 		if (!_objRestarted) {
 			_player->_frameIdx = _player->_animations.getAnimAt(0)._frameNo[_player->_animations.getAnimAt(0)._frameNo[_animIndexTbl[0]]];
@@ -181,7 +181,7 @@ void Animation::updateAnimation() {
 			_player->_walkTarget.x = 218;
 			_player->_walkTarget.y = 198;
 			_objectVar[52] = 0;
-			//			StopVOC(); TODO
+			g_engine->_sound->stopSfx();
 		}
 		break;
 	case 3:
@@ -233,7 +233,7 @@ void Animation::updateAnimation() {
 		_player->_position.y = 91;
 		advanceAnimationFrame(1);
 		if (!_objRestarted) {
-			_player->_frameIdx = _player->_animations.getAnimAt(1)._frameNo[_player->_animations.getAnimAt(1)._frameNo[_animIndexTbl[1]]];
+			_player->_frameIdx = _player->_animations.getAnimAt(1)._frameNo[_animIndexTbl[1]];
 		} else {
 			g_engine->gotoNextMorning(); // TODO there might be some extra logic required from original function
 			_player->_position.x = 242;
@@ -251,6 +251,7 @@ void Animation::updateAnimation() {
 		}
 		if (_frameAdvanced && ((currentRoomNumber == 6 && _animIndexTbl[1] == 1) || (currentRoomNumber == 5 && _animIndexTbl[2] == 1))) {
 			//			FUN_1208_0dacg_engine->_sound_related(0xd,CONCAT11(uVar4,5));
+			g_engine->playSound(4, 5, -1);
 		}
 		if (!_objRestarted) {
 			if (currentRoomNumber == 6) {
@@ -273,6 +274,7 @@ void Animation::updateAnimation() {
 			advanceAnimationFrame(3);
 			if (_frameAdvanced && _animIndexTbl[3] == 1) {
 				// FUN_1208_0dacg_engine->_sound_related(0xd,CONCAT11(extraout_AH_05,5));
+				g_engine->playSound(4, 5, -1);
 			}
 			if (!_objRestarted) {
 				_player->_frameIdx = _player->_animations.getAnimAt(3)._frameNo[_player->_animations.getAnimAt(3)._frameNo[_animIndexTbl[3]]];
@@ -284,6 +286,7 @@ void Animation::updateAnimation() {
 			advanceAnimationFrame(0);
 			if (_frameAdvanced && _animIndexTbl[0] == 1) {
 				// FUN_1208_0dacg_engine->_sound_related(0xd,CONCAT11(extraout_AH_05,5));
+				g_engine->playSound(4, 5, -1);
 			}
 			if (!_objRestarted) {
 				_player->_frameIdx = _player->_animations.getAnimAt(0)._frameNo[_player->_animations.getAnimAt(0)._frameNo[_animIndexTbl[0]]];
@@ -321,7 +324,7 @@ void Animation::updateAnimation() {
 					_objectVar[47] = 1;
 					g_engine->_console->printTosText(922);
 				}
-				g_engine->_sound->waitForSpeech();
+				g_engine->waitForSpeech();
 				setupOtherNspAnimation(1, 9);
 			}
 		}
@@ -466,13 +469,13 @@ void Animation::updateAnimation() {
 		} else {
 			_player->updateSprite();
 			if (_otherNspAnimationType_maybe == 14) {
-				// TODO
 				if (_objectVar.getObjectRunningCode(140) == 0 || g_engine->_room->_roomNumber != 6) {
 					g_engine->_previousRoomNumber = g_engine->_room->_roomNumber;
 					int newRoomNumber;
 					if (g_engine->_room->_roomNumber == 6) {
 						if (_player->_isAutoWalkingToBed && _objectVar[137] == 2) {
-							g_engine->wonGame();
+							wonGame();
+							return;
 						}
 						newRoomNumber = 10;
 					} else if (g_engine->_room->_roomNumber == 10) {
@@ -542,11 +545,21 @@ void Animation::updateAnimation() {
 	}
 	case 32:
 	case 33:
-	case 34: {
+	case 34: { // Take medicine from cabinet
 		_objectVar[112] = 1;
 		int animIdx = _otherNspAnimationType_maybe - 30;
 		advanceAnimationFrame(animIdx);
-		// TODO play sfx.
+		if (_frameAdvanced) {
+			if (_otherNspAnimationType_maybe == 33) {
+				if (_animIndexTbl[animIdx] == 12) {
+					g_engine->playSound(35, 5, -1); // water
+				}
+			} else if (_otherNspAnimationType_maybe == 32) {
+				if (_animIndexTbl[animIdx] == 1 || _animIndexTbl[animIdx] == 18) {
+					g_engine->playSound(34, 5, -1); // open / close cabinet
+				}
+			}
+		}
 		if (_isPlayingAnimation_maybe) {
 			_player->_frameIdx = _player->_animations.getAnimAt(animIdx)._frameNo[_animIndexTbl[animIdx]];
 		}
@@ -653,6 +666,9 @@ void Animation::updateAnimation() {
 		advanceAnimationFrame(iVar4);
 		_player->_frameIdx = _player->_animations.getAnimAt(iVar4)._frameNo[_player->_animations.getAnimAt(iVar4)._frameNo[_animIndexTbl[iVar4]]];
 		//		_HeroSpr = (uint) * (byte *)((int)&DAT_1060_7eb8 + *(int *)((int)&_ObjFrame + iVar4 * 2) + iVar4 * 202);
+		if (_frameAdvanced && _animIndexTbl[iVar4] == 3) { // TODO should we add this conditionally? This logic was missing from the original game. I assume they just forgot to add the sfx.
+			g_engine->playSound(8, 5, -1); // pull lever sound.
+		}
 		if (!_objRestarted || (_otherNspAnimationType_maybe != 46 && _otherNspAnimationType_maybe != 44)) {
 			if (_otherNspAnimationType_maybe == 45) {
 				_objectVar[117] = 1;
@@ -728,9 +744,9 @@ void Animation::updateAnimation() {
 				break;
 			}
 		}
-		if (_frameAdvanced && _animIndexTbl[0] == 1) {
+		if (_otherNspAnimationType_maybe == 55 && _frameAdvanced && _animIndexTbl[stairsIdx] == 4) {
 			// FUN_1208_0dacg_engine->_sound_related(0xd,CONCAT11(extraout_AH_05,5));
-			// PlaySound(1,5,-1);
+			g_engine->playSound(1, 5, -1); //open door to police station
 		}
 		break;
 	}
@@ -797,6 +813,9 @@ void Animation::updateAnimation() {
 			} else {
 				g_engine->_console->addTextLine("The cops ignore your demands for attention.");
 			}
+		}
+		if (_frameAdvanced && _player->_frameIdx == 1) {
+			g_engine->playSound(22, 5, -1);
 		}
 		break;
 	case 65:
@@ -971,6 +990,39 @@ void Animation::sargoAnim() {
 	}
 	g_engine->removeFullscreenPic();
 	g_engine->_cursor.showCursor(true);
+}
+
+void Animation::gancAnim() {
+	g_engine->_cursor.showCursor(false);
+	_player->loadAnimations("ganc.nsp");
+	g_engine->showFullscreenPic("ganc.pic");
+	_animIndexTbl[0] = 0;
+	_spriteAnimCountdownTimer[0] = _player->_animations.getAnimAt(0)._frameDuration[0];
+
+	g_engine->_sound->playMusic(MusicId::kDth);
+	g_engine->playSound(0, 6, -1);
+	g_engine->_console->printTosText(0);
+	g_engine->_console->draw();
+
+	while (!_objRestarted) {
+		g_engine->_sprites.clearSpriteDrawList();
+
+		g_engine->drawFullscreenPic();
+
+		advanceAnimationFrame(0);
+		const Sprite &sargoSprite = _player->_animations.getSpriteAt(_player->_animations.getAnimAt(0)._frameNo[_animIndexTbl[0]]);
+		g_engine->_sprites.addSpriteToDrawList(303, 122, &sargoSprite, 255, sargoSprite._width, sargoSprite._height, false);
+		g_engine->_sprites.drawSprites();
+
+
+		g_engine->_screen->makeAllDirty();
+		g_engine->_screen->update();
+
+		g_system->delayMillis(20);
+	}
+	g_engine->removeFullscreenPic();
+	g_engine->_cursor.showCursor(true);
+	stuffPlayer();
 }
 
 static constexpr uint8 keeperList[250] = {
@@ -1273,6 +1325,78 @@ void Animation::libAnim(bool pickingUpReservedBook) {
 		_objectVar[62] = 0;
 		g_engine->_cutscene.play('G');
 	}
+}
+
+void Animation::wonGame() {
+	_player->loadAnimations("libparts.nsp");
+	g_engine->_room->loadLocationSprites("libmorph.nsp");
+	g_engine->showFullscreenPic("lib_babe.pic");
+
+	g_engine->_cursor.showCursor(false);
+	g_engine->_console->printTosText(925);
+
+	_animIndexTbl[0] = 0;
+	_spriteAnimCountdownTimer[0] = _player->_animations.getAnimAt(0)._frameDuration[0];
+	int counter = 68;
+	uint8 lipsIdx = 0;
+
+	while (counter < 70) {
+		g_engine->_sprites.clearSpriteDrawList();
+
+		g_engine->drawFullscreenPic();
+		g_engine->_console->draw();
+
+		if (!g_engine->_sound->isPlayingSpeech()) {
+			counter++;
+			if (counter == 69) {
+				g_engine->_console->printTosText(926);
+			}
+		}
+		g_engine->_animation->advanceAnimationFrame(0);
+		const Sprite &eyesSprite = _player->_animations.getSpriteAt(_player->_animations.getAnimAt(0)._frameNo[_animIndexTbl[0]]);
+		g_engine->_sprites.addSpriteToDrawList(255, 114, &eyesSprite, 255, eyesSprite._width, eyesSprite._height, false);
+		g_engine->_animation->advanceAnimationFrame(1);
+
+		const Sprite &mouthSprite = _player->_animations.getSpriteAt(libList[lipsIdx]);
+		g_engine->_sprites.addSpriteToDrawList(255, 154, &mouthSprite, 255, mouthSprite._width, mouthSprite._height, false);
+
+		g_engine->_sprites.drawSprites();
+
+		g_engine->_screen->makeAllDirty();
+		g_engine->_screen->update();
+
+		lipsIdx++;
+		if (lipsIdx == 100) {
+			lipsIdx = 0;
+		}
+
+		g_system->delayMillis(50);
+	}
+
+	_objRestarted = false;
+	while (!_objRestarted) {
+		g_engine->_sprites.clearSpriteDrawList();
+		g_engine->_room->advanceFrame(0);
+		const Sprite &headMorph = g_engine->_room->_locationSprites.getSpriteAt(g_engine->_room->_locationSprites.getAnimAt(0)._frameNo[g_engine->_room->_locObjFrame[0]]);
+		g_engine->_sprites.addSpriteToDrawList(227, 50, &headMorph, 255, headMorph._width, headMorph._height, false);
+
+		g_engine->_sprites.drawSprites();
+
+		g_engine->_screen->makeAllDirty();
+		g_engine->_screen->update();
+		g_system->delayMillis(30);
+	}
+	g_engine->_console->printTosText(918);
+	g_engine->_sound->playMusic(MusicId::kVictory, false);
+	g_engine->showFullscreenPic("wonpic.pic");
+	g_engine->_console->draw();
+	g_engine->_screen->makeAllDirty();
+	g_engine->_screen->update();
+
+	while (g_engine->_sound->isPlayingMusic() && !g_engine->shouldQuit()) {
+		g_engine->waitxticks(1);
+	}
+	g_engine->_cutscene.play('Z');
 }
 
 } // End of namespace Darkseed

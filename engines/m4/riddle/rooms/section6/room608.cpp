@@ -59,12 +59,12 @@ void Room608::init() {
 		_ol = TriggerMachineByHash(1, 1, 0, 0, 0, 0, 0, 0, 100, 0x200, 0,
 			triggerMachineByHashCallback, "ol");
 		sendWSMessage_10000(1, _ol, _old1, 1, 1, 200, _old1, 1, 1, 0);
-		_val1 = 0;
-		_val2 = 0;
-		_val3 = 0;
+		_ctr1 = 0;
+		_oldMode = 0;
+		_oldShould = 0;
 	}
 
-	if (inv_object_is_here("DRIFTWOOD STUMP")) {
+	if (inv_object_in_scene("DRIFTWOOD STUMP", 600)) {
 		_stump = series_show("608ST_DN", 0xf00, 16);
 		hotspot_set_active("DRIFTWOOD STUMP ", false);
 	} else {
@@ -138,10 +138,10 @@ void Room608::init() {
 		ws_demand_location(-30, 345, 1);
 		ws_walk(43, 345, nullptr, 18, 3);
 	
-		ws_walk_load_walker_series(SECTION6_NORMAL_DIRS, SECTION6_NORMAL_NAMES);
-		ws_walk_load_shadow_series(SECTION6_SHADOW_DIRS, SECTION6_SHADOW_NAMES);
+		ws_walk_load_walker_series(TT_NORMAL_DIRS, TT_NORMAL_NAMES);
+		ws_walk_load_shadow_series(TT_SHADOW_DIRS, TT_SHADOW_NAMES);
 
-		_tt = triggerMachineByHash_3000(8, 9, *SECTION6_NORMAL_DIRS, *SECTION6_SHADOW_DIRS,
+		_tt = triggerMachineByHash_3000(8, 9, *TT_NORMAL_DIRS, *TT_SHADOW_DIRS,
 			-30, 324, 3, triggerMachineByHashCallback3000, "tt walker");
 		sendWSMessage_10000(_tt, 105, 324, 5, 20, 1);
 	} else if (_G(flags)[V203] == 6) {
@@ -159,10 +159,10 @@ void Room608::init() {
 		ws_demand_location(-30, 345, 1);
 		kernel_timing_trigger(1, 698);
 
-		ws_walk_load_walker_series(SECTION6_NORMAL_DIRS, SECTION6_NORMAL_NAMES);
-		ws_walk_load_shadow_series(SECTION6_SHADOW_DIRS, SECTION6_SHADOW_NAMES);
+		ws_walk_load_walker_series(TT_NORMAL_DIRS, TT_NORMAL_NAMES);
+		ws_walk_load_shadow_series(TT_SHADOW_DIRS, TT_SHADOW_NAMES);
 
-		_tt = triggerMachineByHash_3000(8, 9, *SECTION6_NORMAL_DIRS, *SECTION6_SHADOW_DIRS,
+		_tt = triggerMachineByHash_3000(8, 9, *TT_NORMAL_DIRS, *TT_SHADOW_DIRS,
 			-30, 324, 3, triggerMachineByHashCallback3000, "tt walker");
 		sendWSMessage_10000(_tt, 103, 318, 3, 700, 1);
 	}
@@ -220,7 +220,7 @@ void Room608::daemon() {
 
 	case 20:
 		player_update_info(_tt, &_G(player_info));
-		ws_hide_walker();
+		ws_hide_walker(_tt);
 
 		_ttShadow = series_show("tt walker shadow 5", 0xf00, 0, -1, -1, 0,
 			_G(player_info).scale, _G(player_info).x, _G(player_info).y);
@@ -334,7 +334,7 @@ void Room608::daemon() {
 
 	case 55:
 		terminateMachineAndNull(_ttTalker);
-		ws_unhide_walker();
+		ws_unhide_walker(_tt);
 		terminateMachineAndNull(_ttShadow);
 		sendWSMessage_10000(_tt, -30, 324, 9, 60, 1);
 		_G(flags)[V203] = 3;
@@ -375,23 +375,23 @@ void Room608::daemon() {
 		break;
 
 	case 201:
-		switch (_val2) {
+		switch (_oldMode) {
 		case 0:
-			switch (_val3) {
+			switch (_oldShould) {
 			case 0:
 				sendWSMessage_10000(1, _ol, _old1, 1, 1, 200, _old1, 1, 1, 0);
 				break;
 
 			case 1:
-				if (imath_ranged_rand(10, 30) <= ++_val1) {
-					_val1 = 0;
+				if (imath_ranged_rand(10, 30) <= ++_ctr1) {
+					_ctr1 = 0;
 
 					if (imath_ranged_rand(1, 2) == 1) {
 						sendWSMessage_10000(1, _ol, _old1, 1, 1, 200, _old1, 1, 1, 0);
 						break;
 					} else {
 						sendWSMessage_10000(1, _ol, _old1, 1, 3, 200, _old1, 3, 3, 0);
-						_val2 = 2;
+						_oldMode = 2;
 					}
 				} else {
 					kernel_timing_trigger(10, 200);
@@ -403,7 +403,7 @@ void Room608::daemon() {
 			case 10:
 			case 11:
 				sendWSMessage_10000(1, _ol, _old2, 1, 38, 200, _old2, 38, 38, 0);
-				_val2 = 8;
+				_oldMode = 8;
 				break;
 
 			case 13:
@@ -440,16 +440,16 @@ void Room608::daemon() {
 
 			default:
 				sendWSMessage_10000(1, _ol, _old1, 1, 3, 200, _old1, 3, 3, 0);
-				_val2 = 2;
+				_oldMode = 2;
 				break;
 			}
 			break;
 
 		case 2:
-			switch (_val3) {
+			switch (_oldShould) {
 			case 1:
-				if (imath_ranged_rand(10, 30) <= ++_val1) {
-					_val1 = 0;
+				if (imath_ranged_rand(10, 30) <= ++_ctr1) {
+					_ctr1 = 0;
 
 					switch (imath_ranged_rand(1, 3)) {
 					case 1:
@@ -458,10 +458,12 @@ void Room608::daemon() {
 					case 2:
 						sendWSMessage_10000(1, _ol, _old1, 3, 1, 200, _old1, 1, 1, 0);
 						sendWSMessage_190000(_ol, 7);
+						_oldMode = 0;
 						break;
 					case 3:
 						sendWSMessage_10000(1, _ol, _old1, 4, 5, 200, _old1, 5, 5, 0);
 						sendWSMessage_190000(_ol, 7);
+						_oldMode = 3;
 						break;
 					default:
 						break;
@@ -477,20 +479,22 @@ void Room608::daemon() {
 			case 12:
 				sendWSMessage_10000(1, _ol, _old1, 4, 5, 200, _old1, 5, 5, 0);
 				sendWSMessage_190000(_ol, 7);
+				_oldMode = 3;
 				break;
 
 			default:
 				sendWSMessage_10000(1, _ol, _old1, 3, 1, 200, _old1, 1, 1, 0);
 				sendWSMessage_190000(_ol, 7);
+				_oldMode = 0;
 				break;
 			}
 			break;
 
 		case 3:
-			switch (_val3) {
+			switch (_oldShould) {
 			case 1:
-				if (imath_ranged_rand(10, 30) <= ++_val1) {
-					_val1 = 0;
+				if (imath_ranged_rand(10, 30) <= ++_ctr1) {
+					_ctr1 = 0;
 
 					switch (imath_ranged_rand(1, 3)) {
 					case 1:
@@ -498,12 +502,13 @@ void Room608::daemon() {
 						break;
 					case 2:
 						sendWSMessage_10000(1, _ol, _old1, 5, 4, 200, _old1, 3, 3, 0);
-						_val2 = 2;
+						_oldMode = 2;
 						sendWSMessage_190000(_ol, 7);
 						break;
 					case 3:
 						sendWSMessage_10000(1, _ol, _old1, 6, 7, 200, _old1, 7, 7, 0);
 						sendWSMessage_190000(_ol, 7);
+						_oldMode = 4;
 						break;
 					default:
 						break;
@@ -519,26 +524,29 @@ void Room608::daemon() {
 			case 12:
 				sendWSMessage_10000(1, _ol, _old1, 6, 7, 200, _old1, 7, 7, 0);
 				sendWSMessage_190000(_ol, 7);
+				_oldMode = 4;
 				break;
 
 			default:
 				sendWSMessage_10000(1, _ol, _old1, 5, 4, 200, _old1, 3, 3, 0);
 				sendWSMessage_190000(_ol, 7);
+				_oldMode = 2;
 				break;
 			}
 			break;
 
 		case 4:
-			switch (_val3) {
+			switch (_oldShould) {
 			case 1:
-				if (imath_ranged_rand(10, 30) <= ++_val1) {
-					_val1 = 0;
+				if (imath_ranged_rand(10, 30) <= ++_ctr1) {
+					_ctr1 = 0;
 
 					if (imath_ranged_rand(1, 2) == 1) {
 						sendWSMessage_10000(1, _ol, _old1, 7, 7, 200, _old1, 7, 7, 0);
 					} else {
 						sendWSMessage_10000(1, _ol, _old1, 7, 6, 200, _old1, 5, 5, 0);
 						sendWSMessage_190000(_ol, 7);
+						_oldMode = 3;
 					}
 				} else {
 					kernel_timing_trigger(10, 200);
@@ -548,18 +556,18 @@ void Room608::daemon() {
 			case 7:
 			case 12:
 				sendWSMessage_10000(1, _ol, _old1, 8, 14, 200, _old1, 26, 26, 0);
-				_val2 = 6;
+				_oldMode = 6;
 				break;
 
 			default:
 				sendWSMessage_10000(1, _ol, _old1, 7, 6, 200, _old1, 5, 5, 0);
-				_val2 = 3;
+				_oldMode = 3;
 				break;
 			}
 			break;
 
 		case 6:
-			switch (_val3) {
+			switch (_oldShould) {
 			case 5:
 				sendWSMessage_10000(1, _ol, _old1, 26, 26, -1, _old1, 26, 42, 4);
 				sendWSMessage_1a0000(_ol, 11);
@@ -571,37 +579,37 @@ void Room608::daemon() {
 
 			case 7:
 				sendWSMessage_10000(1, _ol, _old1, 61, 74, 200, _old1, 74, 74, 0);
-				_val2 = 7;
-				_val3 = 5;
+				_oldMode = 7;
+				_oldShould = 5;
 				break;
 
 			case 12:
 				sendWSMessage_10000(1, _ol, _old1, 15, 28, 200, _old1, 26, 26, 0);
-				_val3 = 5;
+				_oldShould = 5;
 				break;
 
 			default:
 				sendWSMessage_10000(1, _ol, _old1, 14, 8, 200, _old1, 7, 7, 0);
-				_val2 = 4;
+				_oldMode = 4;
 				break;
 			}
 			break;
 
 		case 7:
-			switch (_val3) {
+			switch (_oldShould) {
 			case 7:
 				sendWSMessage_10000(1, _ol, _old1, 74, 74, 200, _old1, 74, 74, 0);
 				break;
 
 			default:
 				sendWSMessage_10000(1, _ol, _old1, 74, 61, 200, _old1, 26, 26, 0);
-				_val2 = 6;
+				_oldMode = 6;
 				break;
 			}
 			break;
 
 		case 8:
-			switch (_val3) {
+			switch (_oldShould) {
 			case 8:
 				sendWSMessage_10000(1, _ol, _old2, 38, 38, 200, _old2, 38, 38, 0);
 				break;
@@ -614,22 +622,22 @@ void Room608::daemon() {
 			case 10:
 			case 11:
 				sendWSMessage_10000(1, _ol, _old2, 49, 57, 200, _old2, 57, 57, 0);
-				_val2 = 11;
+				_oldMode = 11;
 				break;
 
 			default:
 				sendWSMessage_10000(1, _ol, _old2, 38, 1, 200, _old1, 1, 1, 0);
-				_val2 = 0;
+				_oldMode = 0;
 				break;
 			}
 			break;
 
 		case 11:
-			switch (_val3) {
+			switch (_oldShould) {
 			case 10:
 				sendWSMessage_10000(1, _ol, _old2, 57, 49, 200, _old2, 38, 38, 0);
-				_val2 = 8;
-				_val3 = 8;
+				_oldMode = 8;
+				_oldShould = 8;
 				break;
 
 			case 11:
@@ -638,6 +646,7 @@ void Room608::daemon() {
 
 			default:
 				sendWSMessage_10000(1, _ol, _old2, 57, 49, 200, _old2, 38, 38, 0);
+				_oldMode = 8;
 				break;
 			}
 			break;
@@ -683,8 +692,8 @@ void Room608::daemon() {
 
 	case 225:
 		sendWSMessage_10000(1, _ol, _old1, 1, 1, 200, _old1, 1, 1, 0);
-		_val2 = 0;
-		_val3 = 1;
+		_oldMode = 0;
+		_oldShould = 1;
 		_ol2 = TriggerMachineByHash(1, 1, 0, 0, 0, 0, 0, 0, 100, 0x100, 0,
 			triggerMachineByHashCallback, "rip talker");
 		sendWSMessage_10000(1, _ol2, _old5f, 1, 1, -1, _old5f, 1, 4, 1);
@@ -729,8 +738,8 @@ void Room608::daemon() {
 
 	case 267:
 		sendWSMessage_10000(1, _ol, _old1, 1, 1, 200, _old1, 1, 1, 0);
-		_val2 = 0;
-		_val3 = 1;
+		_oldMode = 0;
+		_oldShould = 1;
 		_ol2 = TriggerMachineByHash(1, 1, 0, 0, 0, 0, 0, 0, 100, 0x100, 0,
 			triggerMachineByHashCallback, "rip talker");
 		sendWSMessage_10000(1, _ol2, _old5f, 1, 1, -1, _old5f, 1, 4, 1);
@@ -783,8 +792,8 @@ void Room608::daemon() {
 		break;
 
 	case 301:
-		if (!_val5) {
-			switch (_val4) {
+		if (!_ripleyMode) {
+			switch (_ripleyShould) {
 			case 0:
 				sendWSMessage_10000(1, _ripley, _rp09, 23, 23, 300, _rp09, 23, 23, 0);
 				break;
@@ -833,28 +842,28 @@ void Room608::daemon() {
 		terminateMachineAndNull(_shadow);
 		terminateMachineAndNull(_ripley);
 		ws_unhide_walker();
-		_val3 = 14;
+		_oldShould = 14;
 		break;
 
 	case 306:
 		terminateMachineAndNull(_shadow);
 		terminateMachineAndNull(_ripley);
 		ws_unhide_walker();
-		_val3 = 13;
+		_oldShould = 13;
 		break;
 
 	case 307:
 		terminateMachineAndNull(_shadow);
 		terminateMachineAndNull(_ripley);
 		ws_unhide_walker();
-		_val3 = 15;
+		_oldShould = 15;
 		break;
 
 	case 308:
 		terminateMachineAndNull(_shadow);
 		terminateMachineAndNull(_ripley);
 		ws_unhide_walker();
-		_val3 = 16;
+		_oldShould = 16;
 		break;
 
 	case 500:
@@ -1284,10 +1293,10 @@ void Room608::daemon() {
 		series_unload(_ripHandChin);
 		series_unload(_ripTalker);
 
-		series_load(SECTION6_NORMAL_NAMES[0], SECTION6_NORMAL_DIRS[0]);
-		series_load(SECTION6_NORMAL_NAMES[1], SECTION6_NORMAL_DIRS[1]);
-		series_load(SECTION6_NORMAL_NAMES[3], SECTION6_NORMAL_DIRS[3]);
-		series_load(SECTION6_NORMAL_NAMES[4], SECTION6_NORMAL_DIRS[4]);
+		series_load(TT_NORMAL_NAMES[0], TT_NORMAL_DIRS[0]);
+		series_load(TT_NORMAL_NAMES[1], TT_NORMAL_DIRS[1]);
+		series_load(TT_NORMAL_NAMES[3], TT_NORMAL_DIRS[3]);
+		series_load(TT_NORMAL_NAMES[4], TT_NORMAL_DIRS[4]);
 		ws_hide_walker(_tt);
 
 		_ttTalker = TriggerMachineByHash(1, 1, 0, 0, 0, 0, 0, 0, 100, 0x100, 0,
@@ -1440,7 +1449,7 @@ void Room608::pre_parser() {
 	bool takeFlag = player_said("take");
 	bool useFlag = player_said_any("push", "pull", "gear", "open", "close");
 
-	if (player_said("HORN/PULL CORD", "WATER") && !_G(flags)[GLB_TEMP_3])
+	if (player_said("HORN/PULL CORD", "WATER") && !_G(flags)[V009])
 		_G(player).resetWalk();
 	if (player_said("POLE", "DRIFTWOOD STUMP ") && inv_player_has("POLE"))
 		_G(player).resetWalk();
@@ -1461,10 +1470,10 @@ void Room608::parser() {
 	if (player_said("conv608a")) {
 		conv608a();
 	} else if (_G(kernel).trigger == 747) {
-		_val3 = 1;
-		_val4 = 2;
+		_oldShould = 1;
+		_ripleyShould = 2;
 	} else if (talkFlag && player_said("old woman")) {
-		if (_G(flags)[GLB_TEMP_7]) {
+		if (_G(flags)[V013]) {
 			digi_play(_G(flags)[V203] > 2 ? "608r04" : "608r35", 1);
 		} else {
 			if (_G(flags)[V203] >= 2 || !_G(flags)[V034]) {
@@ -1482,9 +1491,9 @@ void Room608::parser() {
 				sendWSMessage_10000(1, _ripley, _rp09, 1, 23, 300, _rp09, 23, 23, 0);
 				_G(kernel).trigger_mode = KT_PARSE;
 
-				_val5 = 0;
-				_val4 = 0;
-				_val3 = 6;
+				_ripleyMode = 0;
+				_ripleyShould = 0;
+				_oldShould = 6;
 				conv_load("conv608a", 10, 10, 747);
 				conv_export_value_curr(_G(flags)[V203] >= 3 ? 1 : 0, 0);
 				conv_play();
@@ -1581,94 +1590,7 @@ void Room608::parser() {
 			break;
 		}
 	} else if (useFlag && HERE("POLE")) {
-		switch (_G(kernel).trigger) {
-		case -1:
-			ws_walk(453, 311, nullptr, 1, 1);
-			break;
-		case 1:
-			player_set_commands_allowed(false);
-			player_update_info();
-			ws_hide_walker();
-			kernel_load_variant("608lock1");
-			digi_preload("950_s37");
-			digi_preload("950_s37a");
-
-			_ol2 = series_stream("608rp04", 5, 0x300, 16);
-			series_stream_break_on_frame(_ol2, 25, 3);
-			break;
-		case 3:
-			series_stream_break_on_frame(_ol2, 33, 30);
-			digi_play("950_s37", 2);
-			break;
-		case 4:
-			series_stream_break_on_frame(_ol2, 76, 5);
-			digi_play("950_s37a", 2);
-			break;
-		case 5:
-			series_stream_break_on_frame(_ol2, 77, 7);
-			digi_play("950_s37", 2);
-			break;
-		case 7:
-			terminateMachineAndNull(_end1);
-			terminateMachineAndNull(_pole);
-			terminateMachineAndNull(_stump);
-			_val3 = 8;
-			digi_play("608_s01a", 1);
-			break;
-		case 10:
-			digi_unload("950_s37");
-			digi_unload("950_s37a");
-			_G(flags)[V186] = 1;
-			_end1 = series_show("608END", 0xf00, 16);
-
-			hotspot_set_active("STATUE", false);
-			hotspot_set_active("STATUE ", true);
-			hotspot_set_active("DRIFTWOOD STUMP ", false);
-			hotspot_set_active("DRIFTWOOD STUMP  ", true);
-			hotspot_set_active("POLE", false);
-			hotspot_set_active("POLE ", true);
-			hotspot_set_active("stone", false);
-
-			ws_unhide_walker();
-			player_update_info();
-			ws_walk(_G(player_info).x + 1, _G(player_info).y,
-				nullptr, 12, 4);
-			break;
-		case 12:
-			_ripLHandTalk = series_load("RIP TREK L HAND TALK POS4");
-			setGlobals1(_ripLHandTalk, 2, 6, 6, 7, 1, 6, 1, 1, 1);
-			digi_play("608r15", 1, 255, 15);
-			break;
-		case 15:
-			sendWSMessage_120000(2);
-			_val3 = 10;
-			digi_play("608o01", 1, 255, 18);
-			break;
-		case 18:
-			sendWSMessage_110000(2);
-			digi_play("608r16", 1, 255, 20);
-			break;
-		case 20:
-			sendWSMessage_140000(-1);
-			_val3 = 9;
-			digi_play("608o02", 1, 255, 22);
-			break;
-		case 22:
-			_val3 = 1;
-			kernel_timing_trigger(1, 200, KT_DAEMON, KT_PARSE);
-			kernel_timing_trigger(100, 25);
-			break;
-		case 25:
-			player_set_commands_allowed(true);
-			digi_play("608r17", 1);
-			break;
-		case 30:
-			series_stream_break_on_frame(_ol2, 44, 4);
-			digi_play("608_s01", 1);
-			break;
-		default:
-			break;
-		}
+		usePole();
 	} else if (player_said_any("lung", "prostate")) {
 		switch (_G(kernel).trigger) {
 		case 1:
@@ -1685,24 +1607,24 @@ void Room608::parser() {
 			sendWSMessage_10000(1, _ripley, _rp09, 1, 23, 300, _rp09, 23, 23, 0);
 			_G(kernel).trigger_mode = KT_PARSE;
 
-			_val5 = 0;
-			_val4 = 1;
-			_val3 = 6;
+			_ripleyMode = 0;
+			_ripleyShould = 1;
+			_oldShould = 6;
 			digi_play("608r70", 1, 255, 2);
 			break;
 		case 2:
-			_val3 = 5;
-			_val4 = 0;
+			_oldShould = 5;
+			_ripleyShould = 0;
 			digi_play("608o18", 1, 255, 3);
 			break;
 		case 3:
-			_val3 = 6;
+			_oldShould = 6;
 			kernel_timing_trigger(1, 200, KT_DAEMON, KT_PARSE);
-			_val4 = 1;
+			_ripleyShould = 1;
 			digi_play("608r71", 1, 255, 5);
 			break;
 		case 5:
-			_val4 = player_said("lung") ? 3 : 4;
+			_ripleyShould = player_said("lung") ? 3 : 4;
 			break;
 		default:
 			break;
@@ -1713,7 +1635,7 @@ void Room608::parser() {
 			Common::strcpy_s(_G(player).verb, "lung");
 			kernel_timing_trigger(1, 1);
 		} else {
-			digi_play(_G(flags)[GLB_TEMP_4] ? "608r04a" : "608r35a", 1);
+			digi_play(_G(flags)[V010] ? "608r04a" : "608r35a", 1);
 		}
 	} else if (player_said("clock facing", "old woman") &&
 			!inv_object_is_here("OBSIDIAN DISK")) {
@@ -1721,7 +1643,7 @@ void Room608::parser() {
 			Common::strcpy_s(_G(player).verb, "prostate");
 			kernel_timing_trigger(1, 1);
 		} else {
-			digi_play(_G(flags)[GLB_TEMP_4] ? "608r04a" : "608r35a", 1);
+			digi_play(_G(flags)[V010] ? "608r04a" : "608r35a", 1);
 		}
 	} else if (player_said_any("bowels", "scrotum")) {
 		switch (_G(kernel).trigger) {
@@ -1739,24 +1661,24 @@ void Room608::parser() {
 			sendWSMessage_10000(1, _ripley, _rp09, 1, 23, 300, _rp09, 23, 23, 0);
 			_G(kernel).trigger_mode = KT_PARSE;
 
-			_val5 = 0;
-			_val4 = 1;
-			_val3 = 6;
+			_ripleyMode = 0;
+			_ripleyShould = 1;
+			_oldShould = 6;
 			digi_play("608r67", 1, 255, 2);
 			break;
 		case 2:
-			_val3 = 5;
-			_val4 = 0;
+			_oldShould = 5;
+			_ripleyShould = 0;
 			digi_play("608o17", 1, 255, 3);
 			break;
 		case 3:
-			_val3 = 6;
+			_oldShould = 6;
 			kernel_timing_trigger(1, 200, KT_DAEMON, KT_PARSE);
-			_val4 = 1;
+			_ripleyShould = 1;
 			digi_play("608r68", 1, 255, 5);
 			break;
 		case 5:
-			_val4 = player_said("bowels") ? 5 : 6;
+			_ripleyShould = player_said("bowels") ? 5 : 6;
 			break;
 		default:
 			break;
@@ -1874,10 +1796,10 @@ void Room608::conv608a() {
 
 	if (_G(kernel).trigger == 1) {
 		if (who <= 0) {
-			_val3 = 6;
+			_oldShould = 6;
 			kernel_timing_trigger(1, 200, KT_DAEMON, KT_PARSE);
 		} else if (who == 1) {
-			_val4 = 0;
+			_ripleyShould = 0;
 		}
 
 		conv_resume();
@@ -1887,16 +1809,16 @@ void Room608::conv608a() {
 			if (node == 4 && entry == 0)
 				midi_play("eastiswo", 255, 0, -1, 949);
 			if ((node == 2 && entry == 1) || (node == 3 && entry == 2))
-				_val3 = 7;
+				_oldShould = 7;
 			else if ((node == 2 && entry == 0) || (node == 3 && entry == 1))
-				_val3 = 12;
+				_oldShould = 12;
 			else
-				_val3 = 5;
+				_oldShould = 5;
 		} else if (who == 1) {
 			if (node == 4)
-				_G(flags)[GLB_TEMP_7] = 1;
+				_G(flags)[V013] = 1;
 			if (!(node == 5 && entry == 3))
-				_val4 = 1;
+				_ripleyShould = 1;
 		}
 
 		digi_play(sound, 1, 255, 1);
@@ -1913,7 +1835,6 @@ bool Room608::takeStump1() {
 			_ripLowReach = series_load("RIP LOW REACH POS1");
 			setGlobals1(_ripLowReach, 1, 10, 10, 10);
 			sendWSMessage_110000(2);
-			return true;
 		}
 		break;
 
@@ -1922,17 +1843,23 @@ bool Room608::takeStump1() {
 		inv_give_to_player("DRIFTWOOD STUMP");
 		kernel_examine_inventory_object("PING DRIFTWOOD STUMP",
 			5, 1, 230, 244, 3);
-		return true;
+		terminateMachineAndNull(_stump);
+		break;
 
 	case 3:
 		sendWSMessage_140000(5);
-		return true;
+		break;
+
+	case 5:
+		series_unload(_ripLowReach);
+		player_set_commands_allowed(true);
+		break;
 
 	default:
-		break;
+		return false;
 	}
 
-	return false;
+	return true;
 }
 
 bool Room608::takePuffin() {
@@ -1940,10 +1867,9 @@ bool Room608::takePuffin() {
 	case -1:
 		if (inv_object_is_here("DRIFTWOOD PUFFIN")) {
 			player_set_commands_allowed(false);
-			_ripLowReach2 = series_load("RIP LOW REACH POS2");
+			_ripLowReach2 = series_load("RIP TREK LOW REACH POS2");
 			setGlobals1(_ripLowReach2, 1, 16, 16, 16);
 			sendWSMessage_110000(2);
-			return true;
 		}
 		break;
 
@@ -1953,21 +1879,22 @@ bool Room608::takePuffin() {
 		kernel_examine_inventory_object("PING DRIFTWOOD PUFFIN",
 			5, 1, 142, 239, 3);
 		terminateMachineAndNull(_puffin);
-		return true;
+		break;
 
 	case 3:
 		sendWSMessage_140000(5);
-		return true;
+		break;
 
 	case 5:
 		series_unload(_ripLowReach2);
+		player_set_commands_allowed(true);
 		break;
 
 	default:
-		break;
+		return false;
 	}
 
-	return false;
+	return true;
 }
 
 bool Room608::stumpHole() {
@@ -2009,38 +1936,37 @@ bool Room608::stumpHole() {
 bool Room608::takeStump2() {
 	if (inv_object_is_here("POLE")) {
 		digi_play("608r74", 1);
-		return true;
 	} else {
 		switch (_G(kernel).trigger) {
 		case -1:
 			ws_walk(474, 309, nullptr, 1, 2);
-			return true;
+			break;
 
 		case 1:
 			player_set_commands_allowed(false);
 			_ripLowReach = series_load("RIP LOW REACH POS1");
 			setGlobals1(_ripLowReach, 1, 10, 10, 10);
 			sendWSMessage_110000(2);
-			return true;
+			break;
 
 		case 2:
 			hotspot_set_active("DRIFTWOOD STUMP ", false);
 			terminateMachineAndNull(_stump);
 			inv_give_to_player("DRIFTWOOD STUMP");
 			sendWSMessage_140000(5);
-			return true;
+			break;
 
 		case 5:
 			series_unload(_ripLowReach);
 			player_set_commands_allowed(true);
-			return true;
+			break;
 
 		default:
-			break;
+			return false;
 		}
-
-		return false;
 	}
+
+	return true;
 }
 
 bool Room608::takeLighter() {
@@ -2117,7 +2043,7 @@ bool Room608::hornCordWater() {
 			series_unload(_horn);
 			terminateMachineAndNull(_shadow5);
 			ws_unhide_walker();
-			_G(flags)[GLB_TEMP_3] = 1;
+			_G(flags)[V009] = 1;
 			player_set_commands_allowed(true);
 			digi_play("608r65", 1);
 			return true;
@@ -2152,6 +2078,125 @@ bool Room608::lookPuffin() {
 	}
 
 	return false;
+}
+
+void Room608::usePole() {
+	switch (_G(kernel).trigger) {
+	case -1:
+		ws_walk(453, 311, nullptr, 1, 1);
+		break;
+
+	case 1:
+		player_set_commands_allowed(false);
+		player_update_info();
+		ws_hide_walker();
+		kernel_load_variant("608lock1");
+		digi_preload("950_s37");
+		digi_preload("950_s37a");
+
+		_ol2 = series_stream("608rp04", 5, 0x300, 10);
+		series_stream_break_on_frame(_ol2, 25, 3);
+		break;
+
+	case 3:
+		series_stream_break_on_frame(_ol2, 33, 30);
+		digi_play("950_s37", 2);
+		break;
+
+	case 4:
+		series_stream_break_on_frame(_ol2, 76, 5);
+		digi_play("950_s37a", 2);
+		break;
+
+	case 5:
+		series_stream_break_on_frame(_ol2, 77, 7);
+		digi_play("950_s37", 2);
+		break;
+
+	case 7:
+		terminateMachineAndNull(_end1);
+		terminateMachineAndNull(_pole);
+		terminateMachineAndNull(_stump);
+		_oldShould = 8;
+		digi_play("608_s01a", 1);
+		break;
+
+	case 10:
+		digi_unload("950_s37");
+		digi_unload("950_s37a");
+		_G(flags)[V186] = 1;
+		_end1 = series_show("608END", 0xf00, 16);
+
+		hotspot_set_active("STATUE", false);
+		hotspot_set_active("STATUE ", true);
+		hotspot_set_active("DRIFTWOOD STUMP ", false);
+		hotspot_set_active("DRIFTWOOD STUMP  ", true);
+		hotspot_set_active("POLE", false);
+		hotspot_set_active("POLE ", true);
+		hotspot_set_active("stone", false);
+
+		ws_unhide_walker();
+		player_update_info();
+		ws_walk(_G(player_info).x + 1, _G(player_info).y,
+			nullptr, 12, 4);
+		break;
+
+	case 12:
+		_ripLHandTalk = series_load("RIP TREK L HAND TALK POS4");
+		setGlobals1(_ripLHandTalk, 1, 6, 6, 7, 1, 6, 1, 1, 1);
+		digi_play("608r15", 1, 255, 15);
+		break;
+
+	case 15:
+		sendWSMessage_120000(2);
+		_oldShould = 10;
+		digi_play("608o01", 1, 255, 18);
+		break;
+
+	case 18:
+		// FIXME: GLB_TEMP_2 is used by player walker to set current frame.
+		// But it's been send to an invalid value by a sendWSMessage_10000
+		// call for animating old lady. Is something supposed to set a value?
+		// For now, do a dummy ws_walk to reset internal states
+		player_update_info();
+		ws_walk(_G(player_info).x, _G(player_info).y, nullptr, -1, 4);
+
+		sendWSMessage_110000(2);
+		digi_play("608r16", 1, 255, 20);
+		break;
+
+	case 20:
+		sendWSMessage_140000(-1);
+		_oldShould = 9;
+		digi_play("608o02", 1, 255, 22);
+		break;
+
+	case 22:
+		_oldShould = 1;
+		kernel_timing_trigger(1, 200, KT_DAEMON, KT_PARSE);
+		kernel_timing_trigger(100, 25);
+		break;
+
+	case 25:
+		player_set_commands_allowed(true);
+		digi_play("608r17", 1);
+		break;
+
+	case 30:
+		series_stream_break_on_frame(_ol2, 44, 4);
+		digi_play("608_s01", 1);
+		break;
+
+	default:
+		break;
+	}
+}
+
+void Room608::syncGame(Common::Serializer &s) {
+	s.syncAsUint32LE(_ripleyShould);
+	s.syncAsUint32LE(_ripleyMode);
+	s.syncAsUint32LE(_oldMode);
+	s.syncAsUint32LE(_oldShould);
 }
 
 } // namespace Rooms

@@ -47,7 +47,7 @@ namespace Director {
 
 class Sprite;
 
-TheEntity entities[] = {
+const TheEntity entities[] = {
 	{ kTheActorList,		"actorList",		false, 400, false },	//			D4 property
 	{ kTheBeepOn,			"beepOn",			false, 200, false },	// D2 p
 	{ kTheButtonStyle,		"buttonStyle",		false, 200, false },	// D2 p
@@ -168,7 +168,7 @@ TheEntity entities[] = {
 	{ kTheNOEntity, nullptr, false, 0, false }
 };
 
-TheEntityField fields[] = {
+const TheEntityField fields[] = {
 	{ kTheSprite,	"backColor",	kTheBackColor,	200 },// D2 p
 	{ kTheSprite,	"blend",		kTheBlend,		400 },//				D4 p
 	{ kTheSprite,	"bottom",		kTheBottom,		200 },// D2 p
@@ -313,7 +313,7 @@ TheEntityField fields[] = {
 void Lingo::initTheEntities() {
 	_objectEntityId = kTheObject;
 
-	TheEntity *e = entities;
+	const TheEntity *e = entities;
 	_entityNames.resize(kTheMaxTheEntityType);
 
 	while (e->entity != kTheNOEntity) {
@@ -326,7 +326,7 @@ void Lingo::initTheEntities() {
 		e++;
 	}
 
-	TheEntityField *f = fields;
+	const TheEntityField *f = fields;
 	_fieldNames.resize(kTheMaxTheFieldType);
 
 	while (f->entity != kTheNOEntity) {
@@ -404,8 +404,8 @@ Datum Lingo::getTheEntity(int entity, Datum &id, int field) {
 	case kTheCast:
 		d = getTheCast(id, field);
 		break;
-	case kTheCastlibs: // D5
-		d = getCastlibsNum();
+	case kTheCastLibs: // D5
+		d = getCastLibsNum();
 		break;
 	case kTheCastMembers:
 		d = getMembersNum();
@@ -1268,7 +1268,7 @@ int Lingo::getMenuNum() {
 	return g_director->_wm->getMenu()->numberOfMenus();
 }
 
-int Lingo::getCastlibsNum() {
+int Lingo::getCastLibsNum() {
 	return _vm->getCurrentMovie()->getCasts()->size();
 }
 
@@ -1533,6 +1533,10 @@ void Lingo::setTheSprite(Datum &id1, int field, Datum &d) {
 	case kTheMemberNum:
 		{
 			CastMemberID castId = d.asMemberID();
+			// Setting the cast ID as a number will preserve whatever is in castLib
+			if (d.isNumeric() && (sprite->_castId.castLib != 0)) {
+				castId = CastMemberID(d.asInt(), sprite->_castId.castLib);
+			}
 			CastMember *castMember = movie->getCastMember(castId);
 
 			if (castMember && castMember->_type == kCastDigitalVideo) {

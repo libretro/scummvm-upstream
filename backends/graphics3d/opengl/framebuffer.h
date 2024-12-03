@@ -24,26 +24,29 @@
 
 #include "graphics/opengl/system_headers.h"
 
-#include "backends/graphics3d/opengl/texture.h"
+#include "graphics/opengl/texture.h"
 
 #if defined(USE_OPENGL_GAME) || defined(USE_OPENGL_SHADERS)
 
 namespace OpenGL {
 
-class FrameBuffer : public TextureGL {
+class FrameBuffer : public Texture {
 public:
 	FrameBuffer(uint width, uint height);
-	FrameBuffer(GLuint texture_name, uint width, uint height, uint texture_width, uint texture_height);
 	virtual ~FrameBuffer();
 
 	virtual void attach();
 	virtual void detach();
 
 protected:
+	FrameBuffer(GLenum glIntFormat, GLenum glFormat, GLenum glType, bool autoCreate)
+		: Texture(glIntFormat, glFormat, glType, autoCreate) {}
+
 	GLuint getFrameBufferName() const { return _frameBuffer; }
 
-private:
 	void init();
+
+private:
 	GLuint _renderBuffers[2];
 	GLuint _frameBuffer;
 };

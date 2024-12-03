@@ -280,7 +280,7 @@ void MidiDriver_AdLib::send(uint32 b) {
 	byte op1 = (b >> 8) & 0xff;
 	byte op2 = (b >> 16) & 0xff;
 
-	//debug("midi send %02x %x %02x %02x", command, channel, op1, op2);
+	//debug(1, "midi send %02x %x %02x %02x", command, channel, op1, op2);
 
 	switch (command) {
 	case 0x80:
@@ -863,6 +863,7 @@ int MidiPlayer_AdLib::open() {
 
 	if (res) {
 		ok = static_cast<MidiDriver_AdLib *>(_driver)->loadResource(*res);
+		delete res;
 	} else {
 		// Early SCI0 games have the sound bank embedded in the AdLib driver
 

@@ -156,7 +156,7 @@ bool HiRes5Engine::isInventoryFull() {
 	}
 
 	if (weight >= 100) {
-		printString(_gameStrings.carryingTooMuch);
+		_display->printString(_gameStrings.carryingTooMuch);
 		inputString();
 		return true;
 	}
@@ -370,6 +370,21 @@ void HiRes5Engine::applyRegionWorkarounds() {
 		// to dig with. Probably a remnant of an earlier version
 		// of the script.
 		removeCommand(_roomCommands, 0);
+		break;
+	case 32:
+		// This broken message appears right before the game restarts,
+		// and should probably explain that the user fell down some
+		// stairs. We remove the broken message.
+		// TODO: Maybe we could put in a new string?
+		removeMessage(29);
+		break;
+	case 40:
+		// Locking the gate prints a broken message, followed by
+		// "O.K.". Maybe there was supposed to be a more elaborate
+		// message, in the style of the one printed when you unlock
+		// the gate. But "O.K." should be enough, so we remove the
+		// first one.
+		removeMessage(172);
 		break;
 	default:
 		break;

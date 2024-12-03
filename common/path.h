@@ -164,9 +164,6 @@ private:
 	 */
 	bool compareComponents(bool (*comparator)(const String &x, const String &y), const Path &other) const;
 
-	static Path &punycode_decodefilename_helper(Path &path, const String &in, bool last);
-	static Path &punycode_encodefilename_helper(Path &path, const String &in, bool last);
-
 	/**
 	 * Determines if the path is escaped
 	 */
@@ -303,6 +300,11 @@ public:
 	 * return the trailing / if any.
 	 */
 	String baseName() const;
+
+	/**
+	 * Returns number of components in this path,
+	 */
+	int numComponents() const;
 
 	/** Check whether this path is identical to path @p x. */
 	bool operator==(const Path &x) const {
@@ -494,6 +496,11 @@ public:
 	Path punycodeEncode() const;
 
 	/**
+	 * Returns whether the path will need to be Punycoded
+	 */
+	bool punycodeNeedsEncode() const;
+
+	/**
 	 * Convert all characters in the path to lowercase.
 	 *
 	 * Be aware that this only affects the case of ASCII characters. All
@@ -551,10 +558,10 @@ public:
 	/**
 	 * Use by ConfigManager to store a path in a protected fashion
 	 * All components are punyencoded and / is used as a delimiter for all platforms
+	 * Under Windows don't encode when it's not needed and make use of \ separator
+	 * in this case
 	 */
-	String toConfig() const {
-		return punycodeEncode().toString('/');
-	}
+	String toConfig() const;
 
 	/**
 	 * Used by ConfigManager to parse a configuration value in a backwards compatible way

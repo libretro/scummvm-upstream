@@ -83,8 +83,8 @@ PreAgiEngine::~PreAgiEngine() {
 	delete _font;
 }
 
-int PreAgiEngine::rnd(int hi) {
-	return (_rnd->getRandomNumber(hi - 1) + 1);
+int PreAgiEngine::rnd(int max) {
+	return (_rnd->getRandomNumber(max - 1) + 1);
 }
 
 // Screen functions
@@ -112,6 +112,7 @@ void PreAgiEngine::drawStr(int row, int col, int attr, const char *buffer) {
 
 		switch (code) {
 		case '\n':
+		case '\r': // winnie
 		case 0x8D:
 			if (++row == 200 / 8) return;
 			col = 0;
@@ -183,10 +184,13 @@ int PreAgiEngine::getSelection(SelectionTypes type) {
 			case Common::EVENT_RBUTTONUP:
 				return 0;
 			case Common::EVENT_LBUTTONUP:
-				if (type == kSelYesNo || type == kSelAnyKey)
+				if (type == kSelYesNo || type == kSelAnyKey || type == kSelBackspace)
 					return 1;
 				break;
 			case Common::EVENT_KEYDOWN:
+				if (event.kbd.flags & Common::KBD_NON_STICKY) {
+					break;
+				}
 				switch (event.kbd.keycode) {
 				case Common::KEYCODE_y:
 					if (type == kSelYesNo)
@@ -221,15 +225,14 @@ int PreAgiEngine::getSelection(SelectionTypes type) {
 						return 0;
 					break;
 				default:
-					if (event.kbd.flags & Common::KBD_CTRL)
-						break;
-					if (type == kSelYesNo) {
-						return 2;
-					} else if (type == kSelNumber) {
-						return 10;
-					} else if (type == kSelAnyKey || type == kSelBackspace) {
-						return 1;
-					}
+					break;
+				}
+				if (type == kSelYesNo) {
+					return 2;
+				} else if (type == kSelNumber) {
+					return 10;
+				} else if (type == kSelAnyKey || type == kSelBackspace) {
+					return 1;
 				}
 				break;
 			default:

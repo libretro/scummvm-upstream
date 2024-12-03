@@ -767,7 +767,7 @@ void macDrawPixel(int x, int y, int color, void *data) {
 	if (p->fillType > p->patterns->size() || !p->fillType)
 		return;
 
-	byte *pat = p->patterns->operator[](p->fillType - 1);
+	const byte *pat = p->patterns->operator[](p->fillType - 1);
 
 	if (p->thickness == 1) {
 		if (x >= 0 && x < p->surface->w && y >= 0 && y < p->surface->h) {
@@ -994,14 +994,6 @@ void MacWindowManager::draw() {
 		}
 	}
 
-	if (_menuTimer && g_system->getMillis() >= _menuTimer) {
-		if (_menuHotzone.contains(_lastMousePos)) {
-			activateMenu();
-		}
-
-		_menuTimer = 0;
-	}
-
 	// Menu is drawn on top of everything and always
 	if (_menu && !(_mode & kWMModeFullscreen)) {
 		if (_fullRefresh)
@@ -1043,6 +1035,14 @@ bool MacWindowManager::processEvent(Common::Event &event) {
 			if (!_menuTimer && _menuHotzone.contains(event.mouse)) {
 				_menuTimer = g_system->getMillis() + _menuDelay;
 			}
+		}
+
+		if (_menuTimer && g_system->getMillis() >= _menuTimer) {
+			if (_menuHotzone.contains(_lastMousePos)) {
+				activateMenu();
+			}
+
+			_menuTimer = 0;
 		}
 	}
 

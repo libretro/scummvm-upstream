@@ -92,8 +92,15 @@ int MacGuiImpl::toMacRoman(int unicode) const {
 	return macRoman;
 }
 
-void MacGuiImpl::setPalette(const byte *palette, uint size) {
-	_windowManager->passPalette(palette, size);
+void MacGuiImpl::setPaletteDirty() {
+	_paletteDirty = true;
+}
+
+void MacGuiImpl::updatePalette() {
+	if (_paletteDirty) {
+		_paletteDirty = false;
+		_windowManager->passPalette(_vm->_currentPalette, getNumColors());
+	}
 }
 
 bool MacGuiImpl::handleEvent(Common::Event event) {
@@ -163,7 +170,19 @@ void MacGuiImpl::menuCallback(int id, Common::String &name, void *data) {
 	}
 }
 
-void MacGuiImpl::initialize() {
+bool MacGuiImpl::initialize() {
+	if (!readStrings()) {
+		// FIXME: THIS IS A TEMPORARY WORKAROUND
+		// The Mac GUI initialization must never fail for Loom or Last Crusade,
+		// because it's used for more than just the Mac menus and dialogs. So
+		// for those games we just silently disable the original GUI, and let
+		// the game start anyway.
+		if (_vm->_game.id == GID_LOOM || _vm->_game.id == GID_INDY3)
+			_vm->_useOriginalGUI = false;
+		else
+			return false;
+	}
+
 	uint32 menuMode = Graphics::kWMModeNoDesktop | Graphics::kWMModeAutohideMenu |
 		Graphics::kWMModalMenuMode | Graphics::kWMModeNoCursorOverride | Graphics::kWMModeForceMacFonts;
 
@@ -286,6 +305,8 @@ void MacGuiImpl::initialize() {
 			break;
 		}
 	}
+
+	return true;
 }
 
 bool MacGuiImpl::handleMenu(int id, Common::String &name) {
@@ -481,6 +502,10 @@ void MacGuiImpl::updateWindowManager() {
 	}
 
 	_menuIsActive = isActive;
+
+	if (menu->isVisible())
+		updatePalette();
+
 	_windowManager->draw();
 }
 

@@ -21,6 +21,7 @@
 
 #include "darkseed/darkseed.h"
 #include "darkseed/inventory.h"
+#include "darkseed/menu.h"
 
 namespace Darkseed {
 
@@ -44,7 +45,7 @@ void Inventory::reset() {
 void Inventory::addItem(uint8 item) {
 	_inventory[_inventoryLength] = item;
 	_inventoryLength++;
-	// TODO playsound(6, 5, -1);
+	g_engine->playSound(6, 5, -1);
 	update();
 }
 
@@ -134,12 +135,13 @@ void Inventory::handleClick() {
 	}
 	int iconIdx = (clickPos.x - 140) / 37;
 	int icon = _iconList[iconIdx];
+	g_engine->playSound(5, 4, -1);
 	if (icon == 42) {
 		leftArrowClicked();
 	} else if (icon == 43) {
 		rightArrowClicked();
 	} else if (icon == 4) {
-		// TODO handle in-game menu
+		g_engine->_menu.loadMenu();
 	} else if (icon == 21) {
 		g_engine->_console->printTosText(935);
 		g_engine->_objectVar[21] = 1;

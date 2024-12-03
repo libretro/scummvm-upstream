@@ -20,6 +20,7 @@
  */
 
 #include "dgds/dragon_native.h"
+#include "dgds/includes.h"
 #include "dgds/globals.h"
 #include "dgds/scene.h"
 
@@ -33,7 +34,7 @@ void DragonNative::drawCountdown(FontManager::FontType fontType, int16 x, int16 
 	int16 currentMins = engine->getClock().getMins();
 	const DgdsFont *fnt = engine->getFontMan()->getFont(fontType);
 	Common::String str = Common::String::format("%d", countdownEnd - currentMins);
-	fnt->drawString(&engine->_compositionBuffer, str, x, y, 320 - x, 10);
+	fnt->drawString(&engine->_compositionBuffer, str, x, y, SCREEN_WIDTH - x, 10);
 }
 
 
@@ -63,7 +64,7 @@ static uint16 passcodeVal4 = 0;
 	if (globalval >= 30) {
 		// One of the keypad buttons
 		if (DRAGON_PASSCODE[passcodeVal4 + passcodeBlockNum * 15] == globalval - 30) {
-			debug("sceneOpUpdatePasscodeGlobal CORRECT: variables %d %d %d %d block %d, curval %d",
+			debug(1, "sceneOpUpdatePasscodeGlobal CORRECT: variables %d %d %d %d block %d, curval %d",
 				passcodeVal1, passcodeVal2, passcodeVal3, passcodeVal4, passcodeBlockNum, globalval);
 
 			// Correct entry! Increment the expected button
@@ -78,7 +79,7 @@ static uint16 passcodeVal4 = 0;
 			}
 		} else {
 			// Mistake
-			debug("sceneOpUpdatePasscodeGlobal WRONG: variables %d %d %d %d block %d, curval %d",
+			debug(1, "sceneOpUpdatePasscodeGlobal WRONG: variables %d %d %d %d block %d, curval %d",
 				passcodeVal1, passcodeVal2, passcodeVal3, passcodeVal4, passcodeBlockNum, globalval);
 			passcodeVal1 = 0;
 			passcodeVal2 = 5;
@@ -88,7 +89,7 @@ static uint16 passcodeVal4 = 0;
 		if (globalval > 4 || globalval == 0)
 			return;
 
-		debug("sceneOpUpdatePasscodeGlobal OTHER: variables %d %d %d %d block %d, curval %d",
+		debug(1, "sceneOpUpdatePasscodeGlobal OTHER: variables %d %d %d %d block %d, curval %d",
 				passcodeVal1, passcodeVal2, passcodeVal3, passcodeVal4, passcodeBlockNum, globalval);
 
 		if (globalval < 4) {

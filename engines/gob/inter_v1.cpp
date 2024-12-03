@@ -505,7 +505,6 @@ void Inter_v1::o1_initMult() {
 			_vm->_mult->_objects[i].animName[0] = '\0';
 			_vm->_mult->_objects[i].videoSlot = 0;
 			_vm->_mult->_objects[i].animVariables = nullptr;
-			_vm->_mult->_objects[i].ownAnimVariables = false;
 			_vm->_mult->_objects[i].lastLeft = -1;
 			_vm->_mult->_objects[i].lastRight = -1;
 			_vm->_mult->_objects[i].lastTop = -1;
@@ -705,8 +704,8 @@ void Inter_v1::o1_callSub(OpFuncParams &params) {
 		debugC(2, kDebugGameFlow, "Skipping copy protection screen");
 		return;
 	}
-	// Skipping the copy protection screen in Gobliins 2
-	if (!_vm->_copyProtection && (_vm->getGameType() == kGameTypeGob2) && (offset == 1746) &&
+	// Skipping the copy protection screen in Gobliins 2 (offset 1722 - Amiga, offset 1746 - PC)
+	if (!_vm->_copyProtection && (_vm->getGameType() == kGameTypeGob2) && (offset == 1722 || offset == 1746) &&
 	    _vm->isCurrentTot("intro0.tot")) {
 		debugC(2, kDebugGameFlow, "Skipping copy protection screen");
 		return;
@@ -1438,11 +1437,30 @@ void Inter_v1::o1_renewTimeInVars(OpFuncParams &params) {
 }
 
 void Inter_v1::o1_speakerOn(OpFuncParams &params) {
-	_vm->_sound->speakerOn(_vm->_game->_script->readValExpr(), -1);
+	int16 frequency = _vm->_game->_script->readValExpr();
+	int32 length = -1;
+
+	_ignoreSpeakerOff = false;
+
+	// WORKAROUND: This is the footsteps sound in Gob2 CD.
+	// We explicitly set a length in this case and ignore the
+	// next speaker off command. This is the same workaround
+	// as the one for Goblins 3 in Inter_v3::o3_speakerOn().
+	// Fixes bug #15341
+	if (_vm->getGameType() == kGameTypeGob2 && frequency == 50) {
+		length = 5;
+
+		_ignoreSpeakerOff = true;
+	}
+
+	_vm->_sound->speakerOn(frequency, length);
 }
 
 void Inter_v1::o1_speakerOff(OpFuncParams &params) {
-	_vm->_sound->speakerOff();
+	if (!_ignoreSpeakerOff)
+		_vm->_sound->speakerOff();
+
+	_ignoreSpeakerOff = false;
 }
 
 void Inter_v1::o1_putPixel(OpFuncParams &params) {

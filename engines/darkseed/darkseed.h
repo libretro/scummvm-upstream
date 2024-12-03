@@ -22,12 +22,13 @@
 #ifndef DARKSEED_H
 #define DARKSEED_H
 
-#include "common/scummsys.h"
-#include "common/system.h"
 #include "common/error.h"
 #include "common/fs.h"
+#include "common/keyboard.h"
 #include "common/random.h"
+#include "common/scummsys.h"
 #include "common/serializer.h"
+#include "common/system.h"
 #include "common/util.h"
 #include "engines/engine.h"
 #include "graphics/screen.h"
@@ -38,6 +39,7 @@
 #include "darkseed/cutscene.h"
 #include "darkseed/detection.h"
 #include "darkseed/inventory.h"
+#include "darkseed/menu.h"
 #include "darkseed/nsp.h"
 #include "darkseed/objects.h"
 #include "darkseed/player.h"
@@ -50,6 +52,14 @@
 namespace Darkseed {
 
 struct DarkseedGameDescription;
+
+enum DarkseedAction {
+	kDarkseedActionNone,
+	kDarkseedActionSelect,
+	kDarkseedActionChangeCommand,
+	kDarkseedActionTimeAdvance,
+	kDarkseedActionQuit
+};
 
 enum ActionMode : uint8 {
 	kPointerAction = 0,
@@ -75,6 +85,7 @@ class DarkseedEngine : public Engine {
 	bool _normalWorldSpritesLoaded = true;
 	bool _redrawFrame = true;
 	bool _restartGame = false;
+	bool _canSaveGame = false;
 
 	FadeDirection _fadeDirection = FadeDirection::NONE;
 	uint8 _fadeStepCounter = 0;
@@ -90,6 +101,7 @@ public:
 	bool _ct_voice_status = false;
 	bool _isRightMouseClicked = false;
 	bool _isLeftMouseClicked = false;
+	Common::KeyCode _lastKeyPressed = Common::KeyCode::KEYCODE_INVALID;
 
 	Sound *_sound = nullptr;
 	Nsp _baseSprites;
@@ -106,6 +118,7 @@ public:
 	UseCode *_useCode = nullptr;
 	Cutscene _cutscene;
 	Animation *_animation = nullptr;
+	Menu _menu;
 
 	uint8 _currentDay = 1;
 	int _currentTimeInSeconds = 0x7e8e;
@@ -140,20 +153,21 @@ public:
 	int16 _soundTimer = 0;
 	bool _printedcomeheredawson = false;
 	void zeroMouseButtons();
+	void updateEvents();
 
 	void gotoNextMorning();
 
 	void playDayChangeCutscene();
 
-	void wonGame();
-
 	void removeFullscreenPic();
 
 	void wait();
 
+	void waitForSpeech();
+	void waitForSpeechOrSfx();
+
 	void syncSoundSettings() override;
 
-public:
 	DarkseedEngine(OSystem *syst, const ADGameDescription *gameDesc);
 	~DarkseedEngine() override;
 
@@ -171,8 +185,16 @@ public:
 		return _randomSource.getRandomNumber(maxNum);
 	}
 
+	bool isDosVersion() const {
+		return _gameDescription->platform == Common::kPlatformDOS;
+	}
+
 	bool isCdVersion() const {
 		return getFeatures() & ADGF_CD;
+	}
+
+	bool isDosFloppy() const {
+		return isDosVersion() && !isCdVersion();
 	}
 
 	bool hasFeature(EngineFeature f) const override {
@@ -183,11 +205,11 @@ public:
 	};
 
 	bool canLoadGameStateCurrently(Common::U32String *msg) override {
-		return !_animation->_isPlayingAnimation_maybe && !_player->_isAutoWalkingToBed && !_player->_heroWaiting;
+		return !_animation->_isPlayingAnimation_maybe && !_player->_isAutoWalkingToBed && !_player->_heroWaiting && !_cutscene.isPlaying();
 	}
 
 	bool canSaveGameStateCurrently(Common::U32String *msg) override {
-		return !_animation->_isPlayingAnimation_maybe && !_player->_isAutoWalkingToBed && !_player->_heroWaiting;
+		return _canSaveGame && !_animation->_isPlayingAnimation_maybe && !_player->_isAutoWalkingToBed && !_player->_heroWaiting && !_cutscene.isPlaying() && !_menu.isOpen();
 	}
 
 	/**
@@ -207,6 +229,7 @@ public:
 		if (syncResult.getCode() == Common::kNoError) {
 			changeToRoom(_room->_roomNumber);
 		}
+		_canSaveGame = true;
 		return syncResult;
 	}
 
@@ -226,7 +249,7 @@ public:
 	void drawFullscreenPic();
 	void lookCode(int objNum);
 	void handleObjCollision(int targetObjNum);
-	void playSound(int16 unk, uint8 unk1, int16 unk2);
+	void playSound(uint8 sfxId, uint8 unk1, int16 unk2);
 	void nextFrame(int nspAminIdx);
 
 	void throwmikeinjail();
@@ -236,10 +259,12 @@ public:
 	void changeToRoom(int newRoomNumber, bool placeDirectly = false);
 	void waitxticks(int ticks);
 
+	void doCircles();
+
 private:
 	void updateBaseSprites();
 	void gameLoop();
-	void updateEvents();
+
 	void handleInput();
 	void handlePointerAction();
 	void loadRoom(int roomNumber);
@@ -252,6 +277,7 @@ private:
 	void movePlayerToDelbert();
 	void delbertThrowStick(int16 spriteNum);
 	void leavePackage();
+	void copyLine(const Graphics::Surface &surface, int16 x1, int16 x2, int16 y);
 };
 
 extern DarkseedEngine *g_engine;

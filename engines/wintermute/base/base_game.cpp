@@ -38,6 +38,7 @@
 #ifdef ENABLE_WME3D
 #include "engines/wintermute/base/gfx/base_renderer3d.h"
 #endif
+#include "engines/wintermute/base/gfx/base_image.h"
 #include "engines/wintermute/base/base_keyboard_state.h"
 #include "engines/wintermute/base/base_parser.h"
 #include "engines/wintermute/base/base_quick_msg.h"
@@ -56,6 +57,7 @@
 #include "engines/wintermute/base/scriptables/script_stack.h"
 #include "engines/wintermute/base/scriptables/script.h"
 #include "engines/wintermute/base/sound/base_sound.h"
+#include "engines/wintermute/base/file/base_savefile_manager_file.h"
 #include "engines/wintermute/ext/plugins.h"
 #include "engines/wintermute/video/video_player.h"
 #include "engines/wintermute/video/video_theora_player.h"
@@ -500,6 +502,8 @@ bool BaseGame::initialize1() {
 			break;
 		}
 		registerObject(_fader);
+
+		_pluginEvents.clearEvents();
 
 		loaded = true;
 	}
@@ -1726,6 +1730,11 @@ bool BaseGame::scCallMethod(ScScript *script, ScStack *stack, ScStack *thisStack
 		const char *filename = stack->pop()->getString();
 
 		bool exists = BaseFileManager::getEngineInstance()->hasFile(filename); // Had absPathWarning = false
+
+		// Used for screenshot files in "Stroke of Fate" duology
+		if (!exists)
+			exists = sfmFileExists(filename);
+
 		stack->pushBool(exists);
 		return STATUS_OK;
 	}
@@ -1799,18 +1808,24 @@ bool BaseGame::scCallMethod(ScScript *script, ScStack *stack, ScStack *thisStack
 
 		ScValue *val = stack->pop();
 
-		warning("BGame::ScCallMethod - Screenshot not reimplemented"); //TODO
 		int fileNum = 0;
-
 		while (true) {
 			Common::sprintf_s(filename, "%s%03d.bmp", val->isNULL() ? getName() : val->getString(), fileNum);
-			if (!Common::File::exists(filename)) {
+			if (!sfmFileExists(filename)) {
 				break;
 			}
 			fileNum++;
 		}
 
-		bool ret = _gameRef->_renderer->saveScreenShot(filename);
+		// redraw before taking screenshot
+		_gameRef->displayContent(false);
+
+		bool ret = false;
+		BaseImage *image = _gameRef->_renderer->takeScreenshot();
+		if (image) {
+			ret = image->saveBMPFile(filename);
+			delete image;
+		}
 
 		stack->pushBool(ret);
 		return STATUS_OK;
@@ -1825,7 +1840,17 @@ bool BaseGame::scCallMethod(ScScript *script, ScStack *stack, ScStack *thisStack
 		int sizeX = stack->pop()->getInt(_renderer->getWidth());
 		int sizeY = stack->pop()->getInt(_renderer->getHeight());
 
-		bool ret = _gameRef->_renderer->saveScreenShot(filename, sizeX, sizeY);
+		// redraw before taking screenshot
+		_gameRef->displayContent(false);
+
+		bool ret = false;
+		BaseImage *image = _gameRef->_renderer->takeScreenshot();
+		if (image) {
+			ret = image->resize(sizeX, sizeY);
+			if (ret)
+				ret = image->saveBMPFile(filename);
+			delete image;
+		}
 
 		stack->pushBool(ret);
 		return STATUS_OK;
@@ -4650,10 +4675,10 @@ bool BaseGame::setMaxShadowType(TShadowType maxShadowType) {
 
 //////////////////////////////////////////////////////////////////////////
 TShadowType BaseGame::getMaxShadowType(BaseObject *object) {
-	if (object) {
-		return MIN(_maxShadowType, object->_shadowType);
-	} else {
+	if (!object) {
 		return _maxShadowType;
+	} else {
+		return MIN(_maxShadowType, object->_shadowType);
 	}
 }
 #endif

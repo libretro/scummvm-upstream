@@ -108,6 +108,8 @@ private:
 	int fillSquare(ToneChan *t, int16 *buf, int len);
 
 private:
+	Common::Mutex _mutex;
+	
 	SndGenChan _channel[CHAN_MAX];
 	ToneChan _tchannel[CHAN_MAX];
 	int16 *_chanData;
@@ -117,6 +119,9 @@ private:
 
 	uint8 *_v1data;
 	uint32 _v1size;
+	int _v1duration;
+
+	int _reg;
 };
 
 } // End of namespace Agi

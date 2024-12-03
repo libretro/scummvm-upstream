@@ -22,6 +22,7 @@
 #include "m4/riddle/rooms/section4/room404.h"
 #include "m4/graphics/gr_series.h"
 #include "m4/riddle/vars.h"
+#include "m4/riddle/riddle.h"
 
 namespace M4 {
 namespace Riddle {
@@ -36,7 +37,7 @@ static const char *NORMAL_NAMES[] = {
 static const int16 SHADOW_DIRS[] = { 200, 201, -1 };
 static const char *SHADOW_NAMES[] = {
 	"butler walker shadow pos1",
-	"wolf walker shadow pos3"
+	"butler walker shadow pos3"
 };
 
 static const char *const SAID[][2] = {
@@ -108,11 +109,15 @@ void Room404::init() {
 		_machine1 = triggerMachineByHash_3000(8, 10, *NORMAL_DIRS, *SHADOW_DIRS,
 			380, 421, 1, triggerMachineByHashCallback3000, "BUTLER_walker");
 
-		if (!_G(kittyScreaming) || !player_been_here(404)) {
+		if (_G(kittyScreaming) || player_been_here(404)) {
+			sendWSMessage_10000(_machine1, 410, 332, 1, 42, 1);
+			kernel_timing_trigger(1, 40);
+		} else {
 			sendWSMessage_10000(_machine1, 410, 332, 1, 21, 1);
 			kernel_timing_trigger(120, 20);
-			digi_play("404_s01", 2);
 		}
+
+		digi_play("404_s01", 2);
 		break;
 	}
 }
@@ -216,7 +221,7 @@ void Room404::daemon() {
 		break;
 
 	case 43:
-		if (!_G(flags)[GLB_TEMP_12] || _G(flags)[V334]) {
+		if (!_G(flags)[V018] || _G(flags)[V334]) {
 			player_set_commands_allowed(true);
 		} else {
 			_G(flags)[V334] = 1;
@@ -552,9 +557,9 @@ void Room404::parser() {
 			digi_play("com016", 1);
 		} else if (_G(kernel).trigger == 6) {
 			_G(flags)[kCastleCartoon] = 1;
-			sendWSMessage_multi("com015");
+			sketchInJournal("com015");
 		} else {
-			sendWSMessage_multi("");
+			sketchInJournal("");
 		}
 	} else {
 		return;

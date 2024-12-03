@@ -28,10 +28,15 @@
 #include "common/fs.h"
 #include "common/config-manager.h"
 #include "common/serializer.h"
+#include "common/translation.h"
 
 #include "backends/audiocd/audiocd.h"
 
 #include "engines/util.h"
+
+#if defined(USE_TINYGL)
+#include "graphics/tinygl/tinygl.h"
+#endif
 
 #include "tinsel/actors.h"
 #include "tinsel/background.h"
@@ -61,6 +66,7 @@
 #include "tinsel/tinsel.h"
 #include "tinsel/noir/notebook.h"
 #include "tinsel/noir/sysreel.h"
+#include "tinsel/noir/spriter.h"
 
 namespace Tinsel {
 
@@ -926,6 +932,7 @@ TinselEngine::TinselEngine(OSystem *syst, const TinselGameDescription *gameDesc)
 
 TinselEngine::~TinselEngine() {
 	_system->getAudioCDManager()->stop();
+	delete _spriter;
 	delete _cursor;
 	delete _bg;
 	delete _font;
@@ -1021,7 +1028,17 @@ Common::Error TinselEngine::run() {
 
 		initGraphics(width, height, &noirFormat);
 
-		_screenSurface.create(width, 432, noirFormat);
+#if defined(USE_TINYGL)
+		// TODO: Find minimal viable drawcall memory
+		constexpr uint32 drawCallMemory = 1024 * 1024;
+		TinyGL::createContext(width, 432, noirFormat, 256, false, false, drawCallMemory);
+		TinyGL::getSurfaceRef(_screenSurface);
+
+		_spriter = new Spriter();
+		_spriter->Init(width, 432);
+#else
+		return Common::Error(Common::kUnsupportedGameidError, _s("Discworld Noir needs ScummVM with TinyGL enabled"));
+#endif
 	} else if (getGameID() == GID_DW2) {
 		if (ConfMan.getBool("crop_black_bars"))
 			initGraphics(640, 432);

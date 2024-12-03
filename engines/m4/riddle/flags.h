@@ -31,7 +31,7 @@ namespace Riddle {
 
 #define FLAGS_COUNT 512
 
-enum {
+enum Flag {
 	V000 =   0,
 	V001 =   1,
 	V002 =   2,
@@ -251,7 +251,7 @@ enum {
 	V214 = 214,
 	kTempleCartoon = 215,
 	V216 = 216,
-	V217 = 217,
+	V217 = 217, // Prayer wheel in niche, room 703
 	V218 = 218,
 	V219 = 219,
 	V220 = 220,
@@ -373,7 +373,7 @@ enum {
 	V335 = 335,
 	V336 = 336,
 	V337 = 337,
-	V338 = 338,
+	kGermanBanknoteFound = 338,
 	V339 = 339,
 	V340 = 340,
 	V341 = 341,
@@ -566,9 +566,9 @@ public:
 	size_t size() const {
 		return FLAGS_COUNT;
 	}
-	int32 &operator[](uint idx) {
-		assert(idx < FLAGS_COUNT);
-		return _flags[idx];
+	int32 &operator[](Flag flag) {
+		assert((int)flag < FLAGS_COUNT);
+		return _flags[flag];
 	}
 
 	/**

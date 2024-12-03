@@ -52,7 +52,7 @@ OpenGLShaderRenderer::OpenGLShaderRenderer(int screenW, int screenH, Common::Ren
 	_bitmapShader = nullptr;
 	_bitmapVBO = 0;
 
-	_texturePixelFormat = OpenGLTexture::getRGBAPixelFormat();
+	_texturePixelFormat = getRGBAPixelFormat();
 	_isAccelerated = true;
 }
 
@@ -64,7 +64,7 @@ OpenGLShaderRenderer::~OpenGLShaderRenderer() {
 	free(_verts);
 }
 
-Texture *OpenGLShaderRenderer::createTexture(const Graphics::Surface *surface) {
+Texture *OpenGLShaderRenderer::createTexture(const Graphics::Surface *surface, bool is3D) {
 	return new OpenGLTexture(surface);
 }
 
@@ -465,14 +465,22 @@ void OpenGLShaderRenderer::setStippleData(byte *data) {
 void OpenGLShaderRenderer::useStipple(bool enabled) {
 	_triangleShader->use();
 	if (enabled) {
+		GLfloat factor = 0;
+		glGetFloatv(GL_POLYGON_OFFSET_FACTOR, &factor);
 		glEnable(GL_POLYGON_OFFSET_FILL);
-		glPolygonOffset(0.0f, -1.0f);
-		_triangleShader->setUniform("useStipple", true);
+		glPolygonOffset(factor - 1.0f, -1.0f);
+		if (_renderMode == Common::kRenderZX    ||
+			_renderMode == Common::kRenderCPC   ||
+			_renderMode == Common::kRenderCGA   ||
+			_renderMode == Common::kRenderHercG)
+			setStippleData((byte *)_variableStippleArray);
+		else
+			setStippleData(_defaultStippleArray);
 	} else {
 		glPolygonOffset(0, 0);
 		glDisable(GL_POLYGON_OFFSET_FILL);
-		_triangleShader->setUniform("useStipple", false);
 	}
+	_triangleShader->setUniform("useStipple", enabled);
 }
 
 void OpenGLShaderRenderer::useColor(uint8 r, uint8 g, uint8 b) {
@@ -511,7 +519,7 @@ void OpenGLShaderRenderer::flipBuffer() {}
 Graphics::Surface *OpenGLShaderRenderer::getScreenshot() {
 	Common::Rect screen = viewport();
 	Graphics::Surface *s = new Graphics::Surface();
-	s->create(screen.width(), screen.height(), OpenGLTexture::getRGBAPixelFormat());
+	s->create(screen.width(), screen.height(), getRGBAPixelFormat());
 	glReadPixels(screen.left, screen.top, screen.width(), screen.height(), GL_RGBA, GL_UNSIGNED_BYTE, s->getPixels());
 	flipVertical(s);
 	return s;

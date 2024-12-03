@@ -29,7 +29,7 @@ namespace QDEngine {
 
 class Scores : public MinigameInterface {
 public:
-	Scores();
+	Scores(MinigameManager *runtime);
 	~Scores();
 
 	void quant(float dt);
@@ -40,10 +40,10 @@ private:
 		int num;
 		MinigameData info;
 		bool operator< (const GameData& rsh) const {
-			return info.sequenceIndex_ < rsh.info.sequenceIndex_;
+			return info._sequenceIndex < rsh.info._sequenceIndex;
 		}
 	};
-	typedef vector<GameData> GameDatas;
+	typedef Std::vector<GameData> GameDatas;
 	struct Level {
 		Level(int lvl = 0) : level(lvl) {}
 		int level;
@@ -53,16 +53,16 @@ private:
 			return level < rsh.level;
 		}
 	};
-	typedef vector<Level> Levels;
+	typedef Std::vector<Level> Levels;
 	Levels levels_;
 
-	const char *currentLevel_;
-	const char *bestScore_;
-	const char *bestTime_;
-	const char *lastScore_;
-	const char *lastTime_;
+	const char *_currentLevel;
+	const char *_bestScore;
+	const char *_bestTime;
+	const char *_lastScore;
+	const char *_lastTime;
 
-	QDObject prev_;
+	QDObject _prev;
 	QDObject next_;
 	QDObject outMaxLevel_;
 
@@ -74,6 +74,8 @@ private:
 	Coords positions_;
 
 	const char *getName(const char* begin, int idx) const;
+
+	MinigameManager *_runtime;
 };
 
 } // namespace QDEngine

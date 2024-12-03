@@ -35,6 +35,7 @@ namespace Dgds {
 class ResourceManager;
 class Decompressor;
 class DgdsFont;
+class SoundRaw;
 
 enum SceneCondition {
 	kSceneCondNone = 0,
@@ -70,8 +71,8 @@ public:
 	uint16 _cursorNum;
 
 	// Used in Willy Beamish
-	uint16 _otherCursorNum;
-	uint16 _objInteractionListFlag;
+	uint16 _cursorNum2;
+	uint16 _objInteractionRectNum;
 
 	Common::Array<SceneConditions> enableConditions;
 	Common::Array<SceneOp> onRClickOps;
@@ -81,6 +82,13 @@ public:
 	virtual ~HotArea() {}
 
 	virtual Common::String dump(const Common::String &indent) const;
+};
+
+class DynamicRect {
+public:
+	DynamicRect() : _num(0) {};
+	uint16 _num;
+	DgdsRect _rect;
 };
 
 enum SceneOpCode {
@@ -126,22 +134,31 @@ enum SceneOpCode {
 
 	// China-specific opcodes
 	kSceneOpChinaTankInit = 100,
-	kSceneOpChinaTankExit = 101,
-	kSceneOpOpenChinaTankMenu = 102,
+	kSceneOpChinaTankEnd = 101,
+	kSceneOpChinaTankTick = 102,
+	kSceneOpChinaSetLanding = 103,
+	kSceneOpChinaScrollIntro = 104,
+	kSceneOpChinaScrollLeft = 105,
+	kSceneOpChinaScrollRight = 107,
+	kSceneOpShellGameInit = 108,
 	kSceneOpShellGameEnd = 109,
 	kSceneOpShellGameTick = 110,
-	kSceneOpOpenChinaTrainMenu = 113,
-	kSceneOpOpenChinaOpenGameOverMenu = 114,	// args: none.
-	kSceneOpOpenChinaOpenSkipCreditsMenu = 115,	// args: none.
+	kSceneOpChinaTrainInit = 111,
+	kSceneOpChinaTrainEnd = 112,
+	kSceneOpChinaTrainTick = 113,
+	kSceneOpChinaOpenGameOverMenu = 114,	// args: none.
+	kSceneOpChinaOpenSkipCreditsMenu = 115,	// args: none.
 	kSceneOpChinaOnIntroTick = 116,	// args: none.
 	kSceneOpChinaOnIntroInit = 117,	// args: none.
-	kSceneOpChinaOnIntroLeave = 118,	// args: none.
+	kSceneOpChinaOnIntroEnd = 118,	// args: none.
 
 	// Beamish-specific opcodes
 	kSceneOpOpenBeamishGameOverMenu = 100,
 	kSceneOpOpenBeamishOpenSkipCreditsMenu = 101,
 
 	kSceneOpMaxCode = 255, // for checking file load
+
+	kSceneOpHasConditionalOpsFlag = 0x8000,
 };
 
 class SceneOp {
@@ -197,7 +214,8 @@ public:
 	Common::Array<SceneOp> opList;
 
 	bool matches(uint16 droppedItemNum, uint16 targetItemNum) const {
-		return _droppedItemNum == droppedItemNum && _targetItemNum == targetItemNum;
+		return (_droppedItemNum == 0xFFFF || _droppedItemNum == droppedItemNum)
+				&& _targetItemNum == targetItemNum;
 	}
 
 	Common::String dump(const Common::String &indent) const;
@@ -246,12 +264,13 @@ private:
 
 class TalkDataHeadFrame {
 public:
-	TalkDataHeadFrame() : _xoff(0), _yoff(0), _frameNo(0) {}
+	TalkDataHeadFrame() : _xoff(0), _yoff(0), _frameNo(0), _flipFlags(0) {}
 	Common::String dump(const Common::String &indent) const;
 
 	uint16 _frameNo;
-	uint16 _xoff;
-	uint16 _yoff;
+	int16 _xoff;
+	int16 _yoff;
+	uint16 _flipFlags;
 };
 
 enum HeadFlags {
@@ -268,7 +287,7 @@ enum HeadFlags {
 
 class TalkDataHead {
 public:
-	TalkDataHead() : _num(0), _drawType(0), _drawCol(0), _val3(0), _flags(kHeadFlagNone) {}
+	TalkDataHead() : _num(0), _drawType(0), _drawCol(0), _flags(kHeadFlagNone) {}
 	Common::String dump(const Common::String &indent) const;
 
 	uint16 _num;
@@ -276,8 +295,9 @@ public:
 	uint16 _drawCol;
 	DgdsRect _rect;
 	Common::Array<TalkDataHeadFrame> _headFrames;
-	uint16 _val3;
+	Common::String _bmpFile;
 	HeadFlags _flags;
+	Common::SharedPtr<Image> _shape;
 };
 
 class TalkData {
@@ -382,9 +402,11 @@ public:
 	void initIconSizes();
 	GameItem *getActiveItem();
 
-	uint16 getDefaultMouseCursor() const { return _defaultMouseCursor; }
+	int16 getDefaultMouseCursor() const { return _defaultMouseCursor; }
+	int16 getDefaultMouseCursor2() const { return _defaultMouseCursor2; }
+	int16 getOtherDefaultMouseCursor() const { return _defaultOtherMouseCursor; }
 	uint16 getInvIconNum() const { return _invIconNum; }
-	uint16 getInvIconMouseCursor() const { return _invIconMouseCursor; }
+	int16 getInvIconMouseCursor() const { return _invIconMouseCursor; }
 
 private:
 	Common::String _iconFile;
@@ -398,11 +420,11 @@ private:
 	Common::Array<ObjectInteraction> _objInteractions1;
 
 	// Additional fields that appear in Willy Beamish (unused in others)
-	uint16 _defaultMouseCursor;
-	uint16 _field3a;
+	int16 _defaultMouseCursor;
+	int16 _defaultMouseCursor2;
 	uint16 _invIconNum;
-	uint16 _invIconMouseCursor;
-	uint16 _field40;
+	int16 _invIconMouseCursor;
+	int16 _defaultOtherMouseCursor;
 };
 
 class SDSScene : public Scene {
@@ -459,10 +481,11 @@ public:
 	void updateVisibleTalkers();
 	void loadTalkDataAndSetFlags(uint16 talknum, uint16 headnum);
 	void drawVisibleHeads(Graphics::ManagedSurface *dst);
+	bool hasVisibleHead() const;
+	bool loadCDSData(uint16 num, uint16 num2, int16 sub);
 
 	// dragon-specific scene ops
 	void addAndShowTiredDialog();
-	void sceneOpUpdatePasscodeGlobal();
 
 	void prevChoice();
 	void nextChoice();
@@ -472,6 +495,9 @@ public:
 	bool isRButtonDown() const { return _rbuttonDown; }
 	void showDialog(uint16 fileNum, uint16 dlgNum);
 	const Common::Array<ConditionalSceneOp> &getConditionalOps() { return _conditionalOps; }
+	void updateHotAreasFromDynamicRects();
+	void setDynamicSceneRect(int16 num, int16 x, int16 y, int16 width, int16 height);
+	void setSceneNum(int16 num) { _num = num; }
 
 protected:
 	HotArea *findAreaUnderMouse(const Common::Point &pt);
@@ -484,6 +510,7 @@ private:
 	void drawHeadType1(Graphics::ManagedSurface *dst, const TalkDataHead &head, const Image &img);
 	void drawHeadType2(Graphics::ManagedSurface *dst, const TalkDataHead &head, const Image &img);
 	void drawHeadType3(Graphics::ManagedSurface *dst, const TalkDataHead &head, const Image &img);
+	void drawHeadType3Beamish(Graphics::ManagedSurface *dst, const TalkData &data, const TalkDataHead &head);
 
 	int _num;
 	Common::Array<SceneOp> _enterSceneOps;
@@ -495,6 +522,7 @@ private:
 	Common::List<HotArea> _hotAreaList;
 	Common::Array<ObjectInteraction> _objInteractions1;
 	Common::Array<ObjectInteraction> _objInteractions2;
+	Common::Array<DynamicRect> _dynamicRects; // Only used in Willy Beamish
 	//uint _field12_0x2b;
 	//uint _field15_0x33;
 
@@ -503,6 +531,7 @@ private:
 	// From here on is mutable stuff that might need saving
 	Common::Array<Dialog> _dialogs;
 	Common::Array<SceneTrigger> _triggers;
+	Common::SharedPtr<SoundRaw> _dlgSound;
 
 	GameItem *_dragItem;
 	bool _shouldClearDlg;

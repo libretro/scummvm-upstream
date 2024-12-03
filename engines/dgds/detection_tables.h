@@ -21,6 +21,10 @@
 
 namespace Dgds {
 
+enum DgdsADGFFlags {
+	ADGF_DGDS_EGA = 1,
+};
+
 static const ADGameDescription gameDescriptions[] = {
 	// Rise of the Dragon (PC) GOG
 	{
@@ -67,6 +71,21 @@ static const ADGameDescription gameDescriptions[] = {
 		GUIO1(GUIO_NONE)
 	},
 
+	// Rise of the Dragon (PC) German
+	{
+		"rise",
+		0,
+		{
+			{"volume.vga", 0, "f4e9cdc69d3177e8eae81ab43ef2e490", 8992},
+			{"volume.001", 0, "0ae4a3512c2fd9b90d1670ed7c351ad6", 1168096},
+			AD_LISTEND
+		},
+		Common::DE_DEU,
+		Common::kPlatformDOS,
+		ADGF_TESTING,
+		GUIO1(GUIO_NONE)
+	},
+
 	// Rise of the Dragon (PC) 16 Color, 1.2MB disks
 	{
 		"rise",
@@ -78,7 +97,22 @@ static const ADGameDescription gameDescriptions[] = {
 		},
 		Common::EN_ANY,
 		Common::kPlatformDOS,
-		ADGF_TESTING,
+		ADGF_TESTING | ADGF_DGDS_EGA,
+		GUIO1(GUIO_NONE)
+	},
+
+	// Rise of the Dragon (PC) 16 Color, 720kB disks (reported by ns394, #15442)
+	{
+		"rise",
+		"EGA",
+		{
+			{"volume.ega", 0, "3e4d62eb36fa5c8ca60e5cf59a307798", 6361},
+			{"volume.001", 0, "69dd06efe5bb562f4e1b094c5d043d93", 524553},
+			AD_LISTEND
+		},
+		Common::EN_ANY,
+		Common::kPlatformDOS,
+		ADGF_TESTING | ADGF_DGDS_EGA,
 		GUIO1(GUIO_NONE)
 	},
 
@@ -92,6 +126,20 @@ static const ADGameDescription gameDescriptions[] = {
 			AD_LISTEND
 		},
 		Common::EN_ANY,
+		Common::kPlatformAmiga,
+		ADGF_UNSTABLE,
+		GUIO1(GUIO_NONE)
+	},
+
+	// Rise of the Dragon (Amiga) German (reported by gabberhead, #15453)
+	{
+		"rise",
+		0,
+		{
+			{"volume.rmf", 0, "7737489a8c452f0c497956eead46e4f0", 8964},
+			{"volume.001", 0, "4e693c2748ccd71a633b76abe2ed6f12", 525920},
+		},
+		Common::DE_DEU,
 		Common::kPlatformAmiga,
 		ADGF_UNSTABLE,
 		GUIO1(GUIO_NONE)
@@ -248,7 +296,7 @@ static const ADGameDescription gameDescriptions[] = {
 		GUIO1(GUIO_NONE)
 	},
 
-	// Heart of China (PC) 720kb Floppy version
+	// Heart of China (PC) EGA 720kb Floppy version
 	{
 		"china",
 		0,
@@ -259,11 +307,11 @@ static const ADGameDescription gameDescriptions[] = {
 		},
 		Common::EN_ANY,
 		Common::kPlatformDOS,
-		ADGF_UNSTABLE,
+		ADGF_UNSTABLE | ADGF_DGDS_EGA,
 		GUIO1(GUIO_NONE)
 	},
 
-	// Heart of China (PC) 1.2MB Floppy version
+	// Heart of China (PC) EGA 1.2MB Floppy version
 	{
 		"china",
 		0,
@@ -274,7 +322,7 @@ static const ADGameDescription gameDescriptions[] = {
 		},
 		Common::EN_ANY,
 		Common::kPlatformDOS,
-		ADGF_UNSTABLE,
+		ADGF_UNSTABLE | ADGF_DGDS_EGA,
 		GUIO1(GUIO_NONE)
 	},
 
@@ -317,6 +365,7 @@ static const ADGameDescription gameDescriptions[] = {
 			{"resource.001", 0, "67a4ebacfa73d3f54e9c489d46f3e512", 1393208},
 			{"resource.002", 0, "de8375a3cf6bf347a0d8604b871883d3", 1456460},
 			{"resource.003", 0, "d22b65b330873828b18377a8276c071a", 1177135},
+			{"turbosci.exe", 0, "a6258fec3119c49c315e9e778e057017", 279008},
 			AD_LISTEND
 		},
 		Common::EN_ANY,
@@ -360,6 +409,7 @@ static const ADGameDescription gameDescriptions[] = {
 		{
 			{"resource.map", 0, "374e6d05c5e0acd88fb5af748948c899", 1461},
 			{"resource.001", 0, "46acc7ab8f6d7f63838ffea5f87380e2", 1175645},
+			{"scrantic.exe", 0, "34bd51a9697ce7ce833b90e189ef51b2", 295952},
 			AD_LISTEND
 		},
 		Common::EN_ANY,
@@ -368,6 +418,21 @@ static const ADGameDescription gameDescriptions[] = {
 		GUIO1(GUIO_NONE)
 	},
 
+	// Johnny Castaway screensaver
+	{
+		"castaway",
+		0,
+		{
+			{"resource.map", 0, "cf6b8e845a5235b2294fba0da1174f09", 1453},
+			{"resource.001", 0, "281ea06786017820969bd7baa0cc2905", 1175278},
+			{"scrantic.exe", 0, "46ce1ae10fcfa52dd964fcfc86694509", 295952},
+			AD_LISTEND
+		},
+		Common::EN_ANY,
+		Common::kPlatformWindows,
+		ADGF_DEMO | ADGF_UNSTABLE,
+		GUIO1(GUIO_NONE)
+	},
 
 	AD_TABLE_END_MARKER
 };

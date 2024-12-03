@@ -56,8 +56,8 @@ void Console::addToCurrentLine(const Common::String &text) {
 	addTextLine(_text[_startIdx] + text);
 }
 
-void Console::draw() {
-	if (!_redrawRequired) {
+void Console::draw(bool forceRedraw) {
+	if (!_redrawRequired && !forceRedraw) {
 		return;
 	}
 
@@ -71,6 +71,10 @@ void Console::draw() {
 	}
 	_redrawRequired = false;
 	g_engine->_screen->addDirtyRect(consoleArea);
+}
+
+void Console::drawStringAt(const int x, const int y, const Common::String &text) const {
+	_font.drawString(g_engine->_screen, text, x, y, _font.getStringWidth(text), 0);
 }
 
 void Console::addLine(const Common::String &line) {

@@ -39,6 +39,8 @@
 namespace Scumm {
 
 void ScummEngine::initBanners() {
+	memset(_bannerColors, 0, sizeof(_bannerColors));
+
 	setPalColor(7, 0x5A, 0x5A, 0x5A);
 	setPalColor(8, 0x46, 0x46, 0x46);
 	setPalColor(15, 0x8C, 0x8C, 0x8C);
@@ -1690,7 +1692,7 @@ void ScummEngine::setUpDraftsInventory() {
 	}
 }
 
-static const char *loomDraftsNames[7][18] = {
+static const char *const loomDraftsNames[7][18] = {
 	// ENGLISH
 	{
 		"Drafts",
@@ -1813,7 +1815,7 @@ void ScummEngine::drawDraftsInventory() {
 		namesWidth, notesWidth;
 
 	char notesBuf[6];
-	const char **names;
+	const char *const *names;
 	const char *notes = "cdefgabC";
 
 	int yConstant = _virtscr[kMainVirtScreen].topline + (_virtscr[kMainVirtScreen].h / 2);
@@ -2257,7 +2259,7 @@ bool ScummEngine::canWriteGame(int slotId) {
 		return true;
 
 	listSavegames(saveList, ARRAYSIZE(saveList));
-	if (saveList[slotId - 1]) {
+	if (saveList[slotId]) {
 		convertMessageToString((const byte *)getGUIString(gsReplacePrompt), (byte *)msgLabelPtr, sizeof(msgLabelPtr));
 
 		// Fallback to a hardcoded string
@@ -2285,7 +2287,7 @@ bool ScummEngine::userWriteLabelRoutine(Common::KeyState &ks, bool &leftMsClicke
 	bool hasLoadedState = false;
 	int firstChar = (_game.version == 4 && _game.id != GID_LOOM) ? 0 : 4;
 	bool opResult = true;
-	_system->setFeatureState(OSystem::kFeatureVirtualKeyboard, true);
+	beginTextInput();
 
 	while (!shouldQuit()) {
 		waitForTimer(1);
@@ -2296,7 +2298,7 @@ bool ScummEngine::userWriteLabelRoutine(Common::KeyState &ks, bool &leftMsClicke
 			clearClickedStatus();
 			opResult = executeMainMenuOperation(GUI_CTRL_OK_BUTTON, -1, -1, hasLoadedState);
 
-			_system->setFeatureState(OSystem::kFeatureVirtualKeyboard, false);
+			endTextInput();
 			return opResult;
 		} else if (leftMsClicked) {
 			clearClickedStatus();
@@ -2327,7 +2329,7 @@ bool ScummEngine::userWriteLabelRoutine(Common::KeyState &ks, bool &leftMsClicke
 		clearClickedStatus();
 	}
 
-	_system->setFeatureState(OSystem::kFeatureVirtualKeyboard, false);
+	endTextInput();
 	return false;
 }
 

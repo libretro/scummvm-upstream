@@ -407,8 +407,7 @@ void Sound::triggerSound(int soundID) {
 	}
 	// Support for sampled sound effects in Monkey Island 1 and 2
 	else if (_vm->_game.platform != Common::kPlatformFMTowns
-	         // The Macintosh m68k versions of MI2/Indy4 just ignore SBL effects.
-	         && !_vm->isMacM68kIMuse()
+	         && _vm->_game.platform != Common::kPlatformMacintosh
 	         && READ_BE_UINT32(ptr) == MKTAG('S','B','L',' ')) {
 		debugC(DEBUG_SOUND, "Using SBL sound effect");
 
@@ -994,14 +993,20 @@ int Sound::isSoundRunning(int sound) const {
 
 /**
  * Check whether the sound resource with the specified ID is still
- * used. This is invoked by ScummEngine::isResourceInUse, to determine
+ * used. This is invoked by ScummEngine::isResourceInUse(), to determine
  * which resources can be expired from memory.
- * Technically, this works very similar to isSoundRunning, however it
+ * Technically, this works very similar to isSoundRunning(), however it
  * calls IMuse::get_sound_active() instead of IMuse::getSoundStatus().
  * The difference between those two is in how they treat sounds which
  * are being faded out: get_sound_active() returns true even when the
  * sound is being faded out, while getSoundStatus() returns false in
  * that case.
+ *
+ * Another difference is that isSoundRunning() checks if sound is greater
+ * than _numSounds before checking if the resource is loaded. That check is
+ * only for non-HE games. In HE games, a number higher than _numSounds
+ * represents a (streamed) music track. HE games have their own implementation
+ * of isSoundRunning(), while isSoundInUse() is used by all.
  */
 bool Sound::isSoundInUse(int sound) const {
 
@@ -1013,6 +1018,9 @@ bool Sound::isSoundInUse(int sound) const {
 	if (sound == _currentCDSound)
 		return pollCD() != 0;
 
+	if (_mixer->isSoundIDActive(sound))
+		return true;
+
 	if (isSoundInQueue(sound))
 		return true;
 
@@ -1021,9 +1029,8 @@ bool Sound::isSoundInUse(int sound) const {
 
 	if (_vm->_imuse)
 		return _vm->_imuse->get_sound_active(sound);
-
-	if (_mixer->isSoundIDActive(sound))
-		return 1;
+	else if (_vm->_musicEngine)
+		return _vm->_musicEngine->getSoundStatus(sound);
 
 	return false;
 }
@@ -1595,9 +1602,10 @@ int ScummEngine::readSoundResource(ResId idx) {
 				pri = 15;
 				break;
 			case MKTAG('A','D','L',' '):
-				pri = 1;
 				if (_sound->_musicType == MDT_ADLIB || _sound->_musicType == MDT_TOWNS)
 					pri = 10;
+				else if (_sound->_musicType != MDT_MACINTOSH && _sound->_musicType != MDT_AMIGA)
+					pri = 1;
 				break;
 			case MKTAG('A','M','I',' '):
 				pri = 3;
@@ -1606,10 +1614,8 @@ int ScummEngine::readSoundResource(ResId idx) {
 				// Some of the Mac MI2 music only exists as Roland tracks. The
 				// original interpreter doesn't play them. I don't think there
 				// is any similarly missing FoA music.
-				if (_game.id == GID_MONKEY2 && _game.platform == Common::kPlatformMacintosh && !enhancementEnabled(kEnhAudioChanges)) {
-					pri = -1;
+				if (_game.id == GID_MONKEY2 && _game.platform == Common::kPlatformMacintosh && !enhancementEnabled(kEnhAudioChanges))
 					break;
-				}
 
 				pri = 3;
 				if (_native_mt32)
@@ -1622,7 +1628,6 @@ int ScummEngine::readSoundResource(ResId idx) {
 				pri = 2;
 				break;
 			case MKTAG('S','P','K',' '):
-				pri = -1;
 				if (_sound->_musicType == MDT_PCSPK || _sound->_musicType == MDT_PCJR)
 					pri = 11;
 				break;
@@ -1669,6 +1674,11 @@ int ScummEngine::readSoundResource(ResId idx) {
 			_fileHandle->read(ptr, best_size);
 			//dumpResource("sound-", idx, ptr);
 			return 1;
+		} else if (_game.platform == Common::kPlatformAmiga || _game.platform == Common::kPlatformMacintosh) {
+			// This isn't a bug. These versions simply don't have all the sounds. Very noticeable for Amiga (which
+			// doesn't even have the Woodtick song), but also for Macintosh in a few cases.
+			debugC(DEBUG_RESOURCE, "No appropriate sound data for target platform found in resource %d", idx);
+			return 0;
 		}
 		break;
 	case MKTAG('M','a','c','0'):
@@ -1774,7 +1784,7 @@ int ScummEngine::readSoundResource(ResId idx) {
 	}
 
 	if (total_size)
-		warning("Unrecognized base tag 0x%08x in sound %d", basetag, idx);
+		warning("Unrecognized base tag '%c%c%c%c' in sound %d", (basetag >> 24) & 0xFF, (basetag >> 16) & 0xFF, (basetag >> 8) & 0xFF, basetag & 0xFF, idx);
 	_res->_types[rtSound][idx]._roomoffs = RES_INVALID_OFFSET;
 	return 0;
 }

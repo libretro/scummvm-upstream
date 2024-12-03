@@ -25,22 +25,24 @@ namespace QDEngine {
 const PlainGameDescriptor GAME_NAMES[] = {
 	{ "qdengine", "QDEngine game" },
 	{ "karliknos", "Little Longnose" }, // Карлик Нос
-	{ "nupogodi3", "Wait for it! Issue 3. Song for a hare" }, // Ну, погоди! Выпуск 3. Песня для зайца
+	{ "nupogodi3", "Wait for it! Issue 3. Song for a Hare" }, // Ну, погоди! Выпуск 3. Песня для зайца
 	{ "pilots3", "Pilot Brothers 3: Back Side of the Earth" }, // Братья Пилоты. Обратная сторона Земли
 	{ "pilots3d", "Pilot Brothers 3D. The Case of Garden Pests" }, // Братья Пилоты 3D. Дело об Огородных вредителях
 	{ "pilots3d-2", "Pilot Brothers 3D-2. Kennel Club Secrets" }, // Братья Пилоты 3D-2. Тайны Клуба Собаководов
-	{ "mng", "Mom don't worry" }, // Мама не горюй
-	{ "rybalka", "Features of national fishing" }, // Особенности национальной рыбалки
-	{ "maski", "Mask show" }, // Маски-шоу
+	{ "mng", "Mom don't Worry" }, // Мама не горюй
+	{ "rybalka", "Features of National Fishing" }, // Особенности национальной рыбалки
+	{ "maski", "Mask Show" }, // Маски-шоу
 	{ "3mice1", "Marvellous Mice Adventures: Meeting Sea Rat" }, // Три маленькие белые мышки. Визит Морской крысы
 	{ "shveik", "The Adventures of the Good Soldier Schweik" }, // Похождения бравого солдата Швейка
 	{ "klepa", "Klepa: Symbolic Rivets" },  // Клёпа: Символические Заклепки
 	{ "3mice2", "Marvellous Mice Adventures: Sea Rat's Birthday" }, // Три маленькие белые мышки. День рождения морской крысы
-	{ "dogncat", "Dog-n-cat: Island of Dr Rattardy" }, // Агентство "КотоПес": Остров доктора Крысарди
-	{ "dogncat2", "Dog-n-cat: In the footsteps of unprecedented beasts" }, // Агентство "КотоПес": По следам невиданных зверей
+	{ "dogncat", "Dog-n-cat: Island of Dr Ratiarty" }, // Агентство "КотоПес": Остров доктора Крысарди
+	{ "dogncat2", "Dog-n-cat: In the Footsteps of Unprecedented Beasts" }, // Агентство "КотоПес": По следам невиданных зверей
 
 	{ 0, 0 }
 };
+
+#define SUPPORT_STATUS ADGF_UNSTABLE
 
 #define GAMEelf(id,extra,md5,size,exefile,exemd5,exesize,lang,flags) { \
         id, \
@@ -48,7 +50,7 @@ const PlainGameDescriptor GAME_NAMES[] = {
         AD_ENTRY2s("qd_game.qml", md5, size, exefile, exemd5, exesize), \
         lang, \
         Common::kPlatformWindows, \
-        (ADGF_UNSTABLE | ADGF_DROPPLATFORM | flags), \
+        (SUPPORT_STATUS | ADGF_DROPPLATFORM | flags), \
         GUIO1(GUIO_NONE) \
     }
 
@@ -65,6 +67,8 @@ const ADGameDescription GAME_DESCRIPTIONS[] = {
 	// Nykštukas Nosis
 	//GAMEl("karliknos", "???", 3225385, Common::LT_LIT),
 
+#undef SUPPORT_STATUS
+#define SUPPORT_STATUS ADGF_TESTING
 	// Ну, погоди! Выпуск 3. Песня для зайца
 	// 2003/12/11. K D-Lab
 	GAME("nupogodi3", "7394a5d28590680cfeb6a037101a9c81", 1675230,
@@ -72,6 +76,15 @@ const ADGameDescription GAME_DESCRIPTIONS[] = {
 	// Na, palauk! Zuikio dainos
 	GAMEl("nupogodi3", "3fbcdd27bf0a3defb6195c92b9b0a95f", 1675036,
 			"qd_game.exe", "18b4260f3f25ac0f394a8c618203dcba", 1855208, Common::LT_LTU),
+	// Jen počkej a Píseň pro zajíce
+	GAMEl("nupogodi3", "c0fab62fe6f3a339e96b1dd4a034e40a", 1674743,
+			"qd_game.exe", "d5e942e1d588fbd127c812551c0b67ef", 909312, Common::CS_CZE),
+	// No počkaj! 3: Pieseň pre zajaca
+	//GAMEl("nupogodi3", "???", 1674743,
+	//		"qd_game.exe", "???", 909312, Common::SK_SVK),
+
+#undef SUPPORT_STATUS
+#define SUPPORT_STATUS ADGF_UNSTABLE
 
 	// Братья Пилоты. Обратная сторона Земли
 	// 2004/06/11. K D-Lab / Pipe Studio
@@ -103,10 +116,16 @@ const ADGameDescription GAME_DESCRIPTIONS[] = {
 	GAMEd("mng", "da3a6e591d4896ca3176c5866aef278f", 2541094,
 			"qd_game.exe", "233ac221814568e5c278f952e76495ce", 757760),
 
+#undef SUPPORT_STATUS
+#define SUPPORT_STATUS ADGF_TESTING
 	// Маски-шоу
 	// 2005/12/16. Lazy Games
 	GAME("maski", "9a40b7491cac0dd80657cfe52e28ea74", 23128230,
 			"maski.exe", "1b7a4076bf1ed15e3eb642caeb337337", 761856),
+
+	// Три маленькие белые мышки и пираты северного моря
+	GAMEd("3mice1", "e6ad21f2f3241116b0f66a1d98f8e3f3", 403092,
+			"qd_game.exe", "da2dc5265cb7c55bcf1b24cd9deae9d1", 761856),
 
 	// Три маленькие белые мышки. Визит Морской крысы
 	// 2007/03/01. Lazy Games
@@ -115,17 +134,25 @@ const ADGameDescription GAME_DESCRIPTIONS[] = {
 	// Příběhy myší rodinky I
 	GAMEl("3mice1", "a6060f3d17ea2e50a03216332e517817", 10022470,
 			"qd_game.exe", "b8b3545b022f8e0975a8a948c03ad76e", 917504, Common::CS_CZE),
+	// Były Sobie Myszki Trzy: Na Spotkanie Cioci Myszy
+	GAMEl("3mice1", "6fe8feb6cf76f4642f6d6cb612b1d446", 10012908,
+			"qd_game.exe", "b8b3545b022f8e0975a8a948c03ad76e", 917504, Common::PL_POL),
 
 	// Похождения бравого солдата Швейка
 	// 2007/09/07. Lazy Games
 	GAME("shveik", "3877afbb780996a5608a5b358dd59726", 30233418,
 			"shveik.exe", "a56cb058b46e47754019652d27d974b3", 962560),
 
+#undef SUPPORT_STATUS
+#define SUPPORT_STATUS ADGF_UNSTABLE
+
 	// Клёпа: Символические Заклепки
 	// 2007/10/19. K-D Logic
 	GAME("klepa", "a09e1f072942d88c06abccfb820f46a9", 20260975,
 			"qd_game.exe", "a56cb058b46e47754019652d27d974b3", 962560),
 
+#undef SUPPORT_STATUS
+#define SUPPORT_STATUS ADGF_TESTING
 	// Три маленькие белые мышки. День рождения морской крысы
 	// 2007/12/27. Lazy Games
 	GAME("3mice2", "93d8311ff9c00453f25192743c9e98d9", 8176962,
@@ -134,6 +161,10 @@ const ADGameDescription GAME_DESCRIPTIONS[] = {
 	//GAMEl("3mice2", "???", 8176962, Common::CZ_CZE),
 	GAMEd("3mice2", "dfd98feb2e7d3345a7babdeb3ed3e9a7", 800666, // Demo1
 			"demo1.exe", "ffe20c2dbb131b01fccc1211a41e76e7", 962560),
+
+	// Były Sobie Myszki Trzy: Urodzinowe Śledztwo
+	GAMEl("3mice2", "9128a0d801e547cb651c5fc7e09bee04", 8182142,
+			"qd_game.exe", "ffe20c2dbb131b01fccc1211a41e76e7", 962560, Common::PL_POL),
 
 	{ // Demo2, original
 	  // Video is in MP4 format which is not supported
@@ -152,7 +183,7 @@ const ADGameDescription GAME_DESCRIPTIONS[] = {
 	  // Video is recoded with: ffmpeg -i martha.mpg -b:v 6000k -maxrate:v 9000k martha-new.mpeg
 	  // The full game has this video also broken: the video frames get frozen at the last several seconds
 		"3mice2",
-		"Recoded video",
+		"Reencoded video",
 		AD_ENTRY3s("qd_game.qml", "6af4c6f11cf0994670bedb78efe22267", 1124576,
 				   "demo2.exe",   "ffe20c2dbb131b01fccc1211a41e76e7", 962560,
 				   "Resource/Video/martha.mpg", "4dc93c37c0cdd75c01c58412f68e4874", 32499712),
@@ -162,6 +193,8 @@ const ADGameDescription GAME_DESCRIPTIONS[] = {
 		GUIO1(GUIO_NONE)
 	},
 
+#undef SUPPORT_STATUS
+#define SUPPORT_STATUS ADGF_UNSTABLE
 	// Агентство "КотоПес": Остров доктора Крысарди
 	// 2008/09/19 KD Vision Games
 	GAME("dogncat", "db4e0081fdaf575e82910cf7399cef62", 17759363,
